@@ -1,3 +1,6 @@
-from django.shortcuts import render
+from django.http import HttpResponse
 
-# Create your views here.
+
+def home(request):
+    """Return a minimal response to prove the app is configured."""
+    return HttpResponse("Wealth Management app is running.")
