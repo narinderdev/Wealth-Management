@@ -1,0 +1,33 @@
+__pycache__/
+*.py[cod]
+$py.class
+
+# Python virtual environments
+venv/
+env/
+ENV/
+env.bak/
+venv.bak/
+.venv/
+venv
+# Cache and build directories
+.pytest_cache/
+.cache/
+build/
+dist/
+*.egg-info/
+
+# Django/local configuration
+db.sqlite3
+media/
+
+# Logs
+*.log
+
+# Editors and IDEs
+.idea/
+.vscode/
+*.suo
+*.ntvs*
+*.njsproj
+*.sln
