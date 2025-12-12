@@ -1,0 +1,241 @@
+﻿{% load static %}
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>CORA Dashboard</title>
+    <link rel="stylesheet" href="{% static 'css/dashboard.css' %}">
+</head>
+<body>
+    <div class="dashboard-shell">
+        <aside class="sidebar">
+            <div class="sidebar-top">
+                <span class="sidebar-toggle">menu</span>
+                <span class="logo-text">CORA</span>
+            </div>
+            <div class="sidebar-icons">
+                <button class="icon-button active" aria-label="Dashboard">
+                    <span class="icon-dot"></span>
+                </button>
+                <button class="icon-button" aria-label="Shield">
+                    <span class="icon-dot"></span>
+                </button>
+                <button class="icon-button" aria-label="Chart">
+                    <span class="icon-dot"></span>
+                </button>
+                <button class="icon-button" aria-label="Settings">
+                    <span class="icon-dot"></span>
+                </button>
+            </div>
+        </aside>
+
+        <div class="content-area">
+            <header class="top-bar">
+                <div class="top-bar-left">
+                    <button class="menu-btn" aria-label="Toggle menu">menu</button>
+                    <h1>Collateral Oversight &amp; Risk Analytics</h1>
+                </div>
+                <div class="top-bar-right">
+                    <span class="top-logo">CORA</span>
+                </div>
+            </header>
+
+            <section class="profile-banner">
+                <div class="profile-info">
+                    <div class="avatar">MT</div>
+                    <div>
+                        <h2>Monica Thomson</h2>
+                        <p>Contact ƒ?› Unified Client Profile</p>
+                    </div>
+                </div>
+                <nav class="profile-tabs">
+                    <button class="tab active">Summary</button>
+                    <button class="tab">Collateral Dynamic</button>
+                    <button class="tab">Forecast</button>
+                    <button class="tab">Risk</button>
+                    <button class="tab">Reports</button>
+                    <button class="tab">Limits</button>
+                </nav>
+            </section>
+
+            <div class="dashboard-grid">
+                <aside class="info-column">
+                    <section class="card borrower-card">
+                        <header>
+                            <span class="pills">Borrower Overview</span>
+                        </header>
+                        <dl>
+                            <dt>Company Name</dt>
+                            <dd>Joe's Lumber</dd>
+                            <dt>Company ID</dt>
+                            <dd>123456789</dd>
+                            <dt>Industry</dt>
+                            <dd>Food &amp; Beverage</dd>
+                            <dt>NAICS</dt>
+                            <dd>424410</dd>
+                            <dt>Website</dt>
+                            <dd><a href="#">JoesLumber.com</a></dd>
+                            <dt>Primary Contact</dt>
+                            <dd>Alex Christie</dd>
+                            <dt>Contact Number</dt>
+                            <dd>401-263-7558</dd>
+                            <dt>Contact Email</dt>
+                            <dd>user@gmail.com</dd>
+                            <dt>Update Interval</dt>
+                            <dd>Weekly</dd>
+                            <dt>Current Update</dt>
+                            <dd>11/7/2025</dd>
+                            <dt>Previous Update</dt>
+                            <dd>11/14/2024</dd>
+                            <dt>Next Update</dt>
+                            <dd>11/14/2026</dd>
+                        </dl>
+                    </section>
+
+                    <section class="card risk-card">
+                        <header>
+                            <h3>Risk profile</h3>
+                        </header>
+                        <div class="risk-score">
+                            <span>3.1</span>
+                        </div>
+                        <div class="risk-gradient">
+                            <span>Low</span>
+                            <span>Mild</span>
+                            <span class="active">Average</span>
+                            <span>Elevated</span>
+                            <span>High</span>
+                        </div>
+                        <ul>
+                            <li>
+                                <span>Accounts Receivable</span>
+                                <strong>4.5</strong>
+                            </li>
+                            <li>
+                                <span>Inventory</span>
+                                <strong>4.0</strong>
+                            </li>
+                            <li>
+                                <span>Company</span>
+                                <strong>2.7</strong>
+                            </li>
+                            <li>
+                                <span>Industry</span>
+                                <strong>4.5</strong>
+                            </li>
+                        </ul>
+                    </section>
+                </aside>
+
+                <section class="main-column">
+                    <div class="insight-header">
+                        <h3>Borrowing Base Insight</h3>
+                        <span class="insight-small">Trends &amp; availability</span>
+                    </div>
+                    <div class="insight-grid">
+                        <article class="insight-card">
+                            <div class="insight-top">
+                                <p>Net Collateral</p>
+                                <span class="insight-value">$987,225</span>
+                                <span class="insight-change down">ƒ+" 8.09%</span>
+                            </div>
+                            <div class="chart-placeholder">
+                                <span class="dot-series blue"></span>
+                            </div>
+                        </article>
+                        <article class="insight-card">
+                            <div class="insight-top">
+                                <p>Outstanding Balance</p>
+                                <span class="insight-value">$5,556</span>
+                                <span class="insight-change down">ƒ+" 5.09%</span>
+                            </div>
+                            <div class="chart-placeholder">
+                                <span class="dot-series purple"></span>
+                            </div>
+                        </article>
+                        <article class="insight-card">
+                            <div class="insight-top">
+                                <p>Availability</p>
+                                <span class="insight-value">$435,987</span>
+                                <span class="insight-change up">ƒ+` 8.09%</span>
+                            </div>
+                            <div class="chart-placeholder">
+                                <span class="dot-series teal"></span>
+                            </div>
+                        </article>
+                    </div>
+
+                    <section class="card collateral-card">
+                        <header>
+                            <h3>Collateral Composition</h3>
+                        </header>
+                        <div class="table-wrapper">
+                            <table>
+                                <thead>
+                                    <tr>
+                                        <th>Beginning Collateral</th>
+                                        <th>Ineligibles</th>
+                                        <th>Eligible Collateral</th>
+                                        <th>NOLV %</th>
+                                        <th>Dilution Rate</th>
+                                        <th>Advanced Rate</th>
+                                        <th>Rate Limit</th>
+                                        <th>Utilized Rate</th>
+                                        <th>Pre-Reserve</th>
+                                        <th>Reserves</th>
+                                        <th>Net Collateral</th>
+                                    </tr>
+                                </thead>
+                                <tbody>
+                                    <tr>
+                                        <td>Accounts Receivable</td>
+                                        <td>$</td>
+                                        <td>$</td>
+                                        <td>%</td>
+                                        <td>%</td>
+                                        <td>%</td>
+                                        <td>%</td>
+                                        <td>%</td>
+                                        <td>$</td>
+                                        <td>$</td>
+                                        <td>$</td>
+                                    </tr>
+                                    <tr>
+                                        <td>Inventory</td>
+                                        <td>$</td>
+                                        <td>$</td>
+                                        <td>%</td>
+                                        <td>%</td>
+                                        <td>%</td>
+                                        <td>%</td>
+                                        <td>%</td>
+                                        <td>$</td>
+                                        <td>$</td>
+                                        <td>$</td>
+                                    </tr>
+                                    <tr>
+                                        <td>Other Collateral</td>
+                                        <td>$</td>
+                                        <td>$</td>
+                                        <td>%</td>
+                                        <td>%</td>
+                                        <td>%</td>
+                                        <td>%</td>
+                                        <td>%</td>
+                                        <td>$</td>
+                                        <td>$</td>
+                                        <td>$</td>
+                                    </tr>
+                                </tbody>
+                            </table>
+                        </div>
+                    </section>
+                </section>
+            </div>
+        </div>
+    </div>
+
+    <script src="{% static 'js/dashboard.js' %}"></script>
+</body>
+</html>

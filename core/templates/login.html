@@ -1,0 +1,86 @@
+﻿{% load static %}
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>CORA Login</title>
+    <link rel="stylesheet" href="{% static 'css/login.css' %}">
+</head>
+<body>
+    <div class="login-page">
+        <div class="split left">
+            <div class="hero-text">
+                <h1>Welcome to CORA</h1>
+                <div class="divider"></div>
+                <p>From Point-In-Time to Real-Time</p>
+                <div class="circle-group" aria-hidden="true">
+                    <span class="circle circle-one"></span>
+                    <span class="circle circle-two"></span>
+                </div>
+            </div>
+        </div>
+        <div class="split right">
+            <div class="form-card">
+                <div class="logo">
+                    <img src="{% static 'images/logo.png' %}" alt="CORA Logo">
+                </div>
+                {% if messages %}
+                <div class="alert success">
+                    {% for message in messages %}{{ message }}{% endfor %}
+                </div>
+                {% endif %}
+                {% if error_message %}
+                <div class="alert error">
+                    {{ error_message }}
+                </div>
+                {% endif %}
+                <form id="login-form" action="{% url 'login' %}" method="POST">
+                    {% csrf_token %}
+                    <div class="input-field">
+                        <span class="icon" aria-hidden="true">
+                            <svg width="20" height="20" viewBox="0 0 24 24" fill="none">
+                                <path d="M4 6h16v12H4z" stroke="#415C9C" stroke-width="1.5" stroke-linecap="round"
+                                    stroke-linejoin="round" />
+                                <path d="M4 6l8 7 8-7" stroke="#415C9C" stroke-width="1.5" stroke-linecap="round"
+                                    stroke-linejoin="round" />
+                            </svg>
+                        </span>
+                        <input type="email" id="email" name="email" placeholder="Enter Email" required>
+                    </div>
+                    <div class="input-field">
+                        <span class="icon" aria-hidden="true">
+                            <svg width="20" height="20" viewBox="0 0 24 24" fill="none">
+                                <rect x="7" y="11" width="10" height="7" rx="2" stroke="#415C9C" stroke-width="1.5"/>
+                                <path d="M8 11V9c0-2 1.5-3.5 3.5-3.5S15 7 15 9v2" stroke="#415C9C" stroke-width="1.5"
+                                    stroke-linecap="round" stroke-linejoin="round" />
+                            </svg>
+                        </span>
+                        <input type="password" id="password" name="password" placeholder="Password" required>
+                        <button type="button" class="visibility-toggle" aria-label="Toggle password visibility">
+                            <svg width="20" height="20" viewBox="0 0 24 24" fill="none">
+                                <path d="M1 12s4-7 11-7 11 7 11 7-4 7-11 7-11-7-11-7z" stroke="#415C9C" stroke-width="1.5"
+                                    stroke-linecap="round" stroke-linejoin="round" />
+                                <circle cx="12" cy="12" r="3" stroke="#415C9C" stroke-width="1.5" />
+                            </svg>
+                        </button>
+                    </div>
+                    <label class="remember">
+                        <input type="checkbox" id="remember-me" name="remember">
+                        <span>Remember Me</span>
+                    </label>
+                    <button type="submit" class="login-btn">Login</button>
+                </form>
+                {% if static_login_identity and static_login_password %}
+                <p class="credential-note">
+                    Use <strong>{{ static_login_identity }}</strong> /
+                    <strong>{{ static_login_password }}</strong> to access the dashboard.
+                </p>
+                {% endif %}
+            </div>
+        </div>
+    </div>
+
+    <script src="{% static 'js/login.js' %}"></script>
+</body>
+</html>

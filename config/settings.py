@@ -118,6 +118,11 @@ USE_TZ = True
 STATIC_URL = 'static/'
 STATIC_ROOT = BASE_DIR / 'staticfiles'
 
+# Static login credentials for quick demos
+STATIC_LOGIN_USERNAME = 'corademo'
+STATIC_LOGIN_EMAIL = 'demo@cora.com'
+STATIC_LOGIN_PASSWORD = 'Demo1234'
+
 # Default primary key field type
 # https://docs.djangoproject.com/en/5.2/ref/settings/#default-auto-field
 
