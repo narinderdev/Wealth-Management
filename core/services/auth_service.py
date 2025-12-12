@@ -4,13 +4,14 @@ from typing import Optional
 
 from django.conf import settings
 from django.contrib.auth import authenticate, get_user_model
+from django.contrib.auth.models import AbstractBaseUser
 
 from .db_services import create_object, get_object
 
 User = get_user_model()
 
 
-def _create_or_update_user(username: str, email: str, password: str) -> tuple[User, bool]:
+def _create_or_update_user(username: str, email: str, password: str) -> tuple[AbstractBaseUser, bool]:
     """Provision or refresh the static user account stored in settings."""
     user = get_object(User, username=username)
     created = False
@@ -27,7 +28,7 @@ def _create_or_update_user(username: str, email: str, password: str) -> tuple[Us
     return user, created
 
 
-def ensure_static_user() -> Optional[User]:
+def ensure_static_user() -> Optional[AbstractBaseUser]:
     """
     Ensure the configured static login account exists and is kept in sync with settings.
     """
