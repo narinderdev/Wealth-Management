@@ -1,41 +1,65 @@
 {% with inventory_tab|default:"summary" as active_tab %}
 <div class="menu-card">
   <div class="menu-title">Inventory</div>
-  <a class="menu-item {% if active_tab == 'summary' %}active{% endif %}" href="?section=inventory&inventory_tab=summary">
-    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
-      <path d="M4 4h16v16H4z"/><path d="M4 10h16"/><path d="M10 4v16"/>
-    </svg>
-    Summary
-  </a>
-  <a class="menu-item {% if active_tab == 'finished_goods' %}active{% endif %}" href="?section=inventory&inventory_tab=finished_goods">
-    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
-      <path d="M4 4h16v16H4z"/><path d="M8 4v16"/><path d="M16 4v16"/>
-    </svg>
-    Finished Goods
-  </a>
-  <a class="menu-item {% if active_tab == 'raw_materials' %}active{% endif %}" href="?section=inventory&inventory_tab=raw_materials">
-    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
-      <path d="M3 12h18"/><path d="M3 6h18"/><path d="M3 18h18"/>
-    </svg>
-    Raw Materials
-  </a>
-  <a class="menu-item {% if active_tab == 'work_in_progress' %}active{% endif %}" href="?section=inventory&inventory_tab=work_in_progress">
-    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
-      <path d="M12 2v20"/><path d="M5 9h14"/>
-    </svg>
-    Work in Progress
-  </a>
-  <a class="menu-item {% if active_tab == 'liquidation_model' %}active{% endif %}" href="?section=inventory&inventory_tab=liquidation_model">
-    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
-      <path d="M3 5h18"/><path d="M3 12h18"/><path d="M3 19h18"/>
-    </svg>
-    Liquidation Model
-  </a>
-  <a class="menu-item {% if active_tab == 'other_collateral' %}active{% endif %}" href="?section=inventory&inventory_tab=other_collateral">
-    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
-      <path d="M4 4h16v16H4z"/><path d="M4 10h16"/><path d="M10 4v16"/>
-    </svg>
-    Other Collateral
-  </a>
+  <div class="collapse">
+    <button class="collapse-toggle {% if active_tab == 'summary' %}open{% endif %}" type="button">
+      Summary
+      <span class="collapse-chevron" aria-hidden="true"></span>
+    </button>
+    <div class="collapse-panel">
+      <a class="menu-item {% if active_tab == 'summary' %}active{% endif %}" href="?section=inventory&inventory_tab=summary">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+          <path d="M4 4h16v16H4z"/><path d="M4 10h16"/><path d="M10 4v16"/>
+        </svg>
+        Summary
+      </a>
+      <a class="menu-item {% if active_tab == 'finished_goods' %}active{% endif %}" href="?section=inventory&inventory_tab=finished_goods">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+          <path d="M4 4h16v16H4z"/><path d="M8 4v16"/><path d="M16 4v16"/>
+        </svg>
+        Finished Goods
+      </a>
+    </div>
+  </div>
+  <div class="collapse">
+    <button class="collapse-toggle {% if active_tab == 'raw_materials' %}open{% endif %}" type="button">
+      Inventory Details
+      <span class="collapse-chevron" aria-hidden="true"></span>
+    </button>
+    <div class="collapse-panel">
+      <a class="menu-item {% if active_tab == 'raw_materials' %}active{% endif %}" href="?section=inventory&inventory_tab=raw_materials">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+          <path d="M3 12h18"/><path d="M3 6h18"/><path d="M3 18h18"/>
+        </svg>
+        Raw Materials
+      </a>
+      <a class="menu-item {% if active_tab == 'work_in_progress' %}active{% endif %}" href="?section=inventory&inventory_tab=work_in_progress">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+          <path d="M12 2v20"/><path d="M5 9h14"/>
+        </svg>
+        Work in Progress
+      </a>
+    </div>
+  </div>
+  <div class="collapse">
+    <button class="collapse-toggle {% if active_tab == 'liquidation_model' %}open{% endif %}" type="button">
+      Other
+      <span class="collapse-chevron" aria-hidden="true"></span>
+    </button>
+    <div class="collapse-panel">
+      <a class="menu-item {% if active_tab == 'liquidation_model' %}active{% endif %}" href="?section=inventory&inventory_tab=liquidation_model">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+          <path d="M3 5h18"/><path d="M3 12h18"/><path d="M3 19h18"/>
+        </svg>
+        Liquidation Model
+      </a>
+      <a class="menu-item {% if active_tab == 'other_collateral' %}active{% endif %}" href="?section=inventory&inventory_tab=other_collateral">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+          <path d="M4 4h16v16H4z"/><path d="M4 10h16"/><path d="M10 4v16"/>
+        </svg>
+        Other Collateral
+      </a>
+    </div>
+  </div>
 </div>
 {% endwith %}

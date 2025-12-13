@@ -304,5 +304,6 @@ def summary_view(request):
         "insights": insights,
         "risk_metrics": risk_metrics,
         "user": request.user,
+        "active_tab": "summary",
     }
     return render(request, "dashboard/summary.html", context)

@@ -13,4 +13,6 @@ def _borrower_context(request):
 
 @login_required(login_url="login")
 def forecast_view(request):
-    return render(request, "forecast/forecast.html", _borrower_context(request))
+    context = _borrower_context(request)
+    context["active_tab"] = "forecast"
+    return render(request, "forecast/forecast.html", context)

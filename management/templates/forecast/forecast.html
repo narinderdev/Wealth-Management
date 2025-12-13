@@ -1,135 +1,49 @@
-<!doctype html>
-<html lang="en">
-<head>
-  <meta charset="utf-8" />
-  <meta name="viewport" content="width=device-width, initial-scale=1" />
-  <title>CORA – Liquidity Forecast</title>
-  <link rel="preconnect" href="https://fonts.googleapis.com">
-  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600&display=swap" rel="stylesheet">
-  <style>
-    :root{
-      --blue:#1d4089;
-      --accent:#0a6af0;
-      --ink:#1f2937;
-      --muted:#6b7280;
-      --line:#e5edf6;
-      --panel:#ffffff;
-      --canvas:#f3f6fb;
-      --sidebar:#f0f4f9;
-    }
-    *{box-sizing:border-box}
-    html,body{
-      height:100%;
-      margin:0;
-      background:var(--canvas);
-      font-family:Inter,system-ui,-apple-system,Segoe UI,Roboto,Arial,sans-serif;
-      color:var(--ink);
-    }
-    body{display:flex;flex-direction:column}
-    .app{flex:1;display:flex;flex-direction:column;background:var(--canvas)}
-    .topbar{
-      height:48px;
-      background:var(--blue);
-      color:#fff;
-      display:flex;
-      align-items:center;
-      justify-content:space-between;
-      padding:0 20px;
-      letter-spacing:.2px;
-      font-weight:600;
-      box-shadow:0 2px 6px rgba(0,0,0,.15);
-    }
-    .topbar .left{display:flex;align-items:center;gap:12px}
-    .burger{width:22px;height:22px;border-radius:6px;background:rgba(255,255,255,.15);display:grid;place-items:center}
-    .burger svg{width:14px;height:14px;stroke:currentColor}
-    .logo{font-weight:700;letter-spacing:.6px}
-    .shell{flex:1;display:flex}
-    .sidebar{
-      width:50px;
-      background:var(--sidebar);
-      border-right:1px solid var(--line);
-      display:flex;
-      flex-direction:column;
-      align-items:center;
-      gap:14px;
-      padding:16px 0;
-    }
-    .ico{
-      width:26px;height:26px;border-radius:8px;
-      border:1px solid #d1dceb;
-      display:grid;place-items:center;
-      background:#fff;
-      color:#5c6472;
-      font-size:12px;
-    }
-    .ico.active{background:#eaf2ff;border-color:#c9ddff;color:var(--accent)}
-    .main{
-      flex:1;
-      padding:20px 26px 28px;
-      overflow:auto;
-    }
-    .userrow{
-      display:flex;
-      align-items:center;
-      gap:12px;
-      padding-bottom:12px;
-    }
-    .avatar{
-      width:32px;height:32px;border-radius:50%;
-      background:#0a6af0;
-      color:#fff;
-      display:grid;place-items:center;
-      font-weight:600;
-    }
-    .user-meta{font-size:13px}
-    .user-meta .sub{font-size:12px;color:var(--muted);display:flex;align-items:center;gap:4px}
-    .user-meta svg{width:10px;height:10px;stroke:currentColor}
-    .tabs{
-      display:flex;
-      gap:18px;
-      font-size:13px;
-      color:var(--muted);
-      border-bottom:1px solid var(--line);
-      padding-bottom:10px;
-      margin-bottom:18px;
-    }
-    .tab{padding-bottom:6px;cursor:pointer}
-    .tab.active{color:var(--accent);border-bottom:2px solid var(--accent);font-weight:600}
+{% extends "layout/app_base.html" %}
 
-    .panel{
-      background:var(--panel);
-      border:1px solid var(--line);
+{% block title %}Liquidity Forecast{% endblock %}
+
+{% block extra_head %}
+  {{ block.super }}
+  <style>
+    .forecast-page{
+      --fc-line:#e5edf6;
+      --fc-panel:#ffffff;
+      --fc-muted:#475569;
+      --fc-shadow:0 4px 12px rgba(15,23,42,.04);
+    }
+    .forecast-page .panel{
+      background:var(--fc-panel);
+      border:1px solid var(--fc-line);
       border-radius:12px;
       padding:16px 18px 20px;
-      box-shadow:0 4px 12px rgba(15,23,42,.04);
+      box-shadow:var(--fc-shadow);
       margin-bottom:18px;
     }
-    .block-heading{
+    .forecast-page .block-heading{
       font-size:15px;
       font-weight:600;
       color:#0f172a;
       margin-bottom:6px;
     }
-    .block-sub{
+    .forecast-page .block-sub{
       font-size:13px;
-      color:#475569;
+      color:var(--fc-muted);
       line-height:1.6;
       margin-bottom:18px;
     }
-    .chart-grid{
+    .forecast-page .chart-grid{
       display:grid;
       gap:16px;
     }
-    .chart-grid.two{grid-template-columns: repeat(auto-fit,minmax(260px,1fr))}
-    .chart-grid.single{grid-template-columns:1fr}
-    .chart-grid.quad{grid-template-columns: repeat(auto-fit,minmax(220px,1fr))}
-    .chart-card{
-      border:1px solid var(--line);
+    .forecast-page .chart-grid.two{grid-template-columns: repeat(auto-fit,minmax(260px,1fr))}
+    .forecast-page .chart-grid.single{grid-template-columns:1fr}
+    .forecast-page .chart-grid.quad{grid-template-columns: repeat(auto-fit,minmax(220px,1fr))}
+    .forecast-page .chart-card{
+      border:1px solid var(--fc-line);
       border-radius:10px;
       padding:12px;
     }
-    .chart-card header{
+    .forecast-page .chart-card header{
       font-size:13px;
       font-weight:600;
       margin-bottom:8px;
@@ -137,210 +51,133 @@
       justify-content:space-between;
       color:#0f172a;
     }
-    .chart-card .small{font-size:11px;color:var(--muted)}
-    svg{max-width:100%}
+    .forecast-page .chart-card .small{font-size:11px;color:var(--fc-muted)}
+    .forecast-page svg{max-width:100%}
   </style>
-</head>
-<body>
-  <div class="app">
-    <header class="topbar">
-      <div class="left">
-        <div class="burger" aria-label="Menu">
-          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round">
-            <path d="M3 6h18M3 12h18M3 18h18"/>
+{% endblock %}
+
+{% block page_content %}
+  <div class="forecast-page">
+    <section class="panel forecast-block">
+      <div class="block-heading">Liquidity Forecast</div>
+      <div class="block-sub">
+        Snapshot overview reflects current operating liquidity with rolling 35-day expectations.
+        Forecast assumes no additional revolver draws and collections at the existing cadence.
+      </div>
+      <div class="chart-grid two">
+        <div class="chart-card">
+          <header>
+            <span>Available Collateral</span>
+            <span class="small">Actual vs Forecast</span>
+          </header>
+          <svg viewBox="0 0 520 180">
+            <path d="M40 140L120 120L200 125L280 110L360 95L440 90" fill="none" stroke="#0a6af0" stroke-width="3"/>
+            <path d="M40 150L120 140L200 145L280 130L360 120L440 125" fill="none" stroke="#60a5fa" stroke-width="3" stroke-dasharray="6 4"/>
+            <g fill="#0a6af0">
+              <circle cx="40" cy="140" r="4"/><circle cx="120" cy="120" r="4"/><circle cx="200" cy="125" r="4"/>
+              <circle cx="280" cy="110" r="4"/><circle cx="360" cy="95" r="4"/><circle cx="440" cy="90" r="4"/>
+            </g>
           </svg>
         </div>
-        Collateral Oversight &amp; Risk Analytics
-      </div>
-      <div class="logo">CORA</div>
-    </header>
-
-    <div class="shell">
-      <aside class="sidebar">
-        <div class="ico">☰</div>
-        <div class="ico">☆</div>
-        <div class="ico active">⚡</div>
-        <div class="ico">⚙</div>
-      </aside>
-
-      <main class="main">
-        <div class="userrow">
-          <div class="avatar">MT</div>
-          <div class="user-meta">
-            <div>Monica Thomson</div>
-            <div class="sub">
-              Liquidity • Business Profile
-              <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
-                <path d="M7 10l5 5 5-5"/>
-              </svg>
-            </div>
-          </div>
+        <div class="chart-card">
+          <header>
+            <span>Liquidity Runway</span>
+            <span class="small">Asset-based revolver</span>
+          </header>
+          <svg viewBox="0 0 520 180">
+            <path d="M40 150h420" stroke="#e5edf6" stroke-width="8" stroke-linecap="round"/>
+            <path d="M40 150h260" stroke="#0a6af0" stroke-width="8" stroke-linecap="round"/>
+            <path d="M320 150h120" stroke="#f97316" stroke-width="8" stroke-linecap="round"/>
+            <text x="70" y="130" font-size="12">$48MM availability</text>
+            <text x="330" y="130" font-size="12">+$22MM dry powder</text>
+          </svg>
         </div>
+      </div>
+    </section>
 
-       <nav class="tabs">
-    <a class="tab" href="{% url 'dashboard' %}">Summary</a>
-    <a class="tab" href="{% url 'collateral_dynamic' %}">Collateral Dynamic</a>
-    <a class="tab active" href="{% url 'forecast' %}">Forecast</a>
-    <a class="tab" href="{% url 'risk' %}">Risk</a>
-    <a class="tab" href="{% url 'reports' %}">Reports</a>
-    <a class="tab" href="{% url 'limits' %}">Limits</a>
-  </nav>
+    <section class="panel">
+      <div class="block-heading">Cash Activity</div>
+      <div class="block-sub">
+        Weekly schedules blend actuals with forecasted collections from the previous cycle.
+        Variance flags when liquidity falls below the 12-week covenant cushion.
+      </div>
+      <div class="chart-grid single">
+        <div class="chart-card">
+          <header>
+            <span>Cash Waterfall</span>
+            <span class="small">Weekly cadence</span>
+          </header>
+          <svg viewBox="0 0 620 240">
+            <polyline fill="none" stroke="#0a6af0" stroke-width="4" points="40,180 120,150 200,160 280,130 360,125 440,110 520,105"/>
+            <polyline fill="none" stroke="#38bdf8" stroke-dasharray="6 4" stroke-width="4" points="40,190 120,170 200,165 280,150 360,140 440,132 520,125"/>
+            <g fill="#0a6af0">
+              <circle cx="40" cy="180" r="4"/><circle cx="120" cy="150" r="4"/><circle cx="200" cy="160" r="4"/>
+              <circle cx="280" cy="130" r="4"/><circle cx="360" cy="125" r="4"/><circle cx="440" cy="110" r="4"/><circle cx="520" cy="105" r="4"/>
+            </g>
+            <text x="60" y="210" font-size="11">Mar 1</text>
+            <text x="140" y="210" font-size="11">Mar 8</text>
+            <text x="220" y="210" font-size="11">Mar 15</text>
+            <text x="300" y="210" font-size="11">Mar 22</text>
+            <text x="380" y="210" font-size="11">Mar 29</text>
+            <text x="460" y="210" font-size="11">Apr 5</text>
+            <text x="540" y="210" font-size="11">Apr 12</text>
+          </svg>
+        </div>
+      </div>
+    </section>
 
-        <section class="panel forecast-block">
-          <div class="block-heading">Liquidity Forecast</div>
-          <div class="block-sub">
-            Snapshot overview reflects current operating liquidity with rolling 35-day expectations.
-            Forecast assumes no additional revolver draws and collections at the existing cadence.
-          </div>
-          <div class="chart-grid two">
-            <div class="chart-card">
-              <header>
-                <span>Available Collateral</span>
-                <span class="small">Actual vs Forecast</span>
-              </header>
-              <svg viewBox="0 0 320 140">
-                <polyline fill="none" stroke="#0a6af0" stroke-width="3" points="20,110 60,72 100,85 140,44 180,64 220,52 260,82 300,66"/>
-                <polyline fill="none" stroke="#ff930f" stroke-width="3" points="20,106 60,92 100,96 140,88 180,60 220,70 260,74 300,84"/>
-                <g fill="#0a6af0"><circle cx="20" cy="110" r="4"/><circle cx="60" cy="72" r="4"/><circle cx="100" cy="85" r="4"/><circle cx="140" cy="44" r="4"/><circle cx="180" cy="64" r="4"/><circle cx="220" cy="52" r="4"/><circle cx="260" cy="82" r="4"/><circle cx="300" cy="66" r="4"/></g>
-              </svg>
-            </div>
-            <div class="chart-card">
-              <header>
-                <span>Borrower Balance</span>
-                <span class="small">Past 12 Months</span>
-              </header>
-              <svg viewBox="0 0 320 140">
-                <polyline fill="none" stroke="#0a6af0" stroke-width="3" points="20,92 60,58 100,72 140,48 180,40 220,64 260,74 300,68"/>
-                <polyline fill="none" stroke="#ff930f" stroke-width="3" points="20,118 60,100 100,110 140,122 180,94 220,88 260,96 300,100"/>
-                <g fill="#ff930f"><circle cx="20" cy="118" r="4"/><circle cx="60" cy="100" r="4"/><circle cx="100" cy="110" r="4"/><circle cx="140" cy="122" r="4"/><circle cx="180" cy="94" r="4"/><circle cx="220" cy="88" r="4"/><circle cx="260" cy="96" r="4"/><circle cx="300" cy="100" r="4"/></g>
-              </svg>
-            </div>
-          </div>
-        </section>
-
-        <section class="panel forecast-block">
-          <div class="block-heading">Available Liquidity</div>
-          <div class="block-sub">
-            Forecast captures base-case collections against utilization requirements, highlighting variance between
-            projected needs and capacity across the quarter.
-          </div>
-          <div class="chart-grid single">
-            <div class="chart-card">
-              <header>
-                <span>Rolling Liquidity</span>
-                <span class="small">Past 12 Months vs 12 Month Forecast</span>
-              </header>
-              <svg viewBox="0 0 320 140">
-                <polyline fill="none" stroke="#0a6af0" stroke-width="3" points="20,100 60,88 100,66 140,72 180,58 220,48 260,60 300,54"/>
-                <polyline fill="none" stroke="#ff930f" stroke-width="3" points="20,104 60,112 100,120 140,108 180,114 220,124 260,116 300,122"/>
-                <g fill="#0a6af0"><circle cx="20" cy="100" r="4"/><circle cx="60" cy="88" r="4"/><circle cx="100" cy="66" r="4"/><circle cx="140" cy="72" r="4"/><circle cx="180" cy="58" r="4"/><circle cx="220" cy="48" r="4"/><circle cx="260" cy="60" r="4"/><circle cx="300" cy="54" r="4"/></g>
-              </svg>
-            </div>
-          </div>
-        </section>
-
-        <section class="panel forecast-block">
-          <div class="block-heading">Collateral Gross Margin Forecast</div>
-          <div class="block-sub">
-            Modeled margin trajectory reflects planned pricing actions and inventory optimization.
-            Base forecast assumes historical seasonality with minimal macro adjustments.
-          </div>
-          <div class="chart-grid two">
-            <div class="chart-card">
-              <header>
-                <span>Sales</span>
-                <span class="small">Net Sales vs Forecast</span>
-              </header>
-              <svg viewBox="0 0 320 140">
-                <polyline fill="none" stroke="#0a6af0" stroke-width="3" points="20,96 60,80 100,72 140,58 180,70 220,62 260,76 300,68"/>
-                <polyline fill="none" stroke="#ff930f" stroke-width="3" points="20,110 60,122 100,118 140,126 180,120 220,124 260,130 300,128"/>
-                <g fill="#ff930f"><circle cx="20" cy="110" r="4"/><circle cx="60" cy="122" r="4"/><circle cx="100" cy="118" r="4"/><circle cx="140" cy="126" r="4"/><circle cx="180" cy="120" r="4"/><circle cx="220" cy="124" r="4"/><circle cx="260" cy="130" r="4"/><circle cx="300" cy="128" r="4"/></g>
-              </svg>
-            </div>
-            <div class="chart-card">
-              <header>
-                <span>Gross Margin</span>
-                <span class="small">Actual vs Forecast</span>
-              </header>
-              <svg viewBox="0 0 320 140">
-                <polyline fill="none" stroke="#0a6af0" stroke-width="3" points="20,118 60,108 100,90 140,88 180,72 220,64 260,70 300,62"/>
-                <polyline fill="none" stroke="#ff930f" stroke-width="3" points="20,122 60,126 100,120 140,130 180,126 220,132 260,136 300,134"/>
-              </svg>
-            </div>
-          </div>
-        </section>
-
-        <section class="panel forecast-block">
-          <div class="block-heading">Accounts Receivable Forecast</div>
-          <div class="block-sub">
-            Receivables forecast monitors DSO trend relative to planned curtailments.
-            Measurement window is two reporting cycles with forward-looking expectations.
-          </div>
-          <div class="chart-grid single">
-            <div class="chart-card">
-              <header>
-                <span>Receivable Run Rate</span>
-                <span class="small">Past 12 Months vs Network Forecast</span>
-              </header>
-              <svg viewBox="0 0 320 140">
-                <polyline fill="none" stroke="#0a6af0" stroke-width="3" points="20,90 60,55 100,70 140,60 180,50 220,68 260,78 300,70"/>
-                <polyline fill="none" stroke="#ff930f" stroke-width="3" points="20,110 60,118 100,124 140,116 180,120 220,130 260,124 300,128"/>
-              </svg>
-            </div>
-          </div>
-        </section>
-
-        <section class="panel forecast-block">
-          <div class="block-heading">Inventory Forecast</div>
-          <div class="block-sub">
-            Inventory scenarios highlight expected conversion of finished goods plus the impact of scrap and vendor receipts.
-            Forecast range assumes controlled replenishment inside vendor agreements.
-          </div>
-          <div class="chart-grid quad">
-            <div class="chart-card">
-              <header>
-                <span>Finished Goods</span>
-                <span class="small">Actual vs Forecast</span>
-              </header>
-              <svg viewBox="0 0 320 140">
-                <polyline fill="none" stroke="#0a6af0" stroke-width="3" points="20,108 60,86 100,76 140,60 180,64 220,58 260,70 300,66"/>
-                <polyline fill="none" stroke="#ff930f" stroke-width="3" points="20,112 60,120 100,116 140,126 180,118 220,124 260,130 300,128"/>
-              </svg>
-            </div>
-            <div class="chart-card">
-              <header>
-                <span>Vendor Receipts</span>
-                <span class="small">Actual vs Forecast</span>
-              </header>
-              <svg viewBox="0 0 320 140">
-                <polyline fill="none" stroke="#0a6af0" stroke-width="3" points="20,114 60,96 100,84 140,78 180,86 220,90 260,82 300,76"/>
-                <polyline fill="none" stroke="#ff930f" stroke-width="3" points="20,118 60,128 100,120 140,130 180,124 220,132 260,136 300,134"/>
-              </svg>
-            </div>
-            <div class="chart-card">
-              <header>
-                <span>WIP &amp; Process</span>
-                <span class="small">Actual vs Forecast</span>
-              </header>
-              <svg viewBox="0 0 320 140">
-                <polyline fill="none" stroke="#0a6af0" stroke-width="3" points="20,100 60,84 100,70 140,66 180,74 220,62 260,72 300,64"/>
-                <polyline fill="none" stroke="#ff930f" stroke-width="3" points="20,116 60,122 100,118 140,124 180,120 220,128 260,132 300,130"/>
-              </svg>
-            </div>
-            <div class="chart-card">
-              <header>
-                <span>Scrap &amp; Decode</span>
-                <span class="small">Actual vs Forecast</span>
-              </header>
-              <svg viewBox="0 0 320 140">
-                <polyline fill="none" stroke="#0a6af0" stroke-width="3" points="20,118 60,100 100,92 140,88 180,90 220,82 260,90 300,86"/>
-                <polyline fill="none" stroke="#ff930f" stroke-width="3" points="20,120 60,128 100,124 140,132 180,126 220,134 260,138 300,136"/>
-              </svg>
-            </div>
-          </div>
-        </section>
-      </main>
-    </div>
+    <section class="panel">
+      <div class="block-heading">Covenant &amp; Trend Watch</div>
+      <div class="chart-grid quad">
+        <div class="chart-card">
+          <header>
+            <span>Borrowing Base</span>
+            <span class="small">net availability</span>
+          </header>
+          <svg viewBox="0 0 220 120">
+            <rect x="20" y="30" width="30" height="70" fill="#e5e7eb"/>
+            <rect x="20" y="50" width="30" height="50" fill="#0a6af0"/>
+            <rect x="80" y="30" width="30" height="70" fill="#e5e7eb"/>
+            <rect x="80" y="35" width="30" height="65" fill="#38bdf8"/>
+            <rect x="140" y="30" width="30" height="70" fill="#e5e7eb"/>
+            <rect x="140" y="40" width="30" height="60" fill="#0a6af0"/>
+            <rect x="200" y="30" width="30" height="70" fill="#e5e7eb"/>
+            <rect x="200" y="45" width="30" height="55" fill="#38bdf8"/>
+          </svg>
+        </div>
+        <div class="chart-card">
+          <header>
+            <span>DSO Tracking</span>
+            <span class="small">rolling 90d</span>
+          </header>
+          <svg viewBox="0 0 220 120">
+            <polyline fill="none" stroke="#0a6af0" stroke-width="3" points="20,90 70,80 120,85 170,70 220,65"/>
+            <polyline fill="none" stroke="#f97316" stroke-dasharray="4 4" stroke-width="3" points="20,100 70,95 120,90 170,85 220,80"/>
+          </svg>
+        </div>
+        <div class="chart-card">
+          <header>
+            <span>Vendor Payments</span>
+            <span class="small">next 8 weeks</span>
+          </header>
+          <svg viewBox="0 0 220 120">
+            <path d="M20 100h180" stroke="#e2e8f0" stroke-width="2"/>
+            <path d="M20 80h150" stroke="#0a6af0" stroke-width="4"/>
+            <path d="M20 60h130" stroke="#f97316" stroke-width="4"/>
+            <path d="M20 40h100" stroke="#38bdf8" stroke-width="4"/>
+          </svg>
+        </div>
+        <div class="chart-card">
+          <header>
+            <span>Run Rate Sensitivity</span>
+            <span class="small">base vs downside</span>
+          </header>
+          <svg viewBox="0 0 220 120">
+            <polyline fill="none" stroke="#0a6af0" stroke-width="3" points="20,90 70,75 120,80 170,65 220,60"/>
+            <polyline fill="none" stroke="#94a3b8" stroke-width="3" stroke-dasharray="5 4" points="20,95 70,90 120,88 170,82 220,78"/>
+          </svg>
+        </div>
+      </div>
+    </section>
   </div>
-</body>
-</html>
+{% endblock %}

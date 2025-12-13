@@ -1,0 +1,91 @@
+{% load static %}
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>{% block title %}CORA{% endblock %}</title>
+  <link rel="stylesheet" href="{% static 'css/summary.css' %}">
+  {% block extra_head %}{% endblock %}
+</head>
+<body>
+  <div class="frame">
+    <div class="app">
+      <aside class="sidebar">
+        <div class="sb-icon" title="Shield">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+            <path d="M12 2l7 4v6c0 5-3 9-7 10C8 21 5 17 5 12V6l7-4z"/>
+          </svg>
+        </div>
+        <div class="sb-icon {% if active_tab == 'summary' %}active{% endif %}" title="Summary">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+            <path d="M4 4h16v16H4z"/><path d="M8 8h8M8 12h8M8 16h5"/>
+          </svg>
+        </div>
+        <div class="sb-icon {% if active_tab == 'reports' %}active{% endif %}" title="Reports">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+            <path d="M4 19V5"/><path d="M4 19h16"/><path d="M8 16v-6"/><path d="M12 16V8"/><path d="M16 16v-4"/>
+          </svg>
+        </div>
+        <div class="sb-icon {% if active_tab == 'limits' %}active{% endif %}" title="Settings">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+            <path d="M12 15.5a3.5 3.5 0 1 0 0-7 3.5 3.5 0 0 0 0 7z"/>
+            <path d="M19.4 15a7.9 7.9 0 0 0 .1-2l2-1.2-2-3.4-2.3.7a8 8 0 0 0-1.7-1L15 4h-6l-.5 2.1a8 8 0 0 0-1.7 1l-2.3-.7-2 3.4 2 1.2a7.9 7.9 0 0 0 .1 2l-2 1.2 2 3.4 2.3-.7a8 8 0 0 0 1.7 1L9 20h6l.5-2.1a8 8 0 0 0 1.7-1l2.3.7 2-3.4-2-1.2z"/>
+          </svg>
+        </div>
+      </aside>
+
+      <div class="main">
+        <header class="topbar">
+          <div class="top-left">
+            <div class="burger" aria-hidden="true">
+              <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round">
+                <path d="M4 6h16"/><path d="M4 12h16"/><path d="M4 18h16"/>
+              </svg>
+            </div>
+            <div class="top-title">Collateral Oversight &amp; Risk Analytics</div>
+          </div>
+          <div class="brand">CORA</div>
+        </header>
+
+        <div class="content">
+          <div class="user-row">
+            {% with request.user as current_user %}
+            {% with user_display=current_user.get_full_name|default:current_user.username %}
+            {% with avatar_text=user_display|slice:":2"|upper %}
+            <div class="avatar">{{ avatar_text }}</div>
+            <div class="user-meta">
+              <div class="user-name">{{ user_display|default:"Borrower" }}</div>
+              <div class="user-sub">
+                Contact • Unified Client Profile
+                <span class="caret">
+                  <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round">
+                    <path d="M7 10l5 5 5-5"/>
+                  </svg>
+                </span>
+              </div>
+            </div>
+            {% endwith %}
+            {% endwith %}
+            {% endwith %}
+          </div>
+
+          <div class="tabs-shell">
+            <nav class="tabs">
+              <a class="tab {% if active_tab == 'summary' %}active{% endif %}" href="{% url 'dashboard' %}">Summary</a>
+              <a class="tab {% if active_tab == 'collateral_dynamic' %}active{% endif %}" href="{% url 'collateral_dynamic' %}">Collateral Dynamic</a>
+              <a class="tab {% if active_tab == 'forecast' %}active{% endif %}" href="{% url 'forecast' %}">Forecast</a>
+              <a class="tab {% if active_tab == 'risk' %}active{% endif %}" href="{% url 'risk' %}">Risk</a>
+              <a class="tab {% if active_tab == 'reports' %}active{% endif %}" href="{% url 'reports' %}">Reports</a>
+              <a class="tab {% if active_tab == 'limits' %}active{% endif %}" href="{% url 'limits' %}">Limits</a>
+            </nav>
+          </div>
+
+          {% block page_content %}{% endblock %}
+        </div>
+      </div>
+    </div>
+  </div>
+  {% block extra_scripts %}{% endblock %}
+</body>
+</html>

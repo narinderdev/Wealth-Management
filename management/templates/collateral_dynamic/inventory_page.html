@@ -1,73 +1,260 @@
-{% extends "collateral_dynamic/base.html" %}
+{% extends "layout/app_base.html" %}
 
-{% block main_content %}
-  <div class="user-header">
-    <div class="avatar">
-      {% with borrower_summary.company_name|default:user.get_full_name|default:user.username as company_name %}
-      {{ company_name|slice:":2"|upper }}
-      {% endwith %}
+{% block title %}Collateral Dynamic{% endblock %}
+
+{% block extra_head %}
+  {{ block.super }}
+  <style>
+    .collateral-dynamic{
+      --cd-panel:#ffffff;
+      --cd-muted:#6b7280;
+      --cd-accent:#0a6af0;
+      --cd-line:#e5edf6;
+      --cd-ink:#1f2937;
+      --cd-shadow:0 4px 12px rgba(15,23,42,.04);
+    }
+    .collateral-dynamic .section-tabs{
+      display:flex;
+      gap:12px;
+      margin-top:12px;
+      font-size:12px;
+      text-transform:uppercase;
+    }
+    .collateral-dynamic .section-tab{
+      padding:6px 14px;
+      border-radius:999px;
+      border:1px solid transparent;
+      background:var(--cd-panel);
+      color:var(--cd-muted);
+      font-weight:500;
+      text-decoration:none;
+    }
+    .collateral-dynamic .section-tab.active{
+      color:var(--cd-accent);
+      border-color:var(--cd-line);
+      box-shadow:0 8px 16px rgba(15,23,42,.08);
+    }
+    .collateral-dynamic .section-content{
+      margin-top:18px;
+    }
+    .collateral-dynamic .layout{
+      display:grid;
+      grid-template-columns:240px 1fr;
+      gap:20px;
+    }
+    .collateral-dynamic .menu-card{
+      background:var(--cd-panel);
+      border:1px solid var(--cd-line);
+      border-radius:14px;
+      padding:16px 12px;
+      box-shadow:var(--cd-shadow);
+    }
+    .collateral-dynamic .menu-card .menu-title{
+      font-size:12px;
+      font-weight:600;
+      color:var(--cd-muted);
+      margin-bottom:12px;
+    }
+    .collateral-dynamic .menu-item{
+      width:100%;
+      border:none;
+      background:transparent;
+      padding:10px;
+      border-radius:10px;
+      display:flex;
+      gap:8px;
+      align-items:center;
+      font-size:13px;
+      color:#475569;
+      cursor:pointer;
+      text-decoration:none;
+    }
+    .collateral-dynamic .menu-item svg{width:14px;height:14px;stroke:currentColor}
+    .collateral-dynamic .menu-item.active{
+      background:#eff4ff;
+      color:var(--cd-accent);
+      font-weight:600;
+    }
+    .collateral-dynamic .panel{
+      background:var(--cd-panel);
+      border:1px solid var(--cd-line);
+      border-radius:14px;
+      padding:18px;
+      box-shadow:var(--cd-shadow);
+      margin-bottom:18px;
+    }
+    .collateral-dynamic .panel-header{
+      display:flex;align-items:center;gap:10px;
+      font-size:14px;font-weight:600;
+      margin-bottom:14px;
+      color:var(--cd-ink);
+    }
+    .collateral-dynamic .panel-header svg{width:16px;height:16px;stroke:var(--cd-accent)}
+    .collateral-dynamic .snapshot-text{
+      font-size:13px;
+      color:#475569;
+      line-height:1.6;
+      margin-bottom:16px;
+    }
+    .collateral-dynamic .snapshot-grid{
+      display:grid;
+      grid-template-columns:220px 1fr;
+      gap:20px;
+    }
+    .collateral-dynamic .donut-card{
+      border:1px solid var(--cd-line);
+      border-radius:12px;
+      padding:12px;
+      text-align:center;
+    }
+    .collateral-dynamic .donut-card .total{
+      font-size:24px;font-weight:700;margin:8px 0;
+    }
+    .collateral-dynamic .donut-card .labels{
+      margin-top:12px;
+      text-align:left;
+      display:flex;
+      flex-direction:column;
+      gap:6px;
+      font-size:12px;
+      color:#475569;
+    }
+    .collateral-dynamic .legend-dot{
+      width:10px;height:10px;border-radius:50%;display:inline-block;margin-right:6px;
+    }
+    .collateral-dynamic .chart-card{
+      border:1px solid var(--cd-line);
+      border-radius:12px;
+      padding:12px;
+    }
+    .collateral-dynamic .chart-card header{
+      font-size:13px;
+      font-weight:600;
+      margin-bottom:8px;
+      display:flex;
+      justify-content:space-between;
+      color:var(--cd-ink);
+    }
+    .collateral-dynamic .value-grid{
+      display:grid;
+      grid-template-columns: repeat(auto-fit,minmax(150px,1fr));
+      gap:12px;
+      margin-bottom:12px;
+    }
+    .collateral-dynamic .value-card{
+      border:1px solid var(--cd-line);
+      border-radius:10px;
+      padding:12px;
+      background:#fafcff;
+    }
+    .collateral-dynamic .value-card .label{
+      font-size:11px;
+      color:var(--cd-muted);
+      text-transform:uppercase;
+      letter-spacing:.3px;
+    }
+    .collateral-dynamic .value-card .value{
+      font-size:18px;
+      font-weight:600;
+      margin-top:6px;
+      color:var(--cd-ink);
+    }
+    .collateral-dynamic .value-card .trend{
+      font-size:12px;
+      margin-top:4px;
+      color:#16a34a;
+    }
+    .collateral-dynamic .value-card .trend.down{color:#dc2626}
+    .collateral-dynamic .table-card{
+      border:1px solid var(--cd-line);
+      border-radius:12px;
+      overflow:hidden;
+    }
+    .collateral-dynamic .stats-row{
+      display:grid;
+      grid-template-columns: repeat(auto-fit,minmax(220px,1fr));
+      gap:16px;
+    }
+    .collateral-dynamic table{
+      width:100%;
+      border-collapse:collapse;
+      font-size:12px;
+      color:#475569;
+    }
+    .collateral-dynamic th,
+    .collateral-dynamic td{
+      padding:10px 8px;
+      border-bottom:1px solid var(--cd-line);
+      text-align:left;
+    }
+    .collateral-dynamic th{
+      background:#f9fbff;
+      color:#6b7280;
+      font-weight:600;
+    }
+    .collateral-dynamic tbody tr:last-child td{border-bottom:none}
+    .collateral-dynamic .placeholder-panel{
+      min-height:280px;
+      display:flex;
+      flex-direction:column;
+      justify-content:center;
+      align-items:flex-start;
+      gap:8px;
+      color:#475569;
+    }
+    .collateral-dynamic .placeholder-panel p{
+      margin:0;
+      font-size:13px;
+      line-height:1.5;
+      color:#475569;
+    }
+  </style>
+{% endblock %}
+
+{% block page_content %}
+  <div class="collateral-dynamic">
+    <div class="section-tabs">
+      <a class="section-tab {% if active_section == 'overview' %}active{% endif %}" href="?section=overview">Overview</a>
+      <a class="section-tab {% if active_section == 'accounts_receivable' %}active{% endif %}" href="?section=accounts_receivable">Accounts Receivable</a>
+      <a class="section-tab {% if active_section == 'inventory' %}active{% endif %}" href="?section=inventory&inventory_tab={{ inventory_tab|default:'summary' }}">Inventory</a>
     </div>
-    <div class="user-meta">
-      <div>{{ borrower_summary.company_name|default:"Borrower" }}</div>
-      <div class="sub">
-        Contact • Collateral Dynamic Profile
-        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
-          <path d="M7 10l5 5 5-5"/>
-        </svg>
-      </div>
-    </div>
-  </div>
 
-  <nav class="tabs">
-    <a class="tab" href="{% url 'dashboard' %}">Summary</a>
-    <a class="tab active" href="{% url 'collateral_dynamic' %}">Collateral Dynamic</a>
-    <a class="tab" href="{% url 'forecast' %}">Forecast</a>
-    <a class="tab" href="{% url 'risk' %}">Risk</a>
-    <a class="tab" href="{% url 'reports' %}">Reports</a>
-    <a class="tab" href="{% url 'limits' %}">Limits</a>
-  </nav>
-
-  <div class="section-tabs">
-    <a class="section-tab {% if active_section == 'overview' %}active{% endif %}" href="?section=overview">Overview</a>
-    <a class="section-tab {% if active_section == 'accounts_receivable' %}active{% endif %}" href="?section=accounts_receivable">Accounts Receivable</a>
-    <a class="section-tab {% if active_section == 'inventory' %}active{% endif %}" href="?section=inventory&inventory_tab={{ inventory_tab|default:'summary' }}">Inventory</a>
-  </div>
-
-  <div class="section-content">
-    {% if active_section == 'overview' %}
-      <div class="panel placeholder-panel">
-        <div class="panel-header">
-          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
-            <path d="M3 3h18v18H3z"/>
-            <path d="M3 9h18"/>
-            <path d="M9 21V9"/>
-          </svg>
-          Overview
+    <div class="section-content">
+      {% if active_section == 'overview' %}
+        <div class="panel placeholder-panel">
+          <div class="panel-header">
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+              <path d="M3 3h18v18H3z"/>
+              <path d="M3 9h18"/>
+              <path d="M9 21V9"/>
+            </svg>
+            Overview
+          </div>
+          <p>
+            High-level collateral positioning, concentration, and liquidity insights will render here when the data feed is ready.
+          </p>
         </div>
-        <p>
-          High-level collateral positioning, concentration, and liquidity insights will render here when the data feed is ready.
-        </p>
-      </div>
-    {% elif active_section == 'accounts_receivable' %}
-      <div class="panel placeholder-panel">
-        <div class="panel-header">
-          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
-            <path d="M4 4h16v16H4z"/>
-            <path d="M4 10h16"/>
-            <path d="M10 4v16"/>
-          </svg>
-          Accounts Receivable
+      {% elif active_section == 'accounts_receivable' %}
+        <div class="panel placeholder-panel">
+          <div class="panel-header">
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+              <path d="M4 4h16v16H4z"/>
+              <path d="M4 10h16"/>
+              <path d="M10 4v16"/>
+            </svg>
+            Accounts Receivable
+          </div>
+          <p>
+            Accounts Receivable dynamics will appear here with total balance, aging buckets, and past due trends.
+          </p>
         </div>
-        <p>
-          Accounts Receivable dynamics will appear here with total balance, aging buckets, and past due trends.
-        </p>
-      </div>
-    {% else %}
-      {% if inventory_tab == 'finished_goods' %}
-      {% include "collateral_dynamic/inventory/finished_goals.html" with inventory_tab=inventory_tab %}
       {% else %}
-      {% include "collateral_dynamic/inventory/summary.html" with inventory_tab=inventory_tab %}
+        {% if inventory_tab == 'finished_goods' %}
+          {% include "collateral_dynamic/inventory/finished_goals.html" with inventory_tab=inventory_tab %}
+        {% else %}
+          {% include "collateral_dynamic/inventory/summary.html" with inventory_tab=inventory_tab %}
+        {% endif %}
       {% endif %}
-    {% endif %}
+    </div>
   </div>
 {% endblock %}

@@ -12,4 +12,6 @@ def _borrower_context(request):
 
 @login_required(login_url="login")
 def reports_view(request):
-    return render(request, "reports/borrowing_base.html", _borrower_context(request))
+    context = _borrower_context(request)
+    context["active_tab"] = "reports"
+    return render(request, "reports/borrowing_base.html", context)

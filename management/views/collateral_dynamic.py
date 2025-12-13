@@ -23,5 +23,6 @@ def collateral_dynamic_view(request):
         "borrower_summary": _build_borrower_summary(borrower),
         "active_section": section,
         "inventory_tab": inventory_tab,
+        "active_tab": "collateral_dynamic",
     }
     return render(request, "collateral_dynamic/inventory_page.html", context)

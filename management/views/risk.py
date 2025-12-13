@@ -12,4 +12,6 @@ def _borrower_context(request):
 
 @login_required(login_url="login")
 def risk_view(request):
-    return render(request, "risk/risk.html", _borrower_context(request))
+    context = _borrower_context(request)
+    context["active_tab"] = "risk"
+    return render(request, "risk/risk.html", context)

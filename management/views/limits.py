@@ -12,4 +12,6 @@ def _borrower_context(request):
 
 @login_required(login_url="login")
 def limits_view(request):
-    return render(request, "limits/limits.html", _borrower_context(request))
+    context = _borrower_context(request)
+    context["active_tab"] = "limits"
+    return render(request, "limits/limits.html", context)
