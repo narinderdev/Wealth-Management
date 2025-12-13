@@ -45,7 +45,7 @@ def _find_borrower_by_identifier(identifier):
     if not borrower:
         borrower = Borrower.objects.filter(primary_contact_email__iexact=identifier).first()
     if not borrower:
-        borrower = Borrower.objects.filter(company__iexact=identifier).first()
+        borrower = Borrower.objects.filter(company__company__iexact=identifier).first()
     return borrower
 
 
