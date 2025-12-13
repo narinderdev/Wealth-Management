@@ -1,4 +1,5 @@
 from django.conf import settings
+from django.contrib.auth.hashers import check_password, make_password
 from django.db import models
 
 
@@ -46,10 +47,37 @@ class Borrower(TimeStampedModel):
     next_update = models.DateField(null=True, blank=True)
     lender = models.CharField(max_length=255, null=True, blank=True)
     lender_id = models.BigIntegerField(null=True, blank=True)
+    password = models.CharField(max_length=128, null=True, blank=True)
 
     def __str__(self):
         return f"{self.company} - {self.primary_contact or 'Borrower'}"
 
+    def set_password(self, raw_password, save=True):
+        self.password = make_password(raw_password)
+        if save:
+            self.save(update_fields=['password'])
+
+    def check_password(self, raw_password):
+        if not self.password:
+            return False
+        return check_password(raw_password, self.password)
+
+
+class BorrowerUser(TimeStampedModel):
+    user = models.OneToOneField(
+        settings.AUTH_USER_MODEL,
+        on_delete=models.CASCADE,
+        related_name="borrower_profile",
+    )
+    borrower = models.OneToOneField(
+        Borrower,
+        on_delete=models.CASCADE,
+        related_name="login_user",
+    )
+    is_active = models.BooleanField(default=True)
+
+    def __str__(self):
+        return f"{self.user.email} -> {self.borrower.company}"
 
 
 class SpecificIndividual(TimeStampedModel):
