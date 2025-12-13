@@ -28,6 +28,11 @@ urlpatterns = [
     path('forecast/', management_views.forecast_view, name='forecast'),
     path('risk/', management_views.risk_view, name='risk'),
     path('reports/', management_views.reports_view, name='reports'),
+    path(
+        'reports/download/<int:report_id>/',
+        management_views.reports_download,
+        name='reports_download',
+    ),
     path('limits/', management_views.limits_view, name='limits'),
     path('logout/', management_views.logout_view, name='logout'),
     path('admin/', admin.site.urls),

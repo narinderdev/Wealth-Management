@@ -87,13 +87,13 @@ def login_view(request):
         user = _authenticate_by_email_or_username(request, identifier, password)
         if user:
             login(request, user)
-            return redirect("dashboard")
+            return redirect("collateral_dynamic")
 
         borrower = _authenticate_by_borrower(identifier, password)
         if borrower:
             user = _ensure_user_for_borrower(borrower)
             login(request, user)
-            return redirect("dashboard")
+            return redirect("collateral_dynamic")
 
         error_message = "Invalid email or password."
 

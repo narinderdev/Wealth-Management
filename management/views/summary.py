@@ -1,3 +1,5 @@
+import math
+
 from decimal import Decimal, InvalidOperation
 
 from django.contrib.auth.decorators import login_required
@@ -82,6 +84,36 @@ def _to_decimal(value):
             return Decimal(str(value))
         except Exception:
             return Decimal("0")
+
+
+CHART_X_POSITIONS = [0, 40, 80, 120, 160, 200, 220]
+
+
+def _build_line_series(base_value, global_max, x_positions=CHART_X_POSITIONS):
+    base = float(_to_decimal(base_value))
+    reference = _to_decimal(global_max or Decimal("1"))
+    if reference <= 0:
+        reference = Decimal("1")
+    ref_float = float(reference)
+    if ref_float == 0:
+        ref_float = 1.0
+    base_ratio = max(0.0, min(1.0, base / ref_float))
+
+    points = []
+    points_list = []
+    total_steps = max(1, len(x_positions) - 1)
+    for idx, x in enumerate(x_positions):
+        jitter = math.sin(idx / total_steps * math.pi) * 0.12
+        ratio = max(0.0, min(1.0, base_ratio + jitter))
+        y = 90 - ratio * 50
+        y_rounded = round(y, 1)
+        points.append(f"{x},{y_rounded}")
+        points_list.append({"x": x, "y": y_rounded})
+
+    return {
+        "points": " ".join(points),
+        "points_list": points_list,
+    }
 
 
 def _build_borrower_summary(borrower):
@@ -234,6 +266,19 @@ def summary_view(request):
         },
     }
 
+    global_max_value = max(
+        net_total,
+        available_total,
+        ar_row.balance if ar_row and ar_row.balance is not None else Decimal("0"),
+        Decimal("1"),
+    )
+    net_chart = _build_line_series(net_total, global_max_value)
+    outstanding_chart = _build_line_series(
+        ar_row.balance if ar_row and ar_row.balance is not None else None,
+        global_max_value,
+    )
+    availability_chart = _build_line_series(available_total, global_max_value)
+
     inventory_rows = [
         row for row in collateral_rows if row.main_type and "inventory" in row.main_type.lower()
     ]
@@ -305,5 +350,8 @@ def summary_view(request):
         "risk_metrics": risk_metrics,
         "user": request.user,
         "active_tab": "summary",
+        "net_chart": net_chart,
+        "outstanding_chart": outstanding_chart,
+        "availability_chart": availability_chart,
     }
     return render(request, "dashboard/summary.html", context)

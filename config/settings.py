@@ -136,7 +136,7 @@ STATICFILES_DIRS = [
 
 # Authentication helpers
 LOGIN_URL = 'login'
-LOGIN_REDIRECT_URL = 'dashboard'
+LOGIN_REDIRECT_URL = 'collateral_dynamic'
 
 
 # Default primary key field type

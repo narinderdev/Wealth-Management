@@ -8,13 +8,13 @@
   <link rel="stylesheet" href="{% static 'css/summary.css' %}">
   {% block extra_head %}{% endblock %}
 </head>
-<body>
+<body class="{% block body_class %}{% endblock %}">
   <div class="frame">
     <div class="app">
       <aside class="sidebar">
-        <div class="sb-icon" title="Shield">
-          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
-            <path d="M12 2l7 4v6c0 5-3 9-7 10C8 21 5 17 5 12V6l7-4z"/>
+        <div class="sb-icon" title="Navigation">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round">
+            <path d="M4 6h16"/><path d="M4 12h16"/><path d="M4 18h16"/>
           </svg>
         </div>
         <a class="sb-icon {% if active_tab == 'summary' %}active{% endif %}" title="Summary" href="{% url 'dashboard' %}">
@@ -27,7 +27,14 @@
             <path d="M4 19V5"/><path d="M4 19h16"/><path d="M8 16v-6"/><path d="M12 16V8"/><path d="M16 16v-4"/>
           </svg>
         </a>
-        <div class="sb-icon {% if active_tab == 'limits' %}active{% endif %}" title="Settings">
+        <!-- <a class="sb-icon {% if active_tab == 'reports' %}active{% endif %}" title="Reports" href="{% url 'reports' %}?report=complete_analysis">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+            <path d="M3 6h18"></path>
+            <path d="M3 12h18"></path>
+            <path d="M3 18h18"></path>
+          </svg>
+        </a> -->
+        <div class="sb-icon" title="Settings">
           <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
             <path d="M12 15.5a3.5 3.5 0 1 0 0-7 3.5 3.5 0 0 0 0 7z"/>
             <path d="M19.4 15a7.9 7.9 0 0 0 .1-2l2-1.2-2-3.4-2.3.7a8 8 0 0 0-1.7-1L15 4h-6l-.5 2.1a8 8 0 0 0-1.7 1l-2.3-.7-2 3.4 2 1.2a7.9 7.9 0 0 0 .1 2l-2 1.2 2 3.4 2.3-.7a8 8 0 0 0 1.7 1L9 20h6l.5-2.1a8 8 0 0 0 1.7-1l2.3.7 2-3.4-2-1.2z"/>
@@ -38,11 +45,11 @@
       <div class="main">
         <header class="topbar">
           <div class="top-left">
-            <div class="burger" aria-hidden="true">
+            <!-- <div class="burger" aria-hidden="true">
               <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round">
                 <path d="M4 6h16"/><path d="M4 12h16"/><path d="M4 18h16"/>
               </svg>
-            </div>
+            </div> -->
             <div class="top-title">Collateral Oversight &amp; Risk Analytics</div>
           </div>
           <div class="brand">CORA</div>

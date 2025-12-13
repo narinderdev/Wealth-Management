@@ -195,19 +195,14 @@
                 <line x1="0" y1="30" x2="220" y2="30"></line>
                 <line x1="0" y1="0" x2="0" y2="120"></line>
               </g>
-              <polyline class="panel-line panel-line--blue" points="0,75 30,45 60,30 90,55 120,42 150,46 180,40 220,42"/>
+              <polyline class="panel-line panel-line--blue" points="{{ net_chart.points }}"/>
               <g class="panel-dots">
-                <circle cx="0" cy="75" r="3"/>
-                <circle cx="30" cy="45" r="3"/>
-                <circle cx="60" cy="30" r="3"/>
-                <circle cx="90" cy="55" r="3"/>
-                <circle cx="120" cy="42" r="3"/>
-                <circle cx="150" cy="46" r="3"/>
-                <circle cx="180" cy="40" r="3"/>
-                <circle cx="220" cy="42" r="3"/>
+                {% for point in net_chart.points_list %}
+                <circle cx="{{ point.x }}" cy="{{ point.y }}" r="3"/>
+                {% endfor %}
               </g>
-              <g class="panel-axis">
-                <text x="4" y="88">$0.2k</text><text x="4" y="58">$0.4k</text><text x="4" y="28">$0.8k</text>
+            <g class="panel-axis">
+              <text x="4" y="88">$0.2k</text><text x="4" y="58">$0.4k</text><text x="4" y="28">$0.8k</text>
                 <text x="25" y="110">01</text><text x="85" y="110">03</text><text x="145" y="110">05</text><text x="205" y="110">07</text>
               </g>
             </svg>
@@ -225,18 +220,14 @@
                 <line x1="0" y1="30" x2="220" y2="30"></line>
                 <line x1="0" y1="0" x2="0" y2="120"></line>
               </g>
-              <polyline class="panel-line panel-line--purple" points="0,80 40,45 80,70 120,40 160,52 200,48 220,58"/>
+              <polyline class="panel-line panel-line--purple" points="{{ outstanding_chart.points }}"/>
               <g class="panel-dots">
-                <circle cx="0" cy="80" r="3"/>
-                <circle cx="40" cy="45" r="3"/>
-                <circle cx="80" cy="70" r="3"/>
-                <circle cx="120" cy="40" r="3"/>
-                <circle cx="160" cy="52" r="3"/>
-                <circle cx="200" cy="48" r="3"/>
-                <circle cx="220" cy="58" r="3"/>
+                {% for point in outstanding_chart.points_list %}
+                <circle cx="{{ point.x }}" cy="{{ point.y }}" r="3"/>
+                {% endfor %}
               </g>
-              <g class="panel-axis">
-                <text x="4" y="88">$0.2k</text><text x="4" y="58">$0.4k</text><text x="4" y="28">$0.8k</text>
+            <g class="panel-axis">
+              <text x="4" y="88">$0.2k</text><text x="4" y="58">$0.4k</text><text x="4" y="28">$0.8k</text>
                 <text x="25" y="110">01</text><text x="85" y="110">03</text><text x="145" y="110">05</text><text x="205" y="110">07</text>
               </g>
             </svg>
@@ -254,15 +245,11 @@
                 <line x1="0" y1="30" x2="220" y2="30"></line>
                 <line x1="0" y1="0" x2="0" y2="120"></line>
               </g>
-              <polyline class="panel-line panel-line--green" points="0,65 40,40 80,52 120,30 160,66 200,58 220,50"/>
+              <polyline class="panel-line panel-line--green" points="{{ availability_chart.points }}"/>
               <g class="panel-dots">
-                <circle cx="0" cy="65" r="3"/>
-                <circle cx="40" cy="40" r="3"/>
-                <circle cx="80" cy="52" r="3"/>
-                <circle cx="120" cy="30" r="3"/>
-                <circle cx="160" cy="66" r="3"/>
-                <circle cx="200" cy="58" r="3"/>
-                <circle cx="220" cy="50" r="3"/>
+                {% for point in availability_chart.points_list %}
+                <circle cx="{{ point.x }}" cy="{{ point.y }}" r="3"/>
+                {% endfor %}
               </g>
               <g class="panel-axis">
                 <text x="4" y="88">$0.2k</text><text x="4" y="58">$0.4k</text><text x="4" y="28">$0.8k</text>

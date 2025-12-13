@@ -10,9 +10,7 @@
       </div>
     </div>
     <div class="snapshotText">
-      Inventory levels increased this period, primarily in finished goods, while turns softened due to slower sales velocity.
-      Excess and obsolete inventory ticked up, raising the risk profile and influencing NOLV recovery expectations.
-      Raw materials and WIP remained steady with no significant swings.
+      {{ snapshot_text }}
     </div>
   </div>
 
@@ -23,25 +21,23 @@
         <div class="donutBox">
           <svg width="130" height="130" viewBox="0 0 130 130" aria-hidden="true">
             <circle cx="65" cy="65" r="45" fill="none" stroke="#e9eef6" stroke-width="14"/>
-            <circle cx="65" cy="65" r="45" fill="none" stroke="#0b2a66" stroke-width="14"
-                    stroke-linecap="butt" stroke-dasharray="107 176" transform="rotate(-90 65 65)"/>
-            <circle cx="65" cy="65" r="45" fill="none" stroke="#4f63ff" stroke-width="14"
-                    stroke-linecap="butt" stroke-dasharray="113 176" transform="rotate(128 65 65)"/>
-            <circle cx="65" cy="65" r="45" fill="none" stroke="#0b66ff" stroke-width="14"
-                    stroke-linecap="butt" stroke-dasharray="56 176" transform="rotate(272 65 65)"/>
+            {% for segment in inventory_donut_segments %}
+            <circle cx="65" cy="65" r="45" fill="none" stroke="{{ segment.color }}" stroke-width="14"
+                    stroke-linecap="butt" stroke-dasharray="{{ segment.dasharray }}"
+                    stroke-dashoffset="{{ segment.dashoffset }}" transform="rotate(-90 65 65)"/>
+            {% endfor %}
           </svg>
-          <div class="donutCenter">8.6M</div>
+          <div class="donutCenter">{{ inventory_available_display }}</div>
         </div>
         <div class="bars">
+          {% for bucket in inventory_mix %}
           <div class="barRow">
-            <div class="barLine navy"><span><i class="dot"></i>38%</span><span>Finish Goods</span></div>
+            <div class="barLine {{ bucket.bar_class }}">
+              <span><i class="dot"></i>{{ bucket.percentage_display }}</span>
+              <span>{{ bucket.label }}</span>
+            </div>
           </div>
-          <div class="barRow">
-            <div class="barLine mid"><span><i class="dot"></i>40%</span><span>Raw Materials</span></div>
-          </div>
-          <div class="barRow">
-            <div class="barLine bright"><span><i class="dot"></i>20%</span><span>Work-in-Progress</span></div>
-          </div>
+          {% endfor %}
         </div>
       </div>
     </div>
@@ -77,43 +73,12 @@
             <text x="22" y="60">75%</text>
             <text x="20" y="23">100%</text>
           </g>
-          <g>
-            <rect x="80" y="70" width="10" height="98" fill="#0b2a66"/>
-            <rect x="80" y="44" width="10" height="26" fill="#4f63ff"/>
-            <rect x="80" y="28" width="10" height="16" fill="#0b66ff"/>
-            <rect x="135" y="76" width="10" height="92" fill="#0b2a66"/>
-            <rect x="135" y="48" width="10" height="28" fill="#4f63ff"/>
-            <rect x="135" y="30" width="10" height="18" fill="#0b66ff"/>
-            <rect x="190" y="74" width="10" height="94" fill="#0b2a66"/>
-            <rect x="190" y="46" width="10" height="28" fill="#4f63ff"/>
-            <rect x="190" y="30" width="10" height="16" fill="#0b66ff"/>
-            <rect x="245" y="78" width="10" height="90" fill="#0b2a66"/>
-            <rect x="245" y="50" width="10" height="28" fill="#4f63ff"/>
-            <rect x="245" y="32" width="10" height="18" fill="#0b66ff"/>
-            <rect x="300" y="80" width="10" height="88" fill="#0b2a66"/>
-            <rect x="300" y="52" width="10" height="28" fill="#4f63ff"/>
-            <rect x="300" y="34" width="10" height="18" fill="#0b66ff"/>
-            <rect x="355" y="82" width="10" height="86" fill="#0b2a66"/>
-            <rect x="355" y="54" width="10" height="28" fill="#4f63ff"/>
-            <rect x="355" y="36" width="10" height="18" fill="#0b66ff"/>
-            <rect x="410" y="79" width="10" height="89" fill="#0b2a66"/>
-            <rect x="410" y="52" width="10" height="27" fill="#4f63ff"/>
-            <rect x="410" y="34" width="10" height="18" fill="#0b66ff"/>
-            <rect x="465" y="83" width="10" height="85" fill="#0b2a66"/>
-            <rect x="465" y="56" width="10" height="27" fill="#4f63ff"/>
-            <rect x="465" y="38" width="10" height="18" fill="#0b66ff"/>
-            <rect x="520" y="81" width="10" height="87" fill="#0b2a66"/>
-            <rect x="520" y="54" width="10" height="27" fill="#4f63ff"/>
-            <rect x="520" y="36" width="10" height="18" fill="#0b66ff"/>
-            <rect x="575" y="79" width="10" height="89" fill="#0b2a66"/>
-            <rect x="575" y="52" width="10" height="27" fill="#4f63ff"/>
-            <rect x="575" y="34" width="10" height="18" fill="#0b66ff"/>
-            <rect x="630" y="80" width="10" height="88" fill="#0b2a66"/>
-            <rect x="630" y="53" width="10" height="27" fill="#4f63ff"/>
-            <rect x="630" y="35" width="10" height="18" fill="#0b66ff"/>
-            <rect x="685" y="78" width="10" height="90" fill="#0b2a66"/>
-            <rect x="685" y="51" width="10" height="27" fill="#4f63ff"/>
-            <rect x="685" y="33" width="10" height="18" fill="#0b66ff"/>
+          <g class="inventory-bars">
+            {% for column in inventory_mix_chart_columns %}
+              {% for bar in column.bars %}
+                <rect x="{{ bar.x }}" y="{{ bar.y }}" width="{{ bar.width }}" height="{{ bar.height }}" fill="{{ bar.color }}"/>
+              {% endfor %}
+            {% endfor %}
           </g>
           <g class="axisText">
             <text x="62" y="198">May</text>
@@ -158,30 +123,16 @@
           </tr>
         </thead>
         <tbody>
+          {% for row in inventory_breakdown %}
           <tr>
-            <td>Finished Goods</td>
-            <td>$5,600K</td>
-            <td>$4,197K</td>
-            <td>81.5%</td>
-            <td>($720K)</td>
-            <td>+3.1%</td>
+            <td>{{ row.label }}</td>
+            <td>{{ row.available_inventory }}</td>
+            <td>{{ row.gross_recovery }}</td>
+            <td>{{ row.cogs }}</td>
+            <td>{{ row.liquidation_cost }}</td>
+            <td>{{ row.net_recovery_trend }}</td>
           </tr>
-          <tr>
-            <td>Raw Materials</td>
-            <td>$2,550K</td>
-            <td>$1,620K</td>
-            <td>63.5%</td>
-            <td>($155K)</td>
-            <td>+1.7%</td>
-          </tr>
-          <tr>
-            <td>Work in Progress</td>
-            <td>$1,050K</td>
-            <td>$420K</td>
-            <td>40.1%</td>
-            <td>($90K)</td>
-            <td>-0.2%</td>
-          </tr>
+          {% endfor %}
         </tbody>
       </table>
     </div>
@@ -221,29 +172,14 @@
           <text x="22" y="59">70%</text>
           <text x="22" y="25">100%</text>
         </g>
-        <polyline fill="none" stroke="#0b2a66" stroke-width="2"
-                  points="80,120 140,92 200,88 260,100 320,130 380,160 440,118 500,104 560,102 620,110 680,118"/>
-        <polyline fill="none" stroke="#4f63ff" stroke-width="2"
-                  points="80,140 140,120 200,112 260,126 320,156 380,178 440,150 500,142 560,142 620,146 680,152"/>
-        <polyline fill="none" stroke="#0b66ff" stroke-width="2"
-                  points="80,104 140,90 200,96 260,98 320,122 380,140 440,92 500,70 560,58 620,78 680,92"/>
+        {% for series in inventory_trend_series %}
+        <polyline fill="none" stroke="{{ series.color }}" stroke-width="2" points="{{ series.points }}"/>
         <g>
-          <circle cx="80" cy="120" r="2.8" fill="#0b2a66"/>
-          <circle cx="200" cy="88" r="2.8" fill="#0b2a66"/>
-          <circle cx="380" cy="160" r="2.8" fill="#0b2a66"/>
-          <circle cx="560" cy="102" r="2.8" fill="#0b2a66"/>
-          <circle cx="680" cy="118" r="2.8" fill="#0b2a66"/>
-          <circle cx="80" cy="140" r="2.8" fill="#4f63ff"/>
-          <circle cx="200" cy="112" r="2.8" fill="#4f63ff"/>
-          <circle cx="380" cy="178" r="2.8" fill="#4f63ff"/>
-          <circle cx="560" cy="142" r="2.8" fill="#4f63ff"/>
-          <circle cx="680" cy="152" r="2.8" fill="#4f63ff"/>
-          <circle cx="80" cy="104" r="2.8" fill="#0b66ff"/>
-          <circle cx="200" cy="96" r="2.8" fill="#0b66ff"/>
-          <circle cx="380" cy="140" r="2.8" fill="#0b66ff"/>
-          <circle cx="560" cy="58" r="2.8" fill="#0b66ff"/>
-          <circle cx="680" cy="92" r="2.8" fill="#0b66ff"/>
+          {% for point in series.points_list %}
+          <circle cx="{{ point.x }}" cy="{{ point.y }}" r="2.8" fill="{{ series.color }}"/>
+          {% endfor %}
         </g>
+        {% endfor %}
         <g class="axisText">
           <text x="70" y="230">May 2019</text>
           <text x="126" y="230">Jun 2019</text>

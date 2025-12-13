@@ -103,6 +103,12 @@
       border-radius:50%;
       background:#2563eb;
     }
+    .report-date{
+      font-size:11px;
+      color:#94a3b8;
+      margin-left:6px;
+      text-transform:none;
+    }
     .download-btn{
       border:none;
       border-radius:999px;
@@ -189,15 +195,24 @@
       {% if report_section.rows %}
         <div class="reports-list" role="list">
           {% for row in report_section.rows %}
-            <div class="report-row" role="listitem">
-              <div class="report-name">
-                {% if row.highlight %}
-                  <span class="dot" aria-hidden="true"></span>
+              <div class="report-row" role="listitem">
+                <div class="report-name">
+                  {% if row.highlight %}
+                    <span class="dot" aria-hidden="true"></span>
+                  {% endif %}
+                  <div>
+                    {{ row.name }}
+                    {% if row.report_date %}
+                      <span class="report-date">{{ row.report_date|date:"M d, Y" }}</span>
+                    {% endif %}
+                  </div>
+                </div>
+                {% if row.download_url %}
+                  <a class="download-btn" href="{{ row.download_url }}">Download</a>
+                {% else %}
+                  <button class="download-btn" type="button" disabled>Download</button>
                 {% endif %}
-                {{ row.name }}
               </div>
-              <button class="download-btn" type="button">Download</button>
-            </div>
           {% endfor %}
         </div>
       {% elif report_section.forecast %}

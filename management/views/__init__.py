@@ -3,7 +3,7 @@ from .summary import summary_view
 from .collateral_dynamic import collateral_dynamic_view, collateral_static_view
 from .forecast import forecast_view
 from .risk import risk_view
-from .reports import reports_view
+from .reports import reports_view, reports_download
 from .limits import limits_view
 
 __all__ = [
@@ -15,5 +15,6 @@ __all__ = [
     "forecast_view",
     "risk_view",
     "reports_view",
+    "reports_download",
     "limits_view",
 ]
