@@ -4,10 +4,15 @@ from django.shortcuts import render
 from management.views.summary import _build_borrower_summary
 
 
-@login_required(login_url="login")
-def collateral_dynamic_view(request):
+def _borrower_context(request):
     borrower_profile = getattr(request.user, "borrower_profile", None)
     borrower = borrower_profile.borrower if borrower_profile else None
+    return borrower
+
+
+@login_required(login_url="login")
+def collateral_dynamic_view(request):
+    borrower = _borrower_context(request)
 
     section = request.GET.get("section", "inventory")
     allowed_sections = {"overview", "accounts_receivable", "inventory"}
@@ -33,3 +38,13 @@ def collateral_dynamic_view(request):
         "active_tab": "collateral_dynamic",
     }
     return render(request, "collateral_dynamic/inventory_page.html", context)
+
+
+@login_required(login_url="login")
+def collateral_static_view(request):
+    borrower = _borrower_context(request)
+    context = {
+        "borrower_summary": _build_borrower_summary(borrower),
+        "active_tab": "collateral_static",
+    }
+    return render(request, "collateral_dynamic/static_insights.html", context)

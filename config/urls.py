@@ -24,6 +24,7 @@ urlpatterns = [
     path('login/', management_views.login_view, name='login'),
     path('dashboard/', management_views.summary_view, name='dashboard'),
     path('collateral-dynamic/', management_views.collateral_dynamic_view, name='collateral_dynamic'),
+    path('collateral-dynamic/static/', management_views.collateral_static_view, name='collateral_static'),
     path('forecast/', management_views.forecast_view, name='forecast'),
     path('risk/', management_views.risk_view, name='risk'),
     path('reports/', management_views.reports_view, name='reports'),

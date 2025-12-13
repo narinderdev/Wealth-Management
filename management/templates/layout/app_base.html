@@ -17,16 +17,16 @@
             <path d="M12 2l7 4v6c0 5-3 9-7 10C8 21 5 17 5 12V6l7-4z"/>
           </svg>
         </div>
-        <div class="sb-icon {% if active_tab == 'summary' %}active{% endif %}" title="Summary">
+        <a class="sb-icon {% if active_tab == 'summary' %}active{% endif %}" title="Summary" href="{% url 'dashboard' %}">
           <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
             <path d="M4 4h16v16H4z"/><path d="M8 8h8M8 12h8M8 16h5"/>
           </svg>
-        </div>
-        <div class="sb-icon {% if active_tab == 'reports' %}active{% endif %}" title="Reports">
+        </a>
+        <a class="sb-icon {% if active_tab == 'collateral_static' %}active{% endif %}" title="Collateral Static" href="{% url 'collateral_static' %}">
           <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
             <path d="M4 19V5"/><path d="M4 19h16"/><path d="M8 16v-6"/><path d="M12 16V8"/><path d="M16 16v-4"/>
           </svg>
-        </div>
+        </a>
         <div class="sb-icon {% if active_tab == 'limits' %}active{% endif %}" title="Settings">
           <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
             <path d="M12 15.5a3.5 3.5 0 1 0 0-7 3.5 3.5 0 0 0 0 7z"/>
