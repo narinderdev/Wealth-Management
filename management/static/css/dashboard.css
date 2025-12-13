@@ -222,86 +222,96 @@
 
     .risk{
       margin-top:auto;
-      padding:14px;
-      border-radius:14px;
-      border:1px solid var(--border);
+      padding:18px;
+      border-radius:22px;
+      border:1px solid rgba(15, 23, 42, 0.1);
       background:#fff;
-      box-shadow:0 4px 10px rgba(0,0,0,.05);
+      box-shadow:0 15px 40px rgba(15,23,42,.12);
+      display:flex;
+      flex-direction:column;
+      gap:16px;
     }
     .risk-title{
-      font-size:10px;
-      font-weight:700;
+      font-size:13px;
+      font-weight:600;
       color:#111827;
-      margin-bottom:12px;
     }
     .risk-score{
       display:flex;
       justify-content:center;
-      margin-bottom:12px;
     }
     .risk-circle{
-      width:96px;
-      height:96px;
+      width:104px;
+      height:104px;
       border-radius:50%;
-      border:9px solid #3f3f46;
+      border:10px solid #3f3f46;
       display:flex;
       align-items:center;
       justify-content:center;
-      font-size:22px;
+      font-size:26px;
       font-weight:700;
       color:#111827;
-      background:#fff;
+      background:#fefefe;
+      box-shadow:0 8px 25px rgba(15,23,42,.15);
     }
     .risk-scale{
-      margin-bottom:14px;
-    }
-    .risk-labels{
       display:flex;
-      justify-content:space-between;
-      font-size:9px;
-      color:#6b7280;
-      margin-bottom:6px;
+      flex-direction:column;
+      gap:6px;
     }
     .risk-bar{
       position:relative;
       height:12px;
       border-radius:999px;
-      background:linear-gradient(90deg,#20c997 0%, #facc15 50%, #ef4444 100%);
+      background:linear-gradient(90deg,#2dd4bf 0%,#facc15 45%,#fb923c 100%);
     }
     .risk-marker{
       position:absolute;
       top:50%;
       left:var(--pos,50%);
       transform:translate(-50%,-50%);
-      width:14px;
-      height:14px;
+      width:16px;
+      height:16px;
       border-radius:50%;
-      border:2px solid #fff;
-      background:#fbbf24;
-      box-shadow:0 1px 6px rgba(0,0,0,.25);
+      border:3px solid #fff;
+      background:#fef3c7;
+      box-shadow:0 4px 12px rgba(15,23,42,.25);
+    }
+    .risk-labels{
+      display:flex;
+      justify-content:space-between;
+      font-size:10px;
+      font-weight:600;
+      letter-spacing:.02em;
+      color:#7c8a9a;
+      text-transform:capitalize;
     }
     .risk-metrics{
       display:flex;
       flex-direction:column;
-      gap:8px;
-      font-size:10px;
-      color:#374151;
+      gap:10px;
+      font-size:11px;
+      color:#0f172a;
     }
     .risk-row{
       display:flex;
       align-items:center;
       justify-content:space-between;
     }
+    .risk-row span:first-child{
+      font-weight:600;
+      color:#1f2937;
+    }
     .risk-change{
       display:inline-flex;
       align-items:center;
-      gap:4px;
+      gap:6px;
       font-weight:600;
-      font-size:10px;
+      font-size:11px;
     }
-    .risk-change.up{color:#16a34a}
-    .risk-change.down{color:#ef4444}
-    .risk-change svg{width:10px;height:10px}
+    .risk-change.up{color:#0f9d58}
+    .risk-change.down{color:#f97316}
+    .risk-change svg{width:12px;height:12px}
 
     /* Right panel */
     .section{
@@ -316,6 +326,31 @@
       margin-bottom:10px;
     }
     .section-title svg{width:12px;height:12px;color:#2f6ae6}
+    .section-title.collateral-title{
+      justify-content:flex-start;
+      gap:12px;
+      background:#f8fafc;
+      padding:10px 12px;
+      border-radius:12px;
+      margin-bottom:12px;
+      border:1px solid #e2e8f0;
+    }
+    .section-title.collateral-title .title-icon svg{
+      width:20px;
+      height:20px;
+      color:#2563eb;
+    }
+    .section-title.collateral-title .title-text{
+      font-size:13px;
+      font-weight:600;
+      color:#0f172a;
+    }
+    .section-title.collateral-title .title-subtitle{
+      font-size:11px;
+      color:#64748b;
+      margin-top:2px;
+      font-weight:500;
+    }
     .insights{
       display:grid;
       grid-template-columns: repeat(3, 1fr);
@@ -385,13 +420,23 @@
       text-align:left;
       white-space:nowrap;
     }
+    .collateral-table thead th.control-col{
+      width:34px;
+      padding:8px;
+    }
     .collateral-table tbody td{
       padding:8px 6px;
       border-bottom:1px solid #f0f2f6;
       text-align:left;
       white-space:nowrap;
     }
-    .collateral-table tbody td.empty{
+    .collateral-table tbody td.control-cell{
+      padding:0 4px;
+      text-align:center;
+      width:34px;
+    }
+    .collateral-table tbody td.empty,
+    .collateral-table tbody td.empty-state{
       text-align:center;
       color:#94a3b8;
       font-style:italic;
@@ -411,7 +456,7 @@
       align-items:center;
       gap:6px;
     }
-    .row-sub{
+    .row-detail{
       font-size:10px;
       color:#94a3b8;
       line-height:1.2;

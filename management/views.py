@@ -4,6 +4,7 @@ from django.contrib import messages
 from django.contrib.auth import authenticate, get_user_model, login, logout
 from django.contrib.auth.decorators import login_required
 from django.shortcuts import redirect, render
+from django.utils.text import slugify
 
 from management.models import (
     ARMetricsRow,
@@ -157,6 +158,42 @@ def _to_decimal(value):
             return Decimal(str(value))
         except Exception:
             return Decimal("0")
+
+
+def _build_collateral_tree(collateral_rows):
+    tree = []
+    parents = {}
+
+    for row in collateral_rows:
+        label = row.get('label') or "collateral"
+        detail = (row.get('detail') or "").strip()
+        if not detail:
+            node = {
+                'id': slugify(label),
+                'row': row,
+                'children': [],
+            }
+            parents[label] = node
+            tree.append(node)
+
+    for row in collateral_rows:
+        label = row.get('label') or "collateral"
+        detail = (row.get('detail') or "").strip()
+        if detail:
+            parent = parents.get(label)
+            if not parent:
+                parent = {
+                    'id': slugify(label),
+                    'row': row,
+                    'children': [],
+                }
+                parents[label] = parent
+                tree.append(parent)
+            parent['children'].append({
+                'row': row,
+            })
+
+    return tree
 
 
 def login_view(request):
@@ -362,11 +399,12 @@ def dashboard_view(request):
     context = {
         'borrower_summary': borrower_summary,
         'collateral_rows': collateral_data,
+        'collateral_tree': _build_collateral_tree(collateral_data),
         'insights': insights,
         'risk_metrics': risk_metrics,
         'user': request.user,
     }
-    return render(request, 'dashboard.html', context)
+    return render(request, 'dashboard/dashboard.html', context)
 
 
 def logout_view(request):

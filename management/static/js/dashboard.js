@@ -1,4 +1,4 @@
-document.addEventListener('DOMContentLoaded', () => {
+ document.addEventListener('DOMContentLoaded', () => {
     const toggles = document.querySelectorAll('.row-toggle');
 
     const hideDescendants = (id) => {
