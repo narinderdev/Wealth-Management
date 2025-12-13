@@ -22,7 +22,12 @@ from management import views as management_views
 urlpatterns = [
     path('', RedirectView.as_view(pattern_name='login', permanent=False)),
     path('login/', management_views.login_view, name='login'),
-    path('dashboard/', management_views.dashboard_view, name='dashboard'),
+    path('dashboard/', management_views.summary_view, name='dashboard'),
+    path('collateral-dynamic/', management_views.collateral_dynamic_view, name='collateral_dynamic'),
+    path('forecast/', management_views.forecast_view, name='forecast'),
+    path('risk/', management_views.risk_view, name='risk'),
+    path('reports/', management_views.reports_view, name='reports'),
+    path('limits/', management_views.limits_view, name='limits'),
     path('logout/', management_views.logout_view, name='logout'),
     path('admin/', admin.site.urls),
 ]

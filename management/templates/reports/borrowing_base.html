@@ -250,12 +250,12 @@
   <div class="content">
 
     <div class="tabs">
-      <div class="tab">Summary</div>
-      <div class="tab">Collateral Dynamic</div>
-      <div class="tab">Forecast</div>
-      <div class="tab">Risk</div>
-      <div class="tab active">Reports</div>
-      <div class="tab">Limits</div>
+        <a class="tab" href="{% url 'dashboard' %}">Summary</a>
+    <a class="tab" href="{% url 'collateral_dynamic' %}">Collateral Dynamic</a>
+    <a class="tab active" href="{% url 'forecast' %}">Forecast</a>
+    <a class="tab" href="{% url 'risk' %}">Risk</a>
+    <a class="tab" href="{% url 'reports' %}">Reports</a>
+    <a class="tab" href="{% url 'limits' %}">Limits</a>
     </div>
 
     <div class="card">

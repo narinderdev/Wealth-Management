@@ -177,14 +177,14 @@
           </div>
         </div>
 
-        <nav class="tabs">
-          <div class="tab">Summary</div>
-          <div class="tab">Collateral Exposure</div>
-          <div class="tab active">Forecast</div>
-          <div class="tab">Risk</div>
-          <div class="tab">Reports</div>
-          <div class="tab">Limits</div>
-        </nav>
+       <nav class="tabs">
+    <a class="tab" href="{% url 'dashboard' %}">Summary</a>
+    <a class="tab" href="{% url 'collateral_dynamic' %}">Collateral Dynamic</a>
+    <a class="tab active" href="{% url 'forecast' %}">Forecast</a>
+    <a class="tab" href="{% url 'risk' %}">Risk</a>
+    <a class="tab" href="{% url 'reports' %}">Reports</a>
+    <a class="tab" href="{% url 'limits' %}">Limits</a>
+  </nav>
 
         <section class="panel forecast-block">
           <div class="block-heading">Liquidity Forecast</div>

@@ -1,0 +1,73 @@
+{% extends "collateral_dynamic/base.html" %}
+
+{% block main_content %}
+  <div class="user-header">
+    <div class="avatar">
+      {% with borrower_summary.company_name|default:user.get_full_name|default:user.username as company_name %}
+      {{ company_name|slice:":2"|upper }}
+      {% endwith %}
+    </div>
+    <div class="user-meta">
+      <div>{{ borrower_summary.company_name|default:"Borrower" }}</div>
+      <div class="sub">
+        Contact • Collateral Dynamic Profile
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+          <path d="M7 10l5 5 5-5"/>
+        </svg>
+      </div>
+    </div>
+  </div>
+
+  <nav class="tabs">
+    <a class="tab" href="{% url 'dashboard' %}">Summary</a>
+    <a class="tab active" href="{% url 'collateral_dynamic' %}">Collateral Dynamic</a>
+    <a class="tab" href="{% url 'forecast' %}">Forecast</a>
+    <a class="tab" href="{% url 'risk' %}">Risk</a>
+    <a class="tab" href="{% url 'reports' %}">Reports</a>
+    <a class="tab" href="{% url 'limits' %}">Limits</a>
+  </nav>
+
+  <div class="section-tabs">
+    <a class="section-tab {% if active_section == 'overview' %}active{% endif %}" href="?section=overview">Overview</a>
+    <a class="section-tab {% if active_section == 'accounts_receivable' %}active{% endif %}" href="?section=accounts_receivable">Accounts Receivable</a>
+    <a class="section-tab {% if active_section == 'inventory' %}active{% endif %}" href="?section=inventory&inventory_tab={{ inventory_tab|default:'summary' }}">Inventory</a>
+  </div>
+
+  <div class="section-content">
+    {% if active_section == 'overview' %}
+      <div class="panel placeholder-panel">
+        <div class="panel-header">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+            <path d="M3 3h18v18H3z"/>
+            <path d="M3 9h18"/>
+            <path d="M9 21V9"/>
+          </svg>
+          Overview
+        </div>
+        <p>
+          High-level collateral positioning, concentration, and liquidity insights will render here when the data feed is ready.
+        </p>
+      </div>
+    {% elif active_section == 'accounts_receivable' %}
+      <div class="panel placeholder-panel">
+        <div class="panel-header">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+            <path d="M4 4h16v16H4z"/>
+            <path d="M4 10h16"/>
+            <path d="M10 4v16"/>
+          </svg>
+          Accounts Receivable
+        </div>
+        <p>
+          Accounts Receivable dynamics will appear here with total balance, aging buckets, and past due trends.
+        </p>
+      </div>
+    {% else %}
+      {% if inventory_tab == 'finished_goods' %}
+      {% include "collateral_dynamic/inventory/finished_goals.html" with inventory_tab=inventory_tab %}
+      {% else %}
+      {% include "collateral_dynamic/inventory/summary.html" with inventory_tab=inventory_tab %}
+      {% endif %}
+    {% endif %}
+  </div>
+{% endblock %}

@@ -5,7 +5,7 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>CORA Dashboard</title>
-    <link rel="stylesheet" href="{% static 'css/dashboard.css' %}">
+    <link rel="stylesheet" href="{% static 'css/summary.css' %}">
 </head>
 <body>
   <div class="frame">
@@ -69,11 +69,11 @@
 
           <div class="tabs">
             <div class="tab active">Summary</div>
-            <div class="tab">Collateral Dynamic</div>
-            <div class="tab">Forecast</div>
-            <div class="tab">Risk</div>
-            <div class="tab">Reports</div>
-            <div class="tab">Limits</div>
+            <a class="tab" href="{% url 'collateral_dynamic' %}">Collateral Dynamic</a>
+            <a class="tab" href="{% url 'forecast' %}">Forecast</a>
+            <a class="tab" href="{% url 'risk' %}">Risk</a>
+            <a class="tab" href="{% url 'reports' %}">Reports</a>
+            <a class="tab" href="{% url 'limits' %}">Limits</a>
           </div>
 
           <div class="grid">
@@ -471,6 +471,6 @@
     </div>
   </div>
 
-    <script src="{% static 'js/dashboard.js' %}"></script>
+    <script src="{% static 'js/summary.js' %}"></script>
 </body>
 </html>
