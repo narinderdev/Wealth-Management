@@ -1,0 +1,252 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8" />
+<title>In-Line / Excess by Category</title>
+<meta name="viewport" content="width=device-width, initial-scale=1.0" />
+
+<style>
+  * {
+    box-sizing: border-box;
+    font-family: Inter, system-ui, -apple-system, BlinkMacSystemFont, sans-serif;
+  }
+
+  body {
+    margin: 0;
+    background: #f4f6f8;
+    padding: 20px;
+    color: #1f2937;
+  }
+
+  /* ===== CONTAINER ===== */
+  .table-wrapper {
+    background: #ffffff;
+    border-radius: 8px;
+    padding: 16px;
+    box-shadow: 0 0 0 1px #e5e7eb;
+    width: 100%;
+    overflow-x: auto;
+  }
+
+  /* ===== TITLE ===== */
+  .title {
+    font-size: 14px;
+    font-weight: 600;
+    margin-bottom: 12px;
+    display: flex;
+    align-items: center;
+    gap: 6px;
+    color: #1f4fa3;
+  }
+
+  /* ===== TABLE ===== */
+  table {
+    width: 100%;
+    border-collapse: collapse;
+    font-size: 12px;
+    min-width: 1200px;
+  }
+
+  thead th {
+    background: #f8fafc;
+    color: #475569;
+    font-weight: 600;
+    border-bottom: 1px solid #e5e7eb;
+    padding: 8px 6px;
+    text-align: center;
+    white-space: nowrap;
+  }
+
+  thead tr:first-child th {
+    font-size: 11px;
+    color: #64748b;
+  }
+
+  tbody td {
+    border-bottom: 1px solid #f1f5f9;
+    padding: 8px 6px;
+    text-align: center;
+    color: #1f2937;
+    white-space: nowrap;
+  }
+
+  tbody tr:last-child td {
+    font-weight: 600;
+    background: #fafafa;
+  }
+
+  tbody td:first-child,
+  thead th:first-child {
+    text-align: left;
+    padding-left: 10px;
+  }
+
+  .category {
+    font-weight: 500;
+  }
+
+  .money {
+    color: #1f4fa3;
+  }
+
+  .percent {
+    color: #475569;
+  }
+</style>
+</head>
+
+<body>
+
+<div class="table-wrapper">
+
+  <div class="title">📈 In-Line / Excess by Category</div>
+
+  <table>
+    <thead>
+      <tr>
+        <th rowspan="2">Category</th>
+        <th colspan="2">New</th>
+        <th colspan="2">0 – 52 Week In-Line</th>
+        <th colspan="2">Total In-Line</th>
+        <th colspan="2">52+ Week</th>
+        <th colspan="2">No Sales</th>
+        <th colspan="2">Total Excess</th>
+      </tr>
+      <tr>
+        <th>$</th><th>% Of Cat.</th>
+        <th>$</th><th>% Of Cat.</th>
+        <th>$</th><th>% Of Cat.</th>
+        <th>$</th><th>% Of Cat.</th>
+        <th>$</th><th>% Of Cat.</th>
+        <th>$</th><th>% Of Cat.</th>
+      </tr>
+    </thead>
+
+    <tbody>
+      <!-- ROW TEMPLATE -->
+      <tr>
+        <td class="category">Cabinets</td>
+        <td class="money">$976</td><td class="percent">75.0%</td>
+        <td class="money">$976</td><td class="percent">75.0%</td>
+        <td class="money">$976</td><td class="percent">75.0%</td>
+        <td class="money">$976</td><td class="percent">75.0%</td>
+        <td class="money">$976</td><td class="percent">75.0%</td>
+        <td class="money">$976</td><td class="percent">75.0%</td>
+      </tr>
+
+      <tr>
+        <td class="category">Doors</td>
+        <td class="money">$976</td><td class="percent">75.0%</td>
+        <td class="money">$976</td><td class="percent">75.0%</td>
+        <td class="money">$976</td><td class="percent">75.0%</td>
+        <td class="money">$976</td><td class="percent">75.0%</td>
+        <td class="money">$976</td><td class="percent">75.0%</td>
+        <td class="money">$976</td><td class="percent">75.0%</td>
+      </tr>
+
+      <tr>
+        <td class="category">Flooring Products</td>
+        <td class="money">$976</td><td class="percent">75.0%</td>
+        <td class="money">$976</td><td class="percent">75.0%</td>
+        <td class="money">$976</td><td class="percent">75.0%</td>
+        <td class="money">$976</td><td class="percent">75.0%</td>
+        <td class="money">$976</td><td class="percent">75.0%</td>
+        <td class="money">$976</td><td class="percent">75.0%</td>
+      </tr>
+
+      <tr>
+        <td class="category">Moulding & Trim</td>
+        <td class="money">$976</td><td class="percent">75.0%</td>
+        <td class="money">$976</td><td class="percent">75.0%</td>
+        <td class="money">$976</td><td class="percent">75.0%</td>
+        <td class="money">$976</td><td class="percent">75.0%</td>
+        <td class="money">$976</td><td class="percent">75.0%</td>
+        <td class="money">$976</td><td class="percent">75.0%</td>
+      </tr>
+
+      <tr>
+        <td class="category">Decking</td>
+        <td class="money">$976</td><td class="percent">75.0%</td>
+        <td class="money">$976</td><td class="percent">75.0%</td>
+        <td class="money">$976</td><td class="percent">75.0%</td>
+        <td class="money">$976</td><td class="percent">75.0%</td>
+        <td class="money">$976</td><td class="percent">75.0%</td>
+        <td class="money">$976</td><td class="percent">75.0%</td>
+      </tr>
+
+      <tr>
+        <td class="category">Roofing</td>
+        <td class="money">$976</td><td class="percent">75.0%</td>
+        <td class="money">$976</td><td class="percent">75.0%</td>
+        <td class="money">$976</td><td class="percent">75.0%</td>
+        <td class="money">$976</td><td class="percent">75.0%</td>
+        <td class="money">$976</td><td class="percent">75.0%</td>
+        <td class="money">$976</td><td class="percent">75.0%</td>
+      </tr>
+
+      <tr>
+        <td class="category">Windows</td>
+        <td class="money">$976</td><td class="percent">75.0%</td>
+        <td class="money">$976</td><td class="percent">75.0%</td>
+        <td class="money">$976</td><td class="percent">75.0%</td>
+        <td class="money">$976</td><td class="percent">75.0%</td>
+        <td class="money">$976</td><td class="percent">75.0%</td>
+        <td class="money">$976</td><td class="percent">75.0%</td>
+      </tr>
+
+      <tr>
+        <td class="category">Hardware</td>
+        <td class="money">$976</td><td class="percent">75.0%</td>
+        <td class="money">$976</td><td class="percent">75.0%</td>
+        <td class="money">$976</td><td class="percent">75.0%</td>
+        <td class="money">$976</td><td class="percent">75.0%</td>
+        <td class="money">$976</td><td class="percent">75.0%</td>
+        <td class="money">$976</td><td class="percent">75.0%</td>
+      </tr>
+
+      <tr>
+        <td class="category">Insulation</td>
+        <td class="money">$976</td><td class="percent">75.0%</td>
+        <td class="money">$976</td><td class="percent">75.0%</td>
+        <td class="money">$976</td><td class="percent">75.0%</td>
+        <td class="money">$976</td><td class="percent">75.0%</td>
+        <td class="money">$976</td><td class="percent">75.0%</td>
+        <td class="money">$976</td><td class="percent">75.0%</td>
+      </tr>
+
+      <tr>
+        <td class="category">Tools</td>
+        <td class="money">$976</td><td class="percent">75.0%</td>
+        <td class="money">$976</td><td class="percent">75.0%</td>
+        <td class="money">$976</td><td class="percent">75.0%</td>
+        <td class="money">$976</td><td class="percent">75.0%</td>
+        <td class="money">$976</td><td class="percent">75.0%</td>
+        <td class="money">$976</td><td class="percent">75.0%</td>
+      </tr>
+
+      <tr>
+        <td class="category">Others</td>
+        <td class="money">$976</td><td class="percent">75.0%</td>
+        <td class="money">$976</td><td class="percent">75.0%</td>
+        <td class="money">$976</td><td class="percent">75.0%</td>
+        <td class="money">$976</td><td class="percent">75.0%</td>
+        <td class="money">$976</td><td class="percent">75.0%</td>
+        <td class="money">$976</td><td class="percent">75.0%</td>
+      </tr>
+
+      <tr>
+        <td>Total</td>
+        <td class="money">$976</td><td class="percent">75.0%</td>
+        <td class="money">$976</td><td class="percent">75.0%</td>
+        <td class="money">$976</td><td class="percent">75.0%</td>
+        <td class="money">$976</td><td class="percent">75.0%</td>
+        <td class="money">$976</td><td class="percent">75.0%</td>
+        <td class="money">$976</td><td class="percent">75.0%</td>
+      </tr>
+    </tbody>
+  </table>
+
+</div>
+
+</body>
+</html>

@@ -8,233 +8,430 @@
     <link rel="stylesheet" href="{% static 'css/dashboard.css' %}">
 </head>
 <body>
-    <div class="dashboard-shell">
-        <aside class="sidebar">
-            <div class="sidebar-top">
-                <span class="sidebar-toggle">menu</span>
-                <span class="logo-text">CORA</span>
-            </div>
-            <div class="sidebar-icons">
-                <button class="icon-button active" aria-label="Dashboard">
-                    <span class="icon-dot"></span>
-                </button>
-                <button class="icon-button" aria-label="Shield">
-                    <span class="icon-dot"></span>
-                </button>
-                <button class="icon-button" aria-label="Chart">
-                    <span class="icon-dot"></span>
-                </button>
-                <button class="icon-button" aria-label="Settings">
-                    <span class="icon-dot"></span>
-                </button>
-            </div>
-        </aside>
-
-        <div class="content-area">
-            <header class="top-bar">
-                <div class="top-bar-left">
-                    <button class="menu-btn" aria-label="Toggle menu">menu</button>
-                    <h1>Collateral Oversight &amp; Risk Analytics</h1>
-                </div>
-                <div class="top-bar-right">
-                    <span class="top-logo">CORA</span>
-                </div>
-            </header>
-
-            <section class="profile-banner">
-                <div class="profile-info">
-                    <div class="avatar">MT</div>
-                    <div>
-                        <h2>Monica Thomson</h2>
-                        <p>Contact • Unified Client Profile</p>
-                    </div>
-                </div>
-                <nav class="profile-tabs">
-                    <button class="tab active">Summary</button>
-                    <button class="tab">Collateral Dynamic</button>
-                    <button class="tab">Forecast</button>
-                    <button class="tab">Risk</button>
-                    <button class="tab">Reports</button>
-                    <button class="tab">Limits</button>
-                </nav>
-            </section>
-
-            <div class="dashboard-grid">
-                <aside class="info-column">
-                    <section class="card borrower-card">
-                        <header>
-                            <span class="pills">Borrower Overview</span>
-                        </header>
-                        <dl>
-                            <dt>Company Name</dt>
-                            <dd>Joe's Lumber</dd>
-                            <dt>Company ID</dt>
-                            <dd>123456789</dd>
-                            <dt>Industry</dt>
-                            <dd>Food &amp; Beverage</dd>
-                            <dt>NAICS</dt>
-                            <dd>424410</dd>
-                            <dt>Website</dt>
-                            <dd><a href="#">JoesLumber.com</a></dd>
-                            <dt>Primary Contact</dt>
-                            <dd>Alex Christie</dd>
-                            <dt>Contact Number</dt>
-                            <dd>401-263-7558</dd>
-                            <dt>Contact Email</dt>
-                            <dd>user@gmail.com</dd>
-                            <dt>Update Interval</dt>
-                            <dd>Weekly</dd>
-                            <dt>Current Update</dt>
-                            <dd>11/7/2025</dd>
-                            <dt>Previous Update</dt>
-                            <dd>11/14/2024</dd>
-                            <dt>Next Update</dt>
-                            <dd>11/14/2026</dd>
-                        </dl>
-                    </section>
-
-                    <section class="card risk-card">
-                        <header>
-                            <h3>Risk profile</h3>
-                        </header>
-                        <div class="risk-score">
-                            <span>3.1</span>
-                        </div>
-                        <div class="risk-gradient">
-                            <span>Low</span>
-                            <span>Mild</span>
-                            <span class="active">Average</span>
-                            <span>Elevated</span>
-                            <span>High</span>
-                        </div>
-                        <ul>
-                            <li>
-                                <span>Accounts Receivable</span>
-                                <strong>4.5</strong>
-                            </li>
-                            <li>
-                                <span>Inventory</span>
-                                <strong>4.0</strong>
-                            </li>
-                            <li>
-                                <span>Company</span>
-                                <strong>2.7</strong>
-                            </li>
-                            <li>
-                                <span>Industry</span>
-                                <strong>4.5</strong>
-                            </li>
-                        </ul>
-                    </section>
-                </aside>
-
-                <section class="main-column">
-                    <div class="insight-header">
-                        <h3>Borrowing Base Insight</h3>
-                        <span class="insight-small">Trends &amp; availability</span>
-                    </div>
-                    <div class="insight-grid">
-                        <article class="insight-card">
-                            <div class="insight-top">
-                                <p>Net Collateral</p>
-                                <span class="insight-value">$987,225</span>
-                                <span class="insight-change down">↓ 8.09%</span>
-                            </div>
-                            <div class="chart-placeholder">
-                                <span class="dot-series blue"></span>
-                            </div>
-                        </article>
-                        <article class="insight-card">
-                            <div class="insight-top">
-                                <p>Outstanding Balance</p>
-                                <span class="insight-value">$5,556</span>
-                                <span class="insight-change down">↓ 5.09%</span>
-                            </div>
-                            <div class="chart-placeholder">
-                                <span class="dot-series purple"></span>
-                            </div>
-                        </article>
-                        <article class="insight-card">
-                            <div class="insight-top">
-                                <p>Availability</p>
-                                <span class="insight-value">$435,987</span>
-                                <span class="insight-change up">↑ 8.09%</span>
-                            </div>
-                            <div class="chart-placeholder">
-                                <span class="dot-series teal"></span>
-                            </div>
-                        </article>
-                    </div>
-
-                    <section class="card collateral-card">
-                        <header>
-                            <h3>Collateral Composition</h3>
-                        </header>
-                        <div class="table-wrapper">
-                            <table>
-                                <thead>
-                                    <tr>
-                                        <th>Beginning Collateral</th>
-                                        <th>Ineligibles</th>
-                                        <th>Eligible Collateral</th>
-                                        <th>NOLV %</th>
-                                        <th>Dilution Rate</th>
-                                        <th>Advanced Rate</th>
-                                        <th>Rate Limit</th>
-                                        <th>Utilized Rate</th>
-                                        <th>Pre-Reserve</th>
-                                        <th>Reserves</th>
-                                        <th>Net Collateral</th>
-                                    </tr>
-                                </thead>
-                                <tbody>
-                                    <tr>
-                                        <td>Accounts Receivable</td>
-                                        <td>$</td>
-                                        <td>$</td>
-                                        <td>%</td>
-                                        <td>%</td>
-                                        <td>%</td>
-                                        <td>%</td>
-                                        <td>%</td>
-                                        <td>$</td>
-                                        <td>$</td>
-                                        <td>$</td>
-                                    </tr>
-                                    <tr>
-                                        <td>Inventory</td>
-                                        <td>$</td>
-                                        <td>$</td>
-                                        <td>%</td>
-                                        <td>%</td>
-                                        <td>%</td>
-                                        <td>%</td>
-                                        <td>%</td>
-                                        <td>$</td>
-                                        <td>$</td>
-                                        <td>$</td>
-                                    </tr>
-                                    <tr>
-                                        <td>Other Collateral</td>
-                                        <td>$</td>
-                                        <td>$</td>
-                                        <td>%</td>
-                                        <td>%</td>
-                                        <td>%</td>
-                                        <td>%</td>
-                                        <td>%</td>
-                                        <td>$</td>
-                                        <td>$</td>
-                                        <td>$</td>
-                                    </tr>
-                                </tbody>
-                            </table>
-                        </div>
-                    </section>
-                </section>
-            </div>
+  <div class="frame">
+    <div class="app">
+      <aside class="sidebar">
+        <div class="sb-icon" title="Shield">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+            <path d="M12 2l7 4v6c0 5-3 9-7 10C8 21 5 17 5 12V6l7-4z"/>
+          </svg>
         </div>
+        <div class="sb-icon active" title="Summary">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+            <path d="M4 4h16v16H4z"/><path d="M8 8h8M8 12h8M8 16h5"/>
+          </svg>
+        </div>
+        <div class="sb-icon" title="Reports">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+            <path d="M4 19V5"/><path d="M4 19h16"/><path d="M8 16v-6"/><path d="M12 16V8"/><path d="M16 16v-4"/>
+          </svg>
+        </div>
+        <div class="sb-icon" title="Settings">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+            <path d="M12 15.5a3.5 3.5 0 1 0 0-7 3.5 3.5 0 0 0 0 7z"/>
+            <path d="M19.4 15a7.9 7.9 0 0 0 .1-2l2-1.2-2-3.4-2.3.7a8 8 0 0 0-1.7-1L15 4h-6l-.5 2.1a8 8 0 0 0-1.7 1l-2.3-.7-2 3.4 2 1.2a7.9 7.9 0 0 0 .1 2l-2 1.2 2 3.4 2.3-.7a8 8 0 0 0 1.7 1L9 20h6l.5-2.1a8 8 0 0 0 1.7-1l2.3.7 2-3.4-2-1.2z"/>
+          </svg>
+        </div>
+      </aside>
+
+      <div class="main">
+        <header class="topbar">
+          <div class="top-left">
+            <div class="burger" aria-hidden="true">
+              <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round">
+                <path d="M4 6h16"/><path d="M4 12h16"/><path d="M4 18h16"/>
+              </svg>
+            </div>
+            <div class="top-title">Collateral Oversight &amp; Risk Analytics</div>
+          </div>
+          <div class="brand">CORA</div>
+        </header>
+
+        <div class="content">
+          <div class="user-row">
+            {% with user_display=user.get_full_name|default:user.username %}
+            {% with avatar_text=user_display|slice:":2"|upper %}
+            <div class="avatar">{{ avatar_text }}</div>
+            <div class="user-meta">
+              <div class="user-name">{{ user_display }}</div>
+              <div class="user-sub">
+                contact • {{ borrower_summary.industry }}
+                <span class="caret">
+                  <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round">
+                    <path d="M7 10l5 5 5-5"/>
+                  </svg>
+                </span>
+              </div>
+            </div>
+            {% endwith %}
+            {% endwith %}
+          </div>
+
+          <div class="tabs">
+            <div class="tab active">Summary</div>
+            <div class="tab">Collateral Dynamic</div>
+            <div class="tab">Forecast</div>
+            <div class="tab">Risk</div>
+            <div class="tab">Reports</div>
+            <div class="tab">Limits</div>
+          </div>
+
+          <div class="grid">
+            <!-- Left: Borrower -->
+            <div class="card borrower">
+              <div class="pill">Borrower Overview</div>
+
+              <div>
+                <div class="kv">
+                  <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M4 7h16"/><path d="M6 7V5h12v2"/><path d="M6 7v12h12V7"/></svg>
+                  <div>Company Name</div>
+                  <div class="v">{{ borrower_summary.company_name }}</div>
+                </div>
+                <div class="kv">
+                  <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M12 2l9 4v6c0 5-4 9-9 10C7 21 3 17 3 12V6l9-4z"/></svg>
+                  <div>Company ID</div>
+                  <div class="v">{{ borrower_summary.company_id }}</div>
+                </div>
+                <div class="kv">
+                  <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M3 11h18"/><path d="M12 2v18"/><path d="M5 5l14 14"/><path d="M19 5L5 19"/></svg>
+                  <div>Industry</div>
+                  <div class="v">{{ borrower_summary.industry }}</div>
+                </div>
+                <div class="kv">
+                  <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M12 2a10 10 0 1 0 10 10"/><path d="M12 12L2 12"/><path d="M12 12l7-7"/></svg>
+                  <div>NAICS</div>
+                  <div class="v">{{ borrower_summary.primary_naics }}</div>
+                </div>
+                <div class="kv">
+                  <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M10 14a5 5 0 0 1 0-7l1-1a5 5 0 0 1 7 7l-1 1"/><path d="M14 10a5 5 0 0 1 0 7l-1 1a5 5 0 0 1-7-7l1-1"/></svg>
+                  <div>Website</div>
+                  <div class="v link">
+                    {% if borrower_summary.website != "—" and borrower_summary.website_url %}
+                    <a href="{{ borrower_summary.website_url }}" target="_blank" rel="noreferrer">
+                      {{ borrower_summary.website }}
+                    </a>
+                    {% else %}
+                      {{ borrower_summary.website }}
+                    {% endif %}
+                  </div>
+                </div>
+
+                <div class="divider"></div>
+
+                <div class="kv">
+                  <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M20 21v-2a4 4 0 0 0-4-4H8a4 4 0 0 0-4 4v2"/><path d="M12 11a4 4 0 1 0 0-8 4 4 0 0 0 0 8z"/></svg>
+                  <div>Primary Contact</div>
+                  <div class="v">{{ borrower_summary.primary_contact }}</div>
+                </div>
+                <div class="kv">
+                  <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M22 16.92V21a1 1 0 0 1-1.09 1A19.8 19.8 0 0 1 3 4.09 1 1 0 0 1 4 3h4.09a1 1 0 0 1 1 .75l1 3.5a1 1 0 0 1-.27 1L8.09 9.91a16 16 0 0 0 6 6l1.66-1.73a1 1 0 0 1 1-.27l3.5 1a1 1 0 0 1 .75 1.01z"/></svg>
+                  <div>Contact Number</div>
+                  <div class="v">{{ borrower_summary.primary_contact_phone }}</div>
+                </div>
+                <div class="kv">
+                  <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M4 4h16v16H4z"/><path d="M22 6l-10 7L2 6"/></svg>
+                  <div>Contact Email</div>
+                  <div class="v">
+                    {% if borrower_summary.primary_contact_email != "—" %}
+                    <a href="mailto:{{ borrower_summary.primary_contact_email }}">
+                      {{ borrower_summary.primary_contact_email }}
+                    </a>
+                    {% else %}
+                      {{ borrower_summary.primary_contact_email }}
+                    {% endif %}
+                  </div>
+                </div>
+
+                <div class="divider"></div>
+
+                <div class="kv">
+                  <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M12 2v20"/><path d="M17 5H9.5a3.5 3.5 0 0 0 0 7H15a3.5 3.5 0 0 1 0 7H6"/></svg>
+                  <div>Project Renewal</div>
+                  <div class="v">{{ borrower_summary.update_interval }}</div>
+                </div>
+                <div class="kv">
+                  <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M8 7V3"/><path d="M16 7V3"/><path d="M4 11h16"/><path d="M5 7h14a1 1 0 0 1 1 1v13a1 1 0 0 1-1 1H5a1 1 0 0 1-1-1V8a1 1 0 0 1 1-1z"/></svg>
+                  <div>Current Update</div>
+                  <div class="v">{{ borrower_summary.current_update }}</div>
+                </div>
+                <div class="kv">
+                  <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M8 7V3"/><path d="M16 7V3"/><path d="M4 11h16"/><path d="M5 7h14a1 1 0 0 1 1 1v13a1 1 0 0 1-1 1H5a1 1 0 0 1-1-1V8a1 1 0 0 1 1-1z"/></svg>
+                  <div>Previous Update</div>
+                  <div class="v">{{ borrower_summary.previous_update }}</div>
+                </div>
+                <div class="kv">
+                  <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M8 7V3"/><path d="M16 7V3"/><path d="M4 11h16"/><path d="M5 7h14a1 1 0 0 1 1 1v13a1 1 0 0 1-1 1H5a1 1 0 0 1-1-1V8a1 1 0 0 1 1-1z"/></svg>
+                  <div>Next Update</div>
+                  <div class="v">{{ borrower_summary.next_update }}</div>
+                </div>
+              </div>
+
+              <div class="risk">
+                <div class="risk-title">Risk profile</div>
+                <div class="risk-score">
+                  <div class="risk-circle">
+                    <span>3.1</span>
+                  </div>
+                </div>
+                <div class="risk-scale">
+                  <div class="risk-labels">
+                    <span>Low</span>
+                    <span>Mild</span>
+                    <span>Average</span>
+                    <span>Elevated</span>
+                    <span>High</span>
+                  </div>
+                  <div class="risk-bar">
+                    <span class="risk-marker" style="--pos:60%"></span>
+                  </div>
+                </div>
+                <div class="risk-metrics">
+                  {% for metric in risk_metrics %}
+                  <div class="risk-row">
+                    <span>{{ metric.label }}</span>
+                    <span class="risk-change {{ metric.direction }}">
+                      {% if metric.direction == 'up' %}
+                      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                        <path d="M12 19V5"/><path d="M5 12l7-7 7 7"/>
+                      </svg>
+                      {% else %}
+                      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                        <path d="M12 5v14"/><path d="M19 12l-7 7-7-7"/>
+                      </svg>
+                      {% endif %}
+                      {{ metric.detail }}
+                    </span>
+                  </div>
+                  {% endfor %}
+                </div>
+              </div>
+            </div>
+
+            <!-- Right side -->
+            <div class="right">
+              <div class="card section">
+                <div class="section-title">
+                  <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                    <path d="M4 19V5"/><path d="M4 19h16"/><path d="M8 15l3-3 4 4 5-6"/>
+                  </svg>
+                  Borrowing Base Insight
+                </div>
+
+                <div class="insights">
+                  <!-- Insight 1 -->
+                  <div class="insight">
+                    <div class="insight-head">
+                      <div>
+                        <div class="kicker">Net Collateral</div>
+                        <div class="amount">{{ insights.net.amount }}</div>
+                        {% if insights.net.detail %}
+                        <div class="pct delta">
+                          {{ insights.net.detail }}
+                        </div>
+                        {% endif %}
+                      </div>
+                      <div class="badge" aria-hidden="true">
+                        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                          <path d="M12 2a10 10 0 1 0 10 10"/><path d="M12 12l6-3"/>
+                        </svg>
+                      </div>
+                    </div>
+                    <div class="mini">
+                      <svg viewBox="0 0 260 110" preserveAspectRatio="none">
+                        <!-- grid -->
+                        <line class="gridline" x1="38" y1="20" x2="250" y2="20"/>
+                        <line class="gridline" x1="38" y1="40" x2="250" y2="40"/>
+                        <line class="gridline" x1="38" y1="60" x2="250" y2="60"/>
+                        <line class="gridline" x1="38" y1="80" x2="250" y2="80"/>
+                        <line class="axis" x1="38" y1="92" x2="250" y2="92"/>
+                        <line class="axis" x1="38" y1="16" x2="38" y2="92"/>
+                        <!-- y labels -->
+                        <text x="4" y="22">$20.0k</text>
+                        <text x="4" y="42">$16.0k</text>
+                        <text x="4" y="62">$12.0k</text>
+                        <text x="4" y="82">$8.0k</text>
+                        <!-- x labels -->
+                        <text x="40" y="106">01</text><text x="72" y="106">02</text><text x="104" y="106">03</text>
+                        <text x="136" y="106">04</text><text x="168" y="106">05</text><text x="200" y="106">06</text><text x="232" y="106">07</text>
+
+                        <polyline class="line" stroke="#2f6ae6"
+                          points="40,58 72,36 104,44 136,74 168,54 200,54 232,60"/>
+                        <g fill="#2f6ae6">
+                          <circle class="dot" cx="40" cy="58" r="3.2"/>
+                          <circle class="dot" cx="72" cy="36" r="3.2"/>
+                          <circle class="dot" cx="104" cy="44" r="3.2"/>
+                          <circle class="dot" cx="136" cy="74" r="3.2"/>
+                          <circle class="dot" cx="168" cy="54" r="3.2"/>
+                          <circle class="dot" cx="200" cy="54" r="3.2"/>
+                          <circle class="dot" cx="232" cy="60" r="3.2"/>
+                        </g>
+                      </svg>
+                    </div>
+                  </div>
+
+                  <!-- Insight 2 -->
+                  <div class="insight">
+                    <div class="insight-head">
+                      <div>
+                        <div class="kicker">Outstanding Balance</div>
+                        <div class="amount">{{ insights.outstanding.amount }}</div>
+                        {% if insights.outstanding.detail %}
+                        <div class="pct delta">
+                          {{ insights.outstanding.detail }}
+                        </div>
+                        {% endif %}
+                      </div>
+                      <div class="badge" aria-hidden="true">
+                        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                          <path d="M12 1v22"/><path d="M17 5H9.5a3.5 3.5 0 0 0 0 7H15a3.5 3.5 0 0 1 0 7H6"/>
+                        </svg>
+                      </div>
+                    </div>
+                    <div class="mini">
+                      <svg viewBox="0 0 260 110" preserveAspectRatio="none">
+                        <line class="gridline" x1="38" y1="20" x2="250" y2="20"/>
+                        <line class="gridline" x1="38" y1="40" x2="250" y2="40"/>
+                        <line class="gridline" x1="38" y1="60" x2="250" y2="60"/>
+                        <line class="gridline" x1="38" y1="80" x2="250" y2="80"/>
+                        <line class="axis" x1="38" y1="92" x2="250" y2="92"/>
+                        <line class="axis" x1="38" y1="16" x2="38" y2="92"/>
+                        <text x="4" y="22">$22.0k</text>
+                        <text x="4" y="42">$18.0k</text>
+                        <text x="4" y="62">$14.0k</text>
+                        <text x="4" y="82">$10.0k</text>
+                        <text x="40" y="106">01</text><text x="72" y="106">02</text><text x="104" y="106">03</text>
+                        <text x="136" y="106">04</text><text x="168" y="106">05</text><text x="200" y="106">06</text><text x="232" y="106">07</text>
+
+                        <polyline class="line" stroke="#7c3aed"
+                          points="40,56 72,30 104,40 136,78 168,50 200,48 232,56"/>
+                        <g fill="#7c3aed">
+                          <circle class="dot" cx="40" cy="56" r="3.2"/>
+                          <circle class="dot" cx="72" cy="30" r="3.2"/>
+                          <circle class="dot" cx="104" cy="40" r="3.2"/>
+                          <circle class="dot" cx="136" cy="78" r="3.2"/>
+                          <circle class="dot" cx="168" cy="50" r="3.2"/>
+                          <circle class="dot" cx="200" cy="48" r="3.2"/>
+                          <circle class="dot" cx="232" cy="56" r="3.2"/>
+                        </g>
+                      </svg>
+                    </div>
+                  </div>
+
+                  <!-- Insight 3 -->
+                  <div class="insight">
+                    <div class="insight-head">
+                      <div>
+                        <div class="kicker">Availability</div>
+                        <div class="amount">{{ insights.availability.amount }}</div>
+                        {% if insights.availability.detail %}
+                        <div class="pct delta">
+                          {{ insights.availability.detail }}
+                        </div>
+                        {% endif %}
+                      </div>
+                      <div class="badge" aria-hidden="true">
+                        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                          <path d="M3 12l2-2 4 4 8-8 4 4-12 8z"/>
+                        </svg>
+                      </div>
+                    </div>
+                    <div class="mini">
+                      <svg viewBox="0 0 260 110" preserveAspectRatio="none">
+                        <line class="gridline" x1="38" y1="20" x2="250" y2="20"/>
+                        <line class="gridline" x1="38" y1="40" x2="250" y2="40"/>
+                        <line class="gridline" x1="38" y1="60" x2="250" y2="60"/>
+                        <line class="gridline" x1="38" y1="80" x2="250" y2="80"/>
+                        <line class="axis" x1="38" y1="92" x2="250" y2="92"/>
+                        <line class="axis" x1="38" y1="16" x2="38" y2="92"/>
+                        <text x="4" y="22">$24.0k</text>
+                        <text x="4" y="42">$20.0k</text>
+                        <text x="4" y="62">$16.0k</text>
+                        <text x="4" y="82">$12.0k</text>
+                        <text x="40" y="106">01</text><text x="72" y="106">02</text><text x="104" y="106">03</text>
+                        <text x="136" y="106">04</text><text x="168" y="106">05</text><text x="200" y="106">06</text><text x="232" y="106">07</text>
+
+                        <polyline class="line" stroke="#059669"
+                          points="40,56 72,36 104,48 136,78 168,56 200,54 232,60"/>
+                        <g fill="#059669">
+                          <circle class="dot" cx="40" cy="56" r="3.2"/>
+                          <circle class="dot" cx="72" cy="36" r="3.2"/>
+                          <circle class="dot" cx="104" cy="48" r="3.2"/>
+                          <circle class="dot" cx="136" cy="78" r="3.2"/>
+                          <circle class="dot" cx="168" cy="56" r="3.2"/>
+                          <circle class="dot" cx="200" cy="54" r="3.2"/>
+                          <circle class="dot" cx="232" cy="60" r="3.2"/>
+                        </g>
+                      </svg>
+                    </div>
+                  </div>
+                </div>
+              </div>
+
+              <div class="card table-card">
+                <div class="section-title" style="margin-bottom:10px;">
+                  <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                    <path d="M3 3h18v18H3z"/><path d="M3 9h18"/><path d="M9 21V9"/>
+                  </svg>
+                  Collateral Composition
+                </div>
+
+                <table class="collateral-table">
+                  <thead>
+                    <tr>
+                      <th></th>
+                      <th>Beginning Collateral</th>
+                      <th>Ineligibles</th>
+                      <th>Eligible Collateral</th>
+                      <th>NOLV %</th>
+                      <th>Dilution Rate</th>
+                      <th>Advanced Rate</th>
+                      <th>Rate Limit</th>
+                      <th>Utilized Rate</th>
+                      <th>Pre-Reserve Collateral</th>
+                      <th>Reserves</th>
+                      <th>Net Collateral</th>
+                    </tr>
+                  </thead>
+                  <tbody>
+                    {% if collateral_rows %}
+                      {% for row in collateral_rows %}
+                      <tr>
+                        <td>
+                          <div class="row-label">
+                            <span>{{ row.label }}</span>
+                            {% if row.detail %}
+                            <span class="row-sub">{{ row.detail }}</span>
+                            {% endif %}
+                          </div>
+                        </td>
+                        <td>{{ row.beginning_collateral }}</td>
+                        <td>{{ row.ineligibles }}</td>
+                        <td>{{ row.eligible_collateral }}</td>
+                        <td>{{ row.nolv_pct }}</td>
+                        <td>{{ row.dilution_rate }}</td>
+                        <td>{{ row.advanced_rate }}</td>
+                        <td>{{ row.rate_limit }}</td>
+                        <td>{{ row.utilized_rate }}</td>
+                        <td>{{ row.pre_reserve_collateral }}</td>
+                        <td>{{ row.reserves }}</td>
+                        <td class="net-cell">{{ row.net_collateral }}</td>
+                      </tr>
+                      {% endfor %}
+                    {% else %}
+                      <tr>
+                        <td colspan="12" class="empty">No collateral data available yet.</td>
+                      </tr>
+                    {% endif %}
+                  </tbody>
+                </table>
+              </div>
+            </div>
+
+          </div>
+        </div>
+      </div>
     </div>
+  </div>
 
     <script src="{% static 'js/dashboard.js' %}"></script>
 </body>

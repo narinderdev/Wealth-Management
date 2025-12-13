@@ -75,10 +75,14 @@ WSGI_APPLICATION = 'config.wsgi.application'
 # https://docs.djangoproject.com/en/3.2/ref/settings/#databases
 
 DATABASES = {
-    'default': {
-        'ENGINE': 'django.db.backends.sqlite3',
-        'NAME': BASE_DIR / 'db.sqlite3',
-    }
+  "default": {
+    "ENGINE": "django.db.backends.postgresql",
+    "NAME": "wealth_managment",
+    "USER": "wealth_user",
+    "PASSWORD": "Dev@Apnitor!23",
+    "HOST": "localhost",
+    "PORT": "5432",
+  }
 }
 
 
@@ -134,10 +138,6 @@ STATICFILES_DIRS = [
 LOGIN_URL = 'login'
 LOGIN_REDIRECT_URL = 'dashboard'
 
-# Static login credentials for quick demos
-STATIC_LOGIN_USERNAME = 'corademo'
-STATIC_LOGIN_EMAIL = 'demo@cora.com'
-STATIC_LOGIN_PASSWORD = 'Demo1234'
 
 # Default primary key field type
 # https://docs.djangoproject.com/en/3.2/ref/settings/#default-auto-field

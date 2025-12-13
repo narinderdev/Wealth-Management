@@ -1,0 +1,414 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <title>CORA – Collateral Dynamic Summary</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600&display=swap" rel="stylesheet">
+  <style>
+    :root{
+      --blue:#1d4089;
+      --accent:#0a6af0;
+      --ink:#1f2937;
+      --muted:#6b7280;
+      --line:#e5edf6;
+      --panel:#ffffff;
+      --canvas:#f3f6fb;
+      --sidebar:#f1f5f9;
+    }
+    *{box-sizing:border-box}
+    html,body{
+      height:100%;
+      margin:0;
+      background:var(--canvas);
+      font-family:Inter,system-ui,-apple-system,Segoe UI,Roboto,Arial,sans-serif;
+      color:var(--ink);
+    }
+    body{display:flex;flex-direction:column}
+    .app{flex:1;display:flex;flex-direction:column}
+    .topbar{
+      height:54px;
+      background:var(--blue);
+      color:#fff;
+      display:flex;
+      align-items:center;
+      justify-content:space-between;
+      padding:0 24px;
+      letter-spacing:.2px;
+      font-weight:600;
+      box-shadow:0 2px 6px rgba(0,0,0,.14);
+    }
+    .topbar .left{display:flex;align-items:center;gap:14px}
+    .burger{width:26px;height:26px;border-radius:6px;background:rgba(255,255,255,.2);display:grid;place-items:center}
+    .burger svg{width:14px;height:14px;stroke:currentColor}
+    .logo{font-weight:700;letter-spacing:.6px}
+    .shell{flex:1;display:flex;min-height:0}
+    .rail{
+      width:56px;
+      background:var(--sidebar);
+      border-right:1px solid var(--line);
+      display:flex;
+      flex-direction:column;
+      align-items:center;
+      gap:16px;
+      padding:18px 0;
+    }
+    .rail-btn{
+      width:32px;height:32px;border-radius:10px;
+      border:1px solid #d3ddec;
+      display:grid;place-items:center;
+      background:#fff;
+      color:#5c6475;
+      font-size:13px;
+    }
+    .rail-btn.active{background:#e9f1ff;color:var(--accent);border-color:#c5d8ff}
+    .main{
+      flex:1;
+      padding:22px 32px 32px;
+      overflow:auto;
+    }
+    .user-header{
+      display:flex;
+      align-items:center;
+      gap:14px;
+      margin-bottom:10px;
+    }
+    .avatar{
+      width:34px;height:34px;border-radius:50%;
+      background:#0a6af0;
+      color:#fff;
+      display:grid;place-items:center;
+      font-weight:600;
+    }
+    .user-meta{font-size:13px}
+    .user-meta .sub{font-size:12px;color:var(--muted);display:flex;align-items:center;gap:6px}
+    .user-meta svg{width:10px;height:10px;stroke:currentColor}
+    .tabs{
+      display:flex;
+      gap:20px;
+      font-size:13px;
+      color:var(--muted);
+      border-bottom:1px solid var(--line);
+      padding-bottom:10px;
+      margin-bottom:18px;
+    }
+    .tab{padding-bottom:6px;cursor:pointer}
+    .tab.active{color:var(--accent);border-bottom:2px solid var(--accent);font-weight:600}
+    .layout{
+      display:grid;
+      grid-template-columns:240px 1fr;
+      gap:20px;
+    }
+    .menu-card{
+      background:var(--panel);
+      border:1px solid var(--line);
+      border-radius:14px;
+      padding:16px 12px;
+      box-shadow:0 4px 10px rgba(15,23,42,.04);
+    }
+    .menu-card .menu-title{
+      font-size:12px;
+      font-weight:600;
+      color:var(--muted);
+      margin-bottom:12px;
+    }
+    .menu-item{
+      width:100%;
+      border:none;
+      background:transparent;
+      padding:10px;
+      border-radius:10px;
+      display:flex;
+      gap:8px;
+      align-items:center;
+      font-size:13px;
+      color:#475569;
+      cursor:pointer;
+    }
+    .menu-item svg{width:14px;height:14px;stroke:currentColor}
+    .menu-item.active{
+      background:#1f4ba912;
+      color:var(--accent);
+      font-weight:600;
+    }
+    .panel{
+      background:var(--panel);
+      border:1px solid var(--line);
+      border-radius:14px;
+      padding:18px;
+      box-shadow:0 4px 12px rgba(15,23,42,.04);
+      margin-bottom:18px;
+    }
+    .panel-header{
+      display:flex;align-items:center;gap:10px;
+      font-size:14px;font-weight:600;
+      margin-bottom:14px;
+    }
+    .panel-header svg{width:16px;height:16px;stroke:var(--accent)}
+    .snapshot-text{font-size:13px;color:#475569;line-height:1.6;margin-bottom:16px}
+    .snapshot-grid{
+      display:grid;
+      grid-template-columns:220px 1fr;
+      gap:20px;
+    }
+    .donut-card{
+      border:1px solid var(--line);
+      border-radius:12px;
+      padding:12px;
+      text-align:center;
+    }
+    .donut-card .total{font-size:24px;font-weight:700;margin:8px 0}
+    .donut-card .labels{
+      margin-top:12px;
+      text-align:left;
+      display:flex;
+      flex-direction:column;
+      gap:6px;
+      font-size:12px;
+      color:#475569;
+    }
+    .legend-dot{
+      width:10px;height:10px;border-radius:50%;display:inline-block;margin-right:6px;
+    }
+    .chart-card{border:1px solid var(--line);border-radius:12px;padding:12px;}
+    table{
+      width:100%;
+      border-collapse:collapse;
+      font-size:12px;
+      color:#475569;
+    }
+    th,td{
+      padding:10px 8px;
+      border-bottom:1px solid var(--line);
+      text-align:left;
+    }
+    th{
+      background:#f9fbff;
+      color:#6b7280;
+      font-weight:600;
+    }
+    tbody tr:last-child td{border-bottom:none}
+  </style>
+</head>
+<body>
+  <div class="app">
+    <header class="topbar">
+      <div class="left">
+        <div class="burger" aria-label="Menu">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round">
+            <path d="M3 6h18M3 12h18M3 18h18"/>
+          </svg>
+        </div>
+        Collateral Oversight &amp; Risk Analytics
+      </div>
+      <div class="logo">CORA</div>
+    </header>
+
+    <div class="shell">
+      <aside class="rail">
+        <div class="rail-btn">☰</div>
+        <div class="rail-btn">☆</div>
+        <div class="rail-btn active">⚡</div>
+        <div class="rail-btn">⚙</div>
+      </aside>
+
+      <main class="main">
+        <div class="user-header">
+          <div class="avatar">MT</div>
+          <div class="user-meta">
+            <div>Monica Thomson</div>
+            <div class="sub">
+              Contact • Collateral Dynamic Profile
+              <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                <path d="M7 10l5 5 5-5"/>
+              </svg>
+            </div>
+          </div>
+        </div>
+
+        <nav class="tabs">
+          <div class="tab">Summary</div>
+          <div class="tab active">Collateral Dynamic</div>
+          <div class="tab">Forecast</div>
+          <div class="tab">Risk</div>
+          <div class="tab">Reports</div>
+          <div class="tab">Limits</div>
+        </nav>
+
+        <div class="layout">
+          <div class="menu-card">
+            <div class="menu-title">Inventory</div>
+            <button class="menu-item active">
+              <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                <path d="M4 4h16v16H4z"/><path d="M4 10h16"/><path d="M10 4v16"/>
+              </svg>
+              Summary
+            </button>
+            <button class="menu-item">
+              <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                <path d="M4 4h16v16H4z"/><path d="M8 4v16"/><path d="M16 4v16"/>
+              </svg>
+              Finished Goods
+            </button>
+            <button class="menu-item">
+              <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                <path d="M3 12h18"/><path d="M3 6h18"/><path d="M3 18h18"/>
+              </svg>
+              Raw Materials
+            </button>
+            <button class="menu-item">
+              <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                <path d="M12 2v20"/><path d="M5 9h14"/>
+              </svg>
+              Work in Progress
+            </button>
+            <button class="menu-item">
+              <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                <path d="M3 5h18"/><path d="M3 12h18"/><path d="M3 19h18"/>
+              </svg>
+              Liquidation Model
+            </button>
+            <button class="menu-item">
+              <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                <path d="M4 4h16v16H4z"/><path d="M4 10h16"/><path d="M10 4v16"/>
+              </svg>
+              Other Collateral
+            </button>
+          </div>
+
+          <div>
+            <section class="panel">
+              <div class="panel-header">
+                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                  <path d="M4 4h16v16H4z"/>
+                </svg>
+                Snapshot Summary
+              </div>
+              <div class="snapshot-text">
+                Inventory levels increased this period, primarily in finished goods, while turns softened due to slower sales velocity.
+                Excess and obsolete inventory ticked up, raising the risk profile and influencing NOLV recovery expectations.
+                Raw materials and WIP remained steady with no significant swings.
+              </div>
+              <div class="snapshot-grid">
+                <div class="donut-card">
+                  <svg viewBox="0 0 120 120">
+                    <circle cx="60" cy="60" r="40" stroke="#dbeafe" stroke-width="12" fill="none"/>
+                    <circle cx="60" cy="60" r="40" stroke="#0a6af0" stroke-width="12" fill="none" stroke-dasharray="170 251" transform="rotate(-90 60 60)"/>
+                    <circle cx="60" cy="60" r="40" stroke="#1ecfff" stroke-width="12" fill="none" stroke-dasharray="120 251" transform="rotate(10 60 60)"/>
+                  </svg>
+                  <div class="total">8.6M</div>
+                  <div class="labels">
+                    <span><span class="legend-dot" style="background:#0a6af0"></span>38% Finished Goods</span>
+                    <span><span class="legend-dot" style="background:#1ecfff"></span>40% Raw Materials</span>
+                    <span><span class="legend-dot" style="background:#93c5fd"></span>22% Work in Progress</span>
+                  </div>
+                </div>
+                <div class="chart-card">
+                  <div style="font-size:13px;font-weight:600;margin-bottom:8px">Available Inventory Mix Trend</div>
+                  <svg viewBox="0 0 520 200" width="100%">
+                    <g stroke-width="20" stroke-linecap="round">
+                      <line x1="40" x2="40" y1="160" y2="80" stroke="#0a6af0"/>
+                      <line x1="40" x2="40" y1="80" y2="60" stroke="#1ecfff"/>
+                      <line x1="40" x2="40" y1="60" y2="40" stroke="#93c5fd"/>
+
+                      <line x1="110" x2="110" y1="160" y2="90" stroke="#0a6af0"/>
+                      <line x1="110" x2="110" y1="90" y2="65" stroke="#1ecfff"/>
+                      <line x1="110" x2="110" y1="65" y2="45" stroke="#93c5fd"/>
+
+                      <line x1="180" x2="180" y1="160" y2="85" stroke="#0a6af0"/>
+                      <line x1="180" x2="180" y1="85" y2="60" stroke="#1ecfff"/>
+                      <line x1="180" x2="180" y1="60" y2="45" stroke="#93c5fd"/>
+
+                      <line x1="250" x2="250" y1="160" y2="110" stroke="#0a6af0"/>
+                      <line x1="250" x2="250" y1="110" y2="70" stroke="#1ecfff"/>
+                      <line x1="250" x2="250" y1="70" y2="50" stroke="#93c5fd"/>
+
+                      <line x1="320" x2="320" y1="160" y2="120" stroke="#0a6af0"/>
+                      <line x1="320" x2="320" y1="120" y2="90" stroke="#1ecfff"/>
+                      <line x1="320" x2="320" y1="90" y2="70" stroke="#93c5fd"/>
+
+                      <line x1="390" x2="390" y1="160" y2="95" stroke="#0a6af0"/>
+                      <line x1="390" x2="390" y1="95" y2="70" stroke="#1ecfff"/>
+                      <line x1="390" x2="390" y1="70" y2="50" stroke="#93c5fd"/>
+
+                      <line x1="460" x2="460" y1="160" y2="105" stroke="#0a6af0"/>
+                      <line x1="460" x2="460" y1="105" y2="80" stroke="#1ecfff"/>
+                      <line x1="460" x2="460" y1="80" y2="60" stroke="#93c5fd"/>
+                    </g>
+                    <text x="40" y="180" font-size="10">Jul</text>
+                    <text x="110" y="180" font-size="10">Aug</text>
+                    <text x="180" y="180" font-size="10">Sep</text>
+                    <text x="250" y="180" font-size="10">Oct</text>
+                    <text x="320" y="180" font-size="10">Nov</text>
+                    <text x="390" y="180" font-size="10">Dec</text>
+                    <text x="460" y="180" font-size="10">Jan</text>
+                  </svg>
+                </div>
+              </div>
+            </section>
+
+            <section class="panel">
+              <div class="panel-header">
+                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                  <path d="M3 3h18v18H3z"/><path d="M3 9h18"/><path d="M9 21V9"/>
+                </svg>
+                Inventory Recovery Overview
+              </div>
+              <table>
+                <thead>
+                  <tr>
+                    <th>Inventory</th>
+                    <th>Available Value</th>
+                    <th>Gross Recovery</th>
+                    <th>@ COGS</th>
+                    <th>Liquidation Cost</th>
+                    <th>Net Recovery Trend</th>
+                  </tr>
+                </thead>
+                <tbody>
+                  <tr>
+                    <td>Finished Goods</td><td>$5,600K</td><td>$4,197K</td><td>81.5%</td><td>($720K)</td><td>+3.1%</td>
+                  </tr>
+                  <tr>
+                    <td>Raw Materials</td><td>$2,550K</td><td>$1,620K</td><td>63.5%</td><td>($155K)</td><td>+1.7%</td>
+                  </tr>
+                  <tr>
+                    <td>Work in Process</td><td>$1,050K</td><td>$420K</td><td>40.1%</td><td>($90K)</td><td>-0.2%</td>
+                  </tr>
+                </tbody>
+              </table>
+            </section>
+
+            <section class="panel">
+              <div class="panel-header">
+                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                  <path d="M3 12l7-7 7 7-7 7-7-7z"/>
+                </svg>
+                Net Recovery Trend
+              </div>
+              <svg viewBox="0 0 620 220" width="100%">
+                <polyline fill="none" stroke="#0a6af0" stroke-width="3" points="40,160 110,130 180,138 250,170 320,140 390,110 460,100 530,120"/>
+                <polyline fill="none" stroke="#1c64f2" stroke-width="3" points="40,150 110,145 180,155 250,178 320,150 390,125 460,130 530,140"/>
+                <polyline fill="none" stroke="#7dd3fc" stroke-width="3" points="40,170 110,160 180,172 250,188 320,162 390,150 460,155 530,165"/>
+                <g fill="#0a6af0">
+                  <circle cx="40" cy="160" r="4"/><circle cx="110" cy="130" r="4"/><circle cx="180" cy="138" r="4"/><circle cx="250" cy="170" r="4"/><circle cx="320" cy="140" r="4"/><circle cx="390" cy="110" r="4"/><circle cx="460" cy="100" r="4"/><circle cx="530" cy="120" r="4"/>
+                </g>
+                <text x="40" y="200" font-size="10">May</text>
+                <text x="110" y="200" font-size="10">Jun</text>
+                <text x="180" y="200" font-size="10">Jul</text>
+                <text x="250" y="200" font-size="10">Aug</text>
+                <text x="320" y="200" font-size="10">Sep</text>
+                <text x="390" y="200" font-size="10">Oct</text>
+                <text x="460" y="200" font-size="10">Nov</text>
+                <text x="530" y="200" font-size="10">Dec</text>
+              </svg>
+            </section>
+          </div>
+        </div>
+      </main>
+    </div>
+  </div>
+</body>
+</html>

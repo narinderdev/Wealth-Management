@@ -1,0 +1,962 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width,initial-scale=1" />
+  <title>CORA – Summary</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
+  <style>
+    :root{
+      --blue:#1d4089;           /* sampled from screenshot */
+      --bg:#f7f9fb;             /* sampled from screenshot */
+      --card:#ffffff;
+      --border:#e5e7eb;
+      --text:#1f2937;
+      --muted:#6b7280;
+      --soft:#eef2f7;
+      --shadow: 0 1px 0 rgba(16,24,40,.04), 0 1px 2px rgba(16,24,40,.06);
+      --r:12px;
+      --sidebar:44px;
+      --frame-w:850px;
+      --frame-h:688px;
+    }
+    *{box-sizing:border-box}
+    html,body{height:100%}
+    body{
+      margin:0;
+      min-height:100vh;
+      font-family: Inter, system-ui, -apple-system, Segoe UI, Roboto, Arial, sans-serif;
+      background:var(--bg);
+      color:var(--text);
+    }
+    .frame{
+      width:100%;
+      min-height:100vh;
+      background:var(--bg);
+      overflow:hidden;
+    }
+    .app{
+      min-height:100vh;
+      display:grid;
+      grid-template-columns: var(--sidebar) 1fr;
+    }
+
+    /* Sidebar */
+    .sidebar{
+      background:#fff;
+      border-right:1px solid var(--border);
+      padding:10px 0;
+      display:flex;
+      flex-direction:column;
+      align-items:center;
+      gap:14px;
+    }
+    .sb-icon{
+      width:26px;height:26px;
+      display:grid;place-items:center;
+      border-radius:7px;
+      color:#7b8794;
+    }
+    .sb-icon svg{width:16px;height:16px;opacity:.9}
+    .sb-icon.active{
+      color:#2f6ae6;
+    }
+
+    /* Topbar */
+    .main{display:flex;flex-direction:column;min-width:0}
+    .topbar{
+      height:44px;
+      background:var(--blue);
+      color:#fff;
+      display:flex;
+      align-items:center;
+      justify-content:space-between;
+      padding:0 16px 0 10px;
+    }
+    .top-left{display:flex;align-items:center;gap:10px;min-width:0}
+    .burger{
+      width:26px;height:26px;border-radius:6px;
+      display:grid;place-items:center;
+      color:#eaf1fb;
+      opacity:.95;
+    }
+    .burger svg{width:18px;height:18px}
+    .top-title{
+      font-size:13px;
+      font-weight:600;
+      letter-spacing:.1px;
+      white-space:nowrap;
+      overflow:hidden;
+      text-overflow:ellipsis;
+    }
+    .brand{
+      font-weight:800;
+      letter-spacing:.5px;
+      font-size:14px;
+    }
+
+    /* Content */
+    .content{
+      padding:12px 16px 14px 16px;
+      min-width:0;
+    }
+    .user-row{
+      display:flex;
+      align-items:center;
+      gap:10px;
+      margin-bottom:8px;
+    }
+    .avatar{
+      width:22px;height:22px;border-radius:50%;
+      background:#0f2f63;
+      display:grid;place-items:center;
+      color:#fff;
+      font-size:10px;
+      font-weight:700;
+    }
+    .user-meta{line-height:1.1}
+    .user-name{
+      font-size:11px;
+      font-weight:600;
+      color:#111827;
+    }
+    .user-sub{
+      font-size:10px;
+      color:#6b7280;
+      margin-top:2px;
+      display:flex;align-items:center;gap:6px;
+    }
+    .caret{
+      width:12px;height:12px;display:inline-grid;place-items:center;
+      color:#94a3b8;
+      transform:translateY(-.5px);
+    }
+
+    /* Tabs */
+    .tabs{
+      display:flex;
+      gap:10px;
+      margin:6px 0 10px 0;
+      font-size:10px;
+      color:#475569;
+    }
+    .tab{
+      padding:4px 8px;
+      border-radius:8px;
+      border:1px solid transparent;
+      background:transparent;
+      cursor:default;
+      user-select:none;
+    }
+    .tab.active{
+      background:var(--blue);
+      color:#fff;
+      font-weight:600;
+      box-shadow:var(--shadow);
+    }
+
+    /* Layout grid */
+    .grid{
+      display:grid;
+      grid-template-columns: 245px 1fr;
+      gap:12px;
+      min-width:0;
+    }
+    .card{
+      background:var(--card);
+      border:1px solid var(--border);
+      border-radius:var(--r);
+      box-shadow:var(--shadow);
+    }
+
+    /* Borrower panel */
+    .borrower{
+      padding:10px;
+      min-height: 510px;
+      display:flex;
+      flex-direction:column;
+      gap:10px;
+    }
+    .pill{
+      width:100%;
+      background:var(--blue);
+      color:#fff;
+      border-radius:10px;
+      padding:7px 10px;
+      font-size:10.5px;
+      font-weight:700;
+      text-align:center;
+    }
+    .kv{
+      display:grid;
+      grid-template-columns: 14px 1fr auto;
+      gap:8px;
+      align-items:center;
+      padding:5px 2px;
+      font-size:9.6px;
+      color:#64748b;
+    }
+    .kv .v{color:#111827;font-weight:500}
+    .kv .link{color:#2f6ae6;font-weight:600}
+    .kv svg{width:12px;height:12px;color:#94a3b8}
+    .divider{height:1px;background:var(--border);margin:2px 0 0}
+
+    .risk{
+      margin-top:auto;
+      padding:14px;
+      border-radius:14px;
+      border:1px solid var(--border);
+      background:#fff;
+      box-shadow:0 4px 10px rgba(0,0,0,.05);
+    }
+    .risk-title{
+      font-size:10px;
+      font-weight:700;
+      color:#111827;
+      margin-bottom:12px;
+    }
+    .risk-score{
+      display:flex;
+      justify-content:center;
+      margin-bottom:12px;
+    }
+    .risk-circle{
+      width:96px;
+      height:96px;
+      border-radius:50%;
+      border:9px solid #3f3f46;
+      display:flex;
+      align-items:center;
+      justify-content:center;
+      font-size:22px;
+      font-weight:700;
+      color:#111827;
+      background:#fff;
+    }
+    .risk-scale{
+      margin-bottom:14px;
+    }
+    .risk-labels{
+      display:flex;
+      justify-content:space-between;
+      font-size:9px;
+      color:#6b7280;
+      margin-bottom:6px;
+    }
+    .risk-bar{
+      position:relative;
+      height:12px;
+      border-radius:999px;
+      background:linear-gradient(90deg,#20c997 0%, #facc15 50%, #ef4444 100%);
+    }
+    .risk-marker{
+      position:absolute;
+      top:50%;
+      left:var(--pos,50%);
+      transform:translate(-50%,-50%);
+      width:14px;
+      height:14px;
+      border-radius:50%;
+      border:2px solid #fff;
+      background:#fbbf24;
+      box-shadow:0 1px 6px rgba(0,0,0,.25);
+    }
+    .risk-metrics{
+      display:flex;
+      flex-direction:column;
+      gap:8px;
+      font-size:10px;
+      color:#374151;
+    }
+    .risk-row{
+      display:flex;
+      align-items:center;
+      justify-content:space-between;
+    }
+    .risk-change{
+      display:inline-flex;
+      align-items:center;
+      gap:4px;
+      font-weight:600;
+      font-size:10px;
+    }
+    .risk-change.up{color:#16a34a}
+    .risk-change.down{color:#ef4444}
+    .risk-change svg{width:10px;height:10px}
+
+    /* Right panel */
+    .section{
+      padding:12px;
+      min-width:0;
+    }
+    .section-title{
+      display:flex;align-items:center;gap:8px;
+      font-size:11px;
+      font-weight:700;
+      color:#111827;
+      margin-bottom:10px;
+    }
+    .section-title svg{width:12px;height:12px;color:#2f6ae6}
+    .insights{
+      display:grid;
+      grid-template-columns: repeat(3, 1fr);
+      gap:10px;
+      min-width:0;
+    }
+    .insight{
+      border:1px solid var(--border);
+      border-radius:10px;
+      padding:10px;
+      background:#fff;
+      min-width:0;
+    }
+    .insight-head{
+      display:flex;
+      justify-content:space-between;
+      align-items:flex-start;
+      gap:10px;
+      margin-bottom:6px;
+    }
+    .kicker{font-size:9px;color:#64748b}
+    .amount{font-size:14px;font-weight:800;color:#111827;letter-spacing:.1px}
+    .pct{font-size:9px;margin-top:3px}
+    .badge{
+      width:24px;height:24px;border-radius:8px;
+      background:#eaf2ff;
+      border:1px solid #d7e6ff;
+      display:grid;place-items:center;
+      flex:0 0 auto;
+    }
+    .badge svg{width:14px;height:14px;color:#2f6ae6}
+    .mini{
+      margin-top:6px;
+      height:98px;
+      border:1px solid #eef1f6;
+      border-radius:8px;
+      background:#fbfcfe;
+      overflow:hidden;
+    }
+    .mini svg{width:100%;height:100%}
+    .mini text{font-size:7px;fill:#9aa6b2}
+    .mini .gridline{stroke:#e9eef5;stroke-width:1}
+    .mini .axis{stroke:#e2e8f0;stroke-width:1}
+    .mini .line{fill:none;stroke-width:2.2}
+    .mini .dot{stroke:#fff;stroke-width:1}
+
+    /* Table section */
+    .table-card{margin-top:12px;padding:12px}
+    table.collateral-table{
+      width:100%;
+      border-collapse:separate;
+      border-spacing:0;
+      font-size:9px;
+      color:#475569;
+      overflow:hidden;
+      border:1px solid var(--border);
+      border-radius:10px;
+      text-align:left;
+    }
+    .collateral-table thead th{
+      background:#fff;
+      position:sticky; top:0;
+      font-weight:700;
+      color:#64748b;
+      padding:8px 6px;
+      border-bottom:1px solid var(--border);
+      text-align:left;
+      white-space:nowrap;
+    }
+    .collateral-table tbody td{
+      padding:8px 6px;
+      border-bottom:1px solid #f0f2f6;
+      text-align:left;
+      white-space:nowrap;
+    }
+    .collateral-table tbody tr:last-child td{border-bottom:none}
+    .collateral-table tbody td:first-child,
+    .collateral-table thead th:first-child{
+      text-align:left;
+      padding-left:10px;
+      width:140px;
+      color:#334155;
+      font-weight:600;
+    }
+    .row-label{
+      display:flex;
+      align-items:center;
+      gap:6px;
+    }
+    .row-toggle{
+      width:18px;
+      height:18px;
+      border:none;
+      background:transparent;
+      padding:0;
+      cursor:pointer;
+      color:#64748b;
+      display:inline-flex;
+      align-items:center;
+      justify-content:center;
+    }
+    .row-toggle svg{
+      width:9px;
+      height:9px;
+      transition:transform .2s ease;
+    }
+    .row-toggle[aria-expanded="true"] svg{transform:rotate(90deg)}
+    .row-hidden{display:none}
+    .collateral-table tr[data-level="1"] td:first-child,
+    .collateral-table tr[data-level="2"] td:first-child{
+      padding-left:10px;
+    }
+    .collateral-table tr.tone-blue td{background:#edf3ff}
+    .collateral-table tr.tone-green td{background:#f0fbf3}
+    .collateral-table tr.tone-red td{background:#fef5f3}
+    .net-cell{padding-right:16px}
+    .net-content{
+      display:flex;
+      align-items:center;
+      justify-content:space-between;
+      gap:8px;
+    }
+    .right{min-width:0}
+  </style>
+</head>
+
+<body>
+  <div class="frame">
+    <div class="app">
+      <aside class="sidebar">
+        <div class="sb-icon" title="Shield">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+            <path d="M12 2l7 4v6c0 5-3 9-7 10C8 21 5 17 5 12V6l7-4z"/>
+          </svg>
+        </div>
+        <div class="sb-icon active" title="Summary">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+            <path d="M4 4h16v16H4z"/><path d="M8 8h8M8 12h8M8 16h5"/>
+          </svg>
+        </div>
+        <div class="sb-icon" title="Reports">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+            <path d="M4 19V5"/><path d="M4 19h16"/><path d="M8 16v-6"/><path d="M12 16V8"/><path d="M16 16v-4"/>
+          </svg>
+        </div>
+        <div class="sb-icon" title="Settings">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+            <path d="M12 15.5a3.5 3.5 0 1 0 0-7 3.5 3.5 0 0 0 0 7z"/>
+            <path d="M19.4 15a7.9 7.9 0 0 0 .1-2l2-1.2-2-3.4-2.3.7a8 8 0 0 0-1.7-1L15 4h-6l-.5 2.1a8 8 0 0 0-1.7 1l-2.3-.7-2 3.4 2 1.2a7.9 7.9 0 0 0 .1 2l-2 1.2 2 3.4 2.3-.7a8 8 0 0 0 1.7 1L9 20h6l.5-2.1a8 8 0 0 0 1.7-1l2.3.7 2-3.4-2-1.2z"/>
+          </svg>
+        </div>
+      </aside>
+
+      <div class="main">
+        <header class="topbar">
+          <div class="top-left">
+            <div class="burger" aria-hidden="true">
+              <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round">
+                <path d="M4 6h16"/><path d="M4 12h16"/><path d="M4 18h16"/>
+              </svg>
+            </div>
+            <div class="top-title">Collateral Oversight &amp; Risk Analytics</div>
+          </div>
+          <div class="brand">CORA</div>
+        </header>
+
+        <div class="content">
+          <div class="user-row">
+            <div class="avatar">MT</div>
+            <div class="user-meta">
+              <div class="user-name">Monica Thomason</div>
+              <div class="user-sub">Contact • Unified Client Profile
+                <span class="caret">
+                  <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round">
+                    <path d="M7 10l5 5 5-5"/>
+                  </svg>
+                </span>
+              </div>
+            </div>
+          </div>
+
+          <div class="tabs">
+            <div class="tab active">Summary</div>
+            <div class="tab">Collateral Dynamic</div>
+            <div class="tab">Forecast</div>
+            <div class="tab">Risk</div>
+            <div class="tab">Reports</div>
+            <div class="tab">Limits</div>
+          </div>
+
+          <div class="grid">
+            <!-- Left: Borrower -->
+            <div class="card borrower">
+              <div class="pill">Borrower Overview</div>
+
+              <div>
+                <div class="kv">
+                  <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M4 7h16"/><path d="M6 7V5h12v2"/><path d="M6 7v12h12V7"/></svg>
+                  <div>Company Name</div>
+                  <div class="v">Joe's Lumber</div>
+                </div>
+                <div class="kv">
+                  <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M12 2l9 4v6c0 5-4 9-9 10C7 21 3 17 3 12V6l9-4z"/></svg>
+                  <div>Company ID</div>
+                  <div class="v">123456789</div>
+                </div>
+                <div class="kv">
+                  <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M3 11h18"/><path d="M12 2v18"/><path d="M5 5l14 14"/><path d="M19 5L5 19"/></svg>
+                  <div>Industry</div>
+                  <div class="v">Food &amp; Beverage</div>
+                </div>
+                <div class="kv">
+                  <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M12 2a10 10 0 1 0 10 10"/><path d="M12 12L2 12"/><path d="M12 12l7-7"/></svg>
+                  <div>NAICS</div>
+                  <div class="v">42410</div>
+                </div>
+                <div class="kv">
+                  <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M10 14a5 5 0 0 1 0-7l1-1a5 5 0 0 1 7 7l-1 1"/><path d="M14 10a5 5 0 0 1 0 7l-1 1a5 5 0 0 1-7-7l1-1"/></svg>
+                  <div>Website</div>
+                  <div class="v link">joeslumber.com</div>
+                </div>
+
+                <div class="divider"></div>
+
+                <div class="kv">
+                  <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M20 21v-2a4 4 0 0 0-4-4H8a4 4 0 0 0-4 4v2"/><path d="M12 11a4 4 0 1 0 0-8 4 4 0 0 0 0 8z"/></svg>
+                  <div>Primary Contact</div>
+                  <div class="v">Alex Christie</div>
+                </div>
+                <div class="kv">
+                  <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M22 16.92V21a1 1 0 0 1-1.09 1A19.8 19.8 0 0 1 3 4.09 1 1 0 0 1 4 3h4.09a1 1 0 0 1 1 .75l1 3.5a1 1 0 0 1-.27 1L8.09 9.91a16 16 0 0 0 6 6l1.66-1.73a1 1 0 0 1 1-.27l3.5 1a1 1 0 0 1 .75 1.01z"/></svg>
+                  <div>Contact Number</div>
+                  <div class="v">401-262-7568</div>
+                </div>
+                <div class="kv">
+                  <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M4 4h16v16H4z"/><path d="M22 6l-10 7L2 6"/></svg>
+                  <div>Contact Email</div>
+                  <div class="v">user@gmail.com</div>
+                </div>
+
+                <div class="divider"></div>
+
+                <div class="kv">
+                  <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M12 2v20"/><path d="M17 5H9.5a3.5 3.5 0 0 0 0 7H15a3.5 3.5 0 0 1 0 7H6"/></svg>
+                  <div>Project Renewal</div>
+                  <div class="v">Weekly</div>
+                </div>
+                <div class="kv">
+                  <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M8 7V3"/><path d="M16 7V3"/><path d="M4 11h16"/><path d="M5 7h14a1 1 0 0 1 1 1v13a1 1 0 0 1-1 1H5a1 1 0 0 1-1-1V8a1 1 0 0 1 1-1z"/></svg>
+                  <div>Current Update</div>
+                  <div class="v">11/7/2025</div>
+                </div>
+                <div class="kv">
+                  <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M8 7V3"/><path d="M16 7V3"/><path d="M4 11h16"/><path d="M5 7h14a1 1 0 0 1 1 1v13a1 1 0 0 1-1 1H5a1 1 0 0 1-1-1V8a1 1 0 0 1 1-1z"/></svg>
+                  <div>Previous Update</div>
+                  <div class="v">11/14/2024</div>
+                </div>
+                <div class="kv">
+                  <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M8 7V3"/><path d="M16 7V3"/><path d="M4 11h16"/><path d="M5 7h14a1 1 0 0 1 1 1v13a1 1 0 0 1-1 1H5a1 1 0 0 1-1-1V8a1 1 0 0 1 1-1z"/></svg>
+                  <div>Next Update</div>
+                  <div class="v">11/14/2026</div>
+                </div>
+              </div>
+
+              <div class="risk">
+                <div class="risk-title">Risk profile</div>
+                <div class="risk-score">
+                  <div class="risk-circle">
+                    <span>3.1</span>
+                  </div>
+                </div>
+                <div class="risk-scale">
+                  <div class="risk-labels">
+                    <span>Low</span>
+                    <span>Mild</span>
+                    <span>Average</span>
+                    <span>Elevated</span>
+                    <span>High</span>
+                  </div>
+                  <div class="risk-bar">
+                    <span class="risk-marker" style="--pos:60%"></span>
+                  </div>
+                </div>
+                <div class="risk-metrics">
+                  <div class="risk-row">
+                    <span>Accounts Receivable</span>
+                    <span class="risk-change up">
+                      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M12 19V5"/><path d="M5 12l7-7 7 7"/></svg>
+                      4.5
+                    </span>
+                  </div>
+                  <div class="risk-row">
+                    <span>Inventory</span>
+                    <span class="risk-change down">
+                      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M12 5v14"/><path d="M19 12l-7 7-7-7"/></svg>
+                      4.0
+                    </span>
+                  </div>
+                  <div class="risk-row">
+                    <span>Company</span>
+                    <span class="risk-change up">
+                      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M12 19V5"/><path d="M5 12l7-7 7 7"/></svg>
+                      2.7
+                    </span>
+                  </div>
+                  <div class="risk-row">
+                    <span>Industry</span>
+                    <span class="risk-change down">
+                      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M12 5v14"/><path d="M19 12l-7 7-7-7"/></svg>
+                      4.5
+                    </span>
+                  </div>
+                </div>
+              </div>
+            </div>
+
+            <!-- Right side -->
+            <div class="right">
+              <div class="card section">
+                <div class="section-title">
+                  <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                    <path d="M4 19V5"/><path d="M4 19h16"/><path d="M8 15l3-3 4 4 5-6"/>
+                  </svg>
+                  Borrowing Base Insight
+                </div>
+
+                <div class="insights">
+                  <!-- Insight 1 -->
+                  <div class="insight">
+                    <div class="insight-head">
+                      <div>
+                        <div class="kicker">Net Collateral</div>
+                        <div class="amount">$987,225</div>
+                        <div class="pct delta down">
+                          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M12 5v14"/><path d="M19 12l-7 7-7-7"/></svg>
+                          -8.09%
+                        </div>
+                      </div>
+                      <div class="badge" aria-hidden="true">
+                        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                          <path d="M12 2a10 10 0 1 0 10 10"/><path d="M12 12l6-3"/>
+                        </svg>
+                      </div>
+                    </div>
+                    <div class="mini">
+                      <svg viewBox="0 0 260 110" preserveAspectRatio="none">
+                        <!-- grid -->
+                        <line class="gridline" x1="38" y1="20" x2="250" y2="20"/>
+                        <line class="gridline" x1="38" y1="40" x2="250" y2="40"/>
+                        <line class="gridline" x1="38" y1="60" x2="250" y2="60"/>
+                        <line class="gridline" x1="38" y1="80" x2="250" y2="80"/>
+                        <line class="axis" x1="38" y1="92" x2="250" y2="92"/>
+                        <line class="axis" x1="38" y1="16" x2="38" y2="92"/>
+                        <!-- y labels -->
+                        <text x="4" y="22">$20.0k</text>
+                        <text x="4" y="42">$16.0k</text>
+                        <text x="4" y="62">$12.0k</text>
+                        <text x="4" y="82">$8.0k</text>
+                        <!-- x labels -->
+                        <text x="40" y="106">01</text><text x="72" y="106">02</text><text x="104" y="106">03</text>
+                        <text x="136" y="106">04</text><text x="168" y="106">05</text><text x="200" y="106">06</text><text x="232" y="106">07</text>
+
+                        <polyline class="line" stroke="#2f6ae6"
+                          points="40,58 72,36 104,44 136,74 168,54 200,54 232,60"/>
+                        <g fill="#2f6ae6">
+                          <circle class="dot" cx="40" cy="58" r="3.2"/>
+                          <circle class="dot" cx="72" cy="36" r="3.2"/>
+                          <circle class="dot" cx="104" cy="44" r="3.2"/>
+                          <circle class="dot" cx="136" cy="74" r="3.2"/>
+                          <circle class="dot" cx="168" cy="54" r="3.2"/>
+                          <circle class="dot" cx="200" cy="54" r="3.2"/>
+                          <circle class="dot" cx="232" cy="60" r="3.2"/>
+                        </g>
+                      </svg>
+                    </div>
+                  </div>
+
+                  <!-- Insight 2 -->
+                  <div class="insight">
+                    <div class="insight-head">
+                      <div>
+                        <div class="kicker">Outstanding Balance</div>
+                        <div class="amount">$5,556</div>
+                        <div class="pct delta down">
+                          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M12 5v14"/><path d="M19 12l-7 7-7-7"/></svg>
+                          -5.09%
+                        </div>
+                      </div>
+                      <div class="badge" aria-hidden="true">
+                        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                          <path d="M12 1v22"/><path d="M17 5H9.5a3.5 3.5 0 0 0 0 7H15a3.5 3.5 0 0 1 0 7H6"/>
+                        </svg>
+                      </div>
+                    </div>
+                    <div class="mini">
+                      <svg viewBox="0 0 260 110" preserveAspectRatio="none">
+                        <line class="gridline" x1="38" y1="20" x2="250" y2="20"/>
+                        <line class="gridline" x1="38" y1="40" x2="250" y2="40"/>
+                        <line class="gridline" x1="38" y1="60" x2="250" y2="60"/>
+                        <line class="gridline" x1="38" y1="80" x2="250" y2="80"/>
+                        <line class="axis" x1="38" y1="92" x2="250" y2="92"/>
+                        <line class="axis" x1="38" y1="16" x2="38" y2="92"/>
+                        <text x="4" y="22">$22.0k</text>
+                        <text x="4" y="42">$18.0k</text>
+                        <text x="4" y="62">$14.0k</text>
+                        <text x="4" y="82">$10.0k</text>
+                        <text x="40" y="106">01</text><text x="72" y="106">02</text><text x="104" y="106">03</text>
+                        <text x="136" y="106">04</text><text x="168" y="106">05</text><text x="200" y="106">06</text><text x="232" y="106">07</text>
+
+                        <polyline class="line" stroke="#7c3aed"
+                          points="40,56 72,30 104,40 136,78 168,50 200,48 232,56"/>
+                        <g fill="#7c3aed">
+                          <circle class="dot" cx="40" cy="56" r="3.2"/>
+                          <circle class="dot" cx="72" cy="30" r="3.2"/>
+                          <circle class="dot" cx="104" cy="40" r="3.2"/>
+                          <circle class="dot" cx="136" cy="78" r="3.2"/>
+                          <circle class="dot" cx="168" cy="50" r="3.2"/>
+                          <circle class="dot" cx="200" cy="48" r="3.2"/>
+                          <circle class="dot" cx="232" cy="56" r="3.2"/>
+                        </g>
+                      </svg>
+                    </div>
+                  </div>
+
+                  <!-- Insight 3 -->
+                  <div class="insight">
+                    <div class="insight-head">
+                      <div>
+                        <div class="kicker">Availability</div>
+                        <div class="amount">$435,987</div>
+                        <div class="pct delta up">
+                          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M12 19V5"/><path d="M5 12l7-7 7 7"/></svg>
+                          +8.09%
+                        </div>
+                      </div>
+                      <div class="badge" aria-hidden="true">
+                        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                          <path d="M3 12l2-2 4 4 8-8 4 4-12 8z"/>
+                        </svg>
+                      </div>
+                    </div>
+                    <div class="mini">
+                      <svg viewBox="0 0 260 110" preserveAspectRatio="none">
+                        <line class="gridline" x1="38" y1="20" x2="250" y2="20"/>
+                        <line class="gridline" x1="38" y1="40" x2="250" y2="40"/>
+                        <line class="gridline" x1="38" y1="60" x2="250" y2="60"/>
+                        <line class="gridline" x1="38" y1="80" x2="250" y2="80"/>
+                        <line class="axis" x1="38" y1="92" x2="250" y2="92"/>
+                        <line class="axis" x1="38" y1="16" x2="38" y2="92"/>
+                        <text x="4" y="22">$24.0k</text>
+                        <text x="4" y="42">$20.0k</text>
+                        <text x="4" y="62">$16.0k</text>
+                        <text x="4" y="82">$12.0k</text>
+                        <text x="40" y="106">01</text><text x="72" y="106">02</text><text x="104" y="106">03</text>
+                        <text x="136" y="106">04</text><text x="168" y="106">05</text><text x="200" y="106">06</text><text x="232" y="106">07</text>
+
+                        <polyline class="line" stroke="#059669"
+                          points="40,56 72,36 104,48 136,78 168,56 200,54 232,60"/>
+                        <g fill="#059669">
+                          <circle class="dot" cx="40" cy="56" r="3.2"/>
+                          <circle class="dot" cx="72" cy="36" r="3.2"/>
+                          <circle class="dot" cx="104" cy="48" r="3.2"/>
+                          <circle class="dot" cx="136" cy="78" r="3.2"/>
+                          <circle class="dot" cx="168" cy="56" r="3.2"/>
+                          <circle class="dot" cx="200" cy="54" r="3.2"/>
+                          <circle class="dot" cx="232" cy="60" r="3.2"/>
+                        </g>
+                      </svg>
+                    </div>
+                  </div>
+                </div>
+              </div>
+
+              <div class="card table-card">
+                <div class="section-title" style="margin-bottom:10px;">
+                  <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                    <path d="M3 3h18v18H3z"/><path d="M3 9h18"/><path d="M9 21V9"/>
+                  </svg>
+                  Collateral Composition
+                </div>
+
+                <table class="collateral-table">
+                  <thead>
+                    <tr>
+                      <th></th>
+                      <th>Beginning Collateral</th>
+                      <th>Ineligibles</th>
+                      <th>Eligible Collateral</th>
+                      <th>NOLV %</th>
+                      <th>Dilution Rate</th>
+                      <th>Advanced Rate</th>
+                      <th>Rate Limit</th>
+                      <th>Utilized Rate</th>
+                      <th>Pre-Reserve Collateral</th>
+                      <th>Reserves</th>
+                      <th>Net Collateral</th>
+                    </tr>
+                  </thead>
+                  <tbody>
+                    <tr class="coll-row tone-blue" data-id="inventory" data-level="0">
+                      <td>
+                        <div class="row-label">Inventory</div>
+                      </td>
+                      <td>$1,200,000</td><td>$85,000</td><td>$1,115,000</td><td>78%</td><td>2%</td><td>75%</td><td>80%</td><td>70%</td><td>$836,000</td><td>$46,000</td>
+                      <td class="net-cell">
+                        <div class="net-content">
+                          <span>$790,000</span>
+                          <button class="row-toggle" type="button" data-row="inventory" aria-expanded="false" aria-label="Toggle Inventory details">
+                            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M9 18l6-6-6-6"/></svg>
+                          </button>
+                        </div>
+                      </td>
+                    </tr>
+                    <tr class="coll-row tone-green row-hidden" data-parent="inventory" data-id="inventory-division-a" data-level="1">
+                      <td>
+                        <div class="row-label">Division A</div>
+                      </td>
+                      <td>$420,000</td><td>$15,000</td><td>$405,000</td><td>74%</td><td>3%</td><td>70%</td><td>75%</td><td>62%</td><td>$279,000</td><td>$16,000</td>
+                      <td class="net-cell">
+                        <div class="net-content">
+                          <span>$263,000</span>
+                          <button class="row-toggle" type="button" data-row="inventory-division-a" aria-expanded="false" aria-label="Toggle Inventory Division A details">
+                            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M9 18l6-6-6-6"/></svg>
+                          </button>
+                        </div>
+                      </td>
+                    </tr>
+                    <tr class="coll-row tone-red row-hidden" data-parent="inventory-division-a" data-id="inventory-division-a-type-1" data-level="2">
+                      <td>
+                        <div class="row-label">Collateral subtype – Raw Lumber</div>
+                      </td>
+                      <td>$190,000</td><td>$4,000</td><td>$186,000</td><td>70%</td><td>2%</td><td>68%</td><td>72%</td><td>60%</td><td>$133,920</td><td>$8,000</td>
+                      <td class="net-cell">
+                        <div class="net-content">
+                          <span>$125,920</span>
+                        </div>
+                      </td>
+                    </tr>
+                    <tr class="coll-row tone-red row-hidden" data-parent="inventory-division-a" data-id="inventory-division-a-type-2" data-level="2">
+                      <td>
+                        <div class="row-label">Collateral subtype – Finished Goods</div>
+                      </td>
+                      <td>$230,000</td><td>$6,000</td><td>$224,000</td><td>78%</td><td>4%</td><td>73%</td><td>75%</td><td>64%</td><td>$163,520</td><td>$8,000</td>
+                      <td class="net-cell">
+                        <div class="net-content">
+                          <span>$155,520</span>
+                        </div>
+                      </td>
+                    </tr>
+                    <tr class="coll-row tone-green row-hidden" data-parent="inventory" data-id="inventory-division-b" data-level="1">
+                      <td>
+                        <div class="row-label">Division B</div>
+                      </td>
+                      <td>$320,000</td><td>$22,000</td><td>$298,000</td><td>80%</td><td>1%</td><td>76%</td><td>80%</td><td>69%</td><td>$227,480</td><td>$12,000</td>
+                      <td class="net-cell">
+                        <div class="net-content">
+                          <span>$215,480</span>
+                        </div>
+                      </td>
+                    </tr>
+                    <tr class="coll-row tone-blue" data-id="accounts" data-level="0">
+                      <td>
+                        <div class="row-label">Accounts Receivable</div>
+                      </td>
+                      <td>$980,000</td><td>$42,000</td><td>$938,000</td><td>85%</td><td>1%</td><td>82%</td><td>85%</td><td>78%</td><td>$730,640</td><td>$28,000</td>
+                      <td class="net-cell">
+                        <div class="net-content">
+                          <span>$702,640</span>
+                          <button class="row-toggle" type="button" data-row="accounts" aria-expanded="false" aria-label="Toggle Accounts Receivable details">
+                            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M9 18l6-6-6-6"/></svg>
+                          </button>
+                        </div>
+                      </td>
+                    </tr>
+                    <tr class="coll-row tone-green row-hidden" data-parent="accounts" data-id="accounts-region" data-level="1">
+                      <td>
+                        <div class="row-label">East Region</div>
+                      </td>
+                      <td>$410,000</td><td>$10,000</td><td>$400,000</td><td>83%</td><td>1%</td><td>80%</td><td>84%</td><td>79%</td><td>$316,000</td><td>$10,000</td>
+                      <td class="net-cell">
+                        <div class="net-content">
+                          <span>$306,000</span>
+                          <button class="row-toggle" type="button" data-row="accounts-region" aria-expanded="false" aria-label="Toggle East Region details">
+                            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M9 18l6-6-6-6"/></svg>
+                          </button>
+                        </div>
+                      </td>
+                    </tr>
+                    <tr class="coll-row tone-red row-hidden" data-parent="accounts-region" data-id="accounts-key" data-level="2">
+                      <td>
+                        <div class="row-label">Key Accounts</div>
+                      </td>
+                      <td>$210,000</td><td>$4,000</td><td>$206,000</td><td>90%</td><td>1%</td><td>86%</td><td>88%</td><td>82%</td><td>$169,000</td><td>$6,000</td>
+                      <td class="net-cell">
+                        <div class="net-content">
+                          <span>$163,000</span>
+                        </div>
+                      </td>
+                    </tr>
+                    <tr class="coll-row tone-blue" data-id="other" data-level="0">
+                      <td>
+                        <div class="row-label">Other Collateral</div>
+                      </td>
+                      <td>$240,000</td><td>$8,000</td><td>$232,000</td><td>65%</td><td>3%</td><td>60%</td><td>70%</td><td>55%</td><td>$154,000</td><td>$6,000</td>
+                      <td class="net-cell">
+                        <div class="net-content">
+                          <span>$148,000</span>
+                          <button class="row-toggle" type="button" data-row="other" aria-expanded="false" aria-label="Toggle Other Collateral details">
+                            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M9 18l6-6-6-6"/></svg>
+                          </button>
+                        </div>
+                      </td>
+                    </tr>
+                  </tbody>
+                </table>
+              </div>
+            </div>
+
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+<script>
+  document.addEventListener('DOMContentLoaded', () => {
+    const toggles = document.querySelectorAll('.row-toggle');
+
+    const hideDescendants = (id) => {
+      if (!id) return;
+      document.querySelectorAll(`[data-parent="${id}"]`).forEach(row => {
+        row.classList.add('row-hidden');
+        const childToggle = row.querySelector('.row-toggle');
+        if (childToggle) {
+          childToggle.setAttribute('aria-expanded', 'false');
+        }
+        const childId = row.dataset.id;
+        if (childId) {
+          hideDescendants(childId);
+        }
+      });
+    };
+
+    toggles.forEach(btn => {
+      btn.addEventListener('click', () => {
+        const target = btn.dataset.row;
+        const expanded = btn.getAttribute('aria-expanded') === 'true';
+        if (expanded) {
+          btn.setAttribute('aria-expanded', 'false');
+          hideDescendants(target);
+        } else {
+          btn.setAttribute('aria-expanded', 'true');
+          document.querySelectorAll(`[data-parent="${target}"]`).forEach(row => {
+            row.classList.remove('row-hidden');
+          });
+        }
+      });
+    });
+  });
+</script>
+</body>
+</html>
