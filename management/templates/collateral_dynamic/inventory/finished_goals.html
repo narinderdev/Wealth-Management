@@ -1,113 +1,103 @@
-<div class="layout">
-  {% include "collateral_dynamic/inventory/_menu.html" with inventory_tab=inventory_tab %}
-
-  <div>
-    <section class="panel">
-      <div class="panel-header">
-        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
-          <path d="M4 4h16v16H4z"/>
+<div class="page-content">
+  <div class="card">
+    <div class="cardHeader">
+      <div class="hleft">
+        <svg class="spark" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+          <path d="M4 14l6-6 4 4 6-6"/>
+          <path d="M20 8v6h-6"/>
         </svg>
         Available Inventory Breakdown
       </div>
-      <div class="value-grid">
-        <div class="value-card">
-          <div class="label">FG Value</div>
-          <div class="value">$3.42MM</div>
-          <div class="trend">+2.1% vs prior</div>
-        </div>
-        <div class="value-card">
-          <div class="label">Active SKU</div>
-          <div class="value">1,248</div>
-          <div class="trend down">-3.4% SKU rationalized</div>
-        </div>
-        <div class="value-card">
-          <div class="label">Avg NOLV</div>
-          <div class="value">78.2%</div>
-          <div class="trend">+0.6 pts</div>
-        </div>
-        <div class="value-card">
-          <div class="label">Days Supply</div>
-          <div class="value">47</div>
-          <div class="trend down">-2 days</div>
-        </div>
+    </div>
+    <div class="value-grid">
+      <div class="value-card">
+        <div class="label">FG Value</div>
+        <div class="value">$3.42MM</div>
+        <div class="trend">+2.1% vs prior</div>
       </div>
-      <div class="table-card">
-        <table>
-          <thead>
-            <tr>
-              <th>Segment</th>
-              <th>Inventory</th>
-              <th>NOLV</th>
-              <th>Turn Rate</th>
-              <th>Variance</th>
-            </tr>
-          </thead>
-          <tbody>
-            <tr><td>Home Centers</td><td>$1.24MM</td><td>76%</td><td>5.1x</td><td>+1.2%</td></tr>
-            <tr><td>Independent Retail</td><td>$0.98MM</td><td>80%</td><td>4.6x</td><td>+0.4%</td></tr>
-            <tr><td>Commercial Projects</td><td>$0.64MM</td><td>79%</td><td>3.9x</td><td>-0.3%</td></tr>
-            <tr><td>E-commerce</td><td>$0.56MM</td><td>78%</td><td>6.0x</td><td>+0.9%</td></tr>
-          </tbody>
-        </table>
+      <div class="value-card">
+        <div class="label">Active SKU</div>
+        <div class="value">1,248</div>
+        <div class="trend down">-3.4% sku rationalized</div>
       </div>
-    </section>
+      <div class="value-card">
+        <div class="label">Avg NOLV</div>
+        <div class="value">78.2%</div>
+        <div class="trend">+0.6 pts</div>
+      </div>
+      <div class="value-card">
+        <div class="label">Days Supply</div>
+        <div class="value">47</div>
+        <div class="trend down">-2 days</div>
+      </div>
+    </div>
+    <div class="table-card">
+      <table>
+        <thead>
+          <tr>
+            <th>Segment</th>
+            <th>Inventory</th>
+            <th>NOLV</th>
+            <th>Turn Rate</th>
+            <th>Variance</th>
+          </tr>
+        </thead>
+        <tbody>
+          <tr>
+            <td>Core FG</td>
+            <td>$1,920K</td>
+            <td>82.1%</td>
+            <td>4.8x</td>
+            <td>+1.2</td>
+          </tr>
+          <tr>
+            <td>Specialty</td>
+            <td>$720K</td>
+            <td>73.5%</td>
+            <td>3.1x</td>
+            <td>-0.9</td>
+          </tr>
+          <tr>
+            <td>Obsolete</td>
+            <td>$780K</td>
+            <td>45.3%</td>
+            <td>0.9x</td>
+            <td>-4.2</td>
+          </tr>
+        </tbody>
+      </table>
+    </div>
+  </div>
 
-    <section class="panel">
-      <div class="panel-header">
-        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
-          <path d="M3 12l7-7 7 7-7 7-7-7z"/>
+  <div class="card mt12">
+    <div class="cardHeader">
+      <div class="hleft">
+        <svg class="spark" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+          <path d="M4 14l6-6 4 4 6-6"/>
+          <path d="M20 8v6h-6"/>
         </svg>
-        Inventory Trend
+        Recovery vs Prior Periods
       </div>
-      <svg viewBox="0 0 620 200" width="100%">
-        <polyline fill="none" stroke="#0a6af0" stroke-width="3" points="40,150 110,120 180,135 250,160 320,138 390,108 460,95 530,115"/>
-        <g fill="#0a6af0">
-          <circle cx="40" cy="150" r="4"/><circle cx="110" cy="120" r="4"/><circle cx="180" cy="135" r="4"/>
-          <circle cx="250" cy="160" r="4"/><circle cx="320" cy="138" r="4"/><circle cx="390" cy="108" r="4"/>
-          <circle cx="460" cy="95" r="4"/><circle cx="530" cy="115" r="4"/>
-        </g>
-        <text x="40" y="180" font-size="10">Jan</text>
-        <text x="110" y="180" font-size="10">Feb</text>
-        <text x="180" y="180" font-size="10">Mar</text>
-        <text x="250" y="180" font-size="10">Apr</text>
-        <text x="320" y="180" font-size="10">May</text>
-        <text x="390" y="180" font-size="10">Jun</text>
-        <text x="460" y="180" font-size="10">Jul</text>
-        <text x="530" y="180" font-size="10">Aug</text>
+    </div>
+    <div class="stats-row">
+      <div>
+        <div class="label">Current Coverage</div>
+        <div class="value">92%</div>
+      </div>
+      <div>
+        <div class="label">Trailing 4Q</div>
+        <div class="value">+1.8%</div>
+      </div>
+    </div>
+    <div class="chart-card">
+      <header>
+        <span>Recovery Trend</span>
+        <span>vs Budget</span>
+      </header>
+      <svg viewBox="0 0 520 200" width="100%">
+        <polyline fill="none" stroke="#0b2a66" stroke-width="3" points="40,150 110,140 180,136 250,150 320,142 390,130 460,128 530,135"/>
+        <polyline fill="none" stroke="#4f63ff" stroke-width="3" points="40,160 110,150 180,150 250,166 320,156 390,148 460,145 530,150"/>
       </svg>
-    </section>
-
-    <section class="panel">
-      <div class="panel-header">
-        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
-          <path d="M3 12h18"/><path d="M3 6h18"/><path d="M3 18h18"/>
-        </svg>
-        Production + Risk Metrics
-      </div>
-      <div class="stats-row">
-        <div class="chart-card">
-          <header>
-            <span>Days on Hand</span>
-            <span>90d</span>
-          </header>
-          <svg viewBox="0 0 260 120">
-            <polyline fill="none" stroke="#0a6af0" stroke-width="3" points="10,90 50,80 90,85 130,75 170,70 210,60 250,65"/>
-            <g fill="#0a6af0"><circle cx="10" cy="90" r="3"/><circle cx="50" cy="80" r="3"/><circle cx="90" cy="85" r="3"/><circle cx="130" cy="75" r="3"/></g>
-          </svg>
-        </div>
-        <div class="chart-card">
-          <header>
-            <span>Risk</span>
-            <span class="small">Utilization vs Limit</span>
-          </header>
-          <svg viewBox="0 0 260 120">
-            <rect x="40" y="20" width="40" height="80" fill="#e5e7eb"/>
-            <rect x="40" y="50" width="40" height="50" fill="#0a6af0"/>
-            <rect x="140" y="20" width="40" height="80" fill="#e5e7eb"/>
-            <rect x="140" y="40" width="40" height="60" fill="#0ea5e9"/>
-          </svg>
-        </div>
-      </div>
-    </section>
+    </div>
   </div>
 </div>

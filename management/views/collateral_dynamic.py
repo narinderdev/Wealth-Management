@@ -15,7 +15,14 @@ def collateral_dynamic_view(request):
         section = "inventory"
 
     inventory_tab = request.GET.get("inventory_tab", "summary")
-    allowed_inventory_tabs = {"summary", "finished_goods"}
+    allowed_inventory_tabs = {
+        "summary",
+        "finished_goods",
+        "raw_materials",
+        "work_in_progress",
+        "liquidation_model",
+        "other_collateral",
+    }
     if inventory_tab not in allowed_inventory_tabs:
         inventory_tab = "summary"
 

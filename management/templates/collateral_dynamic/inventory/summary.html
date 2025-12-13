@@ -1,852 +1,264 @@
-<!doctype html>
-<html lang="en">
-<head>
-  <meta charset="UTF-8" />
-  <meta name="viewport" content="width=device-width,initial-scale=1" />
-  <title>Collateral Oversight & Risk Analytics - CORA</title>
-  <style>
-    :root{
-      --bg:#f5f7fb;
-      --card:#ffffff;
-      --text:#1f2a37;
-      --muted:#6b7280;
-      --line:#e6ecf5;
-      --navy:#0b2a66;      /* Finished Goods */
-      --mid:#4f63ff;       /* Raw Materials  */
-      --bright:#0b66ff;    /* Work-in-Progress */
-      --header:#1f4f90;
-      --pill:#2a6fd4;
-      --shadow:0 1px 0 rgba(16,24,40,.02), 0 1px 6px rgba(16,24,40,.05);
-      --radius:10px;
-    }
-    *{box-sizing:border-box}
-    body{
-      margin:0;
-      background:var(--bg);
-      color:var(--text);
-      font-family:Inter, ui-sans-serif, system-ui, -apple-system, Segoe UI, Roboto, Helvetica, Arial, "Apple Color Emoji","Segoe UI Emoji";
-    }
-
-    /* Layout */
-    .app{display:flex; min-height:100vh;}
-    .rail{
-      width:54px;
-      background:#fff;
-      border-right:1px solid var(--line);
-      display:flex;
-      flex-direction:column;
-      align-items:center;
-      padding:10px 0;
-      gap:10px;
-    }
-    .hamburger{
-      width:18px;height:12px; position:relative; margin:2px 0 6px 0;
-    }
-    .hamburger:before,.hamburger:after,.hamburger i{
-      content:""; position:absolute; left:0; right:0; height:2px; background:#9aa7b8; border-radius:2px;
-    }
-    .hamburger:before{top:0}
-    .hamburger i{top:5px}
-    .hamburger:after{bottom:0}
-    .rail .ico{
-      width:30px;height:30px;border-radius:8px;
-      display:grid; place-items:center;
-      color:#94a3b8;
-      border:1px solid transparent;
-    }
-    .rail .ico.active{
-      color:#2a6fd4;
-      border-color:#d8e6fb;
-      background:#f2f7ff;
-    }
-    .rail svg{width:16px;height:16px}
-
-    .main{flex:1; display:flex; flex-direction:column;}
-
-    /* Top blue header */
-    .topbar{
-      height:44px;
-      background:var(--header);
-      color:#fff;
-      display:flex;
-      align-items:center;
-      justify-content:space-between;
-      padding:0 18px 0 12px;
-      box-shadow:0 1px 0 rgba(0,0,0,.06);
-    }
-    .topbar .title{
-      display:flex; align-items:center; gap:10px;
-      font-weight:600; font-size:13px; letter-spacing:.1px;
-    }
-    .topbar .brand{font-weight:800; letter-spacing:.8px}
-
-    /* Header area under topbar */
-    .head{
-      padding:10px 18px 0 18px;
-    }
-    .profileRow{
-      display:flex;
-      align-items:center;
-      justify-content:flex-start;
-      gap:14px;
-      margin-bottom:8px;
-    }
-    .avatar{
-      width:24px;height:24px;border-radius:999px;
-      background:#123a7c; color:#fff;
-      display:grid; place-items:center;
-      font-weight:700; font-size:10px;
-    }
-    .who{line-height:1.1}
-    .who .name{font-size:10.5px; font-weight:600; color:#111827}
-    .who .sub{font-size:9.5px; color:var(--muted); display:flex; gap:6px; align-items:center}
-    .caret{display:inline-block; width:0;height:0;border-left:4px solid transparent;border-right:4px solid transparent;border-top:5px solid #94a3b8; transform:translateY(1px)}
-
-    .tabs{
-      display:flex;
-      gap:6px;
-      background:#eef4ff;
-      padding:5px;
-      border-radius:8px;
-      width:max-content;
-    }
-    .tab{
-      font-size:10px;
-      padding:4px 8px;
-      border-radius:7px;
-      color:#6b7a90;
-      user-select:none;
-    }
-    .tab.active{
-      background:var(--pill);
-      color:#fff;
-      box-shadow:0 1px 0 rgba(0,0,0,.08);
-    }
-
-    /* Content grid: left nav + page */
-    .content{
-      display:grid;
-      grid-template-columns:200px 1fr;
-      gap:14px;
-      padding:10px 18px 18px 18px;
-    }
-
-    /* Left section nav */
-    .sidenav{
-      background:#fff;
-      border:1px solid var(--line);
-      border-radius:12px;
-      padding:10px 10px;
-      box-shadow:var(--shadow);
-      height:max-content;
-    }
-    .navItem{
-      display:flex; align-items:center; gap:10px;
-      padding:8px 10px;
-      border-radius:10px;
-      font-size:10px;
-      color:#4b5563;
-    }
-    .navItem .mini{width:14px;height:14px; color:#93a3b8}
-    .navItem.section{font-weight:700; color:#334155; margin-top:2px}
-    .navItem.indent{padding-left:30px}
-    .navItem.active{
-      background:var(--navy);
-      color:#fff;
-    }
-    .navItem.active .mini{color:#dbeafe}
-
-    /* Cards */
-    .card{
-      background:var(--card);
-      border:1px solid var(--line);
-      border-radius:12px;
-      box-shadow:var(--shadow);
-    }
-    .cardPad{padding:12px}
-    .cardHeader{
-      display:flex;
-      align-items:center;
-      justify-content:space-between;
-      gap:10px;
-      padding:12px 12px 8px 12px;
-    }
-    .hleft{
-      display:flex; align-items:center; gap:8px;
-      font-weight:700; font-size:11px;
-    }
-    .spark{
-      width:14px;height:14px;
-      color:#2a6fd4;
-    }
-    .muted{color:var(--muted)}
-    .snapshotText{
-      padding:0 12px 12px 34px;
-      font-size:10px;
-      color:#6b7280;
-      line-height:1.35;
-      max-width:780px;
-    }
-
-    /* Two-up row */
-    .grid2{
-      display:grid;
-      grid-template-columns:240px 1fr;
-      gap:12px;
-      margin-top:10px;
-    }
-
-    /* Donut card */
-    .smallTitle{
-      font-size:9px; color:#111827; font-weight:600;
-      padding:10px 12px 0 12px;
-    }
-    .donutWrap{
-      padding:8px 12px 12px 12px;
-      display:flex;
-      flex-direction:column;
-      gap:10px;
-      align-items:center;
-    }
-    .donutCenter{
-      position:absolute;
-      inset:0;
-      display:grid;
-      place-items:center;
-      font-weight:800;
-      font-size:15px;
-      color:#111827;
-    }
-    .donutBox{
-      position:relative;
-      width:130px;height:130px;
-      display:grid; place-items:center;
-    }
-    .bars{width:100%; display:flex; flex-direction:column; gap:8px; margin-top:2px}
-    .barRow{
-      display:flex; flex-direction:column; gap:4px;
-      font-size:9px;
-    }
-    .barLine{
-      height:16px;
-      border-radius:4px;
-      display:flex;
-      align-items:center;
-      padding:0 8px;
-      color:#fff;
-      font-weight:700;
-      letter-spacing:.1px;
-    }
-    .barLine.navy{background:var(--navy)}
-    .barLine.mid{background:var(--mid)}
-    .barLine.bright{background:var(--bright)}
-    .barLine span{display:flex; gap:6px; align-items:center}
-    .dot{width:7px;height:7px;border-radius:2px; display:inline-block; background:rgba(255,255,255,.9)}
-    .barLabel{color:#8aa1c4; font-weight:700; font-size:9px}
-
-    /* Chart cards */
-    .legend{
-      display:flex; gap:12px; align-items:center; font-size:9px; color:#6b7280;
-    }
-    .legItem{display:flex; gap:6px; align-items:center}
-    .sw{width:10px;height:10px;border-radius:2px}
-    .sw.navy{background:var(--navy)}
-    .sw.mid{background:var(--mid)}
-    .sw.bright{background:var(--bright)}
-    .chartPad{padding:0 12px 12px 12px}
-    .svgBox{width:100%; border-radius:10px; background:#fff}
-    .axisText{font-size:8px; fill:#9aa7b8}
-    .gridLine{stroke:#eef2f7; stroke-width:1}
-    .frameLine{stroke:#e6ecf5; stroke-width:1}
-    .tickLine{stroke:#eef2f7; stroke-width:1}
-
-    /* Table card */
-    .tableWrap{padding:10px 12px 12px 12px}
-    table{
-      width:100%;
-      border-collapse:collapse;
-      font-size:9px;
-      color:#374151;
-    }
-    thead th{
-      font-weight:700;
-      color:#6b7280;
-      padding:8px 6px;
-      border-bottom:1px solid var(--line);
-      text-align:center;
-    }
-    thead tr:first-child th{
-      padding-top:6px;
-      color:#7b8aa0;
-      font-weight:700;
-    }
-    tbody td{
-      padding:8px 6px;
-      border-bottom:1px solid #f0f4fa;
-      text-align:center;
-      color:#344256;
-    }
-    tbody td:first-child{
-      text-align:left;
-      font-weight:600;
-      color:#4b5563;
-    }
-    .tblGroup{
-      background:#fbfcfe;
-      border-top:1px solid #f0f4fa;
-      border-bottom:1px solid #f0f4fa;
-    }
-
-    /* Bottom line chart spacing */
-    .mt12{margin-top:12px}
-
-    /* Make it look close to screenshot width */
-    .page{max-width:1080px}
-
-    @media (max-width: 980px){
-      .content{grid-template-columns:1fr}
-      .grid2{grid-template-columns:1fr}
-      .sidenav{order:2}
-    }
-  </style>
-</head>
-
-<body>
-  <div class="app">
-
-    <!-- Left icon rail -->
-    <aside class="rail">
-      <div class="hamburger"><i></i></div>
-
-      <div class="ico active" title="Shield">
-        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
-          <path d="M12 2l8 4v6c0 6-4 10-8 10S4 18 4 12V6l8-4z"/>
+<div class="page-content">
+  <div class="card">
+    <div class="cardHeader">
+      <div class="hleft">
+        <svg class="spark" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+          <path d="M4 14l6-6 4 4 6-6"/>
+          <path d="M20 8v6h-6"/>
         </svg>
+        Snapshot Summary
       </div>
+    </div>
+    <div class="snapshotText">
+      Inventory levels increased this period, primarily in finished goods, while turns softened due to slower sales velocity.
+      Excess and obsolete inventory ticked up, raising the risk profile and influencing NOLV recovery expectations.
+      Raw materials and WIP remained steady with no significant swings.
+    </div>
+  </div>
 
-      <div class="ico" title="Home">
-        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
-          <path d="M3 10l9-7 9 7v10a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V10z"/>
-          <path d="M9 22V12h6v10"/>
-        </svg>
-      </div>
-
-      <div class="ico" title="Chart">
-        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
-          <path d="M4 19V5"/>
-          <path d="M4 19h16"/>
-          <path d="M8 15v-6"/>
-          <path d="M12 19v-9"/>
-          <path d="M16 19v-4"/>
-        </svg>
-      </div>
-
-      <div class="ico" title="Settings">
-        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
-          <path d="M12 15.5A3.5 3.5 0 1 0 12 8.5a3.5 3.5 0 0 0 0 7z"/>
-          <path d="M19.4 15a1.8 1.8 0 0 0 .4 2l.1.1a2.1 2.1 0 0 1-1.5 3.6 2.1 2.1 0 0 1-1.5-.6l-.1-.1a1.8 1.8 0 0 0-2-.4 1.8 1.8 0 0 0-1.1 1.7V22a2.1 2.1 0 0 1-4.2 0v-.2a1.8 1.8 0 0 0-1.1-1.7 1.8 1.8 0 0 0-2 .4l-.1.1a2.1 2.1 0 0 1-3-3l.1-.1a1.8 1.8 0 0 0 .4-2 1.8 1.8 0 0 0-1.7-1.1H2a2.1 2.1 0 0 1 0-4.2h.2a1.8 1.8 0 0 0 1.7-1.1 1.8 1.8 0 0 0-.4-2l-.1-.1a2.1 2.1 0 1 1 3-3l.1.1a1.8 1.8 0 0 0 2 .4 1.8 1.8 0 0 0 1.1-1.7V2a2.1 2.1 0 0 1 4.2 0v.2a1.8 1.8 0 0 0 1.1 1.7 1.8 1.8 0 0 0 2-.4l.1-.1a2.1 2.1 0 0 1 3 3l-.1.1a1.8 1.8 0 0 0-.4 2 1.8 1.8 0 0 0 1.7 1.1H22a2.1 2.1 0 0 1 0 4.2h-.2a1.8 1.8 0 0 0-1.7 1.1z"/>
-        </svg>
-      </div>
-    </aside>
-
-    <div class="main">
-
-      <!-- Blue header -->
-      <header class="topbar">
-        <div class="title">
-          <span style="opacity:.95">Collateral Oversight &amp; Risk Analytics</span>
+  <div class="grid2">
+    <div class="card">
+      <div class="smallTitle">Available Inventory Mix Trend</div>
+      <div class="donutWrap">
+        <div class="donutBox">
+          <svg width="130" height="130" viewBox="0 0 130 130" aria-hidden="true">
+            <circle cx="65" cy="65" r="45" fill="none" stroke="#e9eef6" stroke-width="14"/>
+            <circle cx="65" cy="65" r="45" fill="none" stroke="#0b2a66" stroke-width="14"
+                    stroke-linecap="butt" stroke-dasharray="107 176" transform="rotate(-90 65 65)"/>
+            <circle cx="65" cy="65" r="45" fill="none" stroke="#4f63ff" stroke-width="14"
+                    stroke-linecap="butt" stroke-dasharray="113 176" transform="rotate(128 65 65)"/>
+            <circle cx="65" cy="65" r="45" fill="none" stroke="#0b66ff" stroke-width="14"
+                    stroke-linecap="butt" stroke-dasharray="56 176" transform="rotate(272 65 65)"/>
+          </svg>
+          <div class="donutCenter">8.6M</div>
         </div>
-        <div class="brand">CORA</div>
-      </header>
-
-      <!-- Under-header profile + tabs -->
-      <div class="head page">
-        <div class="profileRow">
-          <div class="avatar">MT</div>
-          <div class="who">
-            <div class="name">Monica Thomson</div>
-            <div class="sub">
-              <span>Contact</span>
-              <span>-</span>
-              <span>Unified Client Profile</span>
-              <span class="caret"></span>
-            </div>
+        <div class="bars">
+          <div class="barRow">
+            <div class="barLine navy"><span><i class="dot"></i>38%</span><span>Finish Goods</span></div>
+          </div>
+          <div class="barRow">
+            <div class="barLine mid"><span><i class="dot"></i>40%</span><span>Raw Materials</span></div>
+          </div>
+          <div class="barRow">
+            <div class="barLine bright"><span><i class="dot"></i>20%</span><span>Work-in-Progress</span></div>
           </div>
         </div>
-
-        <div class="tabs" aria-label="Top tabs">
-          <div class="tab">Summary</div>
-          <div class="tab active">Collateral Dynamic</div>
-          <div class="tab">Forecast</div>
-          <div class="tab">Risk</div>
-          <div class="tab">Reports</div>
-          <div class="tab">Limits</div>
+      </div>
+    </div>
+    <div class="card">
+      <div class="cardHeader">
+        <div class="hleft">
+          <svg class="spark" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+            <path d="M4 14l6-6 4 4 6-6"/>
+            <path d="M20 8v6h-6"/>
+          </svg>
+          Available Inventory Mix Trend
+        </div>
+        <div class="legend">
+          <div class="legItem"><span class="sw navy"></span>Finish Goods</div>
+          <div class="legItem"><span class="sw mid"></span>Raw Materials</div>
+          <div class="legItem"><span class="sw bright"></span>Work-in-Progress</div>
         </div>
       </div>
-
-      <!-- Main content -->
-      <div class="content page">
-
-        <!-- Left nav -->
-        <aside class="sidenav">
-          <div class="navItem">
-            <svg class="mini" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
-              <path d="M3 11l9-7 9 7v10a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V11z"/>
-            </svg>
-            Overview
-          </div>
-          <div class="navItem">
-            <svg class="mini" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
-              <rect x="3" y="4" width="18" height="14" rx="2"/>
-              <path d="M7 8h10M7 12h6"/>
-            </svg>
-            Accounts Receivable
-          </div>
-
-          <div class="navItem section">
-            <svg class="mini" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
-              <path d="M4 6h16M4 12h16M4 18h16"/>
-            </svg>
-            Inventory
-          </div>
-
-          <div class="navItem indent active">
-            <svg class="mini" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
-              <path d="M4 4h16v16H4z"/>
-              <path d="M7 8h10M7 12h10M7 16h6"/>
-            </svg>
-            Summary
-          </div>
-          <div class="navItem indent">
-            <svg class="mini" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
-              <path d="M4 6h16v12H4z"/>
-              <path d="M7 10h10M7 14h6"/>
-            </svg>
-            Finished Goods
-          </div>
-          <div class="navItem indent">
-            <svg class="mini" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
-              <path d="M7 7h10v10H7z"/>
-              <path d="M5 5h14v14H5z"/>
-            </svg>
-            Raw Materials
-          </div>
-          <div class="navItem indent">
-            <svg class="mini" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
-              <path d="M4 7h16M6 11h12M8 15h8M10 19h4"/>
-            </svg>
-            Work - In - Progress
-          </div>
-
-          <div class="navItem">
-            <svg class="mini" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
-              <path d="M12 2v20"/>
-              <path d="M5 9h14"/>
-              <path d="M7 5h10"/>
-              <path d="M7 19h10"/>
-            </svg>
-            Liquidation Model
-          </div>
-          <div class="navItem">
-            <svg class="mini" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
-              <path d="M4 6h16v14H4z"/>
-              <path d="M8 6V4h8v2"/>
-            </svg>
-            Other Collateral
-          </div>
-        </aside>
-
-        <!-- Right page -->
-        <section>
-
-          <!-- Snapshot Summary -->
-          <div class="card">
-            <div class="cardHeader">
-              <div class="hleft">
-                <svg class="spark" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
-                  <path d="M4 14l6-6 4 4 6-6"/>
-                  <path d="M20 8v6h-6"/>
-                </svg>
-                Snapshot Summary
-              </div>
-            </div>
-            <div class="snapshotText">
-              Inventory levels increased this period, primarily in finished goods, while turns softened due to slower sales velocity.
-              Excess and obsolete inventory ticked up, raising the risk profile and influencing NOLV recovery expectations.
-              Raw materials and WIP remained steady with no significant swings
-            </div>
-          </div>
-
-          <!-- Row: donut + bar chart -->
-          <div class="grid2">
-
-            <!-- Donut -->
-            <div class="card">
-              <div class="smallTitle">Available Inventory Mix Trend</div>
-              <div class="donutWrap">
-                <div class="donutBox">
-                  <svg width="130" height="130" viewBox="0 0 130 130" aria-label="Donut">
-                    <!-- background ring -->
-                    <circle cx="65" cy="65" r="45" fill="none" stroke="#e9eef6" stroke-width="14"/>
-                    <!-- segments (total ~98% to leave tiny gap like screenshot) -->
-                    <!-- finished goods 38% -->
-                    <circle cx="65" cy="65" r="45" fill="none" stroke="var(--navy)" stroke-width="14"
-                            stroke-linecap="butt"
-                            stroke-dasharray="107 176"
-                            transform="rotate(-90 65 65)"/>
-                    <!-- raw materials 40% -->
-                    <circle cx="65" cy="65" r="45" fill="none" stroke="var(--mid)" stroke-width="14"
-                            stroke-linecap="butt"
-                            stroke-dasharray="113 176"
-                            transform="rotate(128 65 65)"/>
-                    <!-- wip 20% -->
-                    <circle cx="65" cy="65" r="45" fill="none" stroke="#9bd3ff" stroke-width="14"
-                            stroke-linecap="butt"
-                            stroke-dasharray="56 176"
-                            transform="rotate(272 65 65)"/>
-                  </svg>
-                  <div class="donutCenter">8.6M</div>
-                </div>
-
-                <div class="bars">
-                  <div class="barRow">
-                    <div class="barLine navy"><span><i class="dot"></i>38%</span>&nbsp;&nbsp;<span style="font-weight:700;opacity:.95">Finish Goods</span></div>
-                  </div>
-                  <div class="barRow">
-                    <div class="barLine mid"><span><i class="dot"></i>40%</span>&nbsp;&nbsp;<span style="font-weight:700;opacity:.95">Raw Materials</span></div>
-                  </div>
-                  <div class="barRow">
-                    <div class="barLine bright"><span><i class="dot"></i>20%</span>&nbsp;&nbsp;<span style="font-weight:700;opacity:.95">Work-in-Progress</span></div>
-                  </div>
-                </div>
-              </div>
-            </div>
-
-            <!-- Available Inventory Mix Trend -->
-            <div class="card">
-              <div class="cardHeader">
-                <div class="hleft">
-                  <svg class="spark" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
-                    <path d="M4 14l6-6 4 4 6-6"/>
-                    <path d="M20 8v6h-6"/>
-                  </svg>
-                  Available Inventory Mix Trend
-                </div>
-                <div class="legend">
-                  <div class="legItem"><span class="sw navy"></span>Finish Goods</div>
-                  <div class="legItem"><span class="sw mid"></span>Raw Materials</div>
-                  <div class="legItem"><span class="sw bright"></span>Work-in-Progress</div>
-                </div>
-              </div>
-
-              <div class="chartPad">
-                <!-- Static SVG bars to match screenshot -->
-                <svg class="svgBox" viewBox="0 0 760 210" width="100%" height="210" role="img" aria-label="Available Inventory Mix Trend Chart">
-                  <!-- plot area -->
-                  <rect x="48" y="18" width="690" height="150" fill="#fff" stroke="none"/>
-                  <!-- y grid -->
-                  <g>
-                    <line class="gridLine" x1="48" y1="168" x2="738" y2="168"/>
-                    <line class="gridLine" x1="48" y1="131" x2="738" y2="131"/>
-                    <line class="gridLine" x1="48" y1="94"  x2="738" y2="94"/>
-                    <line class="gridLine" x1="48" y1="57"  x2="738" y2="57"/>
-                    <line class="gridLine" x1="48" y1="20"  x2="738" y2="20"/>
-                  </g>
-
-                  <!-- y axis labels -->
-                  <g class="axisText">
-                    <text x="26" y="171">0%</text>
-                    <text x="22" y="134">25%</text>
-                    <text x="22" y="97">50%</text>
-                    <text x="22" y="60">75%</text>
-                    <text x="20" y="23">100%</text>
-                  </g>
-
-                  <!-- stacked bars (12 months) -->
-                  <!-- each group width 36, bar width 10 -->
-                  <g>
-                    <!-- helper: y0=168 (0%), yTop=20 (100%), height=148 -->
-                    <!-- month 1 -->
-                    <rect x="80" y="70" width="10" height="98" fill="var(--navy)"/>
-                    <rect x="80" y="44" width="10" height="26" fill="var(--mid)"/>
-                    <rect x="80" y="28" width="10" height="16" fill="var(--bright)"/>
-                    <!-- 2 -->
-                    <rect x="135" y="76" width="10" height="92" fill="var(--navy)"/>
-                    <rect x="135" y="48" width="10" height="28" fill="var(--mid)"/>
-                    <rect x="135" y="30" width="10" height="18" fill="var(--bright)"/>
-                    <!-- 3 -->
-                    <rect x="190" y="74" width="10" height="94" fill="var(--navy)"/>
-                    <rect x="190" y="46" width="10" height="28" fill="var(--mid)"/>
-                    <rect x="190" y="30" width="10" height="16" fill="var(--bright)"/>
-                    <!-- 4 -->
-                    <rect x="245" y="78" width="10" height="90" fill="var(--navy)"/>
-                    <rect x="245" y="50" width="10" height="28" fill="var(--mid)"/>
-                    <rect x="245" y="32" width="10" height="18" fill="var(--bright)"/>
-                    <!-- 5 -->
-                    <rect x="300" y="80" width="10" height="88" fill="var(--navy)"/>
-                    <rect x="300" y="52" width="10" height="28" fill="var(--mid)"/>
-                    <rect x="300" y="34" width="10" height="18" fill="var(--bright)"/>
-                    <!-- 6 -->
-                    <rect x="355" y="82" width="10" height="86" fill="var(--navy)"/>
-                    <rect x="355" y="54" width="10" height="28" fill="var(--mid)"/>
-                    <rect x="355" y="36" width="10" height="18" fill="var(--bright)"/>
-                    <!-- 7 -->
-                    <rect x="410" y="79" width="10" height="89" fill="var(--navy)"/>
-                    <rect x="410" y="52" width="10" height="27" fill="var(--mid)"/>
-                    <rect x="410" y="34" width="10" height="18" fill="var(--bright)"/>
-                    <!-- 8 -->
-                    <rect x="465" y="83" width="10" height="85" fill="var(--navy)"/>
-                    <rect x="465" y="56" width="10" height="27" fill="var(--mid)"/>
-                    <rect x="465" y="38" width="10" height="18" fill="var(--bright)"/>
-                    <!-- 9 -->
-                    <rect x="520" y="81" width="10" height="87" fill="var(--navy)"/>
-                    <rect x="520" y="54" width="10" height="27" fill="var(--mid)"/>
-                    <rect x="520" y="36" width="10" height="18" fill="var(--bright)"/>
-                    <!-- 10 -->
-                    <rect x="575" y="79" width="10" height="89" fill="var(--navy)"/>
-                    <rect x="575" y="52" width="10" height="27" fill="var(--mid)"/>
-                    <rect x="575" y="34" width="10" height="18" fill="var(--bright)"/>
-                    <!-- 11 -->
-                    <rect x="630" y="80" width="10" height="88" fill="var(--navy)"/>
-                    <rect x="630" y="53" width="10" height="27" fill="var(--mid)"/>
-                    <rect x="630" y="35" width="10" height="18" fill="var(--bright)"/>
-                    <!-- 12 -->
-                    <rect x="685" y="78" width="10" height="90" fill="var(--navy)"/>
-                    <rect x="685" y="51" width="10" height="27" fill="var(--mid)"/>
-                    <rect x="685" y="33" width="10" height="18" fill="var(--bright)"/>
-                  </g>
-
-                  <!-- x labels -->
-                  <g class="axisText">
-                    <text x="62"  y="198">May 2019</text>
-                    <text x="116" y="198">Jun 2019</text>
-                    <text x="171" y="198">Jul 2019</text>
-                    <text x="222" y="198">Aug 2019</text>
-                    <text x="277" y="198">Sep 2019</text>
-                    <text x="332" y="198">Oct 2019</text>
-                    <text x="387" y="198">Nov 2019</text>
-                    <text x="442" y="198">Dec 2019</text>
-                    <text x="497" y="198">Jan 2020</text>
-                    <text x="552" y="198">Feb 2020</text>
-                    <text x="607" y="198">Mar 2020</text>
-                    <text x="662" y="198">Apr 2020</text>
-                  </g>
-
-                  <!-- border frame -->
-                  <rect x="48" y="18" width="690" height="150" fill="none" class="frameLine"/>
-                </svg>
-              </div>
-            </div>
-          </div>
-
-          <!-- Inventory Recovery Overview -->
-          <div class="card mt12">
-            <div class="cardHeader">
-              <div class="hleft">
-                <svg class="spark" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
-                  <path d="M4 14l6-6 4 4 6-6"/>
-                  <path d="M20 8v6h-6"/>
-                </svg>
-                Inventory Recovery Overview
-              </div>
-            </div>
-
-            <div class="tableWrap">
-              <table>
-                <thead>
-                  <tr class="tblGroup">
-                    <th></th>
-                    <th colspan="1">Available Inventory</th>
-                    <th colspan="2">Gross Recovery</th>
-                    <th colspan="2">Liquidation Cost</th>
-                    <th colspan="2">Net Recovery Trend</th>
-                  </tr>
-                  <tr>
-                    <th></th>
-                    <th>$</th>
-                    <th>$</th>
-                    <th>% of Cost</th>
-                    <th>$</th>
-                    <th>% of Cost</th>
-                    <th>$</th>
-                    <th>% of Cost</th>
-                  </tr>
-                </thead>
-                <tbody>
-                  <tr>
-                    <td>Finished Goods</td>
-                    <td>$5,000</td>
-                    <td>$4,075</td>
-                    <td>81.5%</td>
-                    <td>($1,050)</td>
-                    <td>-21.0%</td>
-                    <td>$3,025</td>
-                    <td>60.5%</td>
-                  </tr>
-                  <tr>
-                    <td>Raw Materials</td>
-                    <td>$2,500</td>
-                    <td>$4,075</td>
-                    <td>81.5%</td>
-                    <td>($1,050)</td>
-                    <td>-21.0%</td>
-                    <td>$3,025</td>
-                    <td>60.5%</td>
-                  </tr>
-                  <tr>
-                    <td>Work-in-Process</td>
-                    <td>$1,000</td>
-                    <td>$4,075</td>
-                    <td>81.5%</td>
-                    <td>($1,050)</td>
-                    <td>-21.0%</td>
-                    <td>$3,025</td>
-                    <td>60.5%</td>
-                  </tr>
-                </tbody>
-              </table>
-            </div>
-          </div>
-
-          <!-- Net Recovery Trend -->
-          <div class="card mt12">
-            <div class="cardHeader">
-              <div class="hleft">
-                <svg class="spark" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
-                  <path d="M4 14l6-6 4 4 6-6"/>
-                  <path d="M20 8v6h-6"/>
-                </svg>
-                Net Recovery Trend
-              </div>
-              <div class="legend">
-                <div class="legItem"><span class="sw navy"></span>Finished Goods</div>
-                <div class="legItem"><span class="sw mid"></span>Raw Material</div>
-                <div class="legItem"><span class="sw bright"></span>Work-In-Process</div>
-              </div>
-            </div>
-
-            <div class="chartPad">
-              <svg class="svgBox" viewBox="0 0 760 250" width="100%" height="250" role="img" aria-label="Net Recovery Trend Line Chart">
-                <!-- plot area -->
-                <rect x="60" y="22" width="670" height="170" fill="#fff"/>
-                <!-- grid lines -->
-                <g>
-                  <line class="gridLine" x1="60" y1="192" x2="730" y2="192"/>
-                  <line class="gridLine" x1="60" y1="158" x2="730" y2="158"/>
-                  <line class="gridLine" x1="60" y1="124" x2="730" y2="124"/>
-                  <line class="gridLine" x1="60" y1="90"  x2="730" y2="90"/>
-                  <line class="gridLine" x1="60" y1="56"  x2="730" y2="56"/>
-                  <line class="gridLine" x1="60" y1="22"  x2="730" y2="22"/>
-                </g>
-
-                <!-- y labels -->
-                <g class="axisText">
-                  <text x="26" y="195">0%</text>
-                  <text x="22" y="161">10%</text>
-                  <text x="22" y="127">30%</text>
-                  <text x="22" y="93">50%</text>
-                  <text x="22" y="59">70%</text>
-                  <text x="22" y="25">100%</text>
-                </g>
-
-                <!-- Y axis title -->
-                <g class="axisText">
-                  <text x="12" y="120" transform="rotate(-90 12 120)" style="font-size:9px; fill:#9aa7b8;">NOLV %</text>
-                </g>
-
-                <!-- lines (approx to screenshot) -->
-                <!-- Finished Goods (navy) -->
-                <polyline fill="none" stroke="var(--navy)" stroke-width="2"
-                  points="
-                    80,120
-                    140,92
-                    200,88
-                    260,100
-                    320,130
-                    380,160
-                    440,118
-                    500,104
-                    560,102
-                    620,110
-                    680,118
-                  "/>
-                <!-- Raw Material (mid) -->
-                <polyline fill="none" stroke="var(--mid)" stroke-width="2"
-                  points="
-                    80,140
-                    140,120
-                    200,112
-                    260,126
-                    320,156
-                    380,178
-                    440,150
-                    500,142
-                    560,142
-                    620,146
-                    680,152
-                  "/>
-                <!-- Work-In-Process (bright) -->
-                <polyline fill="none" stroke="var(--bright)" stroke-width="2"
-                  points="
-                    80,104
-                    140,90
-                    200,96
-                    260,98
-                    320,122
-                    380,140
-                    440,92
-                    500,70
-                    560,58
-                    620,78
-                    680,92
-                  "/>
-
-                <!-- points -->
-                <g>
-                  <!-- FG -->
-                  <circle cx="80" cy="120" r="2.8" fill="var(--navy)"/>
-                  <circle cx="200" cy="88" r="2.8" fill="var(--navy)"/>
-                  <circle cx="380" cy="160" r="2.8" fill="var(--navy)"/>
-                  <circle cx="560" cy="102" r="2.8" fill="var(--navy)"/>
-                  <circle cx="680" cy="118" r="2.8" fill="var(--navy)"/>
-                  <!-- RM -->
-                  <circle cx="80" cy="140" r="2.8" fill="var(--mid)"/>
-                  <circle cx="200" cy="112" r="2.8" fill="var(--mid)"/>
-                  <circle cx="380" cy="178" r="2.8" fill="var(--mid)"/>
-                  <circle cx="560" cy="142" r="2.8" fill="var(--mid)"/>
-                  <circle cx="680" cy="152" r="2.8" fill="var(--mid)"/>
-                  <!-- WIP -->
-                  <circle cx="80" cy="104" r="2.8" fill="var(--bright)"/>
-                  <circle cx="200" cy="96" r="2.8" fill="var(--bright)"/>
-                  <circle cx="380" cy="140" r="2.8" fill="var(--bright)"/>
-                  <circle cx="560" cy="58" r="2.8" fill="var(--bright)"/>
-                  <circle cx="680" cy="92" r="2.8" fill="var(--bright)"/>
-                </g>
-
-                <!-- x labels -->
-                <g class="axisText">
-                  <text x="70"  y="230">May 2019</text>
-                  <text x="126" y="230">Jun 2019</text>
-                  <text x="184" y="230">Jul 2019</text>
-                  <text x="238" y="230">August 2019</text>
-                  <text x="304" y="230">Sep 2019</text>
-                  <text x="360" y="230">Aug 2019</text>
-                  <text x="420" y="230">Sep 2019</text>
-                  <text x="478" y="230">Oct 2019</text>
-                  <text x="536" y="230">Nov 2019</text>
-                  <text x="594" y="230">Dec 2019</text>
-                  <text x="650" y="230">Jan 2020</text>
-                </g>
-
-                <!-- border -->
-                <rect x="60" y="22" width="670" height="170" fill="none" class="frameLine"/>
-              </svg>
-            </div>
-          </div>
-
-        </section>
+      <div class="chartPad">
+        <svg class="svgBox" viewBox="0 0 760 210" width="100%" height="210" role="presentation">
+          <rect x="48" y="18" width="690" height="150" fill="#fff"/>
+          <g>
+            <line class="gridLine" x1="48" y1="168" x2="738" y2="168"/>
+            <line class="gridLine" x1="48" y1="131" x2="738" y2="131"/>
+            <line class="gridLine" x1="48" y1="94" x2="738" y2="94"/>
+            <line class="gridLine" x1="48" y1="57" x2="738" y2="57"/>
+            <line class="gridLine" x1="48" y1="20" x2="738" y2="20"/>
+          </g>
+          <g class="axisText">
+            <text x="26" y="171">0%</text>
+            <text x="22" y="134">25%</text>
+            <text x="22" y="97">50%</text>
+            <text x="22" y="60">75%</text>
+            <text x="20" y="23">100%</text>
+          </g>
+          <g>
+            <rect x="80" y="70" width="10" height="98" fill="#0b2a66"/>
+            <rect x="80" y="44" width="10" height="26" fill="#4f63ff"/>
+            <rect x="80" y="28" width="10" height="16" fill="#0b66ff"/>
+            <rect x="135" y="76" width="10" height="92" fill="#0b2a66"/>
+            <rect x="135" y="48" width="10" height="28" fill="#4f63ff"/>
+            <rect x="135" y="30" width="10" height="18" fill="#0b66ff"/>
+            <rect x="190" y="74" width="10" height="94" fill="#0b2a66"/>
+            <rect x="190" y="46" width="10" height="28" fill="#4f63ff"/>
+            <rect x="190" y="30" width="10" height="16" fill="#0b66ff"/>
+            <rect x="245" y="78" width="10" height="90" fill="#0b2a66"/>
+            <rect x="245" y="50" width="10" height="28" fill="#4f63ff"/>
+            <rect x="245" y="32" width="10" height="18" fill="#0b66ff"/>
+            <rect x="300" y="80" width="10" height="88" fill="#0b2a66"/>
+            <rect x="300" y="52" width="10" height="28" fill="#4f63ff"/>
+            <rect x="300" y="34" width="10" height="18" fill="#0b66ff"/>
+            <rect x="355" y="82" width="10" height="86" fill="#0b2a66"/>
+            <rect x="355" y="54" width="10" height="28" fill="#4f63ff"/>
+            <rect x="355" y="36" width="10" height="18" fill="#0b66ff"/>
+            <rect x="410" y="79" width="10" height="89" fill="#0b2a66"/>
+            <rect x="410" y="52" width="10" height="27" fill="#4f63ff"/>
+            <rect x="410" y="34" width="10" height="18" fill="#0b66ff"/>
+            <rect x="465" y="83" width="10" height="85" fill="#0b2a66"/>
+            <rect x="465" y="56" width="10" height="27" fill="#4f63ff"/>
+            <rect x="465" y="38" width="10" height="18" fill="#0b66ff"/>
+            <rect x="520" y="81" width="10" height="87" fill="#0b2a66"/>
+            <rect x="520" y="54" width="10" height="27" fill="#4f63ff"/>
+            <rect x="520" y="36" width="10" height="18" fill="#0b66ff"/>
+            <rect x="575" y="79" width="10" height="89" fill="#0b2a66"/>
+            <rect x="575" y="52" width="10" height="27" fill="#4f63ff"/>
+            <rect x="575" y="34" width="10" height="18" fill="#0b66ff"/>
+            <rect x="630" y="80" width="10" height="88" fill="#0b2a66"/>
+            <rect x="630" y="53" width="10" height="27" fill="#4f63ff"/>
+            <rect x="630" y="35" width="10" height="18" fill="#0b66ff"/>
+            <rect x="685" y="78" width="10" height="90" fill="#0b2a66"/>
+            <rect x="685" y="51" width="10" height="27" fill="#4f63ff"/>
+            <rect x="685" y="33" width="10" height="18" fill="#0b66ff"/>
+          </g>
+          <g class="axisText">
+            <text x="62" y="198">May</text>
+            <text x="116" y="198">Jun</text>
+            <text x="171" y="198">Jul</text>
+            <text x="222" y="198">Aug</text>
+            <text x="277" y="198">Sep</text>
+            <text x="332" y="198">Oct</text>
+            <text x="387" y="198">Nov</text>
+            <text x="442" y="198">Dec</text>
+            <text x="497" y="198">Jan</text>
+            <text x="552" y="198">Feb</text>
+            <text x="607" y="198">Mar</text>
+            <text x="662" y="198">Apr</text>
+          </g>
+          <rect x="48" y="18" width="690" height="150" fill="none" class="frameLine"/>
+        </svg>
       </div>
     </div>
   </div>
-</body>
-</html>
+
+  <div class="card mt12">
+    <div class="cardHeader">
+      <div class="hleft">
+        <svg class="spark" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+          <path d="M4 14l6-6 4 4 6-6"/>
+          <path d="M20 8v6h-6"/>
+        </svg>
+        Inventory Recovery Overview
+      </div>
+    </div>
+    <div class="tableWrap">
+      <table>
+        <thead>
+          <tr class="tblGroup">
+            <th></th>
+            <th>Available Inventory</th>
+            <th>Gross Recovery</th>
+            <th>@ COGS</th>
+            <th>Liquidation Cost</th>
+            <th>Net Recovery Trend</th>
+          </tr>
+        </thead>
+        <tbody>
+          <tr>
+            <td>Finished Goods</td>
+            <td>$5,600K</td>
+            <td>$4,197K</td>
+            <td>81.5%</td>
+            <td>($720K)</td>
+            <td>+3.1%</td>
+          </tr>
+          <tr>
+            <td>Raw Materials</td>
+            <td>$2,550K</td>
+            <td>$1,620K</td>
+            <td>63.5%</td>
+            <td>($155K)</td>
+            <td>+1.7%</td>
+          </tr>
+          <tr>
+            <td>Work in Progress</td>
+            <td>$1,050K</td>
+            <td>$420K</td>
+            <td>40.1%</td>
+            <td>($90K)</td>
+            <td>-0.2%</td>
+          </tr>
+        </tbody>
+      </table>
+    </div>
+  </div>
+
+  <div class="card mt12">
+    <div class="cardHeader">
+      <div class="hleft">
+        <svg class="spark" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+          <path d="M4 14l6-6 4 4 6-6"/>
+          <path d="M20 8v6h-6"/>
+        </svg>
+        Net Recovery Trend
+      </div>
+      <div class="legend">
+        <div class="legItem"><span class="sw navy"></span>Finished Goods</div>
+        <div class="legItem"><span class="sw mid"></span>Raw Materials</div>
+        <div class="legItem"><span class="sw bright"></span>Work-In-Progress</div>
+      </div>
+    </div>
+    <div class="chartPad">
+      <svg class="svgBox" viewBox="0 0 760 250" width="100%" height="250" role="presentation">
+        <rect x="60" y="22" width="670" height="170" fill="#fff"/>
+        <g>
+          <line class="gridLine" x1="60" y1="192" x2="730" y2="192"/>
+          <line class="gridLine" x1="60" y1="158" x2="730" y2="158"/>
+          <line class="gridLine" x1="60" y1="124" x2="730" y2="124"/>
+          <line class="gridLine" x1="60" y1="90" x2="730" y2="90"/>
+          <line class="gridLine" x1="60" y1="56" x2="730" y2="56"/>
+          <line class="gridLine" x1="60" y1="22" x2="730" y2="22"/>
+        </g>
+        <g class="axisText">
+          <text x="26" y="195">0%</text>
+          <text x="22" y="161">10%</text>
+          <text x="22" y="127">30%</text>
+          <text x="22" y="93">50%</text>
+          <text x="22" y="59">70%</text>
+          <text x="22" y="25">100%</text>
+        </g>
+        <polyline fill="none" stroke="#0b2a66" stroke-width="2"
+                  points="80,120 140,92 200,88 260,100 320,130 380,160 440,118 500,104 560,102 620,110 680,118"/>
+        <polyline fill="none" stroke="#4f63ff" stroke-width="2"
+                  points="80,140 140,120 200,112 260,126 320,156 380,178 440,150 500,142 560,142 620,146 680,152"/>
+        <polyline fill="none" stroke="#0b66ff" stroke-width="2"
+                  points="80,104 140,90 200,96 260,98 320,122 380,140 440,92 500,70 560,58 620,78 680,92"/>
+        <g>
+          <circle cx="80" cy="120" r="2.8" fill="#0b2a66"/>
+          <circle cx="200" cy="88" r="2.8" fill="#0b2a66"/>
+          <circle cx="380" cy="160" r="2.8" fill="#0b2a66"/>
+          <circle cx="560" cy="102" r="2.8" fill="#0b2a66"/>
+          <circle cx="680" cy="118" r="2.8" fill="#0b2a66"/>
+          <circle cx="80" cy="140" r="2.8" fill="#4f63ff"/>
+          <circle cx="200" cy="112" r="2.8" fill="#4f63ff"/>
+          <circle cx="380" cy="178" r="2.8" fill="#4f63ff"/>
+          <circle cx="560" cy="142" r="2.8" fill="#4f63ff"/>
+          <circle cx="680" cy="152" r="2.8" fill="#4f63ff"/>
+          <circle cx="80" cy="104" r="2.8" fill="#0b66ff"/>
+          <circle cx="200" cy="96" r="2.8" fill="#0b66ff"/>
+          <circle cx="380" cy="140" r="2.8" fill="#0b66ff"/>
+          <circle cx="560" cy="58" r="2.8" fill="#0b66ff"/>
+          <circle cx="680" cy="92" r="2.8" fill="#0b66ff"/>
+        </g>
+        <g class="axisText">
+          <text x="70" y="230">May 2019</text>
+          <text x="126" y="230">Jun 2019</text>
+          <text x="184" y="230">Jul 2019</text>
+          <text x="238" y="230">Aug 2019</text>
+          <text x="304" y="230">Sep 2019</text>
+          <text x="360" y="230">Oct 2019</text>
+          <text x="420" y="230">Nov 2019</text>
+          <text x="478" y="230">Dec 2019</text>
+          <text x="536" y="230">Jan 2020</text>
+          <text x="594" y="230">Feb 2020</text>
+          <text x="650" y="230">Mar 2020</text>
+        </g>
+        <rect x="60" y="22" width="670" height="170" fill="none" class="frameLine"/>
+      </svg>
+    </div>
+  </div>
+</div>
