@@ -148,10 +148,15 @@ body {
     margin-left: 8px;
     cursor: pointer;
     display: inline-flex;
+    position: relative;
 }
 
 .visibility-toggle svg {
-    display: block;
+    display: none;
+}
+.visibility-toggle .eye-open{display:block}
+.visibility-toggle[aria-pressed="true"] .eye-open{display:none}
+.visibility-toggle[aria-pressed="true"] .eye-closed{display:block}
 }
 
 .remember {

@@ -260,97 +260,40 @@
         </div>
       </div>
 
-      <div class="table-card">
-        <div class="section-title collateral-title table-heading">
-          <div class="title-icon">
+      <div class="table-card table-card--collateral2">
+        <div class="cc-head">
+          <div class="cc-head-left">
             <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
-              <path d="M4 4h16v16H4z"/><path d="M4 9h16"/><path d="M9 4v16"/>
+              <path d="M4 18l4-6 4 3 4-8 4 5" />
             </svg>
-          </div>
-          <div>
-            <div class="title-text">Collateral Composition</div>
-            <div class="title-subtitle">Snapshot of eligible vs ineligible collateral by class</div>
+            <span>Collateral Composition (USD)</span>
           </div>
         </div>
-        <div class="collateral-table">
-          <table>
+
+        <div class="cc-wrap">
+          <table class="cc-table">
             <thead>
               <tr>
-                <th class="control-cell"></th>
-                <th>Collateral Class</th>
-                <th>Beginning</th>
+                <th>Beginning Collateral</th>
                 <th>Ineligibles</th>
-                <th>Eligible</th>
-                <th>NOLV</th>
-                <th>Dilution</th>
-                <th>Advance</th>
+                <th>Eligible Collateral</th>
+                <th>NOLV %</th>
+                <th>Dilution Rate</th>
+                <th>Advanced Rate</th>
                 <th>Rate Limit</th>
-                <th>Utilized</th>
+                <th>Utilized Rate</th>
                 <th>Pre-Reserve Collateral</th>
                 <th>Reserves</th>
                 <th>Net Collateral</th>
+                <th class="cc-ctl"></th>
               </tr>
             </thead>
+
             <tbody>
               {% if collateral_tree %}
-                {% for node in collateral_tree %}
-                <tr class="coll-row {% cycle 'tone-blue' 'tone-green' 'tone-red' %}" data-id="{{ node.id }}">
-                  <td class="control-cell">
-                    {% if node.children %}
-                    <button class="row-toggle" type="button" data-row="{{ node.id }}" aria-expanded="false" aria-label="Toggle {{ node.row.label }} details">
-                      <span class="chevron" aria-hidden="true"></span>
-                    </button>
-                    {% endif %}
-                  </td>
-                  <td>
-                    <div class="row-label">
-                      {{ node.row.label }}
-                    </div>
-                  </td>
-                  <td>{{ node.row.beginning_collateral }}</td>
-                  <td>{{ node.row.ineligibles }}</td>
-                  <td>{{ node.row.eligible_collateral }}</td>
-                  <td>{{ node.row.nolv_pct }}</td>
-                  <td>{{ node.row.dilution_rate }}</td>
-                  <td>{{ node.row.advanced_rate }}</td>
-                  <td>{{ node.row.rate_limit }}</td>
-                  <td>{{ node.row.utilized_rate }}</td>
-                  <td>{{ node.row.pre_reserve_collateral }}</td>
-                  <td>{{ node.row.reserves }}</td>
-                  <td class="net-cell">{{ node.row.net_collateral }}</td>
-                </tr>
-                {% for child in node.children %}
-                <tr class="coll-row tone-green row-hidden" data-parent="{{ node.id }}">
-                  <td class="control-cell">
-                    {% if child.children %}
-                    <button class="row-toggle" type="button" data-row="{{ child.id }}" aria-expanded="false" aria-label="Toggle {{ child.row.detail|default:child.row.label }} details">
-                      <span class="chevron" aria-hidden="true"></span>
-                    </button>
-                    {% endif %}
-                  </td>
-                  <td>
-                    <div class="row-label">
-                      {{ child.row.detail|default:child.row.label }}
-                    </div>
-                  </td>
-                  <td>{{ child.row.beginning_collateral }}</td>
-                  <td>{{ child.row.ineligibles }}</td>
-                  <td>{{ child.row.eligible_collateral }}</td>
-                  <td>{{ child.row.nolv_pct }}</td>
-                  <td>{{ child.row.dilution_rate }}</td>
-                  <td>{{ child.row.advanced_rate }}</td>
-                  <td>{{ child.row.rate_limit }}</td>
-                  <td>{{ child.row.utilized_rate }}</td>
-                  <td>{{ child.row.pre_reserve_collateral }}</td>
-                  <td>{{ child.row.reserves }}</td>
-                  <td class="net-cell">{{ child.row.net_collateral }}</td>
-                </tr>
-                {% endfor %}
-                {% endfor %}
+                {% include "partials/collateral_rows.html" with nodes=collateral_tree level=0 parent_id="" %}
               {% else %}
-                <tr>
-                  <td colspan="12" class="empty-state">Collateral data unavailable</td>
-                </tr>
+                <tr><td colspan="12" class="cc-empty">Collateral data unavailable</td></tr>
               {% endif %}
             </tbody>
           </table>
