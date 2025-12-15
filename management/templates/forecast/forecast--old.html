@@ -1,0 +1,183 @@
+{% extends "layout/app_base.html" %}
+
+{% block title %}Liquidity Forecast{% endblock %}
+
+{% block extra_head %}
+  {{ block.super }}
+  <style>
+    .forecast-page{
+      --fc-line:#e5edf6;
+      --fc-panel:#ffffff;
+      --fc-muted:#475569;
+      --fc-shadow:0 4px 12px rgba(15,23,42,.04);
+    }
+    .forecast-page .panel{
+      background:var(--fc-panel);
+      border:1px solid var(--fc-line);
+      border-radius:12px;
+      padding:16px 18px 20px;
+      box-shadow:var(--fc-shadow);
+      margin-bottom:18px;
+    }
+    .forecast-page .block-heading{
+      font-size:15px;
+      font-weight:600;
+      color:#0f172a;
+      margin-bottom:6px;
+    }
+    .forecast-page .block-sub{
+      font-size:13px;
+      color:var(--fc-muted);
+      line-height:1.6;
+      margin-bottom:18px;
+    }
+    .forecast-page .chart-grid{
+      display:grid;
+      gap:16px;
+    }
+    .forecast-page .chart-grid.two{grid-template-columns: repeat(auto-fit,minmax(260px,1fr))}
+    .forecast-page .chart-grid.single{grid-template-columns:1fr}
+    .forecast-page .chart-grid.quad{grid-template-columns: repeat(auto-fit,minmax(220px,1fr))}
+    .forecast-page .chart-card{
+      border:1px solid var(--fc-line);
+      border-radius:10px;
+      padding:12px;
+    }
+    .forecast-page .chart-card header{
+      font-size:13px;
+      font-weight:600;
+      margin-bottom:8px;
+      display:flex;
+      justify-content:space-between;
+      color:#0f172a;
+    }
+    .forecast-page .chart-card .small{font-size:11px;color:var(--fc-muted)}
+    .forecast-page svg{max-width:100%}
+  </style>
+{% endblock %}
+
+{% block page_content %}
+  <div class="forecast-page">
+    <section class="panel forecast-block">
+      <div class="block-heading">Liquidity Forecast</div>
+      <div class="block-sub">
+        Snapshot overview reflects current operating liquidity with rolling 35-day expectations.
+        Forecast assumes no additional revolver draws and collections at the existing cadence.
+      </div>
+      <div class="chart-grid two">
+        <div class="chart-card">
+          <header>
+            <span>Available Collateral</span>
+            <span class="small">Actual vs Forecast</span>
+          </header>
+          <svg viewBox="0 0 520 180">
+            <path d="M40 140L120 120L200 125L280 110L360 95L440 90" fill="none" stroke="#0a6af0" stroke-width="3"/>
+            <path d="M40 150L120 140L200 145L280 130L360 120L440 125" fill="none" stroke="#60a5fa" stroke-width="3" stroke-dasharray="6 4"/>
+            <g fill="#0a6af0">
+              <circle cx="40" cy="140" r="4"/><circle cx="120" cy="120" r="4"/><circle cx="200" cy="125" r="4"/>
+              <circle cx="280" cy="110" r="4"/><circle cx="360" cy="95" r="4"/><circle cx="440" cy="90" r="4"/>
+            </g>
+          </svg>
+        </div>
+        <div class="chart-card">
+          <header>
+            <span>Liquidity Runway</span>
+            <span class="small">Asset-based revolver</span>
+          </header>
+          <svg viewBox="0 0 520 180">
+            <path d="M40 150h420" stroke="#e5edf6" stroke-width="8" stroke-linecap="round"/>
+            <path d="M40 150h260" stroke="#0a6af0" stroke-width="8" stroke-linecap="round"/>
+            <path d="M320 150h120" stroke="#f97316" stroke-width="8" stroke-linecap="round"/>
+            <text x="70" y="130" font-size="12">$48MM availability</text>
+            <text x="330" y="130" font-size="12">+$22MM dry powder</text>
+          </svg>
+        </div>
+      </div>
+    </section>
+
+    <section class="panel">
+      <div class="block-heading">Cash Activity</div>
+      <div class="block-sub">
+        Weekly schedules blend actuals with forecasted collections from the previous cycle.
+        Variance flags when liquidity falls below the 12-week covenant cushion.
+      </div>
+      <div class="chart-grid single">
+        <div class="chart-card">
+          <header>
+            <span>Cash Waterfall</span>
+            <span class="small">Weekly cadence</span>
+          </header>
+          <svg viewBox="0 0 620 240">
+            <polyline fill="none" stroke="#0a6af0" stroke-width="4" points="40,180 120,150 200,160 280,130 360,125 440,110 520,105"/>
+            <polyline fill="none" stroke="#38bdf8" stroke-dasharray="6 4" stroke-width="4" points="40,190 120,170 200,165 280,150 360,140 440,132 520,125"/>
+            <g fill="#0a6af0">
+              <circle cx="40" cy="180" r="4"/><circle cx="120" cy="150" r="4"/><circle cx="200" cy="160" r="4"/>
+              <circle cx="280" cy="130" r="4"/><circle cx="360" cy="125" r="4"/><circle cx="440" cy="110" r="4"/><circle cx="520" cy="105" r="4"/>
+            </g>
+            <text x="60" y="210" font-size="11">Mar 1</text>
+            <text x="140" y="210" font-size="11">Mar 8</text>
+            <text x="220" y="210" font-size="11">Mar 15</text>
+            <text x="300" y="210" font-size="11">Mar 22</text>
+            <text x="380" y="210" font-size="11">Mar 29</text>
+            <text x="460" y="210" font-size="11">Apr 5</text>
+            <text x="540" y="210" font-size="11">Apr 12</text>
+          </svg>
+        </div>
+      </div>
+    </section>
+
+    <section class="panel">
+      <div class="block-heading">Covenant &amp; Trend Watch</div>
+      <div class="chart-grid quad">
+        <div class="chart-card">
+          <header>
+            <span>Borrowing Base</span>
+            <span class="small">net availability</span>
+          </header>
+          <svg viewBox="0 0 220 120">
+            <rect x="20" y="30" width="30" height="70" fill="#e5e7eb"/>
+            <rect x="20" y="50" width="30" height="50" fill="#0a6af0"/>
+            <rect x="80" y="30" width="30" height="70" fill="#e5e7eb"/>
+            <rect x="80" y="35" width="30" height="65" fill="#38bdf8"/>
+            <rect x="140" y="30" width="30" height="70" fill="#e5e7eb"/>
+            <rect x="140" y="40" width="30" height="60" fill="#0a6af0"/>
+            <rect x="200" y="30" width="30" height="70" fill="#e5e7eb"/>
+            <rect x="200" y="45" width="30" height="55" fill="#38bdf8"/>
+          </svg>
+        </div>
+        <div class="chart-card">
+          <header>
+            <span>DSO Tracking</span>
+            <span class="small">rolling 90d</span>
+          </header>
+          <svg viewBox="0 0 220 120">
+            <polyline fill="none" stroke="#0a6af0" stroke-width="3" points="20,90 70,80 120,85 170,70 220,65"/>
+            <polyline fill="none" stroke="#f97316" stroke-dasharray="4 4" stroke-width="3" points="20,100 70,95 120,90 170,85 220,80"/>
+          </svg>
+        </div>
+        <div class="chart-card">
+          <header>
+            <span>Vendor Payments</span>
+            <span class="small">next 8 weeks</span>
+          </header>
+          <svg viewBox="0 0 220 120">
+            <path d="M20 100h180" stroke="#e2e8f0" stroke-width="2"/>
+            <path d="M20 80h150" stroke="#0a6af0" stroke-width="4"/>
+            <path d="M20 60h130" stroke="#f97316" stroke-width="4"/>
+            <path d="M20 40h100" stroke="#38bdf8" stroke-width="4"/>
+          </svg>
+        </div>
+        <div class="chart-card">
+          <header>
+            <span>Run Rate Sensitivity</span>
+            <span class="small">base vs downside</span>
+          </header>
+          <svg viewBox="0 0 220 120">
+            <polyline fill="none" stroke="#0a6af0" stroke-width="3" points="20,90 70,75 120,80 170,65 220,60"/>
+            <polyline fill="none" stroke="#94a3b8" stroke-width="3" stroke-dasharray="5 4" points="20,95 70,90 120,88 170,82 220,78"/>
+          </svg>
+        </div>
+      </div>
+    </section>
+  </div>
+{% endblock %}

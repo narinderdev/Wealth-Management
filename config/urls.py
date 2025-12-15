@@ -33,6 +33,11 @@ urlpatterns = [
         management_views.reports_download,
         name='reports_download',
     ),
+    path(
+        'reports/bbc-latest/',
+        management_views.reports_generate_bbc,
+        name='reports_generate_bbc',
+    ),
     path('limits/', management_views.limits_view, name='limits'),
     path('logout/', management_views.logout_view, name='logout'),
     path('admin/', admin.site.urls),

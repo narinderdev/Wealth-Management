@@ -57,7 +57,7 @@
 {% endblock %}
 
 {% block page_content %}
-  <div class="forecast-page">
+  <!-- <div class="forecast-page">
     <section class="panel forecast-block">
       <div class="block-heading">Liquidity Forecast</div>
       <div class="block-sub">
@@ -179,5 +179,532 @@
         </div>
       </div>
     </section>
+  </div> -->
+  <!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <title>Forecast Dashboard (Static)</title>
+  <style>
+    :root{
+      --bg: #f4f7fb;
+      --card: #ffffff;
+      --ink: #101828;
+      --muted: #667085;
+      --muted2:#98A2B3;
+      --border:#E6EAF2;
+      --grid:#EEF2F7;
+      --blue:#175CD3;
+      --orange:#F79009;
+      --shadow: 0 1px 2px rgba(16,24,40,.06);
+      --radius: 10px;
+    }
+    *{ box-sizing:border-box; }
+    body{
+      margin:0;
+      font-family: ui-sans-serif, system-ui, -apple-system, Segoe UI, Roboto, Helvetica, Arial, "Apple Color Emoji","Segoe UI Emoji";
+      color:var(--ink);
+      background:var(--bg);
+      line-height:1.35;
+    }
+    .wrap{
+      max-width: 1120px;
+      margin: 18px auto;
+      padding: 0 18px 28px;
+    }
+    .dashboard{
+      background: var(--card);
+      border: 1px solid var(--border);
+      border-radius: 12px;
+      box-shadow: var(--shadow);
+      overflow:hidden;
+    }
+
+    .section{
+      padding: 18px 18px 14px;
+      border-top: 1px solid var(--border);
+      background: #fff;
+    }
+    .section:first-child{ border-top:none; }
+
+    .section-head{
+      display:flex;
+      align-items:center;
+      gap:10px;
+      margin-bottom: 10px;
+    }
+    .section-icon{
+      width:18px; height:18px;
+      border-radius: 6px;
+      background: rgba(23,92,211,.10);
+      border: 1px solid rgba(23,92,211,.18);
+      position:relative;
+    }
+    .section-icon:before{
+      content:"";
+      position:absolute;
+      inset:4px 4px 4px 4px;
+      border-radius: 4px;
+      background: rgba(23,92,211,.12);
+    }
+    .section-title{
+      font-size: 14px;
+      font-weight: 700;
+      letter-spacing:.1px;
+    }
+
+    .snapshot{
+      background:#F8FAFD;
+      border: 1px solid var(--border);
+      border-radius: var(--radius);
+      padding: 12px 12px;
+      margin-bottom: 12px;
+    }
+    .snapshot .label{
+      display:flex;
+      align-items:center;
+      gap:8px;
+      font-size: 12px;
+      font-weight: 700;
+      color: #344054;
+      margin-bottom: 6px;
+    }
+    .dot{
+      width:8px; height:8px;
+      border-radius: 999px;
+      background: var(--blue);
+      box-shadow: 0 0 0 3px rgba(23,92,211,.12);
+    }
+    .snapshot p{
+      margin:0;
+      font-size: 11px;
+      color: var(--muted);
+      max-width: 980px;
+    }
+
+    .grid-2{
+      display:grid;
+      grid-template-columns: 1fr 1fr;
+      gap: 12px;
+    }
+    .grid-2 + .grid-2{ margin-top: 12px; }
+    @media (max-width: 880px){
+      .grid-2{ grid-template-columns: 1fr; }
+    }
+
+    .chart-card{
+      border: 1px solid var(--border);
+      border-radius: var(--radius);
+      background: #fff;
+      box-shadow: var(--shadow);
+      overflow:hidden;
+    }
+    .chart-card .card-pad{
+      padding: 10px 12px 8px;
+    }
+    .card-top{
+      display:flex;
+      justify-content: space-between;
+      align-items:flex-start;
+      gap: 12px;
+      margin-bottom: 4px;
+    }
+    .card-title{
+      font-size: 12px;
+      font-weight: 700;
+      color:#344054;
+    }
+    .legend{
+      display:flex;
+      gap: 10px;
+      align-items:center;
+      font-size: 11px;
+      color: var(--muted);
+      white-space:nowrap;
+    }
+    .legend .litem{
+      display:flex;
+      align-items:center;
+      gap:6px;
+    }
+    .legend .swatch{
+      width:10px; height:10px;
+      border-radius: 3px;
+      background: var(--blue);
+    }
+    .legend .swatch.orange{ background: var(--orange); }
+    .seg{
+      display:flex;
+      justify-content:center;
+      gap:16px;
+      font-size: 11px;
+      color: var(--muted2);
+      margin: 6px 0 2px;
+      user-select:none;
+    }
+    .seg span:first-child{
+      color: #344054;
+      font-weight: 700;
+    }
+
+    .svg-wrap{
+      padding: 2px 10px 10px;
+    }
+
+    .chart-big .card-title{
+      display:flex; align-items:center; gap:8px;
+    }
+    .chart-big .seg{ margin-top: 2px; }
+    .chart-big .svg-wrap{ padding: 4px 10px 12px; }
+
+    /* SVG styling */
+    svg{ width:100%; height:auto; display:block; }
+    .axis text{ fill: #98A2B3; font-size: 10px; }
+    .gridline{ stroke: var(--grid); stroke-width:1; }
+    .borderline{ stroke: #E6EAF2; stroke-width:1; fill:none; }
+    .line-actual{ stroke: var(--blue); stroke-width: 2.3; fill:none; stroke-linecap:round; stroke-linejoin:round; }
+    .line-forecast{ stroke: var(--orange); stroke-width: 2.3; fill:none; stroke-linecap:round; stroke-linejoin:round; stroke-dasharray: 5 5; }
+    .point{ fill: var(--blue); }
+    .point.fore{ fill: var(--orange); }
+
+    /* spacing for single big cards */
+    .mt-12{ margin-top:12px; }
+
+    .subhead-row{
+      display:flex;
+      justify-content: space-between;
+      align-items:center;
+      gap:12px;
+    }
+    .subhead-row .left{
+      font-size: 11px;
+      color: var(--muted);
+      font-weight:600;
+    }
+  </style>
+</head>
+<body>
+  <div class="wrap">
+    <div class="dashboard">
+
+      <!-- Liquidity Forecast -->
+      <section class="section">
+        <div class="section-head">
+          <div class="section-icon"></div>
+          <div class="section-title">Liquidity Forecast</div>
+        </div>
+
+        <div class="snapshot">
+          <div class="label"><span class="dot"></span>Snapshot Overview</div>
+          <p>
+            Based on current information and weekly trends, liquidity is expected to remain stable in the near term.
+            Forecasts use recent history and assumed seasonality to project the next 12 months.
+          </p>
+        </div>
+
+        <div class="grid-2">
+          <div class="chart-card" data-chart="availableCollateral"></div>
+          <div class="chart-card" data-chart="revolverBalance"></div>
+        </div>
+
+        <div class="chart-card chart-big mt-12" data-chart="availableLiquidity"></div>
+      </section>
+
+      <!-- Sales and Gross Margin Forecast -->
+      <section class="section">
+        <div class="section-head">
+          <div class="section-icon"></div>
+          <div class="section-title">Sales and Gross Margin Forecast</div>
+        </div>
+
+        <div class="snapshot">
+          <div class="label"><span class="dot"></span>Snapshot Overview</div>
+          <p>
+            Sales and gross margin are modeled using recent trailing performance and expected demand patterns. The forecast
+            highlights likely near-term fluctuations followed by a gradual normalization.
+          </p>
+        </div>
+
+        <div class="grid-2">
+          <div class="chart-card" data-chart="sales"></div>
+          <div class="chart-card" data-chart="grossMargin"></div>
+        </div>
+      </section>
+
+      <!-- Accounts Receivable Forecast -->
+      <section class="section">
+        <div class="section-head">
+          <div class="section-icon"></div>
+          <div class="section-title">Accounts Receivable Forecast</div>
+        </div>
+
+        <div class="snapshot">
+          <div class="label"><span class="dot"></span>Snapshot Overview</div>
+          <p>
+            Accounts receivable is projected from historical collections behavior and recent invoicing trends.
+            Forecast values assume steady DSO with modest seasonality.
+          </p>
+        </div>
+
+        <div class="chart-card chart-big" data-chart="accountsReceivable"></div>
+      </section>
+
+      <!-- Inventory Forecast -->
+      <section class="section">
+        <div class="section-head">
+          <div class="section-icon"></div>
+          <div class="section-title">Inventory Forecast</div>
+        </div>
+
+        <div class="snapshot">
+          <div class="label"><span class="dot"></span>Snapshot Overview</div>
+          <p>
+            Inventory components are forecast using recent turns, production assumptions, and a 12‑month demand outlook.
+            The model anticipates a mild buildup before leveling toward target ranges.
+          </p>
+        </div>
+
+        <div class="grid-2">
+          <div class="chart-card" data-chart="finishedGoods"></div>
+          <div class="chart-card" data-chart="weeksOfSupply"></div>
+        </div>
+
+        <div class="grid-2">
+          <div class="chart-card" data-chart="rawMaterials"></div>
+          <div class="chart-card" data-chart="workInProcess"></div>
+        </div>
+      </section>
+
+    </div>
   </div>
+
+  <script>
+    /* ------------ Lightweight inline chart renderer (SVG) ------------ */
+
+    const CHARTS = {
+      availableCollateral: {
+        title: "Available Collateral",
+        pastLabel: "Past 6 months",
+        forecastLabel: "12 month forecast",
+        yPrefix: "$",
+        yFormat: "short",
+        yTicks: 5,
+        labels: ["JUN","JUL","AUG","SEP","OCT","NOV","DEC","JAN","FEB","MAR","APR","MAY"],
+        actual:  [8.2, 9.0, 9.5, 8.9, 7.3, 8.4, 8.6],
+        forecast:[8.6, 8.3, 8.1, 8.7, 9.4]
+      },
+      revolverBalance: {
+        title: "Revolver Balance",
+        pastLabel: "Past 6 months",
+        forecastLabel: "12 month forecast",
+        yPrefix: "$",
+        yFormat: "short",
+        yTicks: 5,
+        labels: ["JUN","JUL","AUG","SEP","OCT","NOV","DEC","JAN","FEB","MAR","APR","MAY"],
+        actual:  [3.6, 4.3, 4.9, 4.0, 3.1, 3.8, 3.9],
+        forecast:[3.8, 3.5, 3.3, 3.9, 4.6]
+      },
+      availableLiquidity: {
+        title: "Available Liquidity",
+        pastLabel: "Past 6 months",
+        forecastLabel: "12 month forecast",
+        yPrefix: "$",
+        yFormat: "short",
+        yTicks: 6,
+        labels: ["JAN 2023","FEB 2023","MAR 2023","APR 2023","MAY 2023","JUN 2023","JUL 2023","AUG 2023","SEP 2023","OCT 2023","NOV 2023","DEC 2023"],
+        actual:  [11.2, 12.6, 13.4, 12.7, 11.0, 10.2, 11.8],
+        forecast:[11.4, 10.6, 10.9, 11.6, 13.1, 12.0, 11.7, 11.8, 12.1]
+      },
+      sales: {
+        title: "Sales",
+        pastLabel: "Past 6 months",
+        forecastLabel: "12 month forecast",
+        yPrefix: "$",
+        yFormat: "short",
+        yTicks: 5,
+        labels: ["JUN","JUL","AUG","SEP","OCT","NOV","DEC","JAN","FEB","MAR","APR","MAY"],
+        actual:  [4.6, 5.4, 4.9, 4.2, 4.8, 4.9, 4.7],
+        forecast:[4.7, 4.5, 4.4, 4.9, 5.2]
+      },
+      grossMargin: {
+        title: "Gross Margin",
+        pastLabel: "Past 6 months",
+        forecastLabel: "12 month forecast",
+        yPrefix: "",
+        yFormat: "pct",
+        yTicks: 5,
+        labels: ["JUN","JUL","AUG","SEP","OCT","NOV","DEC","JAN","FEB","MAR","APR","MAY"],
+        actual:  [32, 35, 33, 28, 32, 33, 31],
+        forecast:[31, 30, 30, 33, 35]
+      },
+      accountsReceivable: {
+        title: "Accounts Receivable",
+        pastLabel: "Past 6 months",
+        forecastLabel: "12 month forecast",
+        yPrefix: "$",
+        yFormat: "short",
+        yTicks: 6,
+        labels: ["JAN 2023","FEB 2023","MAR 2023","APR 2023","MAY 2023","JUN 2023","JUL 2023","AUG 2023","SEP 2023","OCT 2023","NOV 2023","DEC 2023"],
+        actual:  [9.8, 10.9, 11.7, 11.1, 10.2, 8.9, 9.6],
+        forecast:[9.2, 8.6, 8.9, 9.6, 11.1, 10.2, 9.9, 10.0, 10.3]
+      },
+      finishedGoods: {
+        title: "Finished Goods",
+        pastLabel: "Past 6 months",
+        forecastLabel: "12 month forecast",
+        yPrefix: "$",
+        yFormat: "short",
+        yTicks: 5,
+        labels: ["JUN","JUL","AUG","SEP","OCT","NOV","DEC","JAN","FEB","MAR","APR","MAY"],
+        actual:  [6.1, 6.8, 7.2, 6.6, 5.9, 6.3, 6.4],
+        forecast:[6.4, 6.1, 6.0, 6.5, 7.0]
+      },
+      weeksOfSupply: {
+        title: "Weeks of Supply",
+        pastLabel: "Past 6 months",
+        forecastLabel: "12 month forecast",
+        yPrefix: "",
+        yFormat: "num",
+        yTicks: 5,
+        labels: ["JUN","JUL","AUG","SEP","OCT","NOV","DEC","JAN","FEB","MAR","APR","MAY"],
+        actual:  [7.2, 7.8, 8.1, 7.5, 6.7, 7.0, 7.1],
+        forecast:[7.1, 6.9, 6.8, 7.2, 7.7]
+      },
+      rawMaterials: {
+        title: "Raw Materials",
+        pastLabel: "Past 6 months",
+        forecastLabel: "12 month forecast",
+        yPrefix: "$",
+        yFormat: "short",
+        yTicks: 5,
+        labels: ["JUN","JUL","AUG","SEP","OCT","NOV","DEC","JAN","FEB","MAR","APR","MAY"],
+        actual:  [3.8, 4.5, 5.0, 4.1, 3.6, 4.0, 4.1],
+        forecast:[4.1, 3.9, 3.8, 4.2, 4.6]
+      },
+      workInProcess: {
+        title: "Work In Process",
+        pastLabel: "Past 6 months",
+        forecastLabel: "12 month forecast",
+        yPrefix: "$",
+        yFormat: "short",
+        yTicks: 5,
+        labels: ["JUN","JUL","AUG","SEP","OCT","NOV","DEC","JAN","FEB","MAR","APR","MAY"],
+        actual:  [2.9, 3.4, 3.8, 3.2, 2.7, 3.0, 3.1],
+        forecast:[3.1, 2.9, 2.8, 3.2, 3.6]
+      },
+    };
+
+    function formatY(v, chart){
+      if(chart.yFormat === "pct") return `${Math.round(v)}%`;
+      if(chart.yFormat === "num") return `${v.toFixed(1)}`;
+      // short dollars
+      if(chart.yFormat === "short"){
+        // assume "millions-ish" values for compact look
+        if(v >= 10) return `${chart.yPrefix}${v.toFixed(1)}M`;
+        return `${chart.yPrefix}${v.toFixed(1)}M`;
+      }
+      return `${chart.yPrefix}${v}`;
+    }
+
+    function linePath(points){
+      return points.map((p,i)=> (i===0?`M ${p[0]} ${p[1]}`:`L ${p[0]} ${p[1]}`)).join(" ");
+    }
+
+    function renderCard(el, key){
+      const cfg = CHARTS[key];
+      const isBig = el.classList.contains("chart-big");
+      const H = isBig ? 220 : 160;
+      const W = 520; // internal viewBox width (responsive)
+      const pad = {l: 44, r: 14, t: 20, b: isBig ? 34 : 26};
+
+      // compute min/max across all values with gentle padding
+      const all = [...cfg.actual, ...cfg.forecast];
+      let min = Math.min(...all);
+      let max = Math.max(...all);
+      const range = (max-min) || 1;
+      min = min - range*0.15;
+      max = max + range*0.15;
+
+      const plotW = W - pad.l - pad.r;
+      const plotH = H - pad.t - pad.b;
+
+      const nTotal = cfg.labels.length;
+      const nActual = cfg.actual.length;
+      const x = (i) => pad.l + (i/(nTotal-1))*plotW;
+      const y = (v) => pad.t + (1 - (v-min)/(max-min))*plotH;
+
+      // points
+      const actualPts = cfg.actual.map((v,i)=> [x(i), y(v)]);
+      const forecastPts = cfg.forecast.map((v,j)=> {
+        const i = (nActual-1) + j; // forecast begins at last actual point
+        return [x(i), y(v)];
+      });
+
+      // y ticks
+      const ticks = cfg.yTicks || 5;
+      const yTicks = Array.from({length:ticks}, (_,i)=>{
+        const t = i/(ticks-1);
+        const val = max - t*(max-min);
+        return { val, y: y(val) };
+      });
+
+      // x labels (reduce density for big charts)
+      const xLabelStep = isBig ? 2 : 1;
+
+      // card shell (HTML)
+      el.innerHTML = `
+        <div class="card-pad">
+          <div class="card-top">
+            <div class="card-title">${cfg.title}</div>
+            <div class="legend" aria-label="legend">
+              <div class="litem"><span class="swatch"></span>Actual</div>
+              <div class="litem"><span class="swatch orange"></span>Forecast</div>
+            </div>
+          </div>
+          <div class="seg"><span>${cfg.pastLabel}</span><span>${cfg.forecastLabel}</span></div>
+        </div>
+        <div class="svg-wrap">
+          <svg viewBox="0 0 ${W} ${H}" role="img" aria-label="${cfg.title} chart">
+            <!-- plot border -->
+            <rect x="${pad.l}" y="${pad.t}" width="${plotW}" height="${plotH}" class="borderline" />
+            <!-- grid + y labels -->
+            ${yTicks.map(t => `
+              <line x1="${pad.l}" y1="${t.y}" x2="${W-pad.r}" y2="${t.y}" class="gridline" />
+              <g class="axis">
+                <text x="${pad.l-8}" y="${t.y+3}" text-anchor="end">${formatY(t.val, cfg)}</text>
+              </g>
+            `).join("")}
+            <!-- x labels -->
+            <g class="axis">
+              ${cfg.labels.map((lab,i)=>{
+                if(i % xLabelStep !== 0) return "";
+                const xx = x(i);
+                return `<text x="${xx}" y="${H-10}" text-anchor="middle">${lab}</text>`;
+              }).join("")}
+            </g>
+            <!-- lines -->
+            <path d="${linePath(actualPts)}" class="line-actual" />
+            <path d="${linePath([actualPts[actualPts.length-1], ...forecastPts])}" class="line-forecast" />
+            <!-- points (subtle like the reference) -->
+            ${actualPts.map((p,i)=> i===0 || i===actualPts.length-1 ? "" :
+              `<circle cx="${p[0]}" cy="${p[1]}" r="2.2" class="point" />`
+            ).join("")}
+          </svg>
+        </div>
+      `;
+    }
+
+    function init(){
+      document.querySelectorAll("[data-chart]").forEach(el=>{
+        const key = el.getAttribute("data-chart");
+        if(!CHARTS[key]) return;
+        renderCard(el, key);
+      });
+    }
+    init();
+  </script>
+</body>
+</html>
+
 {% endblock %}

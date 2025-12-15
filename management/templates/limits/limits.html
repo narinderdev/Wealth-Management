@@ -58,27 +58,19 @@
           </tr>
         </thead>
         <tbody>
+          {% for row in limit_rows %}
           <tr>
-            <td>Inventory</td>
-            <td>Finished Goods</td>
-            <td>Finished Goods</td>
-            <td class="right">$10,000,000</td>
-            <td class="right">80%</td>
+            <td>{{ row.division }}</td>
+            <td>{{ row.collateral_type }}</td>
+            <td>{{ row.collateral_sub_type }}</td>
+            <td class="right">{{ row.usd_limit }}</td>
+            <td class="right">{{ row.pct_limit }}</td>
           </tr>
+          {% empty %}
           <tr>
-            <td>Accounts Receivable</td>
-            <td>Raw Materials</td>
-            <td>Raw Materials</td>
-            <td class="right">$8,000,000</td>
-            <td class="right">50%</td>
+            <td colspan="5" class="right">No collateral limits have been configured.</td>
           </tr>
-          <tr>
-            <td>Other Collateral</td>
-            <td>Work-In-Process</td>
-            <td>Work-In-Process</td>
-            <td class="right">$2,000,000</td>
-            <td class="right">45%</td>
-          </tr>
+          {% endfor %}
         </tbody>
       </table>
     </div>
@@ -94,21 +86,17 @@
           </tr>
         </thead>
         <tbody>
+          {% for row in ineligible_rows %}
           <tr>
-            <td>Inventory</td>
-            <td>Finished Goods</td>
-            <td>Finished Goods</td>
+            <td>{{ row.division }}</td>
+            <td>{{ row.collateral_type }}</td>
+            <td>{{ row.collateral_sub_type }}</td>
           </tr>
+          {% empty %}
           <tr>
-            <td>Accounts Receivable</td>
-            <td>Raw Materials</td>
-            <td>Raw Materials</td>
+            <td colspan="3">No ineligible collateral at this time.</td>
           </tr>
-          <tr>
-            <td>Other Collateral</td>
-            <td>Work-In-Process</td>
-            <td>Work-In-Process</td>
-          </tr>
+          {% endfor %}
         </tbody>
       </table>
     </div>
