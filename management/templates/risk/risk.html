@@ -43,9 +43,30 @@
       font-weight:600;
     }
     .risk-page .rating-bar{
-      height:4px;
+      height:8px;
       border-radius:999px;
-      background:linear-gradient(90deg,#4caf50 0%,#8bc34a 18%,#ffc107 45%,#ff9800 70%,#f44336 100%);
+      background:#e6eef6;
+      position:relative;
+      overflow:hidden;
+    }
+    .risk-page .rating-bar::after{
+      content:'';
+      position:absolute;
+      inset:0;
+      background:linear-gradient(90deg,#4caf50 0%,#8bc34a 20%,#ffc107 45%,#ff9800 70%,#f44336 100%);
+      width:var(--risk-fill,0%);
+      transition:width .3s ease;
+    }
+    .risk-page .rating-pin{
+      position:absolute;
+      top:50%;
+      width:10px;
+      height:10px;
+      border-radius:50%;
+      background:#fff;
+      border:2px solid #0b57d0;
+      transform:translate(-50%,-50%);
+      box-shadow:0 0 0 3px rgba(11,87,208,.15);
     }
     .risk-page .rating-score{text-align:center;margin-top:8px;font-size:10px;font-weight:600;color:#374151;}
     .risk-page .snapshot{
@@ -212,17 +233,17 @@
         <div class="rating-scale">
           <span>Low</span><span>Mild</span><span>Average</span><span>Elevated</span><span>High</span>
         </div>
-        <div class="rating-bar" aria-hidden="true"></div>
-        <div class="rating-score">3.0</div>
+        <div class="rating-bar" aria-hidden="true" style="--risk-fill: {{ risk.rating_position }}%;">
+          <span class="rating-pin" style="left:var(--risk-fill,0%);"></span>
+        </div>
+        <div class="rating-score">{{ risk.rating_score }}</div>
       </div>
     </section>
 
     <section class="panel">
       <div class="section-h"><span class="dot"></span>Snapshot Summary</div>
       <div class="snapshot">
-        Risk levels remain manageable, though shifts in AR timing and a buildup of slower-moving inventory warrant closer monitoring.
-        Core operations and liquidity are stable, and industry demand remains resilient. Risk reduction will be supported by improved
-        controls on collections and inventory reduction with disciplined cycle-count cadence.
+        {{ risk.snapshot }}
       </div>
     </section>
 
@@ -231,20 +252,20 @@
         <div class="panel" style="box-shadow:none;">
           <div class="section-h" style="padding-bottom:8px;"><span class="dot"></span>Composite Risk Index</div>
           <div class="risk-stack">
-            <div class="donut-wrap">
-              <svg class="donut" viewBox="0 0 42 42" aria-label="Composite risk donut">
-                <circle cx="21" cy="21" r="15.915" fill="transparent" stroke="#cfe3f0" stroke-width="4"></circle>
-                <circle cx="21" cy="21" r="15.915" fill="transparent" stroke="#0063f7" stroke-width="4"
-                        stroke-linecap="round" stroke-dasharray="62 38" transform="rotate(-90 21 21)"></circle>
-                <text x="21" y="22" text-anchor="middle">2.1/5</text>
-              </svg>
-              <div class="pillcol">
-                <div class="pill blue">34%&nbsp;&nbsp;accounts receivable</div>
-                <div class="pill navy">40%&nbsp;&nbsp;inventory</div>
-                <div class="pill lt">22%&nbsp;&nbsp;company</div>
-                <div class="pill wt">4%&nbsp;&nbsp;industry</div>
-              </div>
+          <div class="donut-wrap">
+            <svg class="donut" viewBox="0 0 42 42" aria-label="Composite risk donut">
+              <circle cx="21" cy="21" r="15.915" fill="transparent" stroke="#cfe3f0" stroke-width="4"></circle>
+              <circle cx="21" cy="21" r="15.915" fill="transparent" stroke="#0063f7" stroke-width="4"
+                      stroke-linecap="round" stroke-dasharray="{{ risk.rating_dasharray }}" transform="rotate(-90 21 21)"></circle>
+              <text x="21" y="22" text-anchor="middle">{{ risk.rating_score }}/5</text>
+            </svg>
+            <div class="pillcol">
+              {% for pill in risk.pills %}
+                {% cycle 'blue' 'navy' 'lt' 'wt' as pill_class %}
+                <div class="pill {{ pill_class }}">{{ pill.value }} {{ pill.label|lower }}</div>
+              {% endfor %}
             </div>
+          </div>
           </div>
         </div>
 
@@ -256,20 +277,17 @@
               <line x1="10" y1="55" x2="290" y2="55" stroke="#eef4fb" />
               <line x1="10" y1="90" x2="290" y2="90" stroke="#eef4fb" />
               <polyline fill="none" stroke="#0b57d0" stroke-width="3" stroke-linecap="round" stroke-linejoin="round"
-                points="18,72 55,60 92,46 129,44 166,52 203,66 240,84 277,70" />
+                points="{{ risk.trend_points }}" />
               <g fill="#0b57d0">
-                <circle cx="18" cy="72" r="3.2"></circle>
-                <circle cx="55" cy="60" r="3.2"></circle>
-                <circle cx="92" cy="46" r="3.2"></circle>
-                <circle cx="129" cy="44" r="3.2"></circle>
-                <circle cx="166" cy="52" r="3.2"></circle>
-                <circle cx="203" cy="66" r="3.2"></circle>
-                <circle cx="240" cy="84" r="3.2"></circle>
-                <circle cx="277" cy="70" r="3.2"></circle>
+                {% for point in risk.trend_coords %}
+                  <circle cx="{{ point.x }}" cy="{{ point.y }}" r="3.2"></circle>
+                {% endfor %}
               </g>
             </svg>
             <div class="axislabels">
-              <span>Mar</span><span>Apr</span><span>May</span><span>Jun</span><span>Jul</span><span>Aug</span><span>Sep</span><span>Oct</span>
+              {% for label in risk.trend_axis %}
+                <span>{{ label }}</span>
+              {% endfor %}
             </div>
           </div>
         </div>
@@ -287,11 +305,14 @@
                 </tr>
               </thead>
               <tbody>
-                <tr><td>Inventory Velocity &amp; Turns</td><td>3.1</td><td>2.9</td><td class="chg up">▲&nbsp;0.2</td></tr>
-                <tr><td>Returns &amp; Obsolescence</td><td>3.1</td><td>3.4</td><td class="chg down">▼&nbsp;0.3</td></tr>
-                <tr><td>Sales Trend</td><td>2.8</td><td>2.0</td><td class="chg up">▲&nbsp;0.8</td></tr>
-                <tr><td>Seasonality</td><td>2.5</td><td>2.0</td><td class="chg up">▲&nbsp;0.5</td></tr>
-                <tr><td>Service Level Delays</td><td>3.1</td><td>3.6</td><td class="chg down">▼&nbsp;0.5</td></tr>
+                {% for factor in risk.high_impact %}
+                  <tr>
+                    <td>{{ factor.risk }}</td>
+                    <td>{{ factor.current }}</td>
+                    <td>{{ factor.prior }}</td>
+                    <td class="{% if factor.direction %}chg {{ factor.direction }}{% endif %}">{{ factor.change }}</td>
+                  </tr>
+                {% endfor %}
               </tbody>
             </table>
           </div>
@@ -304,115 +325,32 @@
       <div class="divider"></div>
 
       <div class="grid2">
-        {% comment %} Metric cards {% endcomment %}
-        <div class="metric">
-          <div class="top">
-            <div class="metric-title">Accounts Receivable</div>
-            <div class="scale"><span>Low</span><span>Mild</span><span>Moderate</span><span>Elevated</span><span>High</span></div>
-          </div>
-          <div class="metric-body">
-            <svg class="donut" viewBox="0 0 42 42" aria-label="AR score donut">
-              <circle cx="21" cy="21" r="15.915" fill="transparent" stroke="#e5e7eb" stroke-width="4"></circle>
-              <circle cx="21" cy="21" r="15.915" fill="transparent" stroke="#f59e0b" stroke-width="4"
-                      stroke-linecap="round" stroke-dasharray="90 10" transform="rotate(-90 21 21)"></circle>
-              <text x="21" y="22" text-anchor="middle">4.5</text>
+        {% for metric in risk.metrics %}
+          <div class="metric">
+            <div class="top">
+              <div class="metric-title">{{ metric.label }}</div>
+              <div class="scale"><span>Low</span><span>Mild</span><span>Moderate</span><span>Elevated</span><span>High</span></div>
+            </div>
+            <div class="metric-body">
+              <svg class="donut" viewBox="0 0 42 42" aria-label="{{ metric.label }} score donut">
+              <circle cx="21" cy="21" r="15.915" fill="transparent" stroke="{{ metric.donut_bg }}" stroke-width="4"></circle>
+              <circle cx="21" cy="21" r="15.915" fill="transparent" stroke="{{ metric.donut_color }}" stroke-width="4"
+                      stroke-linecap="round" stroke-dasharray="{{ metric.donut_dash }}" transform="rotate(-90 21 21)"></circle>
+              <text x="21" y="22" text-anchor="middle">{{ metric.score_display }}</text>
             </svg>
             <div class="bars">
-              <div class="barrow"><div class="lbl">Concentration</div><div class="track"><div class="fill" style="width:18%"></div></div></div>
-              <div class="barrow"><div class="lbl">DSO</div><div class="track"><div class="fill" style="width:86%"></div></div></div>
-              <div class="barrow"><div class="lbl">Net DSO</div><div class="track"><div class="fill" style="width:64%"></div></div></div>
-              <div class="barrow"><div class="lbl">Sales Volatility</div><div class="track"><div class="fill" style="width:98%"></div></div></div>
-              <div class="barrow"><div class="lbl">Dispute Frequency</div><div class="track"><div class="fill" style="width:56%"></div></div></div>
-              <div class="barrow"><div class="lbl">Collection Impact</div><div class="track"><div class="fill" style="width:22%"></div></div></div>
-              <div class="barrow"><div class="lbl">Process Risk</div><div class="track"><div class="fill" style="width:52%"></div></div></div>
-              <div class="barrow"><div class="lbl">Credit Aging Risk</div><div class="track"><div class="fill" style="width:20%"></div></div></div>
+              {% for bar in metric.bars %}
+                <div class="barrow">
+                  <div class="lbl">{{ bar.label }}</div>
+                  <div class="track">
+                    <div class="fill" style="width:{{ bar.width }}; background:{{ metric.fill_color }}"></div>
+                  </div>
+                </div>
+              {% endfor %}
+            </div>
             </div>
           </div>
-        </div>
-
-        <div class="metric">
-          <div class="top">
-            <div class="metric-title">Inventory Risks</div>
-            <div class="scale"><span>Low</span><span>Mild</span><span>Moderate</span><span>Elevated</span><span>High</span></div>
-          </div>
-          <div class="metric-body">
-            <svg class="donut" viewBox="0 0 42 42" aria-label="Inventory score donut">
-              <circle cx="21" cy="21" r="15.915" fill="transparent" stroke="#e5e7eb" stroke-width="4"></circle>
-              <circle cx="21" cy="21" r="15.915" fill="transparent" stroke="#fbbf24" stroke-width="4"
-                      stroke-linecap="round" stroke-dasharray="80 20" transform="rotate(-90 21 21)"></circle>
-              <text x="21" y="22" text-anchor="middle">4.0</text>
-            </svg>
-            <div class="bars">
-              <div class="barrow"><div class="lbl">Margin Volatility</div><div class="track"><div class="fill" style="width:18%"></div></div></div>
-              <div class="barrow"><div class="lbl">Cost Variation</div><div class="track"><div class="fill" style="width:74%"></div></div></div>
-              <div class="barrow"><div class="lbl">WIP Down &amp; Scrap</div><div class="track"><div class="fill" style="width:58%"></div></div></div>
-              <div class="barrow"><div class="lbl">Inventory Life</div><div class="track"><div class="fill" style="width:92%"></div></div></div>
-              <div class="barrow"><div class="lbl">WIP &amp; Inv Build</div><div class="track"><div class="fill" style="width:50%"></div></div></div>
-              <div class="barrow"><div class="lbl">SKU Concentration</div><div class="track"><div class="fill" style="width:20%"></div></div></div>
-              <div class="barrow"><div class="lbl">Seasonality</div><div class="track"><div class="fill" style="width:78%"></div></div></div>
-              <div class="barrow"><div class="lbl">Customer Stockout Exposure</div><div class="track"><div class="fill" style="width:58%"></div></div></div>
-              <div class="barrow"><div class="lbl">Lead Time &amp; Supply Disruption</div><div class="track"><div class="fill" style="width:92%"></div></div></div>
-              <div class="barrow"><div class="lbl">Vendor Concentration</div><div class="track"><div class="fill" style="width:22%"></div></div></div>
-              <div class="barrow"><div class="lbl">Production Lead Time</div><div class="track"><div class="fill" style="width:50%"></div></div></div>
-            </div>
-          </div>
-        </div>
-
-        <div class="metric">
-          <div class="top">
-            <div class="metric-title">Company Risks</div>
-            <div class="scale"><span>Low</span><span>Mild</span><span>Moderate</span><span>Elevated</span><span>High</span></div>
-          </div>
-          <div class="metric-body">
-            <svg class="donut" viewBox="0 0 42 42" aria-label="Company score donut">
-              <circle cx="21" cy="21" r="15.915" fill="transparent" stroke="#e5e7eb" stroke-width="4"></circle>
-              <circle cx="21" cy="21" r="15.915" fill="transparent" stroke="#22c55e" stroke-width="4"
-                      stroke-linecap="round" stroke-dasharray="54 46" transform="rotate(-90 21 21)"></circle>
-              <text x="21" y="22" text-anchor="middle">2.7</text>
-            </svg>
-            <div class="bars">
-              <div class="barrow"><div class="lbl">Liquidity</div><div class="track"><div class="fill" style="width:68%"></div></div></div>
-              <div class="barrow"><div class="lbl">Profitability</div><div class="track"><div class="fill" style="width:48%"></div></div></div>
-              <div class="barrow"><div class="lbl">Cash Flow Elasticity</div><div class="track"><div class="fill" style="width:18%"></div></div></div>
-              <div class="barrow"><div class="lbl">D&amp;O Spend</div><div class="track"><div class="fill" style="width:88%"></div></div></div>
-              <div class="barrow"><div class="lbl">Sales Trend</div><div class="track"><div class="fill" style="width:70%"></div></div></div>
-              <div class="barrow"><div class="lbl">Customer Health</div><div class="track"><div class="fill" style="width:78%"></div></div></div>
-              <div class="barrow"><div class="lbl">Vendor Health</div><div class="track"><div class="fill" style="width:24%"></div></div></div>
-              <div class="barrow"><div class="lbl">Liquidation / Collateral Risk</div><div class="track"><div class="fill" style="width:52%"></div></div></div>
-              <div class="barrow"><div class="lbl">Inventory Count Variance</div><div class="track"><div class="fill" style="width:96%"></div></div></div>
-              <div class="barrow"><div class="lbl">System Risk</div><div class="track"><div class="fill" style="width:24%"></div></div></div>
-              <div class="barrow"><div class="lbl">Data Quality &amp; Integrity</div><div class="track"><div class="fill" style="width:56%"></div></div></div>
-              <div class="barrow"><div class="lbl">Customer Experience Strength</div><div class="track"><div class="fill" style="width:72%"></div></div></div>
-              <div class="barrow"><div class="lbl">Operational Risk</div><div class="track"><div class="fill" style="width:70%"></div></div></div>
-            </div>
-          </div>
-        </div>
-
-        <div class="metric">
-          <div class="top">
-            <div class="metric-title">Industry</div>
-            <div class="scale"><span>Low</span><span>Mild</span><span>Moderate</span><span>Elevated</span><span>High</span></div>
-          </div>
-          <div class="metric-body">
-            <svg class="donut" viewBox="0 0 42 42" aria-label="Industry score donut">
-              <circle cx="21" cy="21" r="15.915" fill="transparent" stroke="#e5e7eb" stroke-width="4"></circle>
-              <circle cx="21" cy="21" r="15.915" fill="transparent" stroke="#facc15" stroke-width="4"
-                      stroke-linecap="round" stroke-dasharray="66 34" transform="rotate(-90 21 21)"></circle>
-              <text x="21" y="22" text-anchor="middle">3.3</text>
-            </svg>
-            <div class="bars">
-              <div class="barrow"><div class="lbl">Demand Volatility</div><div class="track"><div class="fill" style="width:52%"></div></div></div>
-              <div class="barrow"><div class="lbl">Input Cost Volatility</div><div class="track"><div class="fill" style="width:72%"></div></div></div>
-              <div class="barrow"><div class="lbl">Competition Pressure</div><div class="track"><div class="fill" style="width:20%"></div></div></div>
-              <div class="barrow"><div class="lbl">Regulatory Sensitivity</div><div class="track"><div class="fill" style="width:54%"></div></div></div>
-              <div class="barrow"><div class="lbl">Distribution Risk</div><div class="track"><div class="fill" style="width:92%"></div></div></div>
-              <div class="barrow"><div class="lbl">Supply Chain Stability</div><div class="track"><div class="fill" style="width:72%"></div></div></div>
-              <div class="barrow"><div class="lbl">Geopolitical Risk</div><div class="track"><div class="fill" style="width:22%"></div></div></div>
-              <div class="barrow"><div class="lbl">End Market Outlook</div><div class="track"><div class="fill" style="width:20%"></div></div></div>
-              <div class="barrow"><div class="lbl">Competitive Risk</div><div class="track"><div class="fill" style="width:54%"></div></div></div>
-            </div>
-          </div>
-        </div>
+        {% endfor %}
       </div>
     </section>
   </div>
