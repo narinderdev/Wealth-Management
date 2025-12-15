@@ -14,6 +14,17 @@
       margin-bottom:16px;
       box-shadow:0 1px 0 rgba(16,24,40,.04);
     }
+    .limits-page .table-scroll {
+      max-height:320px;
+      overflow-y:auto;
+      margin-bottom:-12px;
+    }
+    .limits-page .table-scroll.short {
+      max-height:200px;
+    }
+    .limits-page .table-scroll table {
+      margin-bottom:0;
+    }
     .limits-page .card-title{
       display:flex;
       align-items:center;
@@ -47,6 +58,7 @@
   <div class="limits-page">
     <div class="card">
       <div class="card-title">📈 Collateral Limits</div>
+      <div class="table-scroll">
       <table>
         <thead>
           <tr>
@@ -73,10 +85,12 @@
           {% endfor %}
         </tbody>
       </table>
+      </div>
     </div>
 
     <div class="card">
       <div class="card-title">📈 Ineligibles</div>
+      <div class="table-scroll short">
       <table>
         <thead>
           <tr>
@@ -99,6 +113,7 @@
           {% endfor %}
         </tbody>
       </table>
+      </div>
     </div>
   </div>
 {% endblock %}

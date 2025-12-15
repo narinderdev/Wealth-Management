@@ -56,12 +56,19 @@ def risk_view(request):
     rating_pct = float(min(max(overall_score / Decimal("5"), Decimal("0")), Decimal("1")) * 100) if overall_score else 0
     pill_list = []
     if composite_latest:
-        pill_list = [
-            {"label": "Accounts Receivable", "value": _format_pct(composite_latest.weight_ar)},
-            {"label": "Inventory", "value": _format_pct(composite_latest.weight_inventory)},
-            {"label": "Company Risks", "value": _format_pct(composite_latest.weight_company)},
-            {"label": "Industry", "value": _format_pct(composite_latest.weight_industry)},
+        pill_colors = ["blue", "navy", "lt", "wt"]
+        weights = [
+            ("Accounts Receivable", composite_latest.weight_ar),
+            ("Inventory", composite_latest.weight_inventory),
+            ("Company", composite_latest.weight_company),
+            ("Industry", composite_latest.weight_industry),
         ]
+        for idx, (label, weight) in enumerate(weights):
+            pill_list.append({
+                "label": label,
+                "value": _format_pct(weight),
+                "class": pill_colors[idx % len(pill_colors)],
+            })
     snapshot_text = (
         f"Latest composite score {overall_score:.2f}/5 · "
         f"AR past due {_format_pct(ar_row.pct_past_due)} · "

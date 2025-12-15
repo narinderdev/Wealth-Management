@@ -47,8 +47,7 @@ REPORT_SECTIONS = {
         ],
     },
     "cashflow": {
-        "title": "Cash Flow Forecast",
-        "description": "Projected inflow/outflow summary for the upcoming quarter.",
+        "title": "Report title",
         "forecast": [
             {"period": "Nov 2025", "inflow": "$4.8M", "outflow": "$3.7M", "net": "$1.1M"},
             {"period": "Dec 2025", "inflow": "$4.4M", "outflow": "$3.5M", "net": "$0.9M"},

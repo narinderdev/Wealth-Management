@@ -261,8 +261,7 @@
             </svg>
             <div class="pillcol">
               {% for pill in risk.pills %}
-                {% cycle 'blue' 'navy' 'lt' 'wt' as pill_class %}
-                <div class="pill {{ pill_class }}">{{ pill.value }} {{ pill.label|lower }}</div>
+                <div class="pill {{ pill.class }}">{{ pill.value }} {{ pill.label|lower }}</div>
               {% endfor %}
             </div>
           </div>

@@ -1,545 +1,431 @@
-<!doctype html>
-<html lang="en">
-<head>
-  <meta charset="utf-8" />
-  <meta name="viewport" content="width=device-width, initial-scale=1" />
-  <title>Inventory Dashboard (Static)</title>
-  <style>
-    :root{
-      --bg:#f6f9fd;
-      --card:#ffffff;
-      --text:#0f172a;
-      --muted:#6b7280;
-      --line:#e7eef7;
-      --line2:#f0f5fb;
-      --primary:#1e6fe0;
-      --primary-2:#2c7be5;
-      --success:#16a34a;
-      --danger:#ef4444;
-      --shadow: 0 6px 18px rgba(15, 23, 42, 0.06);
-      --radius:14px;
-    }
+<style>
+  :root{
+    --bg:#f6f9fd;
+    --card:#ffffff;
+    --text:#0f172a;
+    --muted:#6b7280;
+    --line:#e7eef7;
+    --line2:#f0f5fb;
+    --primary:#1e6fe0;
+    --primary-2:#2c7be5;
+    --success:#16a34a;
+    --danger:#ef4444;
+    --shadow: 0 6px 18px rgba(15, 23, 42, 0.06);
+    --radius:14px;
+  }
+  *{box-sizing:border-box;}
+  .work-in-progress .page{
+    max-width:1120px;
+    margin:18px auto;
+    padding:0 14px 28px;
+  }
+  .work-in-progress .card{
+    background:var(--card);
+    border:1px solid var(--line);
+    border-radius:var(--radius);
+    box-shadow:var(--shadow);
+  }
+  .work-in-progress .section{
+    padding:16px 18px;
+    margin-bottom:14px;
+  }
+  .work-in-progress .title{
+    display:flex;
+    align-items:center;
+    gap:10px;
+    font-weight:700;
+    letter-spacing:0.1px;
+    margin:2px 0 12px;
+    color:#0b1220;
+  }
+  .work-in-progress .title .icon{
+    width:18px;height:18px;display:grid;place-items:center;
+    color:var(--primary);
+  }
+  .work-in-progress .top-grid{
+    display:grid;
+    grid-template-columns:360px 1fr;
+    gap:14px;
+    align-items:stretch;
+  }
+  .work-in-progress .metric-stack{
+    display:flex;
+    flex-direction:column;
+    gap:10px;
+  }
+  .work-in-progress .metric{
+    border:1px solid var(--line);
+    border-radius:12px;
+    padding:14px;
+    display:flex;
+    align-items:center;
+    justify-content:space-between;
+    min-height:86px;
+    background:#fff;
+  }
+  .work-in-progress .metric .label{
+    font-size:12px;
+    color:var(--muted);
+    font-weight:600;
+    margin-bottom:4px;
+  }
+  .work-in-progress .metric .value{
+    font-size:22px;
+    font-weight:800;
+    letter-spacing:0.2px;
+    margin-bottom:6px;
+  }
+  .work-in-progress .metric .delta{
+    display:flex;
+    align-items:center;
+    gap:6px;
+    font-size:12px;
+    font-weight:700;
+  }
+  .work-in-progress .delta.danger{color:var(--danger);}
+  .work-in-progress .delta.success{color:var(--success);}
+  .work-in-progress .metric .badge{
+    width:40px;height:40px;
+    border-radius:999px;
+    background:#eaf3ff;
+    border:1px solid #d6e8ff;
+    display:grid;
+    place-items:center;
+    flex:0 0 auto;
+    color:var(--primary);
+  }
+  .work-in-progress .table-wrap{
+    border:1px solid var(--line);
+    border-radius:12px;
+    overflow:hidden;
+    background:#fff;
+    height:100%;
+  }
+  .work-in-progress table{
+    width:100%;
+    border-collapse:collapse;
+    font-size:13px;
+  }
+  .work-in-progress thead th{
+    background:#f4f7fc;
+    color:#475569;
+    font-weight:800;
+    font-size:12px;
+    text-align:left;
+    padding:10px 12px;
+    border-bottom:1px solid var(--line);
+    white-space:nowrap;
+  }
+  .work-in-progress tbody td{
+    padding:10px 12px;
+    border-bottom:1px solid var(--line2);
+    color:#0f172a;
+  }
+  .work-in-progress tbody tr:last-child td{border-bottom:none;}
+  .work-in-progress td.num,.work-in-progress th.num{text-align:right;font-variant-numeric:tabular-nums;}
+  .work-in-progress .chart-area{
+    border:1px solid var(--line);
+    border-radius:12px;
+    padding:12px 12px 8px;
+    background:#fff;
+  }
+  .work-in-progress .chart-note{
+    font-size:12px;
+    color:var(--muted);
+    margin-top:6px;
+  }
+  .work-in-progress .table-card{padding:0;}
+  .work-in-progress .table-card .head{padding:16px 18px 10px;}
+  .work-in-progress .table-card .body{padding:0 18px 16px;}
+  .work-in-progress .footer-row td{
+    background:#fbfdff;
+    font-weight:800;
+    color:#0b1220;
+    border-top:1px solid var(--line);
+  }
+  .work-in-progress .table-card + .table-card{margin-top:8px;}
+  .work-in-progress .numR{text-align:right;}
+  @media (max-width:980px){
+    .work-in-progress .top-grid{grid-template-columns:1fr;}
+    .work-in-progress .metric-stack{flex-direction:column;}
+  }
+</style>
 
-    *{ box-sizing:border-box; }
-    body{
-      margin:0;
-      font-family: ui-sans-serif, system-ui, -apple-system, Segoe UI, Roboto, Helvetica, Arial, "Apple Color Emoji","Segoe UI Emoji";
-      background:var(--bg);
-      color:var(--text);
-    }
-
-    .page{
-      max-width: 1120px;
-      margin: 18px auto;
-      padding: 0 14px 28px;
-    }
-
-    .card{
-      background:var(--card);
-      border:1px solid var(--line);
-      border-radius: var(--radius);
-      box-shadow: var(--shadow);
-    }
-
-    .section{
-      padding: 16px 18px;
-      margin-bottom: 14px;
-    }
-
-    .title{
-      display:flex;
-      align-items:center;
-      gap:10px;
-      font-weight:700;
-      letter-spacing:0.1px;
-      margin: 2px 0 12px;
-      color:#0b1220;
-    }
-
-    .title .icon{
-      width:18px;height:18px; display:grid; place-items:center;
-      color: var(--primary);
-    }
-
-    /* Top grid */
-    .top-grid{
-      display:grid;
-      grid-template-columns: 360px 1fr;
-      gap: 14px;
-      align-items: stretch;
-    }
-
-    .metric-stack{
-      display:flex;
-      flex-direction:column;
-      gap: 10px;
-    }
-
-    .metric{
-      border:1px solid var(--line);
-      border-radius: 12px;
-      padding: 14px 14px;
-      display:flex;
-      align-items:center;
-      justify-content:space-between;
-      min-height: 86px;
-      background: #fff;
-    }
-
-    .metric .label{
-      font-size: 12px;
-      color: var(--muted);
-      font-weight: 600;
-      margin-bottom: 4px;
-    }
-
-    .metric .value{
-      font-size: 22px;
-      font-weight: 800;
-      letter-spacing: 0.2px;
-      margin-bottom: 6px;
-    }
-
-    .metric .delta{
-      display:flex;
-      align-items:center;
-      gap:6px;
-      font-size: 12px;
-      font-weight: 700;
-    }
-    .delta.danger{ color: var(--danger); }
-    .delta.success{ color: var(--success); }
-
-    .metric .badge{
-      width: 40px; height: 40px;
-      border-radius: 999px;
-      background: #eaf3ff;
-      border: 1px solid #d6e8ff;
-      display:grid;
-      place-items:center;
-      flex: 0 0 auto;
-      color: var(--primary);
-    }
-
-    /* Tables */
-    .table-wrap{
-      border:1px solid var(--line);
-      border-radius: 12px;
-      overflow:hidden;
-      background:#fff;
-      height: 100%;
-    }
-    table{
-      width:100%;
-      border-collapse:collapse;
-      font-size: 13px;
-    }
-    thead th{
-      background: #f4f7fc;
-      color: #475569;
-      font-weight: 800;
-      font-size: 12px;
-      text-align:left;
-      padding: 10px 12px;
-      border-bottom:1px solid var(--line);
-      white-space:nowrap;
-    }
-    tbody td{
-      padding: 10px 12px;
-      border-bottom:1px solid var(--line2);
-      color:#0f172a;
-    }
-    tbody tr:last-child td{ border-bottom:none; }
-    td.num, th.num{ text-align:right; font-variant-numeric: tabular-nums; }
-
-    /* Chart */
-    .chart-area{
-      border:1px solid var(--line);
-      border-radius: 12px;
-      padding: 12px 12px 8px;
-      background:#fff;
-    }
-    .chart-note{
-      font-size: 12px;
-      color: var(--muted);
-      margin-top: 6px;
-    }
-
-    /* Big tables */
-    .table-card{
-      padding: 0;
-    }
-    .table-card .head{
-      padding: 16px 18px 10px;
-    }
-    .table-card .body{
-      padding: 0 18px 16px;
-    }
-
-    .footer-row td{
-      background:#fbfdff;
-      font-weight: 800;
-      color:#0b1220;
-      border-top:1px solid var(--line);
-    }
-
-    /* Responsive */
-    @media (max-width: 980px){
-      .top-grid{ grid-template-columns: 1fr; }
-      .metric-stack{ flex-direction:column; }
-    }
-  </style>
-</head>
-
-<body>
-  <div class="page">
-
-    <!-- AVAILABLE INVENTORY BREAKDOWN -->
-    <div class="card section">
-      <div class="title">
-        <span class="icon" aria-hidden="true">
-          <!-- small trend icon -->
-          <svg viewBox="0 0 24 24" width="18" height="18" fill="none">
-            <path d="M4 16.5l6-6 4 4 6-7" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"/>
-            <path d="M20 7h-5" stroke="currentColor" stroke-width="2.2" stroke-linecap="round"/>
-          </svg>
-        </span>
-        <span>Available Inventory Breakdown</span>
+<div class="page work-in-progress">
+  <div class="card section">
+    <div class="title">
+      <span class="icon" aria-hidden="true">
+        <svg viewBox="0 0 24 24"><path d="M4 16.5l6-6 4 4 6-7" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"/><path d="M20 7h-5" stroke="currentColor" stroke-width="2.2" stroke-linecap="round"/></svg>
+      </span>
+      <span>Available Inventory Breakdown</span>
+    </div>
+    <div class="top-grid">
+      <div class="metric-stack">
+        {% for metric in work_in_progress_metrics %}
+          <div class="metric">
+            <div>
+              <div class="label">{{ metric.label }}</div>
+              <div class="value">{{ metric.value }}</div>
+              {% if metric.delta %}
+                <div class="delta {{ metric.delta_class }}">
+                  <span aria-hidden="true">{{ metric.symbol }}</span>
+                  <span>{{ metric.delta }}</span>
+                </div>
+              {% endif %}
+            </div>
+            <div class="badge" aria-hidden="true" title="{{ metric.label }}">
+              {{ metric.icon|safe }}
+            </div>
+          </div>
+        {% empty %}
+          <div class="metric">
+            <div>
+              <div class="label">Awaiting data</div>
+              <div class="value">—</div>
+            </div>
+            <div class="badge"></div>
+          </div>
+        {% endfor %}
       </div>
-
-      <div class="top-grid">
-        <!-- left metric stack -->
-        <div class="metric-stack">
-          <div class="metric">
-            <div>
-              <div class="label">Total Inventory</div>
-              <div class="value">14.89M</div>
-              <div class="delta danger">
-                <span aria-hidden="true">▼</span>
-                <span>-0.84%</span>
-              </div>
-            </div>
-            <div class="badge" aria-hidden="true" title="Metric">
+      <div class="table-wrap">
+        <div style="padding:14px 14px 6px;">
+          <div class="title" style="margin:0;">
+            <span class="icon" aria-hidden="true">
               <svg viewBox="0 0 24 24" width="18" height="18" fill="none">
-                <path d="M6 17V10" stroke="currentColor" stroke-width="2" stroke-linecap="round"/>
-                <path d="M12 17V7" stroke="currentColor" stroke-width="2" stroke-linecap="round"/>
-                <path d="M18 17v-5" stroke="currentColor" stroke-width="2" stroke-linecap="round"/>
+                <path d="M4 16.5l6-6 4 4 6-7" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"/>
+                <path d="M20 7h-5" stroke="currentColor" stroke-width="2.2" stroke-linecap="round"/>
               </svg>
-            </div>
-          </div>
-
-          <div class="metric">
-            <div>
-              <div class="label">Ineligible Inventory</div>
-              <div class="value">60</div>
-              <div class="delta danger">
-                <span aria-hidden="true">▼</span>
-                <span>-0.84%</span>
-              </div>
-            </div>
-            <div class="badge" aria-hidden="true" title="Metric">
-              <svg viewBox="0 0 24 24" width="18" height="18" fill="none">
-                <path d="M7 7h10" stroke="currentColor" stroke-width="2" stroke-linecap="round"/>
-                <path d="M7 12h10" stroke="currentColor" stroke-width="2" stroke-linecap="round"/>
-                <path d="M7 17h10" stroke="currentColor" stroke-width="2" stroke-linecap="round"/>
-              </svg>
-            </div>
-          </div>
-
-          <div class="metric">
-            <div>
-              <div class="label">Available Inventory</div>
-              <div class="value">54.8%</div>
-              <div class="delta success">
-                <span aria-hidden="true">▲</span>
-                <span>+0.67%</span>
-              </div>
-            </div>
-            <div class="badge" aria-hidden="true" title="Metric">
-              <svg viewBox="0 0 24 24" width="18" height="18" fill="none">
-                <path d="M6 18V6" stroke="currentColor" stroke-width="2" stroke-linecap="round"/>
-                <path d="M6 18h12" stroke="currentColor" stroke-width="2" stroke-linecap="round"/>
-                <path d="M9 14l3-3 3 2 4-5" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/>
-              </svg>
-            </div>
+            </span>
+            <span>Ineligible Detail</span>
           </div>
         </div>
-
-        <!-- right table -->
-        <div class="table-wrap">
-          <div style="padding:14px 14px 6px;">
-            <div class="title" style="margin:0;">
-              <span class="icon" aria-hidden="true">
-                <svg viewBox="0 0 24 24" width="18" height="18" fill="none">
-                  <path d="M4 16.5l6-6 4 4 6-7" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"/>
-                  <path d="M20 7h-5" stroke="currentColor" stroke-width="2.2" stroke-linecap="round"/>
-                </svg>
-              </span>
-              <span>Ineligible Detail</span>
-            </div>
-          </div>
-
-          <table>
-            <thead>
+        <table>
+          <thead>
+            <tr>
+              <th>Ineligibles</th>
+              <th class="num">Amount</th>
+              <th class="num">% of Ineligibles</th>
+            </tr>
+          </thead>
+          <tbody>
+            {% for row in work_in_progress_ineligible_detail %}
               <tr>
-                <th>Ineligibles</th>
-                <th class="num">Amount</th>
-                <th class="num">% of Ineligibles</th>
+                <td>{{ row.reason }}</td>
+                <td class="num">{{ row.amount }}</td>
+                <td class="num">{{ row.pct }}</td>
               </tr>
-            </thead>
-            <tbody>
-              <tr>
-                <td>New Inventory Conflicts</td>
-                <td class="num">$18,564.12</td>
-                <td class="num">10%</td>
-              </tr>
-              <tr>
-                <td>Expired</td>
-                <td class="num">$18,641.23</td>
-                <td class="num">10%</td>
-              </tr>
-              <tr>
-                <td>Missing Images</td>
-                <td class="num">$20,814.07</td>
-                <td class="num">14%</td>
-              </tr>
-              <tr>
-                <td>Damages</td>
-                <td class="num">$10,084.32</td>
-                <td class="num">8%</td>
-              </tr>
-              <tr>
-                <td>On Hold</td>
-                <td class="num">$16,884.32</td>
-                <td class="num">10%</td>
-              </tr>
-              <tr>
-                <td>Manual Review Needed</td>
-                <td class="num">$19,854.57</td>
-                <td class="num">12%</td>
-              </tr>
-            </tbody>
-          </table>
-        </div>
+            {% empty %}
+              <tr><td colspan="3">No ineligible detail.</td></tr>
+            {% endfor %}
+          </tbody>
+        </table>
       </div>
     </div>
+  </div>
 
-    <!-- INVENTORY TREND -->
-    <div class="card section">
-      <div class="title">
+  <div class="card section">
+    <div class="title">
+      <span class="icon" aria-hidden="true">
+        <svg viewBox="0 0 24 24" width="18" height="18" fill="none">
+          <path d="M4 16.5l6-6 4 4 6-7" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"/>
+          <path d="M20 7h-5" stroke="currentColor" stroke-width="2.2" stroke-linecap="round"/>
+        </svg>
+      </span>
+      <span>Inventory Trend</span>
+    </div>
+    <div class="chart-area" data-chart="workInventoryTrend"></div>
+    <div class="chart-note">Trend shows how available inventory has moved over the last 12 months.</div>
+  </div>
+
+  <div class="card table-card">
+    <div class="head">
+      <div class="title" style="margin:0;">
         <span class="icon" aria-hidden="true">
           <svg viewBox="0 0 24 24" width="18" height="18" fill="none">
             <path d="M4 16.5l6-6 4 4 6-7" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"/>
             <path d="M20 7h-5" stroke="currentColor" stroke-width="2.2" stroke-linecap="round"/>
           </svg>
         </span>
-        <span>Inventory Trend</span>
+        <span>Category Analysis</span>
       </div>
+    </div>
+    <div class="body">
+      <div class="table-wrap">
+        <table>
+          <thead>
+            <tr>
+              <th>Category</th>
+              <th class="num">Total</th>
+              <th class="num">Ineligible</th>
+              <th class="num">Available</th>
+              <th class="num">% Available</th>
+            </tr>
+          </thead>
+          <tbody>
+            {% for row in work_in_progress_category_rows %}
+              <tr>
+                <td>{{ row.label }}</td>
+                <td class="num">{{ row.total }}</td>
+                <td class="num">{{ row.ineligible }}</td>
+                <td class="num">{{ row.available }}</td>
+                <td class="num">{{ row.pct_available }}</td>
+              </tr>
+            {% endfor %}
+            <tr class="footer-row">
+              <td>{{ work_in_progress_category_top10.label }}</td>
+              <td class="num">{{ work_in_progress_category_top10.total }}</td>
+              <td class="num">{{ work_in_progress_category_top10.ineligible }}</td>
+              <td class="num">{{ work_in_progress_category_top10.available }}</td>
+              <td class="num">{{ work_in_progress_category_top10.pct_available }}</td>
+            </tr>
+            <tr class="footer-row">
+              <td>{{ work_in_progress_category_other.label }}</td>
+              <td class="num">{{ work_in_progress_category_other.total }}</td>
+              <td class="num">{{ work_in_progress_category_other.ineligible }}</td>
+              <td class="num">{{ work_in_progress_category_other.available }}</td>
+              <td class="num">{{ work_in_progress_category_other.pct_available }}</td>
+            </tr>
+            <tr class="footer-row">
+              <td>Total</td>
+              <td class="num">{{ work_in_progress_category_footer.total }}</td>
+              <td class="num">{{ work_in_progress_category_footer.ineligible }}</td>
+              <td class="num">{{ work_in_progress_category_footer.available }}</td>
+              <td class="num">{{ work_in_progress_category_footer.pct_available }}</td>
+            </tr>
+          </tbody>
+        </table>
+      </div>
+    </div>
+  </div>
 
-      <div class="chart-area">
-        <!-- Static SVG line chart (no JS, single-file) -->
-        <svg viewBox="0 0 1040 320" width="100%" height="300" role="img" aria-label="Inventory trend line chart">
-          <!-- plot area -->
+  <div class="card table-card">
+    <div class="head">
+      <div class="title" style="margin:0;">
+        <span class="icon" aria-hidden="true">
+          <svg viewBox="0 0 24 24" width="18" height="18" fill="none">
+            <path d="M4 16.5l6-6 4 4 6-7" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"/>
+            <path d="M20 7h-5" stroke="currentColor" stroke-width="2.2" stroke-linecap="round"/>
+          </svg>
+        </span>
+        <span>Top SKU Analysis</span>
+      </div>
+    </div>
+    <div class="body">
+      <div class="table-wrap">
+        <table>
+          <thead>
+            <tr>
+              <th>SKU</th>
+              <th>Category</th>
+              <th>Description</th>
+              <th class="num">Amount</th>
+              <th class="num">Units</th>
+              <th class="num">$ / Unit</th>
+              <th class="num">% Available</th>
+            </tr>
+          </thead>
+          <tbody>
+            {% for sku in work_in_progress_top_skus %}
+              <tr>
+                <td>{{ sku.sku }}</td>
+                <td>{{ sku.category }}</td>
+                <td>{{ sku.description }}</td>
+                <td class="num">{{ sku.amount }}</td>
+                <td class="num">{{ sku.units }}</td>
+                <td class="num">{{ sku.per_unit }}</td>
+                <td class="num">{{ sku.pct_available }}</td>
+              </tr>
+            {% empty %}
+              <tr><td colspan="7" class="num">No SKU data.</td></tr>
+            {% endfor %}
+          </tbody>
+          <tfoot>
+            <tr class="footer-row">
+              <td>Top 25 Total</td>
+              <td class="num" colspan="4"></td>
+              <td class="num">{{ work_in_progress_top25_total.total }}</td>
+              <td class="num">{{ work_in_progress_top25_total.pct_available }}</td>
+            </tr>
+            <tr class="footer-row">
+              <td>{{ work_in_progress_top_skus_other.label }}</td>
+              <td class="num" colspan="4"></td>
+              <td class="num">{{ work_in_progress_top_skus_other.total }}</td>
+              <td class="num">{{ work_in_progress_top_skus_other.pct_available }}</td>
+            </tr>
+            <tr class="footer-row">
+              <td>{{ work_in_progress_top_skus_total.label }}</td>
+              <td class="num" colspan="4"></td>
+              <td class="num">{{ work_in_progress_top_skus_total.total }}</td>
+              <td class="num">{{ work_in_progress_top_skus_total.pct_available }}</td>
+            </tr>
+          </tfoot>
+        </table>
+      </div>
+    </div>
+  </div>
+</div>
+
+<script>
+  const charts = {{ work_in_progress_chart_config_json|safe }};
+  function fmtY(val, cfg){
+    if (cfg.yPrefix || cfg.ySuffix) return `${cfg.yPrefix||""}${val.toFixed(1)}${cfg.ySuffix||""}`;
+    return String(val.toFixed(1));
+  }
+  function pathFrom(pts){
+    return pts.map((p,i)=> (i===0?`M ${p[0]} ${p[1]}`:`L ${p[0]} ${p[1]}`)).join(" ");
+  }
+  function renderLine(el,c){
+    const W = 1040, H = 320;
+    const pad = {l:80,r:30,t:20,b:60};
+    const plotW = W-pad.l-pad.r, plotH = H-pad.t-pad.b;
+    let min = Math.min(...c.values);
+    let max = Math.max(...c.values);
+    if (max - min < 10) {
+      const padding = 5;
+      min -= padding;
+      max += padding;
+    }
+    const range = max - min || 1;
+    const x = i => pad.l + (i/(c.labels.length-1))*plotW;
+    const y = v => {
+      const ratio = (v - min) / range;
+      return pad.t + (1 - ratio) * plotH;
+    };
+    const points = c.values.map((v,i)=>[x(i),y(v)]);
+    const ticks = c.yTicks||6;
+    const yTicks = Array.from({length:ticks},(_,i)=>{
+      const t = i/(ticks-1);
+      const val = max - t * range;
+      return {val, yy:y(val)};
+    });
+    el.innerHTML = `
+      <div class="chart-wrap">
+        <svg viewBox="0 0 ${W} ${H}" role="img" aria-label="${c.title} chart">
           <defs>
-            <clipPath id="clip">
-              <rect x="80" y="20" width="930" height="230" rx="8"></rect>
+            <clipPath id="clip-wip">
+              <rect x="${pad.l}" y="${pad.t}" width="${plotW}" height="${plotH}" rx="8"></rect>
             </clipPath>
           </defs>
-
-          <!-- grid -->
-          <g stroke="#e7eef7" stroke-width="1">
-            <line x1="80" y1="50" x2="1010" y2="50" />
-            <line x1="80" y1="90" x2="1010" y2="90" />
-            <line x1="80" y1="130" x2="1010" y2="130" />
-            <line x1="80" y1="170" x2="1010" y2="170" />
-            <line x1="80" y1="210" x2="1010" y2="210" />
-            <line x1="80" y1="250" x2="1010" y2="250" />
-          </g>
-
-          <!-- y labels -->
+          ${yTicks.map(t=>`
+            <line x1="${pad.l}" y1="${t.yy}" x2="${W-pad.r}" y2="${t.yy}" stroke="#e7eef7" stroke-width="1"></line>
+            <text x="55" y="${t.yy+4}" fill="#94a3b8" font-size="12" font-weight="700" text-anchor="end">${fmtY(t.val,c)}</text>
+          `).join("")}
+          <path d="${pathFrom(points)}" fill="none" stroke="${c.color||'#1e6fe0'}" stroke-width="4" stroke-linecap="round" stroke-linejoin="round" clip-path="url(#clip-wip)"></path>
+          ${points.map((p,i)=>`<circle cx="${p[0]}" cy="${p[1]}" r="6" fill="${c.color||'#1e6fe0'}"></circle>`).join("")}
           <g fill="#94a3b8" font-size="12" font-weight="700">
-            <text x="48" y="54">100%</text>
-            <text x="55" y="94">90%</text>
-            <text x="55" y="134">70%</text>
-            <text x="55" y="174">50%</text>
-            <text x="55" y="214">30%</text>
-            <text x="55" y="254">10%</text>
-          </g>
-
-          <!-- y axis title -->
-          <g fill="#64748b" font-size="12" font-weight="800">
-            <text transform="translate(18,180) rotate(-90)">% of Inventory</text>
-          </g>
-
-          <!-- line + points -->
-          <g clip-path="url(#clip)">
-            <path d="M95 170
-                     L170 150
-                     L245 132
-                     L320 115
-                     L395 128
-                     L470 138
-                     L545 150
-                     L620 175
-                     L695 200
-                     L770 225
-                     L845 205
-                     L920 180
-                     L995 160"
-                  fill="none" stroke="#1e6fe0" stroke-width="4" stroke-linecap="round" stroke-linejoin="round"/>
-
-            <!-- points -->
-            <g fill="#1e6fe0">
-              <circle cx="95"  cy="170" r="6"/>
-              <circle cx="170" cy="150" r="6"/>
-              <circle cx="245" cy="132" r="6"/>
-              <circle cx="320" cy="115" r="6"/>
-              <circle cx="395" cy="128" r="6"/>
-              <circle cx="470" cy="138" r="6"/>
-              <circle cx="545" cy="150" r="6"/>
-              <circle cx="620" cy="175" r="6"/>
-              <circle cx="695" cy="200" r="6"/>
-              <circle cx="770" cy="225" r="6"/>
-              <circle cx="845" cy="205" r="6"/>
-              <circle cx="920" cy="180" r="6"/>
-              <circle cx="995" cy="160" r="6"/>
-            </g>
-          </g>
-
-          <!-- x labels -->
-          <g fill="#94a3b8" font-size="12" font-weight="700">
-            <text x="85"  y="300">Feb 2024</text>
-            <text x="160" y="300">Mar 2024</text>
-            <text x="235" y="300">Apr 2024</text>
-            <text x="310" y="300">May 2024</text>
-            <text x="385" y="300">Jun 2024</text>
-            <text x="460" y="300">Jul 2024</text>
-            <text x="535" y="300">Aug 2024</text>
-            <text x="610" y="300">Sep 2024</text>
-            <text x="685" y="300">Oct 2024</text>
-            <text x="760" y="300">Nov 2024</text>
-            <text x="835" y="300">Dec 2024</text>
-            <text x="910" y="300">Jan 2025</text>
-            <text x="985" y="300" text-anchor="end">Feb 2025</text>
+            ${c.labels.map((lab,i)=>`<text x="${x(i)}" y="${H-20}" text-anchor="middle">${lab}</text>`).join("")}
           </g>
         </svg>
       </div>
-    </div>
-
-    <!-- CATEGORY ANALYSIS -->
-    <div class="card table-card" style="margin-bottom:14px;">
-      <div class="head">
-        <div class="title" style="margin:0;">
-          <span class="icon" aria-hidden="true">
-            <svg viewBox="0 0 24 24" width="18" height="18" fill="none">
-              <path d="M4 16.5l6-6 4 4 6-7" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"/>
-              <path d="M20 7h-5" stroke="currentColor" stroke-width="2.2" stroke-linecap="round"/>
-            </svg>
-          </span>
-          <span>Category Analysis</span>
-        </div>
-      </div>
-
-      <div class="body">
-        <div class="table-wrap">
-          <table>
-            <thead>
-              <tr>
-                <th>Category</th>
-                <th class="num">Total</th>
-                <th class="num">Ineligible</th>
-                <th class="num">Available</th>
-                <th class="num">% Available</th>
-              </tr>
-            </thead>
-            <tbody>
-              <tr><td>Middle Tier / Small</td><td class="num">17,236</td><td class="num">-1,241</td><td class="num">16,??</td><td class="num">93%</td></tr>
-              <tr><td>Large Components</td><td class="num">6,380</td><td class="num">-841</td><td class="num">5,539</td><td class="num">87%</td></tr>
-              <tr><td>FMC &amp; Machinery</td><td class="num">9,254</td><td class="num">-784</td><td class="num">8,470</td><td class="num">91%</td></tr>
-              <tr><td>RFA &amp; Surface Components</td><td class="num">9,064</td><td class="num">-759</td><td class="num">8,305</td><td class="num">89%</td></tr>
-              <tr><td>RFA &amp; Rigging</td><td class="num">9,777</td><td class="num">-725</td><td class="num">9,052</td><td class="num">93%</td></tr>
-              <tr><td>Final Small Components</td><td class="num">9,778</td><td class="num">-714</td><td class="num">9,064</td><td class="num">93%</td></tr>
-              <tr><td>Pipe &amp; Threaded</td><td class="num">17,236</td><td class="num">-1,241</td><td class="num">15,995</td><td class="num">93%</td></tr>
-              <tr><td>Fasteners/Hardware</td><td class="num">6,380</td><td class="num">-841</td><td class="num">5,539</td><td class="num">87%</td></tr>
-              <tr><td>Packaging Material</td><td class="num">9,254</td><td class="num">-784</td><td class="num">8,470</td><td class="num">91%</td></tr>
-              <tr><td>Adhesives / Sealants</td><td class="num">9,064</td><td class="num">-759</td><td class="num">8,305</td><td class="num">89%</td></tr>
-
-              <tr class="footer-row">
-                <td>Total</td>
-                <td class="num">35,900</td>
-                <td class="num">-6,089</td>
-                <td class="num">29,811</td>
-                <td class="num">83.7%</td>
-              </tr>
-            </tbody>
-          </table>
-        </div>
-      </div>
-    </div>
-
-    <!-- TOP SKU ANALYSIS -->
-    <div class="card table-card">
-      <div class="head">
-        <div class="title" style="margin:0;">
-          <span class="icon" aria-hidden="true">
-            <svg viewBox="0 0 24 24" width="18" height="18" fill="none">
-              <path d="M4 16.5l6-6 4 4 6-7" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"/>
-              <path d="M20 7h-5" stroke="currentColor" stroke-width="2.2" stroke-linecap="round"/>
-            </svg>
-          </span>
-          <span>Top Sku Analysis</span>
-        </div>
-      </div>
-
-      <div class="body">
-        <div class="table-wrap">
-          <table>
-            <thead>
-              <tr>
-                <th>SKU</th>
-                <th>Category</th>
-                <th>Description</th>
-                <th class="num">Amount</th>
-                <th class="num">Units</th>
-                <th class="num">Value</th>
-                <th class="num">% Available</th>
-              </tr>
-            </thead>
-            <tbody>
-              <tr><td>BB-9075</td><td>Limited Components</td><td>Dynamic Panel - 50L...</td><td class="num">$475,364</td><td class="num">11,240</td><td class="num">$8.65</td><td class="num">8.36%</td></tr>
-              <tr><td>BB-9088</td><td>Limited Fasteners</td><td>Magnet Wheel - 90A...</td><td class="num">$375,097</td><td class="num">11,799</td><td class="num">$7.95</td><td class="num">9.07%</td></tr>
-              <tr><td>BA-0104</td><td>Limited Components</td><td>Magnet Wheel - 90A...</td><td class="num">$375,097</td><td class="num">11,799</td><td class="num">$7.95</td><td class="num">8.78%</td></tr>
-              <tr><td>BA-0209</td><td>Limited Components</td><td>Dynamic Panel - 50L...</td><td class="num">$375,300</td><td class="num">11,290</td><td class="num">$7.85</td><td class="num">8.94%</td></tr>
-              <tr><td>TA-1209</td><td>Limited Components</td><td>Dynamic Panel - 90L...</td><td class="num">$323,300</td><td class="num">11,290</td><td class="num">$8.85</td><td class="num">8.21%</td></tr>
-              <tr><td>EW-0042</td><td>Limited Components</td><td>Dynamic Panel - 20L...</td><td class="num">$306,200</td><td class="num">11,290</td><td class="num">$8.66</td><td class="num">8.26%</td></tr>
-
-              <tr class="footer-row">
-                <td colspan="3">Top 6 Total</td>
-                <td class="num">$2,228,?58</td>
-                <td class="num"></td>
-                <td class="num"></td>
-                <td class="num">78.86%</td>
-              </tr>
-              <tr class="footer-row">
-                <td colspan="3">Other SKUs</td>
-                <td class="num">$3,?99,?9</td>
-                <td class="num"></td>
-                <td class="num"></td>
-                <td class="num">71.40%</td>
-              </tr>
-              <tr class="footer-row">
-                <td colspan="3">Total</td>
-                <td class="num">$6,0?8,0?</td>
-                <td class="num"></td>
-                <td class="num"></td>
-                <td class="num">73.40%</td>
-              </tr>
-            </tbody>
-          </table>
-        </div>
-      </div>
-    </div>
-
-  </div>
-</body>
-</html>
+    `;
+  }
+  document.addEventListener("DOMContentLoaded", ()=>{
+    const chartElements = document.querySelectorAll("[data-chart]");
+    chartElements.forEach(el=>{
+      const key = el.getAttribute("data-chart");
+      if (charts[key]) {
+        renderLine(el, charts[key]);
+      }
+    });
+  });
+</script>

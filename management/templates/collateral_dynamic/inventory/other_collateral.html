@@ -2,643 +2,386 @@
 <html lang="en">
 <head>
   <meta charset="utf-8" />
-  <meta name="viewport" content="width=device-width,initial-scale=1" />
-  <title>13 Week Cash Flow + Liquidity (Single Page)</title>
-
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <title>Value Monitor + Value Analysis (Static)</title>
   <style>
     :root{
-      --bg:#f5f8fd;
-      --card:#ffffff;
-      --text:#0f172a;
-      --muted:#6b7280;
-      --line:#e7eef7;
-      --line2:#f0f4fb;
-      --shadow:0 10px 24px rgba(15,23,42,.06);
-      --radius:14px;
+      --bg:#f4f7fb;
+      --card:#fff;
+      --ink:#101828;
+      --muted:#667085;
+      --muted2:#98A2B3;
+      --border:#E6EAF2;
+      --grid:#EEF2F7;
+      --shadow: 0 1px 2px rgba(16,24,40,.06);
+      --r:12px;
 
-      --blue:#1f7ae0;
-      --blue-2:#0e66c2;
-      --orange:#f59e0b;
-      --green:#22c55e;
-      --red:#ef4444;
+      --blue:#175CD3;
+      --blue2:#2E90FA;
+      --indigo:#3B4BD8;
+      --danger:#F04438;
+      --success:#12B76A;
     }
-
-    *{ box-sizing:border-box; }
+    *{box-sizing:border-box}
     body{
       margin:0;
-      font-family: ui-sans-serif, system-ui, -apple-system, Segoe UI, Roboto, Helvetica, Arial;
+      font-family: ui-sans-serif,system-ui,-apple-system,Segoe UI,Roboto,Helvetica,Arial,"Apple Color Emoji","Segoe UI Emoji";
       background:var(--bg);
-      color:var(--text);
+      color:var(--ink);
+      line-height:1.35;
     }
-
-    .page{
-      max-width:1240px;
-      margin:16px auto 28px;
-      padding:0 14px;
-    }
-
+    .wrap{max-width:1180px;margin:14px auto;padding:0 18px 34px;}
     .card{
       background:var(--card);
-      border:1px solid var(--line);
-      border-radius:var(--radius);
+      border:1px solid var(--border);
+      border-radius:var(--r);
       box-shadow:var(--shadow);
+      overflow:hidden;
     }
-    .section{ padding:16px 18px; }
-    .mb{ margin-bottom:14px; }
+    .divider{height:1px;background:var(--border);}
+    .card-head{
+      display:flex;align-items:center;gap:8px;
+      padding:12px 14px;
+      font-size:12px;font-weight:950;color:#344054;
+    }
+    .ico{
+      width:16px;height:16px;border-radius:6px;
+      background: rgba(23,92,211,.10);
+      border:1px solid rgba(23,92,211,.18);
+      display:grid;place-items:center;flex:0 0 auto;
+    }
+    .ico svg{width:10px;height:10px;fill:var(--blue);opacity:.95}
 
-    .title{
-      display:flex;
-      align-items:center;
-      gap:10px;
-      font-weight:900;
-      color:#0b1220;
-      letter-spacing:.1px;
-      margin:2px 0 12px;
-    }
-    .dot{
-      width:10px;height:10px;border-radius:999px;
-      background:var(--blue);
-      box-shadow:0 0 0 4px rgba(31,122,224,.12);
-    }
+    /* ----- Value Monitor top cards ----- */
+    .kpi-row{display:grid;grid-template-columns: repeat(3, 1fr); gap:12px; padding: 0 14px 14px;}
+    @media (max-width: 980px){ .kpi-row{grid-template-columns:1fr;} }
 
-    /* Layout blocks */
-    .grid-top{
-      display:grid;
-      grid-template-columns: 280px 1fr;
-      gap:14px;
-      align-items:stretch;
-    }
-    .grid-2{
-      display:grid;
-      grid-template-columns: 1fr 1fr;
-      gap:14px;
-      align-items:stretch;
-    }
-
-    @media (max-width: 1000px){
-      .grid-top{ grid-template-columns:1fr; }
-      .grid-2{ grid-template-columns:1fr; }
-    }
-
-    /* Current week summary list */
-    .kv{
-      width:100%;
-      border-collapse:collapse;
-      font-size:12px;
-    }
-    .kv td{
-      padding:8px 0;
-      border-bottom:1px solid var(--line2);
-      vertical-align:top;
-    }
-    .kv tr:last-child td{ border-bottom:none; }
-    .kv td:first-child{ color:var(--muted); font-weight:800; }
-    .kv td:last-child{ text-align:right; font-variant-numeric:tabular-nums; font-weight:900; color:#0b1220; }
-
-    /* Metric cards */
-    .metrics{
-      display:grid;
-      grid-template-columns: repeat(3, minmax(0, 1fr));
-      gap:12px;
-      margin-bottom:10px;
-    }
-    @media (max-width: 780px){
-      .metrics{ grid-template-columns:1fr; }
-    }
-    .metric{
-      border:1px solid var(--line);
+    .kpi{
+      border:1px solid var(--border);
       border-radius:12px;
+      background:#fff;
       padding:12px 12px;
       display:flex;
       justify-content:space-between;
-      gap:10px;
-      background:#fff;
-      min-height:74px;
+      gap:12px;
     }
-    .metric .label{ font-size:12px; color:var(--muted); font-weight:800; margin-bottom:4px; }
-    .metric .value{ font-size:18px; font-weight:950; letter-spacing:.2px; margin-bottom:6px; }
-    .metric .delta{
-      font-size:12px;
-      font-weight:900;
-      display:flex;
-      align-items:center;
-      gap:6px;
+    .kpi .left .t{
+      font-size:11px;font-weight:950;color:#475467;margin-bottom:8px;
     }
-    .delta.down{ color:var(--red); }
-    .delta.up{ color:var(--green); }
+    .kpi .big{
+      font-size:18px;font-weight:1000;color:#1D2939;letter-spacing:.1px;
+      margin-bottom:10px;
+    }
+    .kpi .pair{
+      display:flex;justify-content:space-between;gap:10px;
+      font-size:11px;color:#475467;
+      margin-top:6px;
+    }
+    .kpi .pair b{color:#1D2939;font-weight:950}
+    .kpi .right{
+      display:flex;flex-direction:column;align-items:flex-end;gap:8px;
+      min-width:56px;
+    }
+    .info{
+      width:18px;height:18px;border-radius:999px;
+      border:1px solid rgba(152,162,179,.45);
+      color:#98A2B3;
+      display:grid;place-items:center;
+      font-size:12px;font-weight:900;
+    }
+    .delta{
+      font-size:11px;
+      font-weight:950;
+      display:flex;align-items:center;gap:6px;
+      color:var(--danger);
+      margin-top: 18px;
+    }
+    .delta.good{color:var(--success)}
+    .arrow{font-size:12px;line-height:1}
 
-    .badge{
-      width:36px;height:36px;border-radius:999px;
-      background:#eaf3ff;
-      border:1px solid #d6e8ff;
-      color:var(--blue);
-      display:grid;
-      place-items:center;
-      flex:0 0 auto;
-    }
-
-    /* Chart cards */
-    .chart-wrap{
-      border:1px solid var(--line);
-      border-radius:12px;
-      padding:10px 10px 6px;
-      background:#fff;
+    /* ----- Value Trend chart ----- */
+    .chart-head{
+      padding: 10px 14px 0;
+      display:flex;justify-content:space-between;align-items:center;gap:12px;
     }
     .legend{
-      display:flex;
-      align-items:center;
-      justify-content:flex-end;
-      gap:14px;
-      margin-top:6px;
-      font-size:12px;
-      color:#334155;
-      font-weight:800;
+      display:flex;gap:12px;align-items:center;
+      font-size:11px;color:var(--muted);
+      flex-wrap:wrap;
     }
-    .lg-item{ display:flex; align-items:center; gap:8px; }
-    .swatch{ width:10px; height:10px; border-radius:3px; }
-
-    /* Info box */
-    .info{
-      display:flex;
-      gap:12px;
-      border:1px solid var(--line);
-      border-radius:12px;
-      padding:12px;
-      background:#fbfdff;
-    }
-    .info .i{
-      width:34px;height:34px;border-radius:10px;
-      background:#eaf3ff;
-      border:1px solid #d6e8ff;
-      color:var(--blue);
-      display:grid;place-items:center;
-      flex:0 0 auto;
-    }
-    .info .h{ font-weight:950; margin:2px 0 6px; }
-    .info p{ margin:0; font-size:12px; color:#475569; line-height:1.45; font-weight:700; }
-
-    /* Big tables */
-    .table-shell{
-      border:1px solid var(--line);
-      border-radius:12px;
-      overflow:hidden;
+    .litem{display:flex;align-items:center;gap:6px;}
+    .sw{width:10px;height:10px;border-radius:3px;background:var(--blue)}
+    .sw.ind{background:var(--indigo)}
+    .toggle{
+      display:inline-flex;
+      gap:2px;
+      padding:2px;
+      border:1px solid var(--border);
+      border-radius:10px;
       background:#fff;
+      user-select:none;
     }
-    .table-scroll{
-      overflow:auto;
-      max-height: 520px; /* feels like the screenshot */
+    .toggle span{
+      padding:6px 10px;
+      border-radius:8px;
+      font-size:11px;
+      font-weight:950;
+      color:var(--muted);
+    }
+    .toggle span.active{
+      background:#EEF4FF;
+      color:#344054;
     }
 
-    table.t{
+    .svg-wrap{padding: 6px 10px 14px;}
+    svg{width:100%;height:auto;display:block}
+    .axis text{fill:var(--muted2);font-size:10px}
+    .gridline{stroke:var(--grid);stroke-width:1}
+    .borderline{stroke:var(--border);stroke-width:1;fill:none}
+    .lineA{stroke:var(--blue);stroke-width:2.6;fill:none;stroke-linecap:round;stroke-linejoin:round}
+    .lineB{stroke:var(--indigo);stroke-width:2.2;fill:none;stroke-linecap:round;stroke-linejoin:round}
+    .pt{fill:#fff;stroke:var(--blue);stroke-width:2}
+    .ptb{fill:#fff;stroke:var(--indigo);stroke-width:2}
+
+    /* ----- Tables ----- */
+    .table-scroll{overflow:auto;}
+    table.data{
       width:100%;
       border-collapse:collapse;
-      font-size:12px;
+      font-size:10.5px;
       min-width: 980px;
     }
-    table.t thead th{
+    table.data thead th{
       position:sticky; top:0;
-      background:#f4f7fc;
-      color:#475569;
+      background:#FBFCFE;
+      color:#475467;
       font-weight:950;
-      font-size:11px;
-      padding:10px 10px;
-      border-bottom:1px solid var(--line);
-      white-space:nowrap;
-      z-index:2;
-      text-align:right;
-    }
-    table.t thead th:first-child{ text-align:left; left:0; z-index:3; }
-    table.t tbody td{
-      padding:9px 10px;
-      border-bottom:1px solid var(--line2);
-      white-space:nowrap;
-      text-align:right;
-      font-variant-numeric:tabular-nums;
-    }
-    table.t tbody td:first-child{
       text-align:left;
-      font-weight:900;
-      color:#0b1220;
-      position:sticky;
-      left:0;
-      background:#fff;
-      z-index:1;
-    }
-    table.t tbody tr:last-child td{ border-bottom:none; }
-    .sub{ color:#64748b; font-weight:800; }
-
-    /* Variance tables (2-up) */
-    .inner-card{
-      border:1px solid var(--line);
-      border-radius:12px;
-      background:#fff;
-      overflow:hidden;
-    }
-    .inner-head{
-      padding:12px 12px 10px;
-      border-bottom:1px solid var(--line);
-      font-weight:950;
-      color:#0b1220;
-      display:flex;
-      align-items:center;
-      justify-content:center;
-      font-size:13px;
-    }
-    table.v{
-      width:100%;
-      border-collapse:collapse;
-      font-size:12px;
-    }
-    table.v th, table.v td{
-      padding:9px 10px;
-      border-bottom:1px solid var(--line2);
+      padding:10px 12px;
+      border-bottom:1px solid var(--border);
       white-space:nowrap;
     }
-    table.v th{
-      background:#f4f7fc;
-      color:#475569;
-      font-weight:950;
-      font-size:11px;
-      text-align:right;
+    table.data tbody td{
+      padding:10px 12px;
+      border-bottom:1px solid rgba(230,234,242,.65);
+      color:#344054;
+      white-space:nowrap;
     }
-    table.v th:first-child, table.v td:first-child{
-      text-align:left;
-      font-weight:900;
-      color:#0b1220;
-    }
-    table.v td{
-      text-align:right;
-      font-variant-numeric:tabular-nums;
-      font-weight:800;
-      color:#111827;
-    }
-    table.v tr:last-child td{ border-bottom:none; }
+    table.data tbody tr:last-child td{border-bottom:none}
+    tbody tr:hover td{background:#FAFCFF}
+    .numR{text-align:right}
+    .grouphead{font-size:10px;font-weight:950;color:#475467;background:#FBFCFE}
+    .section{margin-top:12px;}
   </style>
 </head>
-
 <body>
-  <div class="page">
+  <div class="wrap">
 
-    <!-- =========================
-         1) 13 Week Cash Flow Summary
-         ========================= -->
-    <div class="grid-top mb">
-      <!-- Left: Current Week Summary -->
-      <div class="card section">
-        <div class="title"><span class="dot"></span><span>Current Week Summary</span></div>
-        <table class="kv">
-          <tr><td>Available Cash</td><td>$142,097</td></tr>
-          <tr><td>Cash In</td><td>$0</td></tr>
-          <tr><td>Cash Out</td><td>$26,225</td></tr>
-          <tr><td>Ending Cash</td><td>$115,872</td></tr>
+    <!-- ===================== SCREEN 1 ===================== -->
+    <div class="card">
+      <div class="card-head">
+        <span class="ico" aria-hidden="true"><svg viewBox="0 0 24 24"><path d="M12 2l4 8h6l-5 4 2 8-7-4-7 4 2-8-5-4h6l4-8z"/></svg></span>
+        Value Monitor
+      </div>
+      <div class="kpi-row">
+        <div class="kpi">
+          <div class="left">
+            <div class="t">Appraised Values</div>
+            <div class="big">14.80M</div>
+            <div class="pair"><span>Fair Market Value</span><b>14.80M</b></div>
+            <div class="pair"><span>Orderly Liquidation Value</span><b>14.89M</b></div>
+          </div>
+          <div class="right">
+            <div class="info">i</div>
+          </div>
+        </div>
 
-          <tr><td class="sub">Vendor Payments</td><td>$20,100</td></tr>
-          <tr><td class="sub">Payroll</td><td>$4,925</td></tr>
-          <tr><td class="sub">Logistics</td><td>$1,200</td></tr>
-          <tr><td class="sub">Other</td><td>$0</td></tr>
+        <div class="kpi">
+          <div class="left">
+            <div class="t">Estimated Values</div>
+            <div class="big">Fair Market Value</div>
+            <div class="pair"><span>Fair Market Value</span><b>14.89M</b></div>
+            <div class="pair"><span>Orderly Liquidation Value</span><b>14.89M</b></div>
+          </div>
+          <div class="right">
+            <div class="info">i</div>
+          </div>
+        </div>
+
+        <div class="kpi">
+          <div class="left">
+            <div class="t">Change in Value</div>
+            <div class="big">Fair Market Value</div>
+            <div class="pair"><span>Fair Market Value</span><b>14.89M</b></div>
+            <div class="pair"><span>Orderly Liquidation Value</span><b>14.89M</b></div>
+          </div>
+          <div class="right">
+            <div class="info">i</div>
+            <div class="delta"><span class="arrow">▼</span> 0.48%</div>
+            <div class="delta good" style="margin-top:0"><span class="arrow">▲</span> 1.10%</div>
+          </div>
+        </div>
+      </div>
+
+      <div class="divider"></div>
+      <div class="card-head" style="padding-bottom:0">
+        <span class="ico" aria-hidden="true"><svg viewBox="0 0 24 24"><path d="M4 17l5-6 4 4 7-10 0 3-7 10-4-4-5 6z"/></svg></span>
+        Value Trend
+      </div>
+      <div class="chart-head">
+        <div class="legend">
+          <div class="litem"><span class="sw"></span>Collateralized</div>
+          <div class="litem"><span class="sw ind"></span>Appraisal</div>
+        </div>
+        <div class="toggle" aria-label="Toggle">
+          <span class="active">Collateralized</span>
+          <span>Appraisal</span>
+        </div>
+      </div>
+      <div class="svg-wrap" data-chart="valueTrend"></div>
+    </div>
+
+    <!-- ===================== SCREEN 2 ===================== -->
+    <div class="section card">
+      <div class="card-head">
+        <span class="ico" aria-hidden="true"><svg viewBox="0 0 24 24"><path d="M3 4h18v16H3V4zm2 4h14V6H5v2zm0 3h6V9H5v2zm0 3h14v-2H5v2z"/></svg></span>
+        Value Analysis
+      </div>
+      <div class="divider"></div>
+      <div class="table-scroll">
+        <table class="data" aria-label="Value Analysis Table">
+          <thead>
+            <tr>
+              <th rowspan="2">ID</th>
+              <th rowspan="2">Equipment Type</th>
+              <th rowspan="2">Manufacturer</th>
+              <th class="numR" colspan="2">Appraised Values</th>
+              <th class="numR" colspan="2">Estimated</th>
+              <th class="numR" colspan="2">Variance</th>
+            </tr>
+            <tr class="grouphead">
+              <th class="numR">FMV</th><th class="numR">OLV</th>
+              <th class="numR">FMV</th><th class="numR">OLV</th>
+              <th class="numR">FMV $</th><th class="numR">FMV %</th>
+            </tr>
+          </thead>
+          <tbody>
+            <tr><td>1001</td><td>Hydraulic Truck Crane</td><td>Tadano</td><td class="numR">475,000</td><td class="numR">350,000</td><td class="numR">465,500</td><td class="numR">341,250</td><td class="numR">-9,500</td><td class="numR">-2.0%</td></tr>
+            <tr><td>1002</td><td>Hydraulic Truck Crane</td><td>Tadano</td><td class="numR">475,000</td><td class="numR">350,000</td><td class="numR">465,500</td><td class="numR">341,250</td><td class="numR">-9,500</td><td class="numR">-2.0%</td></tr>
+            <tr><td>1003</td><td>Hydraulic Truck Crane</td><td>Tadano</td><td class="numR">475,000</td><td class="numR">350,000</td><td class="numR">465,500</td><td class="numR">341,250</td><td class="numR">-9,500</td><td class="numR">-2.0%</td></tr>
+            <tr><td>1004</td><td>Hydraulic Truck Crane</td><td>Tadano</td><td class="numR">475,000</td><td class="numR">350,000</td><td class="numR">465,500</td><td class="numR">341,250</td><td class="numR">-9,500</td><td class="numR">-2.0%</td></tr>
+            <tr><td>1005</td><td>Hydraulic Truck Crane</td><td>Tadano</td><td class="numR">475,000</td><td class="numR">350,000</td><td class="numR">465,500</td><td class="numR">341,250</td><td class="numR">-9,500</td><td class="numR">-2.0%</td></tr>
+            <tr><td>1006</td><td>Hydraulic Truck Crane</td><td>Tadano</td><td class="numR">475,000</td><td class="numR">350,000</td><td class="numR">465,500</td><td class="numR">341,250</td><td class="numR">-9,500</td><td class="numR">-2.0%</td></tr>
+            <tr><td>1007</td><td>Hydraulic Truck Crane</td><td>Tadano</td><td class="numR">475,000</td><td class="numR">350,000</td><td class="numR">465,500</td><td class="numR">341,250</td><td class="numR">-9,500</td><td class="numR">-2.0%</td></tr>
+            <tr><td>1008</td><td>Hydraulic Truck Crane</td><td>Tadano</td><td class="numR">475,000</td><td class="numR">350,000</td><td class="numR">465,500</td><td class="numR">341,250</td><td class="numR">-9,500</td><td class="numR">-2.0%</td></tr>
+            <tr><td>1009</td><td>Hydraulic Truck Crane</td><td>Tadano</td><td class="numR">475,000</td><td class="numR">350,000</td><td class="numR">465,500</td><td class="numR">341,250</td><td class="numR">-9,500</td><td class="numR">-2.0%</td></tr>
+            <tr><td>1010</td><td>Hydraulic Truck Crane</td><td>Tadano</td><td class="numR">475,000</td><td class="numR">350,000</td><td class="numR">465,500</td><td class="numR">341,250</td><td class="numR">-9,500</td><td class="numR">-2.0%</td></tr>
+          </tbody>
         </table>
       </div>
-
-      <!-- Right: Summary + Bar Chart -->
-      <div class="card section">
-        <div class="title"><span class="dot"></span><span>13 Week Cash Flow Summary</span></div>
-
-        <div class="metrics">
-          <div class="metric">
-            <div>
-              <div class="label">Cash Out</div>
-              <div class="value">$26,225</div>
-              <div class="delta down"><span>▼</span><span>-4.8%</span></div>
-            </div>
-            <div class="badge" aria-hidden="true">
-              <svg viewBox="0 0 24 24" width="18" height="18" fill="none">
-                <path d="M7 7h10M7 12h10M7 17h10" stroke="currentColor" stroke-width="2" stroke-linecap="round"/>
-              </svg>
-            </div>
-          </div>
-
-          <div class="metric">
-            <div>
-              <div class="label">Cash In</div>
-              <div class="value">$5,556</div>
-              <div class="delta down"><span>▼</span><span>-1.2%</span></div>
-            </div>
-            <div class="badge" aria-hidden="true">
-              <svg viewBox="0 0 24 24" width="18" height="18" fill="none">
-                <path d="M6 17V10M12 17V7M18 17v-5" stroke="currentColor" stroke-width="2" stroke-linecap="round"/>
-              </svg>
-            </div>
-          </div>
-
-          <div class="metric">
-            <div>
-              <div class="label">Total Net Cash Flow</div>
-              <div class="value">$435,987</div>
-              <div class="delta up"><span>▲</span><span>+0.4%</span></div>
-            </div>
-            <div class="badge" aria-hidden="true">
-              <svg viewBox="0 0 24 24" width="18" height="18" fill="none">
-                <path d="M6 18V6M6 18h12M9 14l3-3 3 2 4-5" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/>
-              </svg>
-            </div>
-          </div>
-        </div>
-
-        <div class="chart-wrap">
-          <!-- Static grouped bar chart -->
-          <svg viewBox="0 0 980 300" width="100%" height="260" role="img" aria-label="Cash in/out bar chart">
-            <!-- plot area -->
-            <g>
-              <!-- grid -->
-              <g stroke="#e7eef7" stroke-width="1">
-                <line x1="60" y1="40" x2="950" y2="40"/>
-                <line x1="60" y1="90" x2="950" y2="90"/>
-                <line x1="60" y1="140" x2="950" y2="140"/>
-                <line x1="60" y1="190" x2="950" y2="190"/>
-                <line x1="60" y1="240" x2="950" y2="240"/>
-              </g>
-
-              <!-- axes labels (minimal like screenshot) -->
-              <g fill="#94a3b8" font-size="11" font-weight="800">
-                <text x="16" y="44">$</text>
-                <text x="16" y="94">$</text>
-                <text x="16" y="144">$</text>
-                <text x="16" y="194">$</text>
-                <text x="16" y="244">$</text>
-              </g>
-
-              <!-- bars (pairs per week) -->
-              <!-- week width ~ 62, group gap -->
-              <!-- Cash In (blue) + Cash Out (orange) -->
-              <g>
-                <!-- Week 1 -->
-                <rect x="88"  y="120" width="12" height="120" rx="3" fill="var(--blue)"/>
-                <rect x="104" y="90"  width="12" height="150" rx="3" fill="var(--orange)"/>
-
-                <!-- Week 2 -->
-                <rect x="158" y="140" width="12" height="100" rx="3" fill="var(--blue)"/>
-                <rect x="174" y="115" width="12" height="125" rx="3" fill="var(--orange)"/>
-
-                <!-- Week 3 (big orange spike like screenshot) -->
-                <rect x="228" y="165" width="12" height="75"  rx="3" fill="var(--blue)"/>
-                <rect x="244" y="55"  width="12" height="185" rx="3" fill="var(--orange)"/>
-
-                <!-- Week 4..13 smalls + later spikes -->
-                <rect x="298" y="205" width="12" height="35" rx="3" fill="var(--blue)"/>
-                <rect x="314" y="198" width="12" height="42" rx="3" fill="var(--orange)"/>
-
-                <rect x="368" y="212" width="12" height="28" rx="3" fill="var(--blue)"/>
-                <rect x="384" y="206" width="12" height="34" rx="3" fill="var(--orange)"/>
-
-                <rect x="438" y="214" width="12" height="26" rx="3" fill="var(--blue)"/>
-                <rect x="454" y="212" width="12" height="28" rx="3" fill="var(--orange)"/>
-
-                <rect x="508" y="216" width="12" height="24" rx="3" fill="var(--blue)"/>
-                <rect x="524" y="214" width="12" height="26" rx="3" fill="var(--orange)"/>
-
-                <rect x="578" y="208" width="12" height="32" rx="3" fill="var(--blue)"/>
-                <rect x="594" y="200" width="12" height="40" rx="3" fill="var(--orange)"/>
-
-                <!-- Later spikes -->
-                <rect x="648" y="130" width="12" height="110" rx="3" fill="var(--blue)"/>
-                <rect x="664" y="120" width="12" height="120" rx="3" fill="var(--orange)"/>
-
-                <rect x="718" y="148" width="12" height="92" rx="3" fill="var(--blue)"/>
-                <rect x="734" y="136" width="12" height="104" rx="3" fill="var(--orange)"/>
-
-                <rect x="788" y="202" width="12" height="38" rx="3" fill="var(--blue)"/>
-                <rect x="804" y="198" width="12" height="42" rx="3" fill="var(--orange)"/>
-
-                <rect x="858" y="122" width="12" height="118" rx="3" fill="var(--blue)"/>
-                <rect x="874" y="108" width="12" height="132" rx="3" fill="var(--orange)"/>
-
-                <rect x="928" y="170" width="12" height="70" rx="3" fill="var(--blue)"/>
-                <rect x="944" y="165" width="12" height="75" rx="3" fill="var(--orange)"/>
-              </g>
-
-              <!-- x labels -->
-              <g fill="#94a3b8" font-size="11" font-weight="800">
-                <text x="86"  y="282">W1</text>
-                <text x="156" y="282">W2</text>
-                <text x="226" y="282">W3</text>
-                <text x="296" y="282">W4</text>
-                <text x="366" y="282">W5</text>
-                <text x="436" y="282">W6</text>
-                <text x="506" y="282">W7</text>
-                <text x="576" y="282">W8</text>
-                <text x="646" y="282">W9</text>
-                <text x="714" y="282">W10</text>
-                <text x="784" y="282">W11</text>
-                <text x="854" y="282">W12</text>
-                <text x="922" y="282">W13</text>
-              </g>
-            </g>
-          </svg>
-
-          <div class="legend">
-            <div class="lg-item"><span class="swatch" style="background:var(--blue)"></span><span>Cash In</span></div>
-            <div class="lg-item"><span class="swatch" style="background:var(--orange)"></span><span>Cash Out</span></div>
-          </div>
-        </div>
-      </div>
     </div>
 
-    <!-- Snapshot Summary -->
-    <div class="card section mb">
-      <div class="title"><span class="dot"></span><span>Snapshot Summary</span></div>
-      <div class="info">
-        <div class="i" aria-hidden="true">
-          <svg viewBox="0 0 24 24" width="18" height="18" fill="none">
-            <path d="M12 9v6" stroke="currentColor" stroke-width="2" stroke-linecap="round"/>
-            <path d="M12 6h.01" stroke="currentColor" stroke-width="3" stroke-linecap="round"/>
-            <path d="M12 22a10 10 0 1 0 0-20 10 10 0 0 0 0 20Z" stroke="currentColor" stroke-width="2"/>
-          </svg>
-        </div>
-        <div>
-          <div class="h">Summary</div>
-          <p>
-            This is a static layout matching your screenshot: a 13-week cash view with grouped cash-in/out bars,
-            a narrative snapshot, and the forecast tables below. Replace values with your real data as needed.
-          </p>
-        </div>
+    <div class="section card">
+      <div class="card-head">
+        <span class="ico" aria-hidden="true"><svg viewBox="0 0 24 24"><path d="M4 6h16v2H4V6zm0 5h16v2H4v-2zm0 5h16v2H4v-2z"/></svg></span>
+        Appraisal Asset Register
       </div>
-    </div>
-
-    <!-- 13-Week Cash Flow Forecast -->
-    <div class="card section mb">
-      <div class="title"><span class="dot"></span><span>13-Week Cash Flow Forecast</span></div>
-      <div class="table-shell">
-        <div class="table-scroll">
-          <table class="t">
-            <thead>
-              <tr>
-                <th>Line Item</th>
-                <th>Forecast Wk 1</th><th>Forecast Wk 2</th><th>Forecast Wk 3</th><th>Forecast Wk 4</th>
-                <th>Forecast Wk 5</th><th>Forecast Wk 6</th><th>Forecast Wk 7</th><th>Forecast Wk 8</th>
-                <th>Forecast Wk 9</th><th>Forecast Wk 10</th><th>Forecast Wk 11</th><th>Forecast Wk 12</th>
-                <th>Forecast Wk 13</th>
-              </tr>
-            </thead>
-            <tbody>
-              <tr><td>Beginning Cash</td><td>115,872</td><td>112,440</td><td>110,020</td><td>108,300</td><td>108,950</td><td>109,400</td><td>110,010</td><td>111,200</td><td>112,800</td><td>114,050</td><td>115,220</td><td>116,010</td><td>117,600</td></tr>
-
-              <tr><td class="sub">Cash In</td><td>5,556</td><td>4,120</td><td>3,950</td><td>3,750</td><td>4,900</td><td>5,100</td><td>4,600</td><td>4,300</td><td>5,200</td><td>5,050</td><td>4,980</td><td>5,120</td><td>5,400</td></tr>
-              <tr><td class="sub">Collections</td><td>3,700</td><td>2,900</td><td>2,800</td><td>2,650</td><td>3,200</td><td>3,400</td><td>3,100</td><td>2,900</td><td>3,450</td><td>3,300</td><td>3,200</td><td>3,350</td><td>3,600</td></tr>
-              <tr><td class="sub">Other Receipts</td><td>1,856</td><td>1,220</td><td>1,150</td><td>1,100</td><td>1,700</td><td>1,700</td><td>1,500</td><td>1,400</td><td>1,750</td><td>1,750</td><td>1,780</td><td>1,770</td><td>1,800</td></tr>
-
-              <tr><td class="sub">Cash Out</td><td>26,225</td><td>6,540</td><td>5,670</td><td>3,100</td><td>4,450</td><td>4,490</td><td>3,410</td><td>2,700</td><td>3,950</td><td>3,880</td><td>4,190</td><td>3,530</td><td>4,020</td></tr>
-              <tr><td class="sub">Vendor Payments</td><td>20,100</td><td>3,950</td><td>3,100</td><td>1,650</td><td>2,450</td><td>2,550</td><td>1,850</td><td>1,600</td><td>2,200</td><td>2,150</td><td>2,350</td><td>2,050</td><td>2,250</td></tr>
-              <tr><td class="sub">Payroll</td><td>4,925</td><td>1,850</td><td>1,850</td><td>1,200</td><td>1,350</td><td>1,350</td><td>1,200</td><td>900</td><td>1,300</td><td>1,300</td><td>1,300</td><td>1,100</td><td>1,300</td></tr>
-              <tr><td class="sub">Logistics</td><td>1,200</td><td>740</td><td>720</td><td>250</td><td>350</td><td>300</td><td>260</td><td>200</td><td>300</td><td>280</td><td>320</td><td>280</td><td>300</td></tr>
-
-              <tr><td>Net Cash Flow</td><td>-20,669</td><td>-2,420</td><td>-1,720</td><td>650</td><td>450</td><td>610</td><td>1,190</td><td>1,600</td><td>1,250</td><td>1,170</td><td>790</td><td>1,590</td><td>1,380</td></tr>
-              <tr><td>Ending Cash</td><td>95,203</td><td>110,020</td><td>108,300</td><td>108,950</td><td>109,400</td><td>110,010</td><td>111,200</td><td>112,800</td><td>114,050</td><td>115,220</td><td>116,010</td><td>117,600</td><td>118,980</td></tr>
-            </tbody>
-          </table>
-        </div>
-      </div>
-
-      <div style="height:12px"></div>
-
-      <div class="title" style="margin-top:6px;"><span class="dot"></span><span>Cash Forecast</span></div>
-      <div class="table-shell mb" style="box-shadow:none;">
-        <div class="table-scroll" style="max-height:220px;">
-          <table class="t" style="min-width:920px;">
-            <thead>
-              <tr>
-                <th>Line Item</th>
-                <th>Wk 1</th><th>Wk 2</th><th>Wk 3</th><th>Wk 4</th><th>Wk 5</th><th>Wk 6</th><th>Wk 7</th><th>Wk 8</th>
-              </tr>
-            </thead>
-            <tbody>
-              <tr><td>Beginning Cash</td><td>115,872</td><td>95,203</td><td>110,020</td><td>108,300</td><td>108,950</td><td>109,400</td><td>110,010</td><td>111,200</td></tr>
-              <tr><td>Net Cash Flow</td><td>-20,669</td><td>14,817</td><td>-1,720</td><td>650</td><td>450</td><td>610</td><td>1,190</td><td>1,600</td></tr>
-              <tr><td>Ending Cash</td><td>95,203</td><td>110,020</td><td>108,300</td><td>108,950</td><td>109,400</td><td>110,010</td><td>111,200</td><td>112,800</td></tr>
-            </tbody>
-          </table>
-        </div>
-      </div>
-
-      <div class="title" style="margin-top:6px;"><span class="dot"></span><span>Availability Forecast</span></div>
-      <div class="table-shell" style="box-shadow:none;">
-        <div class="table-scroll" style="max-height:220px;">
-          <table class="t" style="min-width:920px;">
-            <thead>
-              <tr>
-                <th>Line Item</th>
-                <th>Wk 1</th><th>Wk 2</th><th>Wk 3</th><th>Wk 4</th><th>Wk 5</th><th>Wk 6</th><th>Wk 7</th><th>Wk 8</th>
-              </tr>
-            </thead>
-            <tbody>
-              <tr><td>Collateral Availability</td><td>420,000</td><td>426,000</td><td>431,500</td><td>440,200</td><td>438,900</td><td>442,400</td><td>448,100</td><td>452,600</td></tr>
-              <tr><td>Revolver Availability</td><td>180,000</td><td>175,000</td><td>173,000</td><td>169,000</td><td>172,000</td><td>174,500</td><td>176,200</td><td>178,500</td></tr>
-              <tr><td>Excess Availability + Cash</td><td>275,203</td><td>285,020</td><td>281,300</td><td>287,950</td><td>290,400</td><td>292,010</td><td>295,200</td><td>298,800</td></tr>
-            </tbody>
-          </table>
-        </div>
-      </div>
-    </div>
-
-    <!-- =========================
-         2) 13 Week Liquidity Forecast + Variance Reporting
-         ========================= -->
-    <div class="card section mb">
-      <div class="title"><span class="dot"></span><span>13 Week Liquidity Forecast</span></div>
-
-      <div class="chart-wrap">
-        <!-- Static line chart (3 series) -->
-        <svg viewBox="0 0 980 300" width="100%" height="260" role="img" aria-label="Liquidity forecast line chart">
-          <!-- grid -->
-          <g stroke="#e7eef7" stroke-width="1">
-            <line x1="60" y1="40" x2="950" y2="40"/>
-            <line x1="60" y1="90" x2="950" y2="90"/>
-            <line x1="60" y1="140" x2="950" y2="140"/>
-            <line x1="60" y1="190" x2="950" y2="190"/>
-            <line x1="60" y1="240" x2="950" y2="240"/>
-          </g>
-
-          <!-- series (simple, static) -->
-          <!-- Collateral Availability (blue) -->
-          <path d="M70 120 L150 95 L230 110 L310 105 L390 120 L470 150 L550 165 L630 155 L710 130 L790 110 L870 95 L950 80"
-                fill="none" stroke="var(--blue)" stroke-width="3.5" stroke-linecap="round" stroke-linejoin="round"/>
-          <!-- Revolver Availability (blue-2) -->
-          <path d="M70 150 L150 125 L230 135 L310 140 L390 145 L470 175 L550 195 L630 170 L710 160 L790 155 L870 150 L950 148"
-                fill="none" stroke="var(--blue-2)" stroke-width="3.5" stroke-linecap="round" stroke-linejoin="round"/>
-          <!-- Excess Availability + Cash (orange-ish like screenshot third line) -->
-          <path d="M70 165 L150 140 L230 145 L310 150 L390 165 L470 205 L550 220 L630 190 L710 175 L790 170 L870 165 L950 160"
-                fill="none" stroke="var(--orange)" stroke-width="3.5" stroke-linecap="round" stroke-linejoin="round"/>
-
-          <!-- x labels -->
-          <g fill="#94a3b8" font-size="11" font-weight="800">
-            <text x="65"  y="282">W1</text><text x="145" y="282">W2</text><text x="225" y="282">W3</text><text x="305" y="282">W4</text>
-            <text x="385" y="282">W5</text><text x="465" y="282">W6</text><text x="545" y="282">W7</text><text x="625" y="282">W8</text>
-            <text x="705" y="282">W9</text><text x="782" y="282">W10</text><text x="860" y="282">W11</text><text x="940" y="282">W12</text>
-          </g>
-        </svg>
-
-        <div class="legend">
-          <div class="lg-item"><span class="swatch" style="background:var(--blue)"></span><span>Collateral Availability</span></div>
-          <div class="lg-item"><span class="swatch" style="background:var(--blue-2)"></span><span>Revolver Availability</span></div>
-          <div class="lg-item"><span class="swatch" style="background:var(--orange)"></span><span>Excess Availability + Cash</span></div>
-        </div>
-      </div>
-    </div>
-
-    <!-- Variance Reporting -->
-    <div class="card section">
-      <div class="title"><span class="dot"></span><span>Variance Reporting</span></div>
-
-      <div class="grid-2">
-        <div class="inner-card">
-          <div class="inner-head">Current Week Variance Report</div>
-          <table class="v">
-            <thead>
-              <tr>
-                <th>Line Item</th>
-                <th>Proposed</th>
-                <th>Actual</th>
-                <th>Variance</th>
-                <th>Variance %</th>
-              </tr>
-            </thead>
-            <tbody>
-              <tr><td>Receipts</td><td>$5,900</td><td>$5,556</td><td>-$344</td><td>-5.8%</td></tr>
-              <tr><td>Collections</td><td>$3,900</td><td>$3,700</td><td>-$200</td><td>-5.1%</td></tr>
-              <tr><td>Vendor Payments</td><td>$19,500</td><td>$20,100</td><td>$600</td><td>+3.1%</td></tr>
-              <tr><td>Payroll</td><td>$4,800</td><td>$4,925</td><td>$125</td><td>+2.6%</td></tr>
-              <tr><td>Logistics</td><td>$1,350</td><td>$1,200</td><td>-$150</td><td>-11.1%</td></tr>
-              <tr><td>Other</td><td>$0</td><td>$0</td><td>$0</td><td>0.0%</td></tr>
-              <tr><td>Net Cash Flow</td><td>-$19,750</td><td>-$20,669</td><td>-$919</td><td>-4.7%</td></tr>
-            </tbody>
-          </table>
-        </div>
-
-        <div class="inner-card">
-          <div class="inner-head">Cumulative Variance Report</div>
-          <table class="v">
-            <thead>
-              <tr>
-                <th>Line Item</th>
-                <th>Proposed</th>
-                <th>Actual</th>
-                <th>Variance</th>
-                <th>Variance %</th>
-              </tr>
-            </thead>
-            <tbody>
-              <tr><td>Receipts</td><td>$48,200</td><td>$47,410</td><td>-$790</td><td>-1.6%</td></tr>
-              <tr><td>Collections</td><td>$31,600</td><td>$30,980</td><td>-$620</td><td>-2.0%</td></tr>
-              <tr><td>Vendor Payments</td><td>$82,100</td><td>$83,450</td><td>$1,350</td><td>+1.6%</td></tr>
-              <tr><td>Payroll</td><td>$19,200</td><td>$19,640</td><td>$440</td><td>+2.3%</td></tr>
-              <tr><td>Logistics</td><td>$6,050</td><td>$5,890</td><td>-$160</td><td>-2.6%</td></tr>
-              <tr><td>Other</td><td>$900</td><td>$750</td><td>-$150</td><td>-16.7%</td></tr>
-              <tr><td>Net Cash Flow</td><td>-$59,150</td><td>-$62,320</td><td>-$3,170</td><td>-5.4%</td></tr>
-            </tbody>
-          </table>
-        </div>
+      <div class="divider"></div>
+      <div class="table-scroll">
+        <table class="data" aria-label="Appraisal Asset Register">
+          <thead>
+            <tr>
+              <th>Item ID</th>
+              <th>Equipment Type</th>
+              <th>Manufacturer</th>
+              <th>Serial Number</th>
+              <th class="numR">Year</th>
+              <th>Condition</th>
+              <th class="numR">Fair Market Value</th>
+              <th class="numR">Orderly Liquidation Value</th>
+            </tr>
+          </thead>
+          <tbody>
+            <tr><td>1001</td><td>Hydraulic Truck Crane</td><td>Tadano</td><td>TDN-09H-61337</td><td class="numR">2018</td><td>Good</td><td class="numR">475,000</td><td class="numR">350,000</td></tr>
+            <tr><td>1002</td><td>Hydraulic Truck Crane</td><td>Tadano</td><td>TDN-09H-61338</td><td class="numR">2018</td><td>Good</td><td class="numR">475,000</td><td class="numR">350,000</td></tr>
+            <tr><td>1003</td><td>Hydraulic Truck Crane</td><td>Tadano</td><td>TDN-09H-61339</td><td class="numR">2018</td><td>Good</td><td class="numR">475,000</td><td class="numR">350,000</td></tr>
+            <tr><td>1004</td><td>Hydraulic Truck Crane</td><td>Tadano</td><td>TDN-09H-61340</td><td class="numR">2018</td><td>Good</td><td class="numR">475,000</td><td class="numR">350,000</td></tr>
+            <tr><td>1005</td><td>Hydraulic Truck Crane</td><td>Tadano</td><td>TDN-09H-61341</td><td class="numR">2018</td><td>Good</td><td class="numR">475,000</td><td class="numR">350,000</td></tr>
+            <tr><td>1006</td><td>Hydraulic Truck Crane</td><td>Tadano</td><td>TDN-09H-61342</td><td class="numR">2018</td><td>Good</td><td class="numR">475,000</td><td class="numR">350,000</td></tr>
+            <tr><td>1007</td><td>Hydraulic Truck Crane</td><td>Tadano</td><td>TDN-09H-61343</td><td class="numR">2018</td><td>Good</td><td class="numR">475,000</td><td class="numR">350,000</td></tr>
+            <tr><td>1008</td><td>Hydraulic Truck Crane</td><td>Tadano</td><td>TDN-09H-61344</td><td class="numR">2018</td><td>Good</td><td class="numR">475,000</td><td class="numR">350,000</td></tr>
+            <tr><td>1009</td><td>Hydraulic Truck Crane</td><td>Tadano</td><td>TDN-09H-61345</td><td class="numR">2018</td><td>Good</td><td class="numR">475,000</td><td class="numR">350,000</td></tr>
+            <tr><td>1010</td><td>Hydraulic Truck Crane</td><td>Tadano</td><td>TDDN-09H-61346</td><td class="numR">2018</td><td>Good</td><td class="numR">475,000</td><td class="numR">350,000</td></tr>
+          </tbody>
+        </table>
       </div>
     </div>
 
   </div>
+
+  <script>
+    function linePath(pts){
+      return pts.map((p,i)=> (i===0?`M ${p[0]} ${p[1]}`:`L ${p[0]} ${p[1]}`)).join(" ");
+    }
+
+    function renderTwoLine(el, cfg){
+      const W=980, H=260;
+      const pad={l:46,r:14,t:14,b:34};
+      const plotW=W-pad.l-pad.r, plotH=H-pad.t-pad.b;
+
+      const all = [...cfg.a, ...cfg.b];
+      let min = Math.min(...all), max = Math.max(...all);
+      const range = (max-min)||1;
+      min -= range*0.12; max += range*0.12;
+
+      const x = i => pad.l + (i/(cfg.labels.length-1))*plotW;
+      const y = v => pad.t + (1-(v-min)/(max-min))*plotH;
+
+      const ptsA = cfg.a.map((v,i)=>[x(i),y(v)]);
+      const ptsB = cfg.b.map((v,i)=>[x(i),y(v)]);
+
+      const ticks=6;
+      const yTicks = Array.from({length:ticks},(_,i)=>{
+        const t=i/(ticks-1);
+        const val=max - t*(max-min);
+        return {val, yy:y(val)};
+      });
+
+      const xStep = cfg.labels.length>10 ? 2 : 1;
+
+      el.innerHTML = `
+        <svg viewBox="0 0 ${W} ${H}" role="img" aria-label="${cfg.title}">
+          <rect x="${pad.l}" y="${pad.t}" width="${plotW}" height="${plotH}" class="borderline"></rect>
+
+          ${yTicks.map(t=>`
+            <line x1="${pad.l}" y1="${t.yy}" x2="${W-pad.r}" y2="${t.yy}" class="gridline"></line>
+            <g class="axis"><text x="${pad.l-8}" y="${t.yy+3}" text-anchor="end">${Math.round(t.val/10)*10}</text></g>
+          `).join("")}
+
+          <g class="axis">
+            ${cfg.labels.map((lab,i)=>{
+              if(i%xStep!==0) return "";
+              return `<text x="${x(i)}" y="${H-10}" text-anchor="middle">${lab}</text>`;
+            }).join("")}
+          </g>
+
+          <path d="${linePath(ptsA)}" class="lineA"></path>
+          <path d="${linePath(ptsB)}" class="lineB"></path>
+
+          ${ptsA.map((p,i)=> i%2===1 ? `<circle cx="${p[0]}" cy="${p[1]}" r="3" class="pt"></circle>`:"").join("")}
+          ${ptsB.map((p,i)=> i%2===1 ? `<circle cx="${p[0]}" cy="${p[1]}" r="3" class="ptb"></circle>`:"").join("")}
+        </svg>
+      `;
+    }
+
+    const valueTrend = {
+      title:"Value Trend",
+      labels:["May 23","Jun 23","Jul 23","Aug 23","Sep 23","Oct 23","Nov 23","Dec 23","Jan 24","Feb 24","Mar 24","Apr 24","May 24"],
+      a:[260, 268, 275, 270, 272, 272, 272, 250, 235, 245, 258, 258, 270],
+      b:[220, 240, 265, 255, 245, 230, 210, 175, 205, 235, 245, 245, 245]
+    };
+
+    renderTwoLine(document.querySelector('[data-chart="valueTrend"]'), valueTrend);
+  </script>
 </body>
 </html>

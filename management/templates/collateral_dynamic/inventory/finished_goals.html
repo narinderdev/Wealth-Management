@@ -1,582 +1,409 @@
-<!doctype html>
-<html lang="en">
-<head>
-  <meta charset="utf-8" />
-  <meta name="viewport" content="width=device-width, initial-scale=1" />
-  <title>Inventory & Receivables Dashboard (Static)</title>
-  <style>
-    :root{
-      --bg:#f4f7fb;
-      --card:#fff;
-      --ink:#101828;
-      --muted:#667085;
-      --muted2:#98A2B3;
-      --border:#E6EAF2;
-      --grid:#EEF2F7;
-      --shadow: 0 1px 2px rgba(16,24,40,.06);
-      --r:12px;
+<style>
+  :root{
+    --bg:#f4f7fb;
+    --card:#fff;
+    --ink:#101828;
+    --muted:#667085;
+    --muted2:#98A2B3;
+    --border:#E6EAF2;
+    --grid:#EEF2F7;
+    --shadow: 0 1px 2px rgba(16,24,40,.06);
+    --r:12px;
 
-      --blue:#175CD3;
-      --blue2:#2E90FA;
-      --bar:#2F3A8F;
-      --barSoft:#D6D9FF;
-      --good:#12B76A;
-      --bad:#F04438;
-    }
-    *{box-sizing:border-box}
-    body{
-      margin:0;
-      font-family: ui-sans-serif,system-ui,-apple-system,Segoe UI,Roboto,Helvetica,Arial,"Apple Color Emoji","Segoe UI Emoji";
-      background:var(--bg);
-      color:var(--ink);
-      line-height:1.35;
-    }
-    .wrap{
-      max-width: 1120px;
-      margin: 16px auto;
-      padding: 0 18px 30px;
-    }
+    --blue:#175CD3;
+    --blue2:#2E90FA;
+    --bar:#2F3A8F;
+    --barSoft:#D6D9FF;
+    --good:#12B76A;
+    --bad:#F04438;
+  }
+  :root{font-family:ui-sans-serif,system-ui,-apple-system,Segoe UI,Roboto,Helvetica,Arial,"Apple Color Emoji","Segoe UI Emoji";}
+  .finished-goals .wrap{max-width:1120px;margin:0 auto;padding:0 18px 30px;background:none;}
+  .finished-goals .grid-2{display:grid;grid-template-columns:1fr 1fr;gap:12px;}
+  @media (max-width:920px){.finished-goals .grid-2{grid-template-columns:1fr;}}
+  .finished-goals .card{background:var(--card);border:1px solid var(--border);border-radius:var(--r);box-shadow:var(--shadow);overflow:hidden;}
+  .finished-goals .card-pad{padding:12px 14px;}
+  .finished-goals .card-head{display:flex;align-items:center;gap:8px;padding:12px 14px 8px;font-size:12px;font-weight:800;color:#344054;}
+  .finished-goals .ico{width:16px;height:16px;border-radius:6px;background:rgba(23,92,211,.10);border:1px solid rgba(23,92,211,.18);display:grid;place-items:center;flex:0 0 auto;}
+  .finished-goals .ico svg{width:10px;height:10px;fill:var(--blue);opacity:.9;}
+  .finished-goals .divider{height:1px;background:var(--border);}
+  .finished-goals .metrics{display:flex;flex-direction:column;gap:10px;padding:10px 14px 14px;}
+  .finished-goals .metric-row{display:flex;justify-content:space-between;align-items:center;gap:12px;padding:8px 0;border-bottom:1px solid rgba(230,234,242,.65);}
+  .finished-goals .metric-row:last-child{border-bottom:none;}
+  .finished-goals .metric-name{font-size:11px;color:var(--muted);font-weight:700;}
+  .finished-goals .metric-val{display:flex;align-items:baseline;gap:10px;font-weight:900;color:#1D2939;}
+  .finished-goals .metric-val .num{font-size:14px;letter-spacing:.1px;}
+  .finished-goals .metric-val .delta{font-size:11px;font-weight:800;}
+  .finished-goals .delta.good{color:var(--good);}
+  .finished-goals .delta.bad{color:var(--bad);}
+  .finished-goals .mini-table{width:100%;border-collapse:collapse;font-size:11px;color:#344054;}
+  .finished-goals .mini-table tr{border-bottom:1px solid rgba(230,234,242,.65);}
+  .finished-goals .mini-table tr:last-child{border-bottom:none;}
+  .finished-goals .mini-table td{padding:9px 14px;}
+  .finished-goals .mini-table td:first-child{color:var(--muted);font-weight:700;}
+  .finished-goals .mini-table td:last-child{text-align:right;font-weight:900;}
+  .finished-goals .chart-wrap{padding:8px 10px 12px;}
+  .finished-goals .chart-head{display:flex;justify-content:space-between;align-items:flex-start;gap:12px;padding:8px 14px 0;}
+  .finished-goals .chart-title{display:flex;align-items:center;gap:8px;font-size:12px;font-weight:800;color:#344054;padding:12px 14px 2px;}
+  .finished-goals .legend{display:flex;gap:10px;align-items:center;font-size:11px;color:var(--muted);white-space:nowrap;}
+  .finished-goals .legend .sw{width:10px;height:10px;border-radius:3px;background:var(--blue);}
+  .finished-goals .legend .sw.bar{background:var(--bar);}
+  .finished-goals .legend .sw.soft{background:var(--barSoft);}
+  .finished-goals .seg{display:flex;justify-content:center;gap:18px;font-size:11px;color:var(--muted2);margin:2px 0 6px;user-select:none;}
+  .finished-goals .seg span:first-child{color:#344054;font-weight:800;}
+  .finished-goals svg{width:100%;height:auto;display:block;}
+  .finished-goals .axis text{fill:var(--muted2);font-size:10px;}
+  .finished-goals .gridline{stroke:var(--grid);stroke-width:1;}
+  .finished-goals .borderline{stroke:var(--border);stroke-width:1;fill:none;}
+  .finished-goals .line{stroke:var(--blue);stroke-width:2.5;fill:none;stroke-linecap:round;stroke-linejoin:round;}
+  .finished-goals .pt{fill:var(--blue2);opacity:.9;}
+  .finished-goals .bar-strong{fill:var(--bar);rx:3;}
+  .finished-goals .bar-soft{fill:var(--barSoft);rx:3;}
+  .finished-goals .stack .sub{padding-bottom:6px;}
+  .finished-goals .stack .sub + .sub{border-top:1px solid var(--border);padding-top:6px;}
+  .finished-goals .table-card .card-head{padding-bottom:10px;}
+  .finished-goals .table-scroll{overflow:auto;}
+  .finished-goals table.data{width:100%;border-collapse:collapse;font-size:10.5px;min-width:860px;}
+  .finished-goals table.data thead th{position:sticky;top:0;background:#FBFCFE;color:#475467;font-weight:900;text-align:left;padding:10px 12px;border-bottom:1px solid var(--border);white-space:nowrap;}
+  .finished-goals table.data tbody td{padding:10px 12px;border-bottom:1px solid rgba(230,234,242,.65);color:#344054;white-space:nowrap;}
+  .finished-goals table.data tbody tr:last-child td{border-bottom:none;}
+  .finished-goals .numR{text-align:right;}
+  .finished-goals .pill{display:inline-flex;padding:3px 8px;border-radius:999px;font-size:10px;font-weight:900;border:1px solid rgba(230,234,242,.9);background:#F8FAFD;color:#475467;}
+</style>
 
-    .grid-2{display:grid; grid-template-columns: 1fr 1fr; gap:12px;}
-    @media (max-width: 920px){ .grid-2{grid-template-columns:1fr;} }
+<div class="wrap finished-goals">
 
-    .card{
-      background:var(--card);
-      border:1px solid var(--border);
-      border-radius: var(--r);
-      box-shadow: var(--shadow);
-      overflow:hidden;
-    }
-    .card-pad{padding:12px 14px;}
-    .card-head{
-      display:flex;
-      align-items:center;
-      gap:8px;
-      padding:12px 14px 8px;
-      font-size: 12px;
-      font-weight: 800;
-      color:#344054;
-    }
-    .ico{
-      width:16px;height:16px;border-radius:6px;
-      background: rgba(23,92,211,.10);
-      border: 1px solid rgba(23,92,211,.18);
-      display:grid;place-items:center;
-      flex:0 0 auto;
-    }
-    .ico svg{width:10px;height:10px;fill:var(--blue);opacity:.9}
-    .divider{height:1px;background:var(--border);}
-
-    /* Metrics card (left) */
-    .metrics{
-      display:flex;
-      flex-direction:column;
-      gap:10px;
-      padding: 10px 14px 14px;
-    }
-    .metric-row{
-      display:flex;
-      justify-content:space-between;
-      align-items:center;
-      gap:12px;
-      padding: 8px 0;
-      border-bottom:1px solid rgba(230,234,242,.65);
-    }
-    .metric-row:last-child{border-bottom:none}
-    .metric-name{font-size:11px;color:var(--muted);font-weight:700}
-    .metric-val{
-      display:flex;align-items:baseline;gap:10px;
-      font-weight:900;color:#1D2939;
-    }
-    .metric-val .num{font-size:14px; letter-spacing:.1px}
-    .metric-val .delta{font-size:11px; font-weight:800}
-    .delta.good{color:var(--good)}
-    .delta.bad{color:var(--bad)}
-
-    /* Highlights table (right) */
-    .mini-table{
-      width:100%;
-      border-collapse:collapse;
-      font-size:11px;
-      color:#344054;
-    }
-    .mini-table tr{border-bottom:1px solid rgba(230,234,242,.65)}
-    .mini-table tr:last-child{border-bottom:none}
-    .mini-table td{
-      padding: 9px 14px;
-      vertical-align:middle;
-    }
-    .mini-table td:first-child{color:var(--muted); font-weight:700}
-    .mini-table td:last-child{text-align:right; font-weight:900; color:#1D2939}
-
-    /* Charts */
-    .chart-wrap{padding: 8px 10px 12px;}
-    .chart-top{
-      display:flex;
-      justify-content:space-between;
-      align-items:flex-start;
-      gap:12px;
-      padding: 8px 14px 0;
-    }
-    .chart-title{
-      display:flex;
-      align-items:center;
-      gap:8px;
-      font-size:12px;
-      font-weight:800;
-      color:#344054;
-      padding: 12px 14px 2px;
-    }
-    .legend{
-      display:flex;gap:10px;align-items:center;
-      font-size:11px;color:var(--muted);
-      white-space:nowrap;
-    }
-    .sw{width:10px;height:10px;border-radius:3px;background:var(--blue)}
-    .sw.bar{background:var(--bar)}
-    .sw.soft{background:var(--barSoft)}
-    .seg{
-      display:flex;
-      justify-content:center;
-      gap:18px;
-      font-size:11px;
-      color:var(--muted2);
-      margin: 2px 0 6px;
-      user-select:none;
-    }
-    .seg span:first-child{color:#344054;font-weight:800}
-
-    svg{width:100%; height:auto; display:block}
-    .axis text{ fill: var(--muted2); font-size:10px; }
-    .gridline{ stroke: var(--grid); stroke-width:1; }
-    .borderline{ stroke: var(--border); stroke-width:1; fill:none; }
-    .line{ stroke: var(--blue); stroke-width:2.5; fill:none; stroke-linecap:round; stroke-linejoin:round; }
-    .pt{ fill: var(--blue2); opacity:.9 }
-    .bar-strong{ fill: var(--bar); rx:3; }
-    .bar-soft{ fill: var(--barSoft); rx:3; }
-
-    /* Stacked (two charts in one card) */
-    .stack .sub{padding-bottom:6px;}
-    .stack .sub + .sub{border-top:1px solid var(--border); padding-top:6px;}
-
-    /* Big tables */
-    .table-card .card-head{padding-bottom:10px}
-    .table-scroll{overflow:auto;}
-    table.data{
-      width:100%;
-      border-collapse:collapse;
-      font-size:10.5px;
-      min-width: 860px;
-    }
-    table.data thead th{
-      position:sticky; top:0;
-      background:#FBFCFE;
-      color:#475467;
-      font-weight:900;
-      text-align:left;
-      padding:10px 12px;
-      border-bottom:1px solid var(--border);
-      white-space:nowrap;
-    }
-    table.data tbody td{
-      padding:10px 12px;
-      border-bottom:1px solid rgba(230,234,242,.65);
-      color:#344054;
-      white-space:nowrap;
-    }
-    table.data tbody tr:last-child td{border-bottom:none}
-    .numR{text-align:right}
-    .pill{
-      display:inline-flex;
-      padding:3px 8px;
-      border-radius:999px;
-      font-size:10px;
-      font-weight:900;
-      border:1px solid rgba(230,234,242,.9);
-      background:#F8FAFD;
-      color:#475467;
-    }
-  </style>
-</head>
-<body>
-  <div class="wrap">
-
-    <!-- Top row -->
-    <div class="grid-2">
-      <div class="card">
-        <div class="card-head">
-          <span class="ico" aria-hidden="true">
-            <svg viewBox="0 0 24 24"><path d="M7 17h2V7H7v10zm4 0h2V11h-2v6zm4 0h2V9h-2v8z"/></svg>
-          </span>
-          Overall Inventory Breakdown
-        </div>
-        <div class="metrics">
-          <div class="metric-row">
-            <div class="metric-name">Total Inventory</div>
-            <div class="metric-val"><span class="num">$4.28M</span><span class="delta bad">▼ 1.2%</span></div>
-          </div>
-          <div class="metric-row">
-            <div class="metric-name">Raw Materials</div>
-            <div class="metric-val"><span class="num">$0.91M</span><span class="delta bad">▼ 0.7%</span></div>
-          </div>
-          <div class="metric-row">
-            <div class="metric-name">Work in Process</div>
-            <div class="metric-val"><span class="num">$0.64M</span><span class="delta good">▲ 0.9%</span></div>
-          </div>
-          <div class="metric-row">
-            <div class="metric-name">Finished Goods</div>
-            <div class="metric-val"><span class="num">$2.73M</span><span class="delta good">▲ 1.6%</span></div>
-          </div>
-        </div>
-      </div>
-
-      <div class="card">
-        <div class="card-head">
-          <span class="ico" aria-hidden="true">
-            <svg viewBox="0 0 24 24"><path d="M12 2l3 7h7l-5.5 4.2L18 21l-6-3.8L6 21l1.5-7.8L2 9h7l3-7z"/></svg>
-          </span>
-          Highlights
-        </div>
-        <table class="mini-table" aria-label="Highlights">
-          <tr><td>Inventory Turnover</td><td>4.9x</td></tr>
-          <tr><td>Days Inventory Outstanding</td><td>74</td></tr>
-          <tr><td>Aged Stock (&gt; 180d)</td><td>12%</td></tr>
-          <tr><td>Receivables DSO</td><td>41</td></tr>
-          <tr><td>Top Customer Concentration</td><td>18%</td></tr>
-        </table>
-      </div>
-    </div>
-
-    <!-- Inventory Trend (full width) -->
-    <div class="card" style="margin-top:12px" data-chart="inventoryTrend"></div>
-
-    <!-- Stock and Receivables Metrics -->
-    <div class="grid-2" style="margin-top:12px">
-      <div class="card">
-        <div class="card-head">
-          <span class="ico" aria-hidden="true">
-            <svg viewBox="0 0 24 24"><path d="M4 19h16v2H4v-2zm1-4h3v3H5v-3zm5-6h3v9h-3V9zm5 3h3v6h-3v-6z"/></svg>
-          </span>
-          Key Insights
-        </div>
-        <div class="metrics">
-          <div class="metric-row">
-            <div class="metric-name">Aged Stock Value</div>
-            <div class="metric-val"><span class="num">$0.51M</span><span class="delta bad">▲ 2.3%</span></div>
-          </div>
-          <div class="metric-row">
-            <div class="metric-name">A/R Balance</div>
-            <div class="metric-val"><span class="num">$1.12M</span><span class="delta good">▼ 1.1%</span></div>
-          </div>
-          <div class="metric-row">
-            <div class="metric-name">Credit Memo Rate</div>
-            <div class="metric-val"><span class="num">1.6%</span><span class="delta good">▼ 0.2%</span></div>
-          </div>
-          <div class="metric-row">
-            <div class="metric-name">Past Due Share</div>
-            <div class="metric-val"><span class="num">9.8%</span><span class="delta bad">▲ 0.7%</span></div>
-          </div>
-        </div>
-      </div>
-
-      <div class="card stack">
-        <div class="sub" data-chart="agedStock"></div>
-        <div class="sub" data-chart="agedStockTrend"></div>
-      </div>
-    </div>
-
-    <!-- Inbound vs Outbound -->
-    <div class="grid-2" style="margin-top:12px">
-      <div class="card" data-chart="inboundOutbound"></div>
-      <div class="card" data-chart="inboundOutboundTrend"></div>
-    </div>
-
-    <!-- Tables -->
-    <div class="card table-card" style="margin-top:12px">
+  <div class="grid-2">
+    <div class="card">
       <div class="card-head">
         <span class="ico" aria-hidden="true">
-          <svg viewBox="0 0 24 24"><path d="M3 4h18v16H3V4zm2 4h14V6H5v2zm0 3h6V9H5v2zm0 3h14v-2H5v2zm8-3h6V9h-6v2z"/></svg>
+          <svg viewBox="0 0 24 24"><path d="M7 17h2V7H7v10zm4 0h2V11h-2v6zm4 0h2V9h-2v8z"/></svg>
         </span>
-        A/R Concentration Summary
+        Overall Inventory Breakdown
       </div>
-      <div class="divider"></div>
-      <div class="table-scroll">
-        <table class="data" aria-label="AR Concentration Summary">
-          <thead>
-            <tr>
-              <th>Customer</th>
-              <th class="numR">Balance</th>
-              <th class="numR">Share</th>
-              <th class="numR">Avg Days</th>
-              <th>Status</th>
-              <th class="numR">Last Payment</th>
-              <th class="numR">Notes</th>
-            </tr>
-          </thead>
-          <tbody>
-            <tr><td>Northwind</td><td class="numR">$210,400</td><td class="numR">18%</td><td class="numR">36</td><td><span class="pill">Current</span></td><td class="numR">10/05</td><td class="numR">—</td></tr>
-            <tr><td>Contoso</td><td class="numR">$148,920</td><td class="numR">13%</td><td class="numR">44</td><td><span class="pill">Current</span></td><td class="numR">10/02</td><td class="numR">—</td></tr>
-            <tr><td>Fabrikam</td><td class="numR">$118,300</td><td class="numR">10%</td><td class="numR">58</td><td><span class="pill">Past Due</span></td><td class="numR">09/18</td><td class="numR">Follow up</td></tr>
-            <tr><td>Adventure Works</td><td class="numR">$92,110</td><td class="numR">8%</td><td class="numR">41</td><td><span class="pill">Current</span></td><td class="numR">09/29</td><td class="numR">—</td></tr>
-            <tr><td>Tailspin</td><td class="numR">$71,500</td><td class="numR">6%</td><td class="numR">63</td><td><span class="pill">Past Due</span></td><td class="numR">09/10</td><td class="numR">Dispute</td></tr>
-            <tr><td>Other</td><td class="numR">$479,700</td><td class="numR">45%</td><td class="numR">39</td><td><span class="pill">Mixed</span></td><td class="numR">10/07</td><td class="numR">—</td></tr>
-          </tbody>
-        </table>
+      <div class="metrics">
+        {% for metric in finished_goals_metrics %}
+          <div class="metric-row">
+            <div class="metric-name">{{ metric.label }}</div>
+            <div class="metric-val">
+              <span class="num">{{ metric.value }}</span>
+              {% if metric.delta %}
+                <span class="delta {{ metric.delta_class }}">{{ metric.delta }}</span>
+              {% endif %}
+            </div>
+          </div>
+        {% empty %}
+          <div class="metric-row">
+            <div class="metric-name">Awaiting data</div>
+            <div class="metric-val"><span class="num">—</span></div>
+          </div>
+        {% endfor %}
       </div>
     </div>
 
-    <div class="card table-card" style="margin-top:12px">
+    <div class="card">
       <div class="card-head">
         <span class="ico" aria-hidden="true">
-          <svg viewBox="0 0 24 24"><path d="M4 4h16v4H4V4zm0 6h16v10H4V10zm3 3v2h4v-2H7z"/></svg>
+          <svg viewBox="0 0 24 24"><path d="M12 2l3 7h7l-5.5 4.2L18 21l-6-3.8L6 21l1.5-7.8L2 9h7l3-7z"/></svg>
         </span>
-        A/R Aging Summary
+        Highlights
       </div>
-      <div class="divider"></div>
-      <div class="table-scroll">
-        <table class="data" aria-label="AR Aging Summary">
-          <thead>
-            <tr>
-              <th>Bucket</th>
-              <th class="numR">Current</th>
-              <th class="numR">1–30</th>
-              <th class="numR">31–60</th>
-              <th class="numR">61–90</th>
-              <th class="numR">91–120</th>
-              <th class="numR">120+</th>
-              <th class="numR">Total</th>
-              <th class="numR">% Total</th>
-            </tr>
-          </thead>
-          <tbody>
-            <tr><td>Amount</td><td class="numR">$710,220</td><td class="numR">$184,310</td><td class="numR">$98,540</td><td class="numR">$54,120</td><td class="numR">$29,880</td><td class="numR">$43,610</td><td class="numR">$1,120,680</td><td class="numR">100%</td></tr>
-            <tr><td>Share</td><td class="numR">63%</td><td class="numR">16%</td><td class="numR">9%</td><td class="numR">5%</td><td class="numR">3%</td><td class="numR">4%</td><td class="numR">—</td><td class="numR">—</td></tr>
-          </tbody>
-        </table>
-      </div>
+      <table class="mini-table" aria-label="Highlights">
+        {% for highlight in finished_goals_highlights %}
+          <tr><td>{{ highlight.label }}</td><td>{{ highlight.value }}</td></tr>
+        {% empty %}
+          <tr><td colspan="2">Awaiting insights.</td></tr>
+        {% endfor %}
+      </table>
     </div>
-
-    <div class="card table-card" style="margin-top:12px">
-      <div class="card-head">
-        <span class="ico" aria-hidden="true">
-          <svg viewBox="0 0 24 24"><path d="M7 2h10v2H7V2zM5 6h14v16H5V6zm2 2v2h10V8H7zm0 4v2h10v-2H7z"/></svg>
-        </span>
-        Stock Analysis
-      </div>
-      <div class="divider"></div>
-      <div class="table-scroll">
-        <table class="data" aria-label="Stock Analysis">
-          <thead>
-            <tr>
-              <th>SKU</th>
-              <th>Category</th>
-              <th>Description</th>
-              <th class="numR">On Hand</th>
-              <th class="numR">Unit Cost</th>
-              <th class="numR">Value</th>
-              <th class="numR">Age (days)</th>
-              <th class="numR">Turns</th>
-              <th>Status</th>
-            </tr>
-          </thead>
-          <tbody>
-            <tr><td>FG-1002</td><td>Finished</td><td>Assembly Kit A</td><td class="numR">1,240</td><td class="numR">$42.10</td><td class="numR">$52,204</td><td class="numR">52</td><td class="numR">5.4</td><td><span class="pill">Normal</span></td></tr>
-            <tr><td>FG-1009</td><td>Finished</td><td>Assembly Kit B</td><td class="numR">980</td><td class="numR">$58.40</td><td class="numR">$57,232</td><td class="numR">188</td><td class="numR">2.1</td><td><span class="pill">Aged</span></td></tr>
-            <tr><td>RM-0311</td><td>Raw</td><td>Steel Coil</td><td class="numR">7,600</td><td class="numR">$3.90</td><td class="numR">$29,640</td><td class="numR">41</td><td class="numR">8.2</td><td><span class="pill">Normal</span></td></tr>
-            <tr><td>WIP-0090</td><td>WIP</td><td>Sub-assembly</td><td class="numR">540</td><td class="numR">$22.50</td><td class="numR">$12,150</td><td class="numR">76</td><td class="numR">4.6</td><td><span class="pill">Normal</span></td></tr>
-            <tr><td>FG-1017</td><td>Finished</td><td>Legacy Part</td><td class="numR">320</td><td class="numR">$64.00</td><td class="numR">$20,480</td><td class="numR">260</td><td class="numR">1.3</td><td><span class="pill">Aged</span></td></tr>
-            <tr><td>RM-0404</td><td>Raw</td><td>Packaging</td><td class="numR">4,200</td><td class="numR">$1.10</td><td class="numR">$4,620</td><td class="numR">33</td><td class="numR">10.1</td><td><span class="pill">Normal</span></td></tr>
-          </tbody>
-        </table>
-      </div>
-    </div>
-
   </div>
 
-  <script>
-    /* ---------- Simple SVG chart renderer (line + bar) ---------- */
+  <div class="card" style="margin-top:12px" data-chart="inventoryTrend"></div>
 
-    const charts = {
-      inventoryTrend: {
-        type: "line",
-        title: "Inventory Trend",
-        labels: ["Jan","Feb","Mar","Apr","May","Jun","Jul","Aug","Sep","Oct","Nov","Dec"],
-        values: [3.2,3.5,3.8,4.0,4.2,4.1,3.9,3.7,3.4,3.1,3.3,3.6],
-        yPrefix: "$",
-        ySuffix: "M",
-        yTicks: 5
-      },
-      agedStock: {
-        type: "bar",
-        title: "Aged Stock",
-        labels: ["0-30","31-60","61-90","91-120","121-180","180+"],
-        values: [0.12,0.18,0.09,0.33,0.17,0.11],
-        highlightIndex: 3,
-        yPrefix: "$",
-        ySuffix: "M",
-        yTicks: 4
-      },
-      agedStockTrend: {
-        type: "line",
-        title: "Aged Moving Trend",
-        labels: ["Jan","Feb","Mar","Apr","May","Jun","Jul","Aug","Sep","Oct","Nov","Dec"],
-        values: [0.24,0.27,0.32,0.31,0.29,0.26,0.18,0.12,0.14,0.19,0.23,0.25],
-        yPrefix: "$",
-        ySuffix: "M",
-        yTicks: 4
-      },
-      inboundOutbound: {
-        type:"bar",
-        title:"In‑Bound vs Outbound",
-        labels:["W1","W2","W3","W4","W5","W6"],
-        values:[0.42,0.48,0.31,0.76,0.50,0.39],
-        highlightIndex: 3,
-        yPrefix:"$",
-        ySuffix:"M",
-        yTicks:4
-      },
-      inboundOutboundTrend: {
-        type:"line",
-        title:"In‑Bound vs Outbounds Trend",
-        labels:["Jan","Feb","Mar","Apr","May","Jun","Jul","Aug","Sep","Oct","Nov","Dec"],
-        values:[0.22,0.26,0.31,0.30,0.28,0.24,0.16,0.10,0.13,0.18,0.22,0.26],
-        yPrefix:"$",
-        ySuffix:"M",
-        yTicks:4
-      }
-    };
+  <div class="grid-2" style="margin-top:12px">
+    <div class="card">
+      <div class="card-head">
+        <span class="ico" aria-hidden="true">
+          <svg viewBox="0 0 24 24"><path d="M4 19h16v2H4v-2zm1-4h3v3H5v-3zm5-6h3v9h-3V9zm5 3h3v6h-3v-6z"/></svg>
+        </span>
+        Key Insights
+      </div>
+      <div class="metrics">
+        {% for metric in finished_goals_metrics %}
+          <div class="metric-row">
+            <div class="metric-name">{{ metric.label }}</div>
+            <div class="metric-val">
+              <span class="num">{{ metric.value }}</span>
+            </div>
+          </div>
+        {% endfor %}
+      </div>
+    </div>
 
-    function fmtY(v,c){
-      // values are already in "M" scale for compact display
-      if (c.yPrefix || c.ySuffix) return `${c.yPrefix||""}${v.toFixed(2)}${c.ySuffix||""}`;
-      return String(v);
-    }
-    function pathFrom(pts){
-      return pts.map((p,i)=> (i===0?`M ${p[0]} ${p[1]}`:`L ${p[0]} ${p[1]}`)).join(" ");
-    }
+    <div class="card stack">
+      <div class="sub" data-chart="agedStock"></div>
+      <div class="sub" data-chart="agedStockTrend"></div>
+    </div>
+  </div>
 
-    function renderLine(el,c){
-      const W = 560, H = 190;
-      const pad = {l:46,r:14,t:16,b:30};
-      const plotW = W-pad.l-pad.r, plotH = H-pad.t-pad.b;
+  <div class="grid-2" style="margin-top:12px">
+    <div class="card" data-chart="inboundOutbound"></div>
+    <div class="card" data-chart="inboundOutboundTrend"></div>
+  </div>
 
-      let min = Math.min(...c.values), max = Math.max(...c.values);
-      const range = (max-min)||1;
-      min -= range*0.15; max += range*0.15;
+  <div class="card table-card" style="margin-top:12px">
+    <div class="card-head">
+      <span class="ico" aria-hidden="true">
+        <svg viewBox="0 0 24 24"><path d="M3 4h18v16H3V4zm2 4h14V6H5v2zm0 3h6V9H5v2zm0 3h14v-2H5v2zm8-3h6V9h-6v2z"/></svg>
+      </span>
+      A/R Concentration Summary
+    </div>
+    <div class="divider"></div>
+    <div class="table-scroll">
+      <table class="data" aria-label="AR Concentration Summary">
+        <thead>
+          <tr>
+            <th>Customer</th>
+            <th class="numR">Balance</th>
+            <th class="numR">Share</th>
+            <th class="numR">Avg Days</th>
+            <th>Status</th>
+            <th class="numR">Last Payment</th>
+            <th class="numR">Notes</th>
+          </tr>
+        </thead>
+        <tbody>
+          {% for row in finished_goals_ar_concentration %}
+            <tr>
+              <td>{{ row.customer }}</td>
+              <td class="numR">{{ row.balance }}</td>
+              <td class="numR">{{ row.share }}</td>
+              <td class="numR">{{ row.avg_days }}</td>
+              <td>{{ row.status }}</td>
+              <td class="numR">{{ row.last_payment }}</td>
+              <td class="numR">{{ row.notes }}</td>
+            </tr>
+          {% empty %}
+            <tr><td colspan="7" class="numR">No concentration data available.</td></tr>
+          {% endfor %}
+        </tbody>
+      </table>
+    </div>
+  </div>
 
-      const x = i => pad.l + (i/(c.labels.length-1))*plotW;
-      const y = v => pad.t + (1-(v-min)/(max-min))*plotH;
+  <div class="card table-card" style="margin-top:12px">
+    <div class="card-head">
+      <span class="ico" aria-hidden="true">
+        <svg viewBox="0 0 24 24"><path d="M4 4h16v4H4V4zm0 6h16v16H4V10zm3 3v2h4v-2H7z"/></svg>
+      </span>
+      A/R Aging Summary
+    </div>
+    <div class="divider"></div>
+    <div class="table-scroll">
+      <table class="data" aria-label="AR Aging Summary">
+        <thead>
+          <tr>
+            <th>Bucket</th>
+            {% for bucket in finished_goals_ar_aging.buckets %}
+              <th class="numR">{{ bucket }}</th>
+            {% endfor %}
+            <th class="numR">Total</th>
+            <th class="numR">% Total</th>
+          </tr>
+        </thead>
+        <tbody>
+          <tr>
+            <td>Amount</td>
+            {% for amount in finished_goals_ar_aging.amounts %}
+              <td class="numR">{{ amount }}</td>
+            {% endfor %}
+            <td class="numR">{{ finished_goals_ar_aging.total_amount }}</td>
+            <td class="numR">{{ finished_goals_ar_aging.total_share }}</td>
+          </tr>
+          <tr>
+            <td>Share</td>
+            {% for share in finished_goals_ar_aging.shares %}
+              <td class="numR">{{ share }}</td>
+            {% endfor %}
+            <td class="numR">—</td>
+            <td class="numR">{{ finished_goals_ar_aging.total_share }}</td>
+          </tr>
+        </tbody>
+      </table>
+    </div>
+  </div>
 
-      const pts = c.values.map((v,i)=>[x(i),y(v)]);
-      const ticks = c.yTicks||5;
-      const yTicks = Array.from({length:ticks},(_,i)=>{
-        const t=i/(ticks-1);
-        const val=max - t*(max-min);
-        return {val, yy:y(val)};
-      });
+  <div class="card table-card" style="margin-top:12px">
+    <div class="card-head">
+      <span class="ico" aria-hidden="true">
+        <svg viewBox="0 0 24 24"><path d="M7 2h10v2H7V2zM5 6h14v16H5V6zm2 2v2h10V8H7zm0 4v2h10v-2H7z"/></svg>
+      </span>
+      Stock Analysis
+    </div>
+    <div class="divider"></div>
+    <div class="table-scroll">
+      <table class="data" aria-label="Stock Analysis">
+        <thead>
+          <tr>
+            <th>SKU</th>
+            <th>Category</th>
+            <th>Description</th>
+            <th class="numR">On Hand</th>
+            <th class="numR">Unit Cost</th>
+            <th class="numR">Value</th>
+            <th class="numR">Age (days)</th>
+            <th class="numR">Turns</th>
+            <th>Status</th>
+          </tr>
+        </thead>
+        <tbody>
+          {% for row in finished_goals_stock %}
+            <tr>
+              <td>{{ row.sku }}</td>
+              <td>{{ row.category }}</td>
+              <td>{{ row.description }}</td>
+              <td class="numR">{{ row.on_hand }}</td>
+              <td class="numR">{{ row.unit_cost }}</td>
+              <td class="numR">{{ row.value }}</td>
+              <td class="numR">{{ row.age }}</td>
+              <td class="numR">{{ row.turns }}</td>
+              <td><span class="pill">{{ row.status }}</span></td>
+            </tr>
+          {% empty %}
+            <tr><td colspan="9" class="numR">Inventory levels not available.</td></tr>
+          {% endfor %}
+        </tbody>
+      </table>
+    </div>
+  </div>
 
-      const xStep = c.labels.length>10 ? 2 : 1;
+</div>
 
-      el.innerHTML = `
-        <div class="card-head">
-          <span class="ico" aria-hidden="true">
-            <svg viewBox="0 0 24 24"><path d="M4 17l5-6 4 4 7-10 0 3-7 10-4-4-5 6z"/></svg>
-          </span>
-          ${c.title}
-        </div>
-        <div class="chart-wrap">
-          <svg viewBox="0 0 ${W} ${H}" role="img" aria-label="${c.title} chart">
-            <rect x="${pad.l}" y="${pad.t}" width="${plotW}" height="${plotH}" class="borderline"></rect>
+<script>
+  const charts = {{ finished_goals_chart_config_json|safe }};
 
-            ${yTicks.map(t=>`
-              <line x1="${pad.l}" y1="${t.yy}" x2="${W-pad.r}" y2="${t.yy}" class="gridline"></line>
-              <g class="axis">
-                <text x="${pad.l-8}" y="${t.yy+3}" text-anchor="end">${fmtY(t.val,c)}</text>
-              </g>
-            `).join("")}
+  function fmtY(v,c){
+    if (c.yPrefix || c.ySuffix) return `${c.yPrefix||""}${v.toFixed(2)}${c.ySuffix||""}`;
+    return String(v);
+  }
+  function pathFrom(pts){
+    return pts.map((p,i)=> (i===0?`M ${p[0]} ${p[1]}`:`L ${p[0]} ${p[1]}`)).join(" ");
+  }
 
+  function renderLine(el,c){
+    const W = 560, H = 190;
+    const pad = {l:46,r:14,t:16,b:30};
+    const plotW = W-pad.l-pad.r, plotH = H-pad.t-pad.b;
+
+    let min = Math.min(...c.values), max = Math.max(...c.values);
+    const range = (max-min)||1;
+    min -= range*0.15; max += range*0.15;
+
+    const x = i => pad.l + (i/(c.labels.length-1))*plotW;
+    const y = v => pad.t + (1-(v-min)/(max-min))*plotH;
+
+    const pts = c.values.map((v,i)=>[x(i),y(v)]);
+    const ticks = c.yTicks||5;
+    const yTicks = Array.from({length:ticks},(_,i)=>{
+      const t=i/(ticks-1);
+      const val=max - t*(max-min);
+      return {val, yy:y(val)};
+    });
+
+    const xStep = c.labels.length>10 ? 2 : 1;
+
+    el.innerHTML = `
+      <div class="card-head">
+        <span class="ico" aria-hidden="true">
+          <svg viewBox="0 0 24 24"><path d="M4 17l5-6 4 4 7-10 0 3-7 10-4-4-5 6z"/></svg>
+        </span>
+        ${c.title}
+      </div>
+      <div class="chart-wrap">
+        <svg viewBox="0 0 ${W} ${H}" role="img" aria-label="${c.title} chart">
+          <rect x="${pad.l}" y="${pad.t}" width="${plotW}" height="${plotH}" class="borderline"></rect>
+          ${yTicks.map(t=>`
+            <line x1="${pad.l}" y1="${t.yy}" x2="${W-pad.r}" y2="${t.yy}" class="gridline"></line>
             <g class="axis">
-              ${c.labels.map((lab,i)=>{
-                if(i%xStep!==0) return "";
-                return `<text x="${x(i)}" y="${H-10}" text-anchor="middle">${lab}</text>`;
-              }).join("")}
+              <text x="${pad.l-8}" y="${t.yy+3}" text-anchor="end">${fmtY(t.val,c)}</text>
             </g>
-
-            <path d="${pathFrom(pts)}" class="line"></path>
-            ${pts.map((p,i)=> i===0||i===pts.length-1 ? "" : `<circle cx="${p[0]}" cy="${p[1]}" r="2.1" class="pt"></circle>`).join("")}
-          </svg>
-        </div>
-      `;
-    }
-
-    function renderBar(el,c){
-      const W = 560, H = 190;
-      const pad = {l:46,r:14,t:16,b:30};
-      const plotW = W-pad.l-pad.r, plotH = H-pad.t-pad.b;
-
-      let min = 0;
-      let max = Math.max(...c.values);
-      max += max*0.18;
-
-      const n = c.values.length;
-      const gap = 10;
-      const barW = Math.max(18, (plotW - gap*(n-1))/n);
-
-      const x = i => pad.l + i*(barW+gap);
-      const y = v => pad.t + (1-(v-min)/(max-min))*plotH;
-      const h = v => (pad.t+plotH) - y(v);
-
-      const ticks = c.yTicks||4;
-      const yTicks = Array.from({length:ticks},(_,i)=>{
-        const t=i/(ticks-1);
-        const val=max - t*(max-min);
-        return {val, yy:y(val)};
-      });
-
-      el.innerHTML = `
-        <div class="card-head">
-          <span class="ico" aria-hidden="true">
-            <svg viewBox="0 0 24 24"><path d="M4 19h16v2H4v-2zM6 17V7h3v10H6zm5 0V4h3v13h-3zm5 0v-8h3v8h-3z"/></svg>
-          </span>
-          ${c.title}
-        </div>
-        <div class="chart-wrap">
-          <svg viewBox="0 0 ${W} ${H}" role="img" aria-label="${c.title} chart">
-            <rect x="${pad.l}" y="${pad.t}" width="${plotW}" height="${plotH}" class="borderline"></rect>
-
-            ${yTicks.map(t=>`
-              <line x1="${pad.l}" y1="${t.yy}" x2="${W-pad.r}" y2="${t.yy}" class="gridline"></line>
-              <g class="axis">
-                <text x="${pad.l-8}" y="${t.yy+3}" text-anchor="end">${fmtY(t.val,c)}</text>
-              </g>
-            `).join("")}
-
-            ${c.values.map((v,i)=>{
-              const cls = (typeof c.highlightIndex==="number" && i===c.highlightIndex) ? "bar-strong" : "bar-soft";
-              return `<rect x="${x(i)}" y="${y(v)}" width="${barW}" height="${h(v)}" class="${cls}"></rect>`;
+          `).join("")}
+          <g class="axis">
+            ${c.labels.map((lab,i)=>{
+              if(i%xStep!==0) return "";
+              return `<text x="${x(i)}" y="${H-10}" text-anchor="middle">${lab}</text>`;
             }).join("")}
+          </g>
+          <path d="${pathFrom(pts)}" class="line"></path>
+          ${pts.map((p,i)=> i===0||i===pts.length-1 ? "" : `<circle cx="${p[0]}" cy="${p[1]}" r="2.1" class="pt"></circle>`).join("")}
+        </svg>
+      </div>
+    `;
+  }
 
+  function renderBar(el,c){
+    const W = 560, H = 190;
+    const pad = {l:46,r:14,t:16,b:30};
+    const plotW = W-pad.l-pad.r, plotH = H-pad.t-pad.b;
+
+    let min = 0;
+    let max = Math.max(...c.values);
+    max += max*0.18;
+
+    const n = c.values.length;
+    const gap = 10;
+    const barW = Math.max(18, (plotW - gap*(n-1))/n);
+
+    const x = i => pad.l + i*(barW+gap);
+    const y = v => pad.t + (1-(v-min)/(max-min))*plotH;
+    const h = v => (pad.t+plotH) - y(v);
+
+    const ticks = c.yTicks||4;
+    const yTicks = Array.from({length:ticks},(_,i)=>{
+      const t=i/(ticks-1);
+      const val=max - t*(max-min);
+      return {val, yy:y(val)};
+    });
+
+    el.innerHTML = `
+      <div class="card-head">
+        <span class="ico" aria-hidden="true">
+          <svg viewBox="0 0 24 24"><path d="M4 19h16v2H4v-2zM6 17V7h3v10H6zm5 0V4h3v13h-3zm5 0v-8h3v8h-3z"/></svg>
+        </span>
+        ${c.title}
+      </div>
+      <div class="chart-wrap">
+        <svg viewBox="0 0 ${W} ${H}" role="img" aria-label="${c.title} chart">
+          <rect x="${pad.l}" y="${pad.t}" width="${plotW}" height="${plotH}" class="borderline"></rect>
+          ${yTicks.map(t=>`
+            <line x1="${pad.l}" y1="${t.yy}" x2="${W-pad.r}" y2="${t.yy}" class="gridline"></line>
             <g class="axis">
-              ${c.labels.map((lab,i)=>{
-                const xx = x(i) + barW/2;
-                return `<text x="${xx}" y="${H-10}" text-anchor="middle">${lab}</text>`;
-              }).join("")}
+              <text x="${pad.l-8}" y="${t.yy+3}" text-anchor="end">${fmtY(t.val,c)}</text>
             </g>
-          </svg>
-        </div>
-      `;
-    }
+          `).join("")}
+          ${c.values.map((v,i)=>{
+            const cls = (typeof c.highlightIndex==="number" && i===c.highlightIndex) ? "bar-strong" : "bar-soft";
+            return `<rect x="${x(i)}" y="${y(v)}" width="${barW}" height="${h(v)}" class="${cls}"></rect>`;
+          }).join("")}
+          <g class="axis">
+            ${c.labels.map((lab,i)=>{
+              const xx = x(i) + barW/2;
+              return `<text x="${xx}" y="${H-10}" text-anchor="middle">${lab}</text>`;
+            }).join("")}
+          </g>
+        </svg>
+      </div>
+    `;
+  }
 
-    function init(){
-      document.querySelectorAll("[data-chart]").forEach(el=>{
-        const key = el.getAttribute("data-chart");
-        const c = charts[key];
-        if(!c) return;
-        if(c.type==="line") renderLine(el,c);
-        if(c.type==="bar") renderBar(el,c);
-      });
-    }
-    init();
-  </script>
-</body>
-</html>
+  function initFinishedGoalsCharts(){
+    document.querySelectorAll("[data-chart]").forEach(el=>{
+      const key = el.getAttribute("data-chart");
+      const c = charts[key];
+      if(!c) return;
+      if(c.type==="line") renderLine(el,c);
+      if(c.type==="bar") renderBar(el,c);
+    });
+  }
+  initFinishedGoalsCharts();
+</script>
