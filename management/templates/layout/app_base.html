@@ -62,7 +62,24 @@
             {% with avatar_text=user_display|slice:":2"|upper %}
             <div class="avatar">{{ avatar_text }}</div>
             <div class="user-meta">
-              <div class="user-name">{{ user_display|default:"Borrower" }}</div>
+              {% with borrower=current_user.borrower_profile.borrower %}
+              {% if borrower %}
+              <div class="user-name">{{ borrower.company.company|default:user_display }}</div>
+              <div class="user-sub">
+                {{ borrower.primary_contact|default:"Contact" }}
+                {% if borrower.primary_contact_phone %}
+                  • {{ borrower.primary_contact_phone }}
+                {% else %}
+                  • Unified Client Profile
+                {% endif %}
+                <span class="caret">
+                  <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round">
+                    <path d="M7 10l5 5 5-5"/>
+                  </svg>
+                </span>
+              </div>
+              {% else %}
+              <div class="user-name">{{ user_display }}</div>
               <div class="user-sub">
                 Contact • Unified Client Profile
                 <span class="caret">
@@ -71,6 +88,8 @@
                   </svg>
                 </span>
               </div>
+              {% endif %}
+              {% endwith %}
             </div>
             {% endwith %}
             {% endwith %}
