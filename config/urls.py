@@ -40,5 +40,8 @@ urlpatterns = [
     ),
     path('limits/', management_views.limits_view, name='limits'),
     path('logout/', management_views.logout_view, name='logout'),
+    path('admin/dashboard/', management_views.admin_dashboard_view, name='admin_dashboard'),
+    path('admin/company/', management_views.admin_company_view, name='admin_company'),
+    path('admin/borrower/', management_views.admin_borrower_view, name='admin_borrower'),
     path('admin/', admin.site.urls),
 ]

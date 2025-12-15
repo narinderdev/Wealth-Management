@@ -157,7 +157,6 @@ body {
 .visibility-toggle .eye-open{display:block}
 .visibility-toggle[aria-pressed="true"] .eye-open{display:none}
 .visibility-toggle[aria-pressed="true"] .eye-closed{display:block}
-}
 
 .remember {
     display: flex;
@@ -192,6 +191,27 @@ body {
 .login-btn:hover {
     transform: translateY(-1px);
     box-shadow: 0 10px 30px rgba(17, 38, 126, 0.3);
+}
+
+.admin-preview-btn{
+    display:inline-flex;
+    justify-content:center;
+    align-items:center;
+    width:100%;
+    margin-top:12px;
+    padding:12px;
+    border-radius:12px;
+    border:1px solid #d8dbe7;
+    background:#f5f8ff;
+    color:#1f55c7;
+    font-size:1rem;
+    font-weight:600;
+    text-decoration:none;
+    transition:background .15s ease, color .15s ease;
+}
+.admin-preview-btn:hover{
+    background:#e8f0ff;
+    color:#132983;
 }
 
 .credential-note {

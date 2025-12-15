@@ -1,0 +1,433 @@
+{% load static %}
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width,initial-scale=1" />
+  <title>CORA Admin - {% block page_title %}Company{% endblock %}</title>
+  <style>
+    :root{
+      --navy:#214c8f;
+      --blue:#0b73d9;
+      --bg:#f3f6fb;
+      --card:#ffffff;
+      --text:#0f172a;
+      --muted:#6b7280;
+      --line:#e6edf6;
+      --line2:#dfe7f2;
+      --shadow:0 10px 22px rgba(15, 23, 42, .08);
+      --radius:10px;
+      --inputRadius:6px;
+    }
+
+    *{ box-sizing:border-box; }
+    body{
+      margin:0;
+      font-family: ui-sans-serif, system-ui, -apple-system, Segoe UI, Roboto, Helvetica, Arial;
+      background:var(--bg);
+      color:var(--text);
+    }
+
+    .app{
+      display:flex;
+      min-height:100vh;
+    }
+
+    /* Sidebar */
+    .sidebar{
+      width:220px;
+      background:#fff;
+      border-right:1px solid var(--line2);
+      padding:14px 12px;
+    }
+
+    .brand{
+      display:flex;
+      align-items:center;
+      gap:10px;
+      padding:6px 6px 12px;
+      margin-bottom:8px;
+    }
+    .brand img{
+      height:34px;
+      width:auto;
+      max-width:100%;
+      flex:0 0 auto;
+    }
+    .brand .name{
+      line-height:1.15;
+      white-space:normal;
+      word-break:break-word;
+    }
+    .brand .name strong{
+      display:block;
+      font-weight:900;
+      letter-spacing:.2px;
+      font-size:15px;
+      color:#163777;
+    }
+    .brand .name span{display:none}
+
+    .nav{
+      margin-top:6px;
+      display:flex;
+      flex-direction:column;
+      gap:4px;
+    }
+    .nav a{
+      display:flex;
+      align-items:center;
+      gap:10px;
+      padding:8px 10px;
+      border-radius:7px;
+      text-decoration:none;
+      color:#334155;
+      font-weight:700;
+      font-size:11px;
+    }
+    .nav a .ico{
+      width:18px;height:18px;
+      display:grid;place-items:center;
+      color:#8aa2c7;
+      flex:0 0 auto;
+    }
+    .nav a:hover{
+      background:#f2f7ff;
+    }
+    .nav a.active{
+      background:var(--blue);
+      color:#fff;
+    }
+    .nav a.active .ico{ color:#fff; }
+
+    /* Main */
+    .main{
+      flex:1;
+      display:flex;
+      flex-direction:column;
+      min-width:0;
+    }
+
+    .topbar{
+      height:40px;
+      background:var(--navy);
+      color:#fff;
+      display:flex;
+      align-items:center;
+      justify-content:space-between;
+      padding:0 18px;
+      box-shadow:0 2px 0 rgba(0,0,0,.06);
+    }
+    .topbar .title{
+      font-weight:800;
+      font-size:12px;
+      letter-spacing:.2px;
+    }
+    .topbar .right{
+      font-weight:900;
+      letter-spacing:.8px;
+    }
+
+    .content{
+      padding:18px;
+      display:flex;
+      flex-direction:column;
+      gap:18px;
+    }
+
+    .dash-card{
+      background:#fff;
+      border:1px solid #e8eef7;
+      border-radius:var(--radius);
+      padding:18px;
+      box-shadow:0 12px 30px rgba(15,23,42,.04);
+    }
+    .dash-head{
+      display:flex;
+      justify-content:space-between;
+      align-items:flex-start;
+      margin-bottom:14px;
+    }
+    .dash-head .title{
+      font-weight:700;
+      font-size:12px;
+      color:#0f1d3d;
+    }
+    .dash-metrics{
+      display:grid;
+      grid-template-columns: repeat(auto-fit,minmax(180px,1fr));
+      gap:12px;
+    }
+    .mini-card{
+      border:1px solid #edf2fb;
+      border-radius:12px;
+      padding:12px;
+      background:#fbfcff;
+    }
+    .mini-label{
+      font-size:10px;
+      font-weight:700;
+      color:#6b7a95;
+      text-transform:uppercase;
+      letter-spacing:.04em;
+      margin-bottom:6px;
+    }
+    .mini-value{
+      font-size:20px;
+      font-weight:800;
+      color:#0f1d3d;
+      margin-bottom:4px;
+    }
+    .mini-sub{
+      font-size:11px;
+      color:#10b981;
+    }
+    .badge-trend{
+      padding:4px 8px;
+      border-radius:999px;
+      font-size:10px;
+      font-weight:700;
+      background:#ecfdf3;
+      color:#047857;
+    }
+
+    .panel{
+      background:var(--card);
+      border:1px solid var(--line);
+      border-radius:var(--radius);
+      box-shadow:var(--shadow);
+      padding:16px 18px 32px;
+      position:relative;
+    }
+    .admin-screen{display:block;}
+
+    .panel-head{
+      display:flex;
+      align-items:center;
+      gap:10px;
+      color:#1f3b66;
+      font-weight:900;
+      font-size:12px;
+      margin-bottom:14px;
+    }
+    .panel-head .head-ico{
+      width:22px;height:22px;
+      border-radius:7px;
+      display:grid;place-items:center;
+      background:#f0f6ff;
+      border:1px solid #d8e9ff;
+      color:var(--blue);
+    }
+
+    .form-grid{
+      display:grid;
+      grid-template-columns: repeat(3, minmax(0, 1fr));
+      gap:14px 18px;
+      max-width: 960px;
+    }
+    .field label{
+      display:block;
+      font-size:10px;
+      font-weight:800;
+      color:#3b4a63;
+      margin-bottom:6px;
+    }
+    .req{
+      color:#ef4444;
+      margin-left:3px;
+      font-weight:900;
+    }
+    .field input,
+    .control{
+      width:100%;
+      height:30px;
+      padding:0 10px;
+      border:1px solid #d9e2ef;
+      border-radius:var(--inputRadius);
+      outline:none;
+      font-size:11px;
+      font-weight:700;
+      color:#111827;
+      background:#fff;
+    }
+    .field input::placeholder,
+    .control::placeholder{
+      color:#9aa6b2;
+      font-weight:700;
+    }
+    .field input:focus,
+    .control:focus{
+      border-color:#8fc0ff;
+      box-shadow:0 0 0 3px rgba(11,115,217,.12);
+    }
+    .span-2{ grid-column: span 1; }
+    .empty{ visibility:hidden; }
+
+    .actions{
+      display:flex;
+      gap:10px;
+      justify-content:flex-end;
+      margin-top:24px;
+    }
+    .btn{
+      height:30px;
+      padding:0 14px;
+      border-radius:4px;
+      font-size:11px;
+      font-weight:800;
+      border:1px solid transparent;
+      cursor:pointer;
+    }
+    .btn.cancel{
+      background:#e6e6e6;
+      color:#7a7a7a;
+      cursor:not-allowed;
+    }
+    .btn.save{
+      background:var(--blue);
+      color:#fff;
+      box-shadow:0 8px 16px rgba(11,115,217,.22);
+    }
+    .screen-placeholder{
+      padding:60px 20px;
+      text-align:center;
+      color:#475569;
+    }
+    .screen-placeholder h2{
+      font-size:20px;
+      margin-bottom:10px;
+      color:#1d2c49;
+    }
+    .screen-placeholder p{
+      font-size:13px;
+      margin:0;
+    }
+    .select-wrap,
+    .icon-input{
+      position:relative;
+    }
+    .select-wrap select{
+      appearance:none;
+      -webkit-appearance:none;
+      -moz-appearance:none;
+      padding-right:34px;
+      cursor:pointer;
+    }
+    .select-wrap .end-ico{
+      position:absolute;
+      top:50%;
+      right:10px;
+      transform:translateY(-50%);
+      color:#94a3b8;
+      pointer-events:none;
+    }
+    .icon-input .end-ico{
+      position:absolute;
+      top:0;
+      bottom:0;
+      right:6px;
+      display:grid;
+      place-items:center;
+      color:#94a3b8;
+    }
+    .icon-input button.end-ico{
+      background:transparent;
+      border:none;
+      width:32px;
+      height:100%;
+      padding:0;
+      cursor:pointer;
+    }
+    .icon-input button.end-ico:focus-visible{
+      outline:2px solid #8fc0ff;
+      border-radius:4px;
+    }
+
+    @media (max-width: 980px){
+      .sidebar{ width:200px; }
+      .form-grid{ grid-template-columns:1fr; max-width: 520px; }
+      .empty{ display:none; }
+    }
+  </style>
+  {% block extra_head %}{% endblock %}
+</head>
+
+<body>
+  <div class="app">
+    <aside class="sidebar">
+      <div class="brand">
+        <img src="{% static 'images/logo.png' %}" alt="CORA logo">
+      </div>
+
+      {% with current_nav=active_nav|default:'dashboard' %}
+      <nav class="nav">
+        <a class="{% if current_nav == 'dashboard' %}active{% endif %}" href="{% url 'admin_dashboard' %}">
+          <span class="ico" aria-hidden="true">
+            <svg viewBox="0 0 24 24" width="16" height="16" fill="none">
+              <path d="M4 13l5-4 4 3 7-6" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/>
+              <path d="M4 19h16" stroke="currentColor" stroke-width="2" stroke-linecap="round"/>
+            </svg>
+          </span>
+          Dashboard
+        </a>
+
+        <a class="{% if current_nav == 'company' %}active{% endif %}" href="{% url 'admin_company' %}">
+          <span class="ico" aria-hidden="true">
+            <svg viewBox="0 0 24 24" width="16" height="16" fill="none">
+              <path d="M5 20V7l7-3 7 3v13" stroke="currentColor" stroke-width="2" stroke-linejoin="round"/>
+              <path d="M9 20v-8h6v8" stroke="currentColor" stroke-width="2" stroke-linejoin="round"/>
+            </svg>
+          </span>
+          Company
+        </a>
+
+        <a class="{% if current_nav == 'borrower' %}active{% endif %}" href="{% url 'admin_borrower' %}">
+          <span class="ico" aria-hidden="true">
+            <svg viewBox="0 0 24 24" width="16" height="16" fill="none">
+              <path d="M16 11a4 4 0 1 1-8 0 4 4 0 0 1 8 0Z" stroke="currentColor" stroke-width="2"/>
+              <path d="M4 20a8 8 0 0 1 16 0" stroke="currentColor" stroke-width="2" stroke-linecap="round"/>
+            </svg>
+          </span>
+          Borrower
+        </a>
+
+        <a class="{% if current_nav == 'individual' %}active{% endif %}" href="#">
+          <span class="ico" aria-hidden="true">
+            <svg viewBox="0 0 24 24" width="16" height="16" fill="none">
+              <path d="M12 12a4 4 0 1 0-4-4 4 4 0 0 0 4 4Z" stroke="currentColor" stroke-width="2"/>
+              <path d="M6 22a6 6 0 0 1 12 0" stroke="currentColor" stroke-width="2" stroke-linecap="round"/>
+            </svg>
+          </span>
+          Specific Individual
+        </a>
+
+        <a class="{% if current_nav == 'collateral' %}active{% endif %}" href="#">
+          <span class="ico" aria-hidden="true">
+            <svg viewBox="0 0 24 24" width="16" height="16" fill="none">
+              <path d="M4 7h16M4 12h16M4 17h10" stroke="currentColor" stroke-width="2" stroke-linecap="round"/>
+            </svg>
+          </span>
+          Collateral
+        </a>
+      </nav>
+      {% endwith %}
+    </aside>
+
+    <main class="main">
+      <header class="topbar">
+        <div class="title">{% block header_title %}Company Form{% endblock %}</div>
+        <div class="right">CORA</div>
+      </header>
+
+      <div class="content">
+        {% block top_section %}{% endblock %}
+        <section class="panel">
+          {% block admin_screens %}{% endblock %}
+        </section>
+      </div>
+    </main>
+  </div>
+
+  {% block extra_scripts %}{% endblock %}
+</body>
+</html>
