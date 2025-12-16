@@ -61,7 +61,7 @@ def collateral_dynamic_view(request):
         **_other_collateral_context(borrower),
         **_liquidation_model_context(borrower),
     }
-    return render(request, "collateral_dynamic/inventory_page.html", context)
+    return render(request, "collateral_dynamic/accounts_receivable.html", context)
 
 
 @login_required(login_url="login")

@@ -1,0 +1,1141 @@
+{% extends "layout/app_base.html" %}
+
+{% block title %}Collateral Dynamic{% endblock %}
+
+{% block extra_head %}
+  {{ block.super }}
+  <style>
+    .collateral-dynamic{
+      --cd-panel:#ffffff;
+      --cd-muted:#6b7280;
+      --cd-accent:#0a6af0;
+      --cd-line:#e5edf6;
+      --cd-ink:#1f2937;
+      --cd-shadow:0 4px 12px rgba(15,23,42,.04);
+      --blue-2:#2b6ff7;
+      --blue-3:#0b5bd3;
+      --teal:#1aa37a;
+      --purple:#8b3aa8;
+    }
+    .collateral-dynamic .section-tabs{
+      display:flex;
+      gap:12px;
+      margin-top:12px;
+      font-size:12px;
+      text-transform:uppercase;
+    }
+    .collateral-dynamic .section-tab{
+      padding:6px 14px;
+      border-radius:999px;
+      border:1px solid transparent;
+      background:var(--cd-panel);
+      color:var(--cd-muted);
+      font-weight:500;
+      text-decoration:none;
+    }
+    .collateral-dynamic .section-tab.active{
+      color:var(--cd-accent);
+      border-color:var(--cd-line);
+      box-shadow:0 8px 16px rgba(15,23,42,.08);
+    }
+    .collateral-dynamic .section-content{
+      margin-top:18px;
+    }
+    .collateral-dynamic .layout{
+      display:grid;
+      grid-template-columns:240px 1fr;
+      gap:20px;
+    }
+    .collateral-dynamic .menu-card{
+      background:#fff;
+      border-radius:18px;
+      padding:16px;
+      box-shadow:0 12px 30px rgba(15,23,42,.1);
+    }
+    .collateral-dynamic .menu-card .menu-title{
+      font-size:12px;
+      font-weight:600;
+      color:#4b5563;
+      margin-bottom:16px;
+      letter-spacing:.2px;
+    }
+    .collateral-dynamic .menu-item{
+      width:100%;
+      border:none;
+      background:transparent;
+      padding:10px 12px;
+      border-radius:12px;
+      display:flex;
+      align-items:center;
+      gap:12px;
+      font-size:14px;
+      color:#475569;
+      cursor:pointer;
+      text-decoration:none;
+      transition:background .2s ease,color .2s ease;
+    }
+    .collateral-dynamic .menu-item.active{
+      background:#eef2ff;
+      color:#0b2a66;
+      font-weight:600;
+    }
+    .collateral-dynamic .menu-icon{
+      width:24px;
+      height:24px;
+      border-radius:6px;
+      display:flex;
+      align-items:center;
+      justify-content:center;
+      background:#eef2ff;
+      color:#0b2a66;
+      font-size:12px;
+    }
+    .collateral-dynamic .menu-group-label{
+      margin-top:18px;
+      display:flex;
+      align-items:center;
+      gap:10px;
+      font-size:14px;
+      font-weight:600;
+      color:#0b2a66;
+    }
+    .collateral-dynamic .inventory-sublist{
+      display:flex;
+      flex-direction:column;
+      gap:8px;
+      margin-top:12px;
+      padding-left:14px;
+    }
+    .collateral-dynamic .inventory-subitem{
+      border-radius:12px;
+      padding:10px 16px;
+      background:#f5f7fb;
+      color:#475569;
+      font-weight:600;
+      text-decoration:none;
+      transition:background .2s ease;
+      font-size:13px;
+    }
+    .collateral-dynamic .inventory-subitem.active{
+      background:#0b2a66;
+      color:#fff;
+      box-shadow:0 6px 12px rgba(15,23,42,.2);
+    }
+    .collateral-dynamic .panel{
+      background:var(--cd-panel);
+      border:1px solid var(--cd-line);
+      border-radius:14px;
+      padding:18px;
+      box-shadow:var(--cd-shadow);
+      margin-bottom:18px;
+    }
+    .collateral-dynamic .page{
+      display:flex;
+      flex-direction:column;
+      gap:16px;
+    }
+    .collateral-dynamic .card{
+      background:#fff;
+      border:1px solid var(--cd-line);
+      border-radius:12px;
+      box-shadow:var(--cd-shadow);
+      padding:12px;
+    }
+    .collateral-dynamic .cardHeader{
+      display:flex;
+      align-items:center;
+      justify-content:space-between;
+      gap:10px;
+      padding-bottom:6px;
+      border-bottom:1px solid #eef1f7;
+    }
+    .collateral-dynamic .hleft{
+      display:flex;
+      align-items:center;
+      gap:8px;
+      font-weight:600;
+      font-size:12px;
+      color:#1f2a37;
+    }
+    .collateral-dynamic .spark{
+      width:14px;
+      height:14px;
+      color:var(--cd-accent);
+    }
+    .collateral-dynamic .snapshotText{
+      font-size:12px;
+      color:#475569;
+      line-height:1.5;
+      padding:8px 0 0 2px;
+    }
+    .collateral-dynamic .grid2{
+      display:grid;
+      grid-template-columns:240px 1fr;
+      gap:12px;
+    }
+    .collateral-dynamic .smallTitle{
+      font-size:10px;
+      font-weight:600;
+      color:#4b5563;
+      padding-bottom:8px;
+    }
+    .collateral-dynamic .donutWrap{
+      display:flex;
+      flex-direction:column;
+      gap:10px;
+      align-items:center;
+      padding:8px 0 0 0;
+    }
+    .collateral-dynamic .donutCard{
+      position:relative;
+      width:130px;
+      height:130px;
+    }
+    .collateral-dynamic .donutBox{
+      position:relative;
+      width:130px;
+      height:130px;
+      display:grid;
+      place-items:center;
+    }
+    .collateral-dynamic .donutCenter{
+      position:absolute;
+      inset:0;
+      display:grid;
+      place-items:center;
+      font-weight:800;
+      font-size:18px;
+    }
+    .collateral-dynamic .bars{
+      width:100%;
+      display:flex;
+      flex-direction:column;
+      gap:8px;
+    }
+    .collateral-dynamic .barRow{
+      display:flex;
+      flex-direction:column;
+      gap:4px;
+    }
+    .collateral-dynamic .barLine{
+      height:18px;
+      border-radius:4px;
+      display:flex;
+      align-items:center;
+      justify-content:space-between;
+      padding:0 8px;
+      color:#ffffff;
+      font-weight:600;
+      font-size:11px;
+      letter-spacing:.2px;
+    }
+    .collateral-dynamic .barLine span{display:flex;align-items:center;gap:6px}
+    .collateral-dynamic .barLine.navy{background:#0b2a66;}
+    .collateral-dynamic .barLine.mid{background:#4f63ff;}
+    .collateral-dynamic .barLine.bright{background:#0b66ff;}
+    .collateral-dynamic .barLine .dot{
+      width:8px;height:8px;
+      border-radius:2px;
+      background:rgba(255,255,255,.9);
+      display:inline-block;
+    }
+    .collateral-dynamic .legend{
+      display:flex;
+      gap:12px;
+      align-items:center;
+      font-size:10px;
+      color:#6b7280;
+    }
+    .collateral-dynamic .legItem{
+      display:flex;
+      gap:6px;
+      align-items:center;
+      text-transform:uppercase;
+      font-size:9px;
+      letter-spacing:.3px;
+    }
+    .collateral-dynamic .sw{
+      width:10px;
+      height:10px;
+      border-radius:2px;
+      display:inline-block;
+    }
+    .collateral-dynamic .sw.navy{background:#0b2a66}
+    .collateral-dynamic .sw.mid{background:#4f63ff}
+    .collateral-dynamic .sw.bright{background:#0b66ff}
+    .collateral-dynamic .chartPad{
+      padding:12px 6px 4px 6px;
+    }
+    .collateral-dynamic .svgBox{
+      width:100%;
+      height:100%;
+      border-radius:10px;
+      background:#fff;
+    }
+    .collateral-dynamic .axisText{
+      font-size:8px;
+      fill:#9aa7b8;
+    }
+    .collateral-dynamic .gridLine{
+      stroke:#eef2f7;
+      stroke-width:1;
+    }
+    .collateral-dynamic .tableWrap{
+      padding:8px 4px 8px 4px;
+    }
+    .collateral-dynamic table{
+      width:100%;
+      border-collapse:collapse;
+      font-size:11px;
+      color:#374151;
+    }
+    .collateral-dynamic thead th{
+      font-weight:600;
+      color:#6b7280;
+      padding:8px 6px;
+      border-bottom:1px solid #f0f4fa;
+      text-align:left;
+    }
+    .collateral-dynamic tbody td{
+      padding:10px 6px;
+      border-bottom:1px solid #f0f4fa;
+      text-align:left;
+    }
+    .collateral-dynamic tbody tr:last-child td{
+      border-bottom:none;
+    }
+    .collateral-dynamic .mt12{
+      margin-top:12px;
+    }
+    .collateral-dynamic .value-grid{
+      display:grid;
+      grid-template-columns:repeat(auto-fit,minmax(150px,1fr));
+      gap:10px;
+      margin-top:12px;
+    }
+    .collateral-dynamic .value-card{
+      border:1px solid #f0f4fa;
+      border-radius:10px;
+      padding:12px;
+      background:#f8fafc;
+    }
+    .collateral-dynamic .value-card .label{
+      font-size:10px;
+      color:#6b7280;
+      text-transform:uppercase;
+      letter-spacing:.3px;
+    }
+    .collateral-dynamic .value-card .value{
+      font-size:18px;
+      font-weight:700;
+      margin-top:4px;
+      color:#111827;
+    }
+    .collateral-dynamic .value-card .trend{
+      font-size:11px;
+      margin-top:4px;
+      color:#16a34a;
+    }
+    .collateral-dynamic .value-card .trend.down{
+      color:#dc2626;
+    }
+    .collateral-dynamic .table-card{
+      border:1px solid #e5e7eb;
+      border-radius:12px;
+      overflow:hidden;
+      margin-top:12px;
+    }
+    .collateral-dynamic .stats-row{
+      display:grid;
+      grid-template-columns:repeat(auto-fit,minmax(150px,1fr));
+      gap:16px;
+      margin-bottom:12px;
+      margin-top:12px;
+    }
+    .collateral-dynamic .chart-card header{
+      font-size:12px;
+      font-weight:600;
+      display:flex;
+      justify-content:space-between;
+      margin-bottom:8px;
+    }
+    .collateral-dynamic .panel-header{
+      display:flex;align-items:center;gap:10px;
+      font-size:14px;font-weight:600;
+      margin-bottom:14px;
+      color:var(--cd-ink);
+    }
+    .collateral-dynamic .panel-header svg{width:16px;height:16px;stroke:var(--cd-accent)}
+    .collateral-dynamic .snapshot-text{
+      font-size:13px;
+      color:#475569;
+      line-height:1.6;
+      margin-bottom:16px;
+    }
+    .collateral-dynamic .snapshot-grid{
+      display:grid;
+      grid-template-columns:220px 1fr;
+      gap:20px;
+    }
+    .collateral-dynamic .donut-card{
+      border:1px solid var(--cd-line);
+      border-radius:12px;
+      padding:12px;
+      text-align:center;
+    }
+    .collateral-dynamic .donut-card .total{
+      font-size:24px;font-weight:700;margin:8px 0;
+    }
+    .collateral-dynamic .donut-card .labels{
+      margin-top:12px;
+      text-align:left;
+      display:flex;
+      flex-direction:column;
+      gap:6px;
+      font-size:12px;
+      color:#475569;
+    }
+    .collateral-dynamic .legend-dot{
+      width:10px;height:10px;border-radius:50%;display:inline-block;margin-right:6px;
+    }
+    .collateral-dynamic .chart-card{
+      border:1px solid var(--cd-line);
+      border-radius:12px;
+      padding:12px;
+    }
+    .collateral-dynamic .chart-card header{
+      font-size:13px;
+      font-weight:600;
+      margin-bottom:8px;
+      display:flex;
+      justify-content:space-between;
+      color:var(--cd-ink);
+    }
+    .collateral-dynamic .value-grid{
+      display:grid;
+      grid-template-columns: repeat(auto-fit,minmax(150px,1fr));
+      gap:12px;
+      margin-bottom:12px;
+    }
+    .collateral-dynamic .value-card{
+      border:1px solid var(--cd-line);
+      border-radius:10px;
+      padding:12px;
+      background:#fafcff;
+    }
+    .collateral-dynamic .value-card .label{
+      font-size:11px;
+      color:var(--cd-muted);
+      text-transform:uppercase;
+      letter-spacing:.3px;
+    }
+    .collateral-dynamic .value-card .value{
+      font-size:18px;
+      font-weight:600;
+      margin-top:6px;
+      color:var(--cd-ink);
+    }
+    .collateral-dynamic .value-card .trend{
+      font-size:12px;
+      margin-top:4px;
+      color:#16a34a;
+    }
+    .collateral-dynamic .value-card .trend.down{color:#dc2626}
+    .collateral-dynamic .table-card{
+      border:1px solid var(--cd-line);
+      border-radius:12px;
+      overflow:hidden;
+    }
+    .collateral-dynamic .stats-row{
+      display:grid;
+      grid-template-columns: repeat(auto-fit,minmax(220px,1fr));
+      gap:16px;
+    }
+    .collateral-dynamic table{
+      width:100%;
+      border-collapse:collapse;
+      font-size:12px;
+      color:#475569;
+    }
+    .collateral-dynamic th,
+    .collateral-dynamic td{
+      padding:10px 8px;
+      border-bottom:1px solid var(--cd-line);
+      text-align:left;
+    }
+    .collateral-dynamic th{
+      background:#f9fbff;
+      color:#6b7280;
+      font-weight:600;
+    }
+    .collateral-dynamic tbody tr:last-child td{border-bottom:none}
+    .collateral-dynamic .placeholder-panel{
+      min-height:280px;
+      display:flex;
+      flex-direction:column;
+      justify-content:center;
+      align-items:flex-start;
+      gap:8px;
+      color:#475569;
+    }
+    .collateral-dynamic .placeholder-panel p{
+      margin:0;
+      font-size:13px;
+      line-height:1.5;
+      color:#475569;
+    }
+    .collateral-dynamic .ar-section{
+      display:flex;
+      flex-direction:column;
+      gap:18px;
+    }
+    .collateral-dynamic .ar-section .card{
+      background:#fff;
+      border:1px solid #dfe4f2;
+      border-radius:16px;
+      box-shadow:0 20px 40px rgba(15,23,42,.08);
+      padding:18px 20px;
+    }
+    .collateral-dynamic .ar-section .h2{
+      font-size:14px;
+      font-weight:700;
+      margin:0 0 8px;
+      display:flex;
+      align-items:center;
+      gap:8px;
+      color:#0f172a;
+    }
+    .collateral-dynamic .ar-section .p{
+      margin:0;
+      font-size:12px;
+      color:#4b5563;
+      line-height:1.6;
+    }
+    .collateral-dynamic .ar-section .kpis{
+      display:grid;
+      grid-template-columns:repeat(auto-fit,minmax(240px,1fr));
+      gap:14px;
+    }
+    .collateral-dynamic .ar-section .kpi{
+      border:1px solid #e2e8f8;
+      border-radius:14px;
+      background:linear-gradient(180deg,#ffffff,#f7fbff);
+      padding:14px;
+      position:relative;
+    }
+    .collateral-dynamic .ar-section .kpi .info{
+      position:absolute;
+      top:12px;
+      right:12px;
+      width:22px;
+      height:22px;
+      border-radius:999px;
+      border:1px solid rgba(43,111,247,.25);
+      display:grid;
+      place-items:center;
+      font-size:11px;
+      color:var(--blue-2);
+      background:#f0f6ff;
+      font-weight:700;
+    }
+    .collateral-dynamic .ar-section .kpi .label{
+      font-size:11px;
+      color:#6b7280;
+      margin-bottom:6px;
+    }
+    .collateral-dynamic .ar-section .kpi .value{
+      font-size:18px;
+      font-weight:800;
+      letter-spacing:.2px;
+    }
+    .collateral-dynamic .ar-section .kpi .delta{
+      font-size:11px;
+      font-weight:700;
+      margin:4px 0 10px;
+      display:flex;
+      align-items:center;
+      gap:6px;
+    }
+    .collateral-dynamic .ar-section .kpi .delta.up{color:var(--teal);}
+    .collateral-dynamic .ar-section .kpi .delta.down{color:#e05555;}
+    .collateral-dynamic .ar-section .kpi .mini{
+      border-top:1px solid rgba(226,232,248,.7);
+      padding-top:6px;
+    }
+    .collateral-dynamic .ar-section .two-col,
+    .collateral-dynamic .ar-section .three-col,
+    .collateral-dynamic .ar-section .tables-row{
+      display:grid;
+      gap:14px;
+    }
+    .collateral-dynamic .ar-section .two-col{
+      grid-template-columns:repeat(auto-fit,minmax(280px,1fr));
+    }
+    .collateral-dynamic .ar-section .tables-row{
+      grid-template-columns:repeat(auto-fit,minmax(320px,1fr));
+      margin-top:14px;
+    }
+    .collateral-dynamic .ar-section .three-col{
+      grid-template-columns:repeat(auto-fit,minmax(280px,1fr));
+    }
+    .collateral-dynamic .ar-section .subcard{
+      border:1px solid #e2e8f8;
+      border-radius:14px;
+      padding:14px;
+      background:#fff;
+    }
+    .collateral-dynamic .ar-section .subhead{
+      display:flex;
+      align-items:center;
+      justify-content:space-between;
+      margin-bottom:8px;
+      gap:12px;
+    }
+    .collateral-dynamic .ar-section .h3{
+      font-size:12px;
+      font-weight:700;
+      margin:0;
+      display:flex;
+      align-items:center;
+      gap:6px;
+      color:#0f172a;
+    }
+    .collateral-dynamic .ar-section .pct-label{
+      font-size:10px;
+      color:rgba(15,23,42,.6);
+    }
+    .collateral-dynamic .ar-section .legend{
+      font-size:10px;
+      color:rgba(15,23,42,.65);
+      display:flex;
+      gap:12px;
+    }
+    .collateral-dynamic .ar-section .swatch{
+      width:10px;
+      height:10px;
+      border-radius:3px;
+      display:inline-block;
+      margin-right:6px;
+    }
+    .collateral-dynamic .ar-section .swatch.past{background:#1b2a55;}
+    .collateral-dynamic .ar-section .swatch.current{background:var(--blue-2);}
+    .collateral-dynamic .ar-section table{
+      width:100%;
+      border-collapse:separate;
+      border-spacing:0;
+      font-size:11px;
+      color:#475569;
+    }
+    .collateral-dynamic .ar-section thead th{
+      text-align:left;
+      padding:6px 8px;
+      font-weight:700;
+      font-size:10px;
+      color:#6b7280;
+      background:#f7faff;
+      border-top:1px solid #e3eaf7;
+      border-bottom:1px solid #e3eaf7;
+    }
+    .collateral-dynamic .ar-section thead th:first-child{
+      border-left:1px solid #e3eaf7;
+      border-top-left-radius:8px;
+    }
+    .collateral-dynamic .ar-section thead th:last-child{
+      border-right:1px solid #e3eaf7;
+      border-top-right-radius:8px;
+    }
+    .collateral-dynamic .ar-section tbody td{
+      padding:6px 8px;
+      border-bottom:1px solid #eef2fb;
+      background:#fff;
+    }
+    .collateral-dynamic .ar-section tbody tr:last-child td{
+      border-bottom:1px solid #e3eaf7;
+    }
+    .collateral-dynamic .ar-section .table-title{
+      font-size:11px;
+      font-weight:700;
+      color:#111827;
+      margin-bottom:10px;
+    }
+    .collateral-dynamic .ar-section .align-right{text-align:right;}
+    .collateral-dynamic .ar-section .align-center{text-align:center;}
+    .collateral-dynamic .ar-section .total td{
+      font-weight:800;
+    }
+  </style>
+{% endblock %}
+
+{% block page_content %}
+  <div class="collateral-dynamic">
+    <div class="layout">
+      {% include "collateral_dynamic/inventory/_menu.html" with inventory_tab=inventory_tab|default:"summary" active_section=active_section %}
+      <div class="page">
+        {% if active_section == 'overview' %}
+          <div class="panel placeholder-panel">
+            <div class="panel-header">
+              <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                <path d="M3 3h18v18H3z"/>
+                <path d="M3 9h18"/>
+                <path d="M9 21V9"/>
+              </svg>
+              Overview
+            </div>            
+          </div>
+        {% elif active_section == 'accounts_receivable' %}
+          <div class="ar-section">
+            <section class="card">
+              <div class="h2">
+                <svg class="spark" viewBox="0 0 24 24" fill="none">
+                  <path d="M4 16l6-6 4 4 6-8" stroke="var(--blue-2)" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/>
+                  <path d="M20 8v6h-6" stroke="var(--blue-2)" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/>
+                </svg>
+                Snapshot Summary
+              </div>
+              <p class="p">
+                AR balances expanded while payment timing weakened, pushing a larger share into past-due categories.
+                Rising aging and concentrated exposure increase sensitivity of the borrowing base to slowdowns in collections.
+              </p>
+            </section>
+
+            <section class="card">
+              <div class="h2">
+                <svg class="spark" viewBox="0 0 24 24" fill="none">
+                  <path d="M4 16l6-6 4 4 6-8" stroke="var(--blue-2)" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/>
+                </svg>
+                Borrowing Base Insight
+              </div>
+              <div class="kpis">
+                <div class="kpi">
+                  <div class="info">i</div>
+                  <div class="label">Balance</div>
+                  <div class="value">$14.89M</div>
+                  <div class="delta down">&#9660; <span>-6.0%</span></div>
+                  <div class="mini">
+                    <svg viewBox="0 0 260 64" width="100%" height="64" aria-label="Balance mini trend">
+                      <g stroke="rgba(15,23,42,.08)" stroke-width="1">
+                        <path d="M0 52H260"/>
+                        <path d="M0 36H260"/>
+                        <path d="M0 20H260"/>
+                      </g>
+                      <polyline fill="none" stroke="var(--blue-3)" stroke-width="2.5"
+                        points="10,42 45,18 80,28 115,55 150,30 185,32 220,36 250,40"/>
+                      <g fill="#fff" stroke="var(--blue-3)" stroke-width="2">
+                        <circle cx="45" cy="18" r="3.2"/>
+                        <circle cx="115" cy="55" r="3.2"/>
+                        <circle cx="150" cy="30" r="3.2"/>
+                        <circle cx="220" cy="36" r="3.2"/>
+                      </g>
+                    </svg>
+                  </div>
+                </div>
+                <div class="kpi">
+                  <div class="info">i</div>
+                  <div class="label">Days Sales Outstanding</div>
+                  <div class="value">60</div>
+                  <div class="delta down">&#9660; <span>-4.6%</span></div>
+                  <div class="mini">
+                    <svg viewBox="0 0 260 64" width="100%" height="64" aria-label="DSO mini trend">
+                      <g stroke="rgba(15,23,42,.08)" stroke-width="1">
+                        <path d="M0 52H260"/>
+                        <path d="M0 36H260"/>
+                        <path d="M0 20H260"/>
+                      </g>
+                      <polyline fill="none" stroke="var(--purple)" stroke-width="2.5"
+                        points="10,40 50,18 90,26 130,52 170,28 210,30 250,34"/>
+                      <g fill="#fff" stroke="var(--purple)" stroke-width="2">
+                        <circle cx="50" cy="18" r="3.2"/>
+                        <circle cx="130" cy="52" r="3.2"/>
+                        <circle cx="170" cy="28" r="3.2"/>
+                      </g>
+                    </svg>
+                  </div>
+                </div>
+                <div class="kpi">
+                  <div class="info">i</div>
+                  <div class="label">% of total past due</div>
+                  <div class="value">54.8%</div>
+                  <div class="delta up">&#9650; <span>+0.8%</span></div>
+                  <div class="mini">
+                    <svg viewBox="0 0 260 64" width="100%" height="64" aria-label="Past due mini trend">
+                      <g stroke="rgba(15,23,42,.08)" stroke-width="1">
+                        <path d="M0 52H260"/>
+                        <path d="M0 36H260"/>
+                        <path d="M0 20H260"/>
+                      </g>
+                      <polyline fill="none" stroke="var(--teal)" stroke-width="2.5"
+                        points="10,44 50,20 90,30 130,56 170,34 210,36 250,40"/>
+                      <g fill="#fff" stroke="var(--teal)" stroke-width="2">
+                        <circle cx="50" cy="20" r="3.2"/>
+                        <circle cx="130" cy="56" r="3.2"/>
+                        <circle cx="170" cy="34" r="3.2"/>
+                      </g>
+                    </svg>
+                  </div>
+                </div>
+              </div>
+            </section>
+
+            <section class="card">
+              <div class="h2">
+                <svg class="spark" viewBox="0 0 24 24" fill="none">
+                  <path d="M4 16l6-6 4 4 6-8" stroke="var(--blue-2)" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/>
+                </svg>
+                Aging Analysis
+              </div>
+              <div class="two-col">
+                <div class="subcard">
+                  <div class="subhead">
+                    <div class="h3">
+                      <svg class="spark" viewBox="0 0 24 24" fill="none" style="width:12px;height:12px">
+                        <path d="M4 16l6-6 4 4 6-8" stroke="var(--blue-2)" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/>
+                      </svg>
+                      Aging Composition
+                    </div>
+                    <div class="pct-label">%</div>
+                  </div>
+                  <svg viewBox="0 0 440 170" width="100%" height="170" aria-label="Aging composition bar chart">
+                    <g stroke="rgba(15,23,42,.08)" stroke-width="1">
+                      <path d="M40 140H420"/>
+                      <path d="M40 110H420"/>
+                      <path d="M40 80H420"/>
+                      <path d="M40 50H420"/>
+                    </g>
+                    <g fill="rgba(15,23,42,.45)" font-size="10">
+                      <text x="10" y="143">$20</text>
+                      <text x="10" y="113">$40</text>
+                      <text x="10" y="83">$60</text>
+                      <text x="10" y="53">$80</text>
+                    </g>
+                    <g>
+                      <rect x="70" y="78" width="40" height="62" rx="6" fill="#1b2a55"/>
+                      <text x="90" y="70" text-anchor="middle" font-size="10" fill="rgba(15,23,42,.55)">30%</text>
+                      <text x="90" y="160" text-anchor="middle" font-size="10" fill="rgba(15,23,42,.55)">Current</text>
+                      <rect x="140" y="58" width="40" height="82" rx="6" fill="rgba(43,111,247,.35)"/>
+                      <text x="160" y="50" text-anchor="middle" font-size="10" fill="rgba(15,23,42,.55)">47%</text>
+                      <text x="160" y="160" text-anchor="middle" font-size="10" fill="rgba(15,23,42,.55)">0-30</text>
+                      <rect x="210" y="90" width="40" height="50" rx="6" fill="rgba(43,111,247,.25)"/>
+                      <text x="230" y="82" text-anchor="middle" font-size="10" fill="rgba(15,23,42,.55)">27%</text>
+                      <text x="230" y="160" text-anchor="middle" font-size="10" fill="rgba(15,23,42,.55)">31-60</text>
+                      <rect x="280" y="36" width="40" height="104" rx="6" fill="rgba(43,111,247,.30)"/>
+                      <text x="300" y="28" text-anchor="middle" font-size="10" fill="rgba(15,23,42,.55)">80%</text>
+                      <text x="300" y="160" text-anchor="middle" font-size="10" fill="rgba(15,23,42,.55)">61-90</text>
+                      <rect x="350" y="72" width="40" height="68" rx="6" fill="rgba(43,111,247,.20)"/>
+                      <text x="370" y="64" text-anchor="middle" font-size="10" fill="rgba(15,23,42,.55)">35%</text>
+                      <text x="370" y="160" text-anchor="middle" font-size="10" fill="rgba(15,23,42,.55)">90+</text>
+                    </g>
+                  </svg>
+                </div>
+                <div class="subcard">
+                  <div class="subhead">
+                    <div class="h3">
+                      <svg class="spark" viewBox="0 0 24 24" fill="none" style="width:12px;height:12px">
+                        <path d="M4 16l6-6 4 4 6-8" stroke="var(--blue-2)" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/>
+                      </svg>
+                      Current vs Past Due Trend
+                    </div>
+                    <div class="legend">
+                      <span><i class="swatch past"></i>Past Due</span>
+                      <span><i class="swatch current"></i>Current</span>
+                    </div>
+                  </div>
+                  <svg viewBox="0 0 520 170" width="100%" height="170" aria-label="Current vs Past Due grouped bar chart">
+                    <g stroke="rgba(15,23,42,.08)" stroke-width="1">
+                      <path d="M40 140H500"/>
+                      <path d="M40 110H500"/>
+                      <path d="M40 80H500"/>
+                      <path d="M40 50H500"/>
+                    </g>
+                    <g fill="rgba(15,23,42,.45)" font-size="10">
+                      <text x="10" y="143">0%</text>
+                      <text x="10" y="113">20%</text>
+                      <text x="10" y="83">40%</text>
+                      <text x="10" y="53">60%</text>
+                    </g>
+                    <g>
+                      <rect x="58" y="78" width="8" height="62" rx="3" fill="#1b2a55"/>
+                      <rect x="70" y="58" width="8" height="82" rx="3" fill="var(--blue-2)"/>
+                      <rect x="92" y="62" width="8" height="78" rx="3" fill="#1b2a55"/>
+                      <rect x="104" y="52" width="8" height="88" rx="3" fill="var(--blue-2)"/>
+                      <rect x="126" y="70" width="8" height="70" rx="3" fill="#1b2a55"/>
+                      <rect x="138" y="46" width="8" height="94" rx="3" fill="var(--blue-2)"/>
+                      <rect x="160" y="54" width="8" height="86" rx="3" fill="#1b2a55"/>
+                      <rect x="172" y="40" width="8" height="100" rx="3" fill="var(--blue-2)"/>
+                      <rect x="194" y="66" width="8" height="74" rx="3" fill="#1b2a55"/>
+                      <rect x="206" y="58" width="8" height="82" rx="3" fill="var(--blue-2)"/>
+                      <rect x="228" y="78" width="8" height="62" rx="3" fill="#1b2a55"/>
+                      <rect x="240" y="54" width="8" height="86" rx="3" fill="var(--blue-2)"/>
+                      <rect x="262" y="86" width="8" height="54" rx="3" fill="#1b2a55"/>
+                      <rect x="274" y="62" width="8" height="78" rx="3" fill="var(--blue-2)"/>
+                      <rect x="296" y="92" width="8" height="48" rx="3" fill="#1b2a55"/>
+                      <rect x="308" y="72" width="8" height="68" rx="3" fill="var(--blue-2)"/>
+                      <rect x="330" y="84" width="8" height="56" rx="3" fill="#1b2a55"/>
+                      <rect x="342" y="60" width="8" height="80" rx="3" fill="var(--blue-2)"/>
+                      <rect x="364" y="76" width="8" height="64" rx="3" fill="#1b2a55"/>
+                      <rect x="376" y="50" width="8" height="90" rx="3" fill="var(--blue-2)"/>
+                      <rect x="398" y="70" width="8" height="70" rx="3" fill="#1b2a55"/>
+                      <rect x="410" y="56" width="8" height="84" rx="3" fill="var(--blue-2)"/>
+                      <rect x="432" y="74" width="8" height="66" rx="3" fill="#1b2a55"/>
+                      <rect x="444" y="58" width="8" height="82" rx="3" fill="var(--blue-2)"/>
+                      <rect x="466" y="66" width="8" height="74" rx="3" fill="#1b2a55"/>
+                      <rect x="478" y="54" width="8" height="86" rx="3" fill="var(--blue-2)"/>
+                    </g>
+                    <g fill="rgba(15,23,42,.45)" font-size="9">
+                      <text x="64" y="163" text-anchor="middle">May</text>
+                      <text x="98" y="163" text-anchor="middle">Jun</text>
+                      <text x="132" y="163" text-anchor="middle">Jul</text>
+                      <text x="166" y="163" text-anchor="middle">Aug</text>
+                      <text x="200" y="163" text-anchor="middle">Sep</text>
+                      <text x="234" y="163" text-anchor="middle">Oct</text>
+                      <text x="268" y="163" text-anchor="middle">Nov</text>
+                      <text x="302" y="163" text-anchor="middle">Dec</text>
+                      <text x="336" y="163" text-anchor="middle">Jan</text>
+                      <text x="370" y="163" text-anchor="middle">Feb</text>
+                      <text x="404" y="163" text-anchor="middle">Mar</text>
+                      <text x="438" y="163" text-anchor="middle">Apr</text>
+                      <text x="472" y="163" text-anchor="middle">May</text>
+                    </g>
+                  </svg>
+                </div>
+              </div>
+              <div class="tables-row">
+                <div class="subcard">
+                  <div class="table-title">Customer Aging Composition by Total Balance</div>
+                  <table>
+                    <thead>
+                      <tr>
+                        <th>Customer</th>
+                        <th>Current</th>
+                        <th>0-30</th>
+                        <th>31-60</th>
+                        <th>61-90</th>
+                        <th>90+</th>
+                        <th>Total</th>
+                      </tr>
+                    </thead>
+                    <tbody>
+                      <tr><td>Customer 1</td><td>$</td><td>$</td><td>$</td><td>$</td><td>$</td><td>$</td></tr>
+                      <tr><td>Customer 2</td><td>$</td><td>$</td><td>$</td><td>$</td><td>$</td><td>$</td></tr>
+                      <tr><td>Customer 3</td><td>$</td><td>$</td><td>$</td><td>$</td><td>$</td><td>$</td></tr>
+                      <tr><td>Customer 4</td><td>$</td><td>$</td><td>$</td><td>$</td><td>$</td><td>$</td></tr>
+                      <tr><td>Customer 5</td><td>$</td><td>$</td><td>$</td><td>$</td><td>$</td><td>$</td></tr>
+                      <tr><td>Customer 6</td><td>$</td><td>$</td><td>$</td><td>$</td><td>$</td><td>$</td></tr>
+                      <tr><td>Customer 7</td><td>$</td><td>$</td><td>$</td><td>$</td><td>$</td><td>$</td></tr>
+                      <tr><td>Customer 8</td><td>$</td><td>$</td><td>$</td><td>$</td><td>$</td><td>$</td></tr>
+                      <tr><td>Customer 9</td><td>$</td><td>$</td><td>$</td><td>$</td><td>$</td><td>$</td></tr>
+                      <tr><td>Customer 10</td><td>$</td><td>$</td><td>$</td><td>$</td><td>$</td><td>$</td></tr>
+                    </tbody>
+                  </table>
+                </div>
+                <div class="subcard">
+                  <div class="table-title">Customer Aging Composition by Past Due Balance</div>
+                  <table>
+                    <thead>
+                      <tr>
+                        <th>Customer</th>
+                        <th>Current</th>
+                        <th>0-30</th>
+                        <th>31-60</th>
+                        <th>61-90</th>
+                        <th>90+</th>
+                        <th>Total</th>
+                      </tr>
+                    </thead>
+                    <tbody>
+                      <tr><td>Customer 1</td><td>$</td><td>$</td><td>$</td><td>$</td><td>$</td><td>$</td></tr>
+                      <tr><td>Customer 2</td><td>$</td><td>$</td><td>$</td><td>$</td><td>$</td><td>$</td></tr>
+                      <tr><td>Customer 3</td><td>$</td><td>$</td><td>$</td><td>$</td><td>$</td><td>$</td></tr>
+                      <tr><td>Customer 4</td><td>$</td><td>$</td><td>$</td><td>$</td><td>$</td><td>$</td></tr>
+                      <tr><td>Customer 5</td><td>$</td><td>$</td><td>$</td><td>$</td><td>$</td><td>$</td></tr>
+                      <tr><td>Customer 6</td><td>$</td><td>$</td><td>$</td><td>$</td><td>$</td><td>$</td></tr>
+                      <tr><td>Customer 7</td><td>$</td><td>$</td><td>$</td><td>$</td><td>$</td><td>$</td></tr>
+                      <tr><td>Customer 8</td><td>$</td><td>$</td><td>$</td><td>$</td><td>$</td><td>$</td></tr>
+                      <tr><td>Customer 9</td><td>$</td><td>$</td><td>$</td><td>$</td><td>$</td><td>$</td></tr>
+                      <tr><td>Customer 10</td><td>$</td><td>$</td><td>$</td><td>$</td><td>$</td><td>$</td></tr>
+                    </tbody>
+                  </table>
+                </div>
+              </div>
+            </section>
+
+            <section class="card">
+              <div class="h2">
+                <svg class="spark" viewBox="0 0 24 24" fill="none">
+                  <path d="M4 16l6-6 4 4 6-8" stroke="var(--blue-2)" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/>
+                </svg>
+                Ineligible Detail
+              </div>
+              <div class="two-col">
+                <div class="subcard">
+                  <div class="h3">Ineligible Overview</div>
+                  <table>
+                    <thead>
+                      <tr>
+                        <th>Ineligibles</th>
+                        <th class="align-right">Amount</th>
+                        <th class="align-right">% of Total</th>
+                      </tr>
+                    </thead>
+                    <tbody>
+                      <tr><td>Past Due Over 60 Days</td><td class="align-right">$184,520</td><td class="align-right">60%</td></tr>
+                      <tr><td>Dilution</td><td class="align-right">$84,210</td><td class="align-right">12%</td></tr>
+                      <tr><td>Cross Age</td><td class="align-right">$58,400</td><td class="align-right">8%</td></tr>
+                      <tr><td>Concentration Over Cap</td><td class="align-right">$40,130</td><td class="align-right">6%</td></tr>
+                      <tr><td>Foreign Receivable</td><td class="align-right">$28,600</td><td class="align-right">4%</td></tr>
+                      <tr><td>Government Receivable</td><td class="align-right">$19,900</td><td class="align-right">3%</td></tr>
+                      <tr><td>Intercompany Receivable</td><td class="align-right">$18,000</td><td class="align-right">3%</td></tr>
+                      <tr><td>Contra Receivable</td><td class="align-right">$12,000</td><td class="align-right">2%</td></tr>
+                      <tr><td>Other</td><td class="align-right">$6,859</td><td class="align-right">1%</td></tr>
+                      <tr class="total"><td>Total</td><td class="align-right">$1,326,619</td><td class="align-right">100%</td></tr>
+                    </tbody>
+                  </table>
+                </div>
+                <div class="subcard">
+                  <div class="h3">Ineligible AR Trend</div>
+                  <svg viewBox="0 0 520 210" width="100%" height="210" aria-label="Ineligible AR trend line chart">
+                    <g stroke="rgba(15,23,42,.08)" stroke-width="1">
+                      <path d="M50 170H500"/>
+                      <path d="M50 140H500"/>
+                      <path d="M50 110H500"/>
+                      <path d="M50 80H500"/>
+                      <path d="M50 50H500"/>
+                    </g>
+                    <g fill="rgba(15,23,42,.45)" font-size="10">
+                      <text x="10" y="173">10%</text>
+                      <text x="10" y="143">30%</text>
+                      <text x="10" y="113">50%</text>
+                      <text x="10" y="83">70%</text>
+                      <text x="10" y="53">90%</text>
+                    </g>
+                    <polyline fill="none" stroke="var(--blue-3)" stroke-width="2.5"
+                      points="60,140 105,120 150,100 195,92 240,104 285,110 330,120 375,145 420,160 465,140 490,128"/>
+                    <g fill="#fff" stroke="var(--blue-3)" stroke-width="2">
+                      <circle cx="60" cy="140" r="3.2"/>
+                      <circle cx="195" cy="92" r="3.2"/>
+                      <circle cx="420" cy="160" r="3.2"/>
+                      <circle cx="490" cy="128" r="3.2"/>
+                    </g>
+                    <g fill="rgba(15,23,42,.45)" font-size="9">
+                      <text x="60" y="194" text-anchor="middle">May</text>
+                      <text x="105" y="194" text-anchor="middle">Jun</text>
+                      <text x="150" y="194" text-anchor="middle">Jul</text>
+                      <text x="195" y="194" text-anchor="middle">Aug</text>
+                      <text x="240" y="194" text-anchor="middle">Sep</text>
+                      <text x="285" y="194" text-anchor="middle">Oct</text>
+                      <text x="330" y="194" text-anchor="middle">Nov</text>
+                      <text x="375" y="194" text-anchor="middle">Dec</text>
+                      <text x="420" y="194" text-anchor="middle">Jan</text>
+                      <text x="465" y="194" text-anchor="middle">Feb</text>
+                      <text x="490" y="194" text-anchor="middle">Mar</text>
+                    </g>
+                    <text x="18" y="120" fill="rgba(15,23,42,.45)" font-size="10" transform="rotate(-90 18 120)">
+                      % of Accounts Receivable
+                    </text>
+                  </svg>
+                </div>
+              </div>
+            </section>
+
+            <section class="card">
+              <div class="h2">
+                <svg class="spark" viewBox="0 0 24 24" fill="none">
+                  <path d="M4 16l6-6 4 4 6-8" stroke="var(--blue-2)" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/>
+                </svg>
+                Customer Exposure &amp; Collection Trend
+              </div>
+              <div class="three-col">
+                <div class="subcard">
+                  <div class="table-title">Concentration</div>
+                  <table>
+                    <thead>
+                      <tr>
+                        <th>Customer</th>
+                        <th class="align-center">Current</th>
+                        <th class="align-center">Average TTM</th>
+                        <th class="align-center">Variance (pp)</th>
+                      </tr>
+                    </thead>
+                    <tbody>
+                      <tr><td>Customer 1</td><td class="align-center">$</td><td class="align-center">$</td><td class="align-center">$</td></tr>
+                      <tr><td>Customer 2</td><td class="align-center">$</td><td class="align-center">$</td><td class="align-center">$</td></tr>
+                      <tr><td>Customer 3</td><td class="align-center">$</td><td class="align-center">$</td><td class="align-center">$</td></tr>
+                      <tr><td>Customer 4</td><td class="align-center">$</td><td class="align-center">$</td><td class="align-center">$</td></tr>
+                      <tr><td>Customer 5</td><td class="align-center">$</td><td class="align-center">$</td><td class="align-center">$</td></tr>
+                      <tr><td>Customer 6</td><td class="align-center">$</td><td class="align-center">$</td><td class="align-center">$</td></tr>
+                      <tr><td>Customer 7</td><td class="align-center">$</td><td class="align-center">$</td><td class="align-center">$</td></tr>
+                      <tr><td>Customer 8</td><td class="align-center">$</td><td class="align-center">$</td><td class="align-center">$</td></tr>
+                      <tr><td>Customer 9</td><td class="align-center">$</td><td class="align-center">$</td><td class="align-center">$</td></tr>
+                      <tr><td>Customer 10</td><td class="align-center">$</td><td class="align-center">$</td><td class="align-center">$</td></tr>
+                    </tbody>
+                  </table>
+                </div>
+                <div class="subcard">
+                  <div class="table-title">Average Days Outstanding</div>
+                  <table>
+                    <thead>
+                      <tr>
+                        <th class="align-center">Current</th>
+                        <th class="align-center">Average TTM</th>
+                        <th class="align-center">Variance (days)</th>
+                      </tr>
+                    </thead>
+                    <tbody>
+                      <tr><td class="align-center">$</td><td class="align-center">$</td><td class="align-center">$</td></tr>
+                      <tr><td class="align-center">$</td><td class="align-center">$</td><td class="align-center">$</td></tr>
+                      <tr><td class="align-center">$</td><td class="align-center">$</td><td class="align-center">$</td></tr>
+                      <tr><td class="align-center">$</td><td class="align-center">$</td><td class="align-center">$</td></tr>
+                      <tr><td class="align-center">$</td><td class="align-center">$</td><td class="align-center">$</td></tr>
+                      <tr><td class="align-center">$</td><td class="align-center">$</td><td class="align-center">$</td></tr>
+                      <tr><td class="align-center">$</td><td class="align-center">$</td><td class="align-center">$</td></tr>
+                      <tr><td class="align-center">$</td><td class="align-center">$</td><td class="align-center">$</td></tr>
+                      <tr><td class="align-center">$</td><td class="align-center">$</td><td class="align-center">$</td></tr>
+                      <tr><td class="align-center">$</td><td class="align-center">$</td><td class="align-center">$</td></tr>
+                    </tbody>
+                  </table>
+                </div>
+                <div class="subcard">
+                  <div class="table-title">Days Sales Outstanding</div>
+                  <table>
+                    <thead>
+                      <tr>
+                        <th class="align-center">Current</th>
+                        <th class="align-center">Average TTM</th>
+                        <th class="align-center">Variance (days)</th>
+                      </tr>
+                    </thead>
+                    <tbody>
+                      <tr><td class="align-center">$</td><td class="align-center">$</td><td class="align-center">$</td></tr>
+                      <tr><td class="align-center">$</td><td class="align-center">$</td><td class="align-center">$</td></tr>
+                      <tr><td class="align-center">$</td><td class="align-center">$</td><td class="align-center">$</td></tr>
+                      <tr><td class="align-center">$</td><td class="align-center">$</td><td class="align-center">$</td></tr>
+                      <tr><td class="align-center">$</td><td class="align-center">$</td><td class="align-center">$</td></tr>
+                      <tr><td class="align-center">$</td><td class="align-center">$</td><td class="align-center">$</td></tr>
+                      <tr><td class="align-center">$</td><td class="align-center">$</td><td class="align-center">$</td></tr>
+                      <tr><td class="align-center">$</td><td class="align-center">$</td><td class="align-center">$</td></tr>
+                      <tr><td class="align-center">$</td><td class="align-center">$</td><td class="align-center">$</td></tr>
+                      <tr><td class="align-center">$</td><td class="align-center">$</td><td class="align-center">$</td></tr>
+                    </tbody>
+                  </table>
+                </div>
+              </div>
+            </section>
+          </div>
+        {% else %}
+          {% if inventory_tab == 'finished_goods' %}
+            {% include "collateral_dynamic/inventory/finished_goals.html" %}
+          {% elif inventory_tab == 'raw_materials' %}
+            {% include "collateral_dynamic/inventory/raw_materials.html" %}
+          {% elif inventory_tab == 'work_in_progress' %}
+            {% include "collateral_dynamic/inventory/work_in_progress.html" %}
+          {% elif inventory_tab == 'liquidation_model' %}
+            {% include "collateral_dynamic/inventory/liquidation_model.html" %}
+          {% elif inventory_tab == 'other_collateral' %}
+            {% include "collateral_dynamic/inventory/other_collateral.html" %}
+          {% else %}
+            {% include "collateral_dynamic/inventory/summary.html" %}
+          {% endif %}
+        {% endif %}
+      </div>
+    </div>
+  </div>
+{% endblock %}
