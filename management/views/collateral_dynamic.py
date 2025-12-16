@@ -8,14 +8,20 @@ from django.shortcuts import redirect, render
 
 from management.models import (
     ARMetricsRow,
+    AgingCompositionRow,
     BorrowerReport,
     CollateralOverviewRow,
+    ConcentrationADODSORow,
     FGIneligibleDetailRow,
     FGInventoryMetricsRow,
     FGInlineCategoryAnalysisRow,
     FGGrossRecoveryHistoryRow,
+    IneligibleOverviewRow,
+    IneligibleTrendRow,
     MachineryEquipmentRow,
     NOLVTableRow,
+    Top20ByPastDueRow,
+    Top20ByTotalARRow,
 )
 from management.views.summary import (
     _build_borrower_summary,
@@ -55,6 +61,7 @@ def collateral_dynamic_view(request):
         "inventory_tab": inventory_tab,
         "active_tab": "collateral_dynamic",
         **_inventory_context(borrower),
+        **_accounts_receivable_context(borrower),
         **_finished_goals_context(borrower),
         **_raw_materials_context(borrower),
         **_work_in_progress_context(borrower),
@@ -100,6 +107,63 @@ CATEGORY_CONFIG = [
         "color": "#0b66ff",
     },
 ]
+
+def _build_spark_points(values, width=260, height=64, padding=10):
+    if not values:
+        values = [50, 50, 50, 50]
+    float_values = [float(v) if v is not None else 0.0 for v in values]
+    min_val = min(float_values)
+    max_val = max(float_values)
+    span = width - padding * 2
+    step = span / max(1, len(float_values) - 1)
+    range_val = max_val - min_val
+    if range_val == 0:
+        range_val = max(abs(min_val), 1.0)
+
+    points = []
+    dots = []
+    for idx, value in enumerate(float_values):
+        ratio = (value - min_val) / range_val if range_val else 0.5
+        ratio = max(0.0, min(1.0, ratio))
+        x = padding + idx * step
+        y = padding + (1 - ratio) * (height - padding * 2)
+        points.append(f"{x:.2f},{y:.2f}")
+        dots.append({"cx": round(x, 1), "cy": round(y, 1)})
+
+    return {"points": " ".join(points), "dots": dots}
+
+
+def _build_trend_points(values, labels=None, width=520, height=210, left=50, top=50, bottom=40):
+    if not values:
+        return {"points": "", "dots": [], "labels": []}
+    float_values = [float(v if v is not None else 0.0) for v in values]
+    total_width = width - left - 20
+    step = total_width / max(1, len(float_values) - 1)
+    baseline_y = height - bottom
+    chart_height = baseline_y - top
+    max_value = max(float_values + [100.0]) or 1.0
+
+    points = []
+    dots = []
+    label_points = []
+    for idx, value in enumerate(float_values):
+        ratio = max(0.0, min(1.0, value / max_value))
+        x = left + idx * step
+        y = baseline_y - ratio * chart_height
+        points.append(f"{x:.1f},{y:.1f}")
+        dots.append({"cx": round(x, 1), "cy": round(y, 1)})
+        label_text = labels[idx] if labels and idx < len(labels) else ""
+        label_points.append({"x": round(x, 1), "text": label_text})
+
+    return {"points": " ".join(points), "dots": dots, "labels": label_points}
+
+
+def _format_variance(value, suffix=""):
+    if value is None:
+        return "—"
+    val = float(_to_decimal(value))
+    return f"{val:+.1f}{suffix}"
+
 
 def _get_category_definition(key):
     return next((category for category in CATEGORY_CONFIG if category["key"] == key), None)
@@ -418,6 +482,429 @@ def _inventory_context(borrower):
         "inventory_donut_segments": donut_segments,
         "inventory_mix_chart_columns": inventory_mix_chart_columns,
         "inventory_trend_series": inventory_trend_series,
+    }
+
+def _accounts_receivable_context(borrower):
+    base_context = {
+        "ar_borrowing_base_kpis": [],
+        "ar_aging_chart_buckets": [],
+        "ar_current_vs_past_due_trend": {"bars": [], "labels": []},
+        "ar_top_by_total_rows": [],
+        "ar_top_by_total_grand": None,
+        "ar_top_by_past_due_rows": [],
+        "ar_top_by_past_due_grand": None,
+        "ar_ineligible_overview_rows": [],
+        "ar_ineligible_overview_total": None,
+        "ar_ineligible_trend": {"points": "", "dots": [], "labels": []},
+        "ar_concentration_rows": [],
+        "ar_ado_rows": [],
+        "ar_dso_rows": [],
+    }
+
+    if not borrower:
+        return base_context
+
+    latest_report = (
+        BorrowerReport.objects.filter(borrower=borrower)
+        .order_by("-report_date", "-created_at")
+        .first()
+    )
+    if not latest_report:
+        return base_context
+
+    ar_rows_latest = list(ARMetricsRow.objects.filter(report=latest_report))
+    if not ar_rows_latest:
+        return base_context
+
+    aging_rows = list(AgingCompositionRow.objects.filter(report=latest_report))
+    top_total_rows = list(Top20ByTotalARRow.objects.filter(report=latest_report))
+    top_past_rows = list(Top20ByPastDueRow.objects.filter(report=latest_report))
+    ineligible_overview = (
+        IneligibleOverviewRow.objects.filter(report=latest_report)
+        .order_by("-date", "-id")
+        .first()
+    )
+    concentration_rows = list(
+        ConcentrationADODSORow.objects.filter(report=latest_report)
+    )
+    ineligible_trend_rows = list(
+        IneligibleTrendRow.objects.filter(report__borrower=borrower)
+        .order_by("date", "id")
+    )
+
+    def _aggregate_ar_rows(rows):
+        total_balance = Decimal("0")
+        total_current = Decimal("0")
+        total_past_due = Decimal("0")
+        weighted_dso = Decimal("0")
+        for row in rows:
+            balance = _to_decimal(row.balance)
+            total_balance += balance
+            current_amt = _to_decimal(row.current_amt)
+            past_due_amt = _to_decimal(row.past_due_amt)
+            total_current += current_amt
+            total_past_due += past_due_amt
+            weighted_dso += _to_decimal(row.dso) * balance
+        avg_dso = weighted_dso / total_balance if total_balance else Decimal("0")
+        total_amount = total_current + total_past_due
+        past_due_pct = (
+            (total_past_due / total_amount * Decimal("100")) if total_amount else Decimal("0")
+        )
+        current_pct = (
+            (total_current / total_amount * Decimal("100")) if total_amount else Decimal("0")
+        )
+        return {
+            "total_balance": total_balance,
+            "avg_dso": avg_dso,
+            "past_due_pct": past_due_pct,
+            "current_pct": current_pct,
+            "total_current_amt": total_current,
+            "total_past_due_amt": total_past_due,
+        }
+
+    history = []
+    reports = BorrowerReport.objects.filter(borrower=borrower).order_by(
+        "report_date", "created_at"
+    )
+    for report in reports:
+        rows = list(ARMetricsRow.objects.filter(report=report))
+        if not rows:
+            continue
+        payload = _aggregate_ar_rows(rows)
+        if not (
+            payload["total_balance"]
+            or payload["total_current_amt"]
+            or payload["total_past_due_amt"]
+        ):
+            continue
+        label_date = report.report_date or report.created_at
+        label = label_date.strftime("%b %y") if label_date else f"Report {report.id}"
+        history.append({**payload, "label": label})
+    if not history:
+        return base_context
+    max_history = 12
+    if len(history) > max_history:
+        history = history[-max_history:]
+
+    def _format_days(value):
+        if value is None:
+            return "—"
+        return f"{int(round(_to_decimal(value))):,}"
+
+    def _format_pct_display(value):
+        if value is None:
+            return "—"
+        pct = _to_decimal(value)
+        if pct > Decimal("1"):
+            pct /= Decimal("100")
+        return _format_pct(pct)
+
+    def _delta_payload(current, previous, improvement_on_increase=True):
+        if previous is None or previous == 0:
+            return None
+        curr = _to_decimal(current)
+        prev = _to_decimal(previous)
+        if prev == 0:
+            return None
+        diff = (curr - prev) / prev * Decimal("100")
+        is_positive = diff >= 0
+        symbol = "▲" if is_positive else "▼"
+        value = f"{abs(diff):.1f}%"
+        if not improvement_on_increase:
+            is_positive = not is_positive
+        return {
+            "symbol": symbol,
+            "value": value,
+            "delta_class": "up" if is_positive else "down",
+        }
+
+    current_snapshot = history[-1]
+    previous_snapshot = history[-2] if len(history) > 1 else None
+    kpi_specs = [
+        {
+            "label": "Balance",
+            "key": "total_balance",
+            "formatter": lambda value: _format_currency(_to_decimal(value)),
+            "color": "var(--blue-3)",
+            "improvement_on_increase": True,
+        },
+        {
+            "label": "Days Sales Outstanding",
+            "key": "avg_dso",
+            "formatter": lambda value: _format_days(value),
+            "color": "var(--purple)",
+            "improvement_on_increase": False,
+        },
+        {
+            "label": "% of total past due",
+            "key": "past_due_pct",
+            "formatter": lambda value: _format_pct_display(value),
+            "color": "var(--teal)",
+            "improvement_on_increase": False,
+        },
+    ]
+    kpis = []
+    for spec in kpi_specs:
+        spark = _build_spark_points([row[spec["key"]] for row in history])
+        delta = _delta_payload(
+            current_snapshot[spec["key"]],
+            previous_snapshot[spec["key"]] if previous_snapshot else None,
+            spec["improvement_on_increase"],
+        )
+        kpis.append(
+            {
+                "label": spec["label"],
+                "value": spec["formatter"](current_snapshot[spec["key"]]),
+                "color": spec["color"],
+                "spark_points": spark["points"],
+                "spark_dots": spark["dots"],
+                "delta": delta["value"] if delta else None,
+                "symbol": delta["symbol"] if delta else "",
+                "delta_class": delta["delta_class"] if delta else "",
+            }
+        )
+
+    AGING_BUCKET_DEFS = [
+        {"key": "current", "label": "Current", "color": "#1b2a55"},
+        {"key": "0-30", "label": "0-30", "color": "rgba(43,111,247,.35)"},
+        {"key": "31-60", "label": "31-60", "color": "rgba(43,111,247,.25)"},
+        {"key": "61-90", "label": "61-90", "color": "rgba(43,111,247,.30)"},
+        {"key": "90+", "label": "90+", "color": "rgba(43,111,247,.20)"},
+    ]
+
+    def _bucket_key(bucket_label):
+        if not bucket_label:
+            return None
+        normalized = bucket_label.lower().replace(" ", "")
+        if "current" in normalized:
+            return "current"
+        if normalized.startswith("0"):
+            return "0-30"
+        if normalized.startswith("31") or "31-60" in normalized:
+            return "31-60"
+        if normalized.startswith("61") or "61-90" in normalized:
+            return "61-90"
+        if "90" in normalized:
+            return "90+"
+        return None
+
+    bucket_amounts = {bucket["key"]: Decimal("0") for bucket in AGING_BUCKET_DEFS}
+    bucket_pct_overrides = {}
+    for row in aging_rows:
+        key = _bucket_key(row.bucket)
+        if not key:
+            continue
+        bucket_amounts[key] += _to_decimal(row.amount)
+        if row.pct_of_total is not None:
+            bucket_pct_overrides[key] = _to_decimal(row.pct_of_total)
+
+    total_amount = sum(bucket_amounts.values())
+    bucket_positions = [70, 140, 210, 280, 350]
+    aging_buckets = []
+    for idx, bucket in enumerate(AGING_BUCKET_DEFS):
+        amount = bucket_amounts[bucket["key"]]
+        percent_override = bucket_pct_overrides.get(bucket["key"])
+        if percent_override is not None:
+            percent_ratio = percent_override
+        else:
+            percent_ratio = amount / total_amount if total_amount else Decimal("0")
+        if percent_ratio > Decimal("1"):
+            percent_ratio /= Decimal("100")
+        ratio_float = float(percent_ratio) if percent_ratio else 0.0
+        height_value = max(8.0, min(110.0, ratio_float * 110))
+        y_position = 140 - height_value
+        aging_buckets.append(
+            {
+                "x": bucket_positions[idx],
+                "y": y_position,
+                "height": height_value,
+                "width": 40,
+                "color": bucket["color"],
+                "percent_display": _format_pct(percent_ratio),
+                "label": bucket["label"],
+                "percent_y": max(24, y_position - 6),
+                "label_y": 160,
+                "text_x": bucket_positions[idx] + 20,
+            }
+        )
+
+    trend_bars = []
+    trend_labels = []
+    for idx, entry in enumerate(history):
+        past_pct = float(entry["past_due_pct"])
+        current_pct = float(entry["current_pct"])
+        past_height = min(120.0, max(8.0, past_pct))
+        current_height = min(120.0, max(8.0, current_pct))
+        past_y = 140 - past_height
+        current_y = 140 - current_height
+        past_x = 58 + idx * 34
+        current_x = past_x + 12
+        label_x = past_x + 6
+        trend_bars.append(
+            {
+                "past_due_x": past_x,
+                "past_due_y": past_y,
+                "past_due_height": past_height,
+                "current_x": current_x,
+                "current_y": current_y,
+                "current_height": current_height,
+            }
+        )
+        trend_labels.append({"x": label_x, "text": entry["label"]})
+
+    def _prepare_customer_table(rows, total_key):
+        if not rows:
+            return [], None
+        sorted_rows = sorted(
+            rows,
+            key=lambda row: _to_decimal(getattr(row, total_key) or 0),
+            reverse=True,
+        )
+        formatted = []
+        fields = ["current", "col_0_30", "col_31_60", "col_61_90", "col_91_plus"]
+        for row in sorted_rows[:10]:
+            formatted.append(
+                {
+                    "customer": _safe_str(row.customer),
+                    "current": _format_currency(row.current),
+                    "col_0_30": _format_currency(row.col_0_30),
+                    "col_31_60": _format_currency(row.col_31_60),
+                    "col_61_90": _format_currency(row.col_61_90),
+                    "col_91_plus": _format_currency(row.col_91_plus),
+                    "total": _format_currency(getattr(row, total_key)),
+                }
+            )
+        totals = {
+            field: sum(_to_decimal(getattr(row, field) or 0) for row in rows)
+            for field in fields
+        }
+        totals["total"] = sum(
+            _to_decimal(getattr(row, total_key) or 0) for row in rows
+        )
+        total_entry = {
+            "customer": "Total",
+            "current": _format_currency(totals["current"]),
+            "col_0_30": _format_currency(totals["col_0_30"]),
+            "col_31_60": _format_currency(totals["col_31_60"]),
+            "col_61_90": _format_currency(totals["col_61_90"]),
+            "col_91_plus": _format_currency(totals["col_91_plus"]),
+            "total": _format_currency(totals["total"]),
+        }
+        return formatted, total_entry
+
+    top_by_total_rows, top_by_total_grand = _prepare_customer_table(
+        top_total_rows, "total_ar"
+    )
+    top_by_past_due_rows, top_by_past_due_grand = _prepare_customer_table(
+        top_past_rows, "total_past_due"
+    )
+
+    ineligible_rows = []
+    ineligible_total_row = None
+    if ineligible_overview:
+        total_ineligible = _to_decimal(ineligible_overview.total_ineligible)
+        categories = [
+            ("Past Due Over 60 Days", ineligible_overview.past_due_gt_90_days),
+            ("Dilution", ineligible_overview.dilution),
+            ("Cross Age", ineligible_overview.cross_age),
+            ("Concentration Over Cap", ineligible_overview.concentration_over_cap),
+            ("Foreign Receivable", ineligible_overview.foreign),
+            ("Government Receivable", ineligible_overview.government),
+            ("Intercompany Receivable", ineligible_overview.intercompany),
+            ("Contra Receivable", ineligible_overview.contra),
+            ("Other", ineligible_overview.other),
+        ]
+        for label, amount in categories:
+            amount_value = _to_decimal(amount)
+            pct = amount_value / total_ineligible if total_ineligible else Decimal("0")
+            ineligible_rows.append(
+                {
+                    "label": label,
+                    "amount": _format_currency(amount_value),
+                    "pct": _format_pct(pct),
+                }
+            )
+        ineligible_total_row = {
+            "label": "Total",
+            "amount": _format_currency(total_ineligible),
+            "pct": _format_pct(Decimal("1")),
+        }
+
+    trend_points = []
+    trend_texts = []
+    for row in ineligible_trend_rows:
+        value = float(_to_decimal(row.ineligible_pct_of_ar) * Decimal("100"))
+        trend_points.append(value)
+        label_date = row.date
+        label = label_date.strftime("%b %y") if label_date else f"Point {row.id}"
+        trend_texts.append(label)
+    max_trend = 12
+    if len(trend_points) > max_trend:
+        trend_points = trend_points[-max_trend:]
+        trend_texts = trend_texts[-max_trend:]
+    trend_chart = _build_trend_points(trend_points, trend_texts)
+
+    concentration_entries = []
+    for row in sorted(
+        concentration_rows,
+        key=lambda r: _to_decimal(r.current_concentration_pct),
+        reverse=True,
+    )[:10]:
+        concentration_entries.append(
+            {
+                "customer": _safe_str(row.customer),
+                "current": _format_pct(row.current_concentration_pct),
+                "average": _format_pct(row.avg_ttm_concentration_pct),
+                "variance": _format_variance(row.variance_concentration_pp, suffix="pp"),
+            }
+        )
+
+    ado_entries = []
+    for row in sorted(
+        concentration_rows,
+        key=lambda r: _to_decimal(r.current_ado_days),
+        reverse=True,
+    )[:10]:
+        ado_entries.append(
+            {
+                "current": _format_days(row.current_ado_days),
+                "average": _format_days(row.avg_ttm_ado_days),
+                "variance": _format_variance(row.variance_ado_days, suffix="d"),
+            }
+        )
+
+    dso_entries = []
+    for row in sorted(
+        concentration_rows,
+        key=lambda r: _to_decimal(r.current_dso_days),
+        reverse=True,
+    )[:10]:
+        dso_entries.append(
+            {
+                "current": _format_days(row.current_dso_days),
+                "average": _format_days(row.avg_ttm_dso_days),
+                "variance": _format_variance(row.variance_dso_days, suffix="d"),
+            }
+        )
+
+    return {
+        "ar_borrowing_base_kpis": kpis,
+        "ar_aging_chart_buckets": aging_buckets,
+        "ar_current_vs_past_due_trend": {"bars": trend_bars, "labels": trend_labels},
+        "ar_top_by_total_rows": top_by_total_rows,
+        "ar_top_by_total_grand": top_by_total_grand,
+        "ar_top_by_past_due_rows": top_by_past_due_rows,
+        "ar_top_by_past_due_grand": top_by_past_due_grand,
+        "ar_ineligible_overview_rows": ineligible_rows,
+        "ar_ineligible_overview_total": ineligible_total_row,
+        "ar_ineligible_trend": {
+            "points": trend_chart["points"],
+            "dots": trend_chart["dots"],
+            "labels": trend_chart["labels"],
+        },
+        "ar_concentration_rows": concentration_entries,
+        "ar_ado_rows": ado_entries,
+        "ar_dso_rows": dso_entries,
     }
 
 

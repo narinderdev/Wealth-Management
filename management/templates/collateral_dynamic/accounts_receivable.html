@@ -663,6 +663,62 @@
     .collateral-dynamic .ar-section .total td{
       font-weight:800;
     }
+    .collateral-dynamic .borrowing-base{
+      border:1px solid rgba(0,122,245,.1);
+      box-shadow:0px 1px 2px rgba(0,0,0,.05);
+      border-radius:12px;
+      padding:18px 20px 20px;
+      background:#fff;
+    }
+    .collateral-dynamic .borrowing-base .h2{
+      font-family:'Roboto',sans-serif;
+      font-weight:600;
+      font-size:24px;
+      line-height:24px;
+      letter-spacing:-0.6px;
+      color:#585858;
+      align-items:center;
+      gap:8px;
+    }
+    .collateral-dynamic .borrowing-base .kpis{
+      margin-top:16px;
+      display:flex;
+      gap:14px;
+      flex-wrap:wrap;
+    }
+    .collateral-dynamic .borrowing-base .kpi{
+      flex:1;
+      min-width:200px;
+      border:1px solid rgba(15,23,42,.08);
+      box-shadow:0px 4px 12px rgba(15,23,42,.08);
+      border-radius:12px;
+      padding:18px;
+      background:#fff;
+    }
+    .collateral-dynamic .borrowing-base .kpi .label{
+      font-size:11px;
+      color:#6b7280;
+      letter-spacing:.3px;
+      text-transform:uppercase;
+    }
+    .collateral-dynamic .borrowing-base .kpi .value{
+      font-size:26px;
+      font-weight:700;
+      margin-top:6px;
+      color:#111827;
+    }
+    .collateral-dynamic .borrowing-base .kpi .delta{
+      margin-top:10px;
+      display:flex;
+      align-items:center;
+      gap:6px;
+      font-weight:600;
+      font-size:12px;
+    }
+    .collateral-dynamic .borrowing-base .kpi .delta span{
+      display:inline-flex;
+      align-items:center;
+    }
   </style>
 {% endblock %}
 
@@ -684,7 +740,7 @@
           </div>
         {% elif active_section == 'accounts_receivable' %}
           <div class="ar-section">
-            <section class="card">
+            <section class="card borrowing-base">
               <div class="h2">
                 <svg class="spark" viewBox="0 0 24 24" fill="none">
                   <path d="M4 16l6-6 4 4 6-8" stroke="var(--blue-2)" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/>
@@ -706,73 +762,54 @@
                 Borrowing Base Insight
               </div>
               <div class="kpis">
-                <div class="kpi">
-                  <div class="info">i</div>
-                  <div class="label">Balance</div>
-                  <div class="value">$14.89M</div>
-                  <div class="delta down">&#9660; <span>-6.0%</span></div>
-                  <div class="mini">
-                    <svg viewBox="0 0 260 64" width="100%" height="64" aria-label="Balance mini trend">
-                      <g stroke="rgba(15,23,42,.08)" stroke-width="1">
-                        <path d="M0 52H260"/>
-                        <path d="M0 36H260"/>
-                        <path d="M0 20H260"/>
-                      </g>
-                      <polyline fill="none" stroke="var(--blue-3)" stroke-width="2.5"
-                        points="10,42 45,18 80,28 115,55 150,30 185,32 220,36 250,40"/>
-                      <g fill="#fff" stroke="var(--blue-3)" stroke-width="2">
-                        <circle cx="45" cy="18" r="3.2"/>
-                        <circle cx="115" cy="55" r="3.2"/>
-                        <circle cx="150" cy="30" r="3.2"/>
-                        <circle cx="220" cy="36" r="3.2"/>
-                      </g>
-                    </svg>
+                {% if ar_borrowing_base_kpis %}
+                  {% for kpi in ar_borrowing_base_kpis %}
+                    <div class="kpi">
+                      <div class="info">i</div>
+                      <div class="label">{{ kpi.label }}</div>
+                      <div class="value">{{ kpi.value }}</div>
+                    {% if kpi.delta %}
+                        <div class="delta {{ kpi.delta_class }}">
+                          <span class="delta-symbol">{{ kpi.symbol }}</span>
+                          <span class="delta-value">{{ kpi.delta }}</span>
+                        </div>
+                      {% endif %}
+                      <div class="mini">
+                        <svg viewBox="0 0 260 64" width="100%" height="64" aria-label="{{ kpi.label }} mini trend">
+                          <g stroke="rgba(15,23,42,.08)" stroke-width="1">
+                            <path d="M0 52H260"/>
+                            <path d="M0 36H260"/>
+                            <path d="M0 20H260"/>
+                          </g>
+                          <polyline fill="none" stroke="{{ kpi.color }}" stroke-width="2.5"
+                            points="{{ kpi.spark_points }}"/>
+                          <g fill="#fff" stroke="{{ kpi.color }}" stroke-width="2">
+                            {% for dot in kpi.spark_dots %}
+                              <circle cx="{{ dot.cx }}" cy="{{ dot.cy }}" r="3.2"/>
+                            {% endfor %}
+                          </g>
+                        </svg>
+                      </div>
+                    </div>
+                  {% endfor %}
+                {% else %}
+                  <div class="kpi">
+                    <div class="info">i</div>
+                    <div class="label">Balance</div>
+                    <div class="value">—</div>
+                    <div class="mini">
+                      <svg viewBox="0 0 260 64" width="100%" height="64" aria-label="No data mini trend">
+                        <g stroke="rgba(15,23,42,.08)" stroke-width="1">
+                          <path d="M0 52H260"/>
+                          <path d="M0 36H260"/>
+                          <path d="M0 20H260"/>
+                        </g>
+                        <polyline fill="none" stroke="var(--blue-3)" stroke-width="2.5"
+                          points="10,42 45,18 80,28 115,55 150,30 185,32 220,36 250,40"/>
+                      </svg>
+                    </div>
                   </div>
-                </div>
-                <div class="kpi">
-                  <div class="info">i</div>
-                  <div class="label">Days Sales Outstanding</div>
-                  <div class="value">60</div>
-                  <div class="delta down">&#9660; <span>-4.6%</span></div>
-                  <div class="mini">
-                    <svg viewBox="0 0 260 64" width="100%" height="64" aria-label="DSO mini trend">
-                      <g stroke="rgba(15,23,42,.08)" stroke-width="1">
-                        <path d="M0 52H260"/>
-                        <path d="M0 36H260"/>
-                        <path d="M0 20H260"/>
-                      </g>
-                      <polyline fill="none" stroke="var(--purple)" stroke-width="2.5"
-                        points="10,40 50,18 90,26 130,52 170,28 210,30 250,34"/>
-                      <g fill="#fff" stroke="var(--purple)" stroke-width="2">
-                        <circle cx="50" cy="18" r="3.2"/>
-                        <circle cx="130" cy="52" r="3.2"/>
-                        <circle cx="170" cy="28" r="3.2"/>
-                      </g>
-                    </svg>
-                  </div>
-                </div>
-                <div class="kpi">
-                  <div class="info">i</div>
-                  <div class="label">% of total past due</div>
-                  <div class="value">54.8%</div>
-                  <div class="delta up">&#9650; <span>+0.8%</span></div>
-                  <div class="mini">
-                    <svg viewBox="0 0 260 64" width="100%" height="64" aria-label="Past due mini trend">
-                      <g stroke="rgba(15,23,42,.08)" stroke-width="1">
-                        <path d="M0 52H260"/>
-                        <path d="M0 36H260"/>
-                        <path d="M0 20H260"/>
-                      </g>
-                      <polyline fill="none" stroke="var(--teal)" stroke-width="2.5"
-                        points="10,44 50,20 90,30 130,56 170,34 210,36 250,40"/>
-                      <g fill="#fff" stroke="var(--teal)" stroke-width="2">
-                        <circle cx="50" cy="20" r="3.2"/>
-                        <circle cx="130" cy="56" r="3.2"/>
-                        <circle cx="170" cy="34" r="3.2"/>
-                      </g>
-                    </svg>
-                  </div>
-                </div>
+                {% endif %}
               </div>
             </section>
 
@@ -808,21 +845,11 @@
                       <text x="10" y="53">$80</text>
                     </g>
                     <g>
-                      <rect x="70" y="78" width="40" height="62" rx="6" fill="#1b2a55"/>
-                      <text x="90" y="70" text-anchor="middle" font-size="10" fill="rgba(15,23,42,.55)">30%</text>
-                      <text x="90" y="160" text-anchor="middle" font-size="10" fill="rgba(15,23,42,.55)">Current</text>
-                      <rect x="140" y="58" width="40" height="82" rx="6" fill="rgba(43,111,247,.35)"/>
-                      <text x="160" y="50" text-anchor="middle" font-size="10" fill="rgba(15,23,42,.55)">47%</text>
-                      <text x="160" y="160" text-anchor="middle" font-size="10" fill="rgba(15,23,42,.55)">0-30</text>
-                      <rect x="210" y="90" width="40" height="50" rx="6" fill="rgba(43,111,247,.25)"/>
-                      <text x="230" y="82" text-anchor="middle" font-size="10" fill="rgba(15,23,42,.55)">27%</text>
-                      <text x="230" y="160" text-anchor="middle" font-size="10" fill="rgba(15,23,42,.55)">31-60</text>
-                      <rect x="280" y="36" width="40" height="104" rx="6" fill="rgba(43,111,247,.30)"/>
-                      <text x="300" y="28" text-anchor="middle" font-size="10" fill="rgba(15,23,42,.55)">80%</text>
-                      <text x="300" y="160" text-anchor="middle" font-size="10" fill="rgba(15,23,42,.55)">61-90</text>
-                      <rect x="350" y="72" width="40" height="68" rx="6" fill="rgba(43,111,247,.20)"/>
-                      <text x="370" y="64" text-anchor="middle" font-size="10" fill="rgba(15,23,42,.55)">35%</text>
-                      <text x="370" y="160" text-anchor="middle" font-size="10" fill="rgba(15,23,42,.55)">90+</text>
+                      {% for bucket in ar_aging_chart_buckets %}
+                        <rect x="{{ bucket.x }}" y="{{ bucket.y }}" width="{{ bucket.width }}" height="{{ bucket.height }}" rx="6" fill="{{ bucket.color }}"/>
+                        <text x="{{ bucket.text_x }}" y="{{ bucket.percent_y }}" text-anchor="middle" font-size="10" fill="rgba(15,23,42,.55)">{{ bucket.percent_display }}</text>
+                        <text x="{{ bucket.text_x }}" y="{{ bucket.label_y }}" text-anchor="middle" font-size="10" fill="rgba(15,23,42,.55)">{{ bucket.label }}</text>
+                      {% endfor %}
                     </g>
                   </svg>
                 </div>
@@ -853,47 +880,15 @@
                       <text x="10" y="53">60%</text>
                     </g>
                     <g>
-                      <rect x="58" y="78" width="8" height="62" rx="3" fill="#1b2a55"/>
-                      <rect x="70" y="58" width="8" height="82" rx="3" fill="var(--blue-2)"/>
-                      <rect x="92" y="62" width="8" height="78" rx="3" fill="#1b2a55"/>
-                      <rect x="104" y="52" width="8" height="88" rx="3" fill="var(--blue-2)"/>
-                      <rect x="126" y="70" width="8" height="70" rx="3" fill="#1b2a55"/>
-                      <rect x="138" y="46" width="8" height="94" rx="3" fill="var(--blue-2)"/>
-                      <rect x="160" y="54" width="8" height="86" rx="3" fill="#1b2a55"/>
-                      <rect x="172" y="40" width="8" height="100" rx="3" fill="var(--blue-2)"/>
-                      <rect x="194" y="66" width="8" height="74" rx="3" fill="#1b2a55"/>
-                      <rect x="206" y="58" width="8" height="82" rx="3" fill="var(--blue-2)"/>
-                      <rect x="228" y="78" width="8" height="62" rx="3" fill="#1b2a55"/>
-                      <rect x="240" y="54" width="8" height="86" rx="3" fill="var(--blue-2)"/>
-                      <rect x="262" y="86" width="8" height="54" rx="3" fill="#1b2a55"/>
-                      <rect x="274" y="62" width="8" height="78" rx="3" fill="var(--blue-2)"/>
-                      <rect x="296" y="92" width="8" height="48" rx="3" fill="#1b2a55"/>
-                      <rect x="308" y="72" width="8" height="68" rx="3" fill="var(--blue-2)"/>
-                      <rect x="330" y="84" width="8" height="56" rx="3" fill="#1b2a55"/>
-                      <rect x="342" y="60" width="8" height="80" rx="3" fill="var(--blue-2)"/>
-                      <rect x="364" y="76" width="8" height="64" rx="3" fill="#1b2a55"/>
-                      <rect x="376" y="50" width="8" height="90" rx="3" fill="var(--blue-2)"/>
-                      <rect x="398" y="70" width="8" height="70" rx="3" fill="#1b2a55"/>
-                      <rect x="410" y="56" width="8" height="84" rx="3" fill="var(--blue-2)"/>
-                      <rect x="432" y="74" width="8" height="66" rx="3" fill="#1b2a55"/>
-                      <rect x="444" y="58" width="8" height="82" rx="3" fill="var(--blue-2)"/>
-                      <rect x="466" y="66" width="8" height="74" rx="3" fill="#1b2a55"/>
-                      <rect x="478" y="54" width="8" height="86" rx="3" fill="var(--blue-2)"/>
+                      {% for bar in ar_current_vs_past_due_trend.bars %}
+                        <rect x="{{ bar.past_due_x }}" y="{{ bar.past_due_y }}" width="8" height="{{ bar.past_due_height }}" rx="3" fill="#1b2a55"/>
+                        <rect x="{{ bar.current_x }}" y="{{ bar.current_y }}" width="8" height="{{ bar.current_height }}" rx="3" fill="var(--blue-2)"/>
+                      {% endfor %}
                     </g>
                     <g fill="rgba(15,23,42,.45)" font-size="9">
-                      <text x="64" y="163" text-anchor="middle">May</text>
-                      <text x="98" y="163" text-anchor="middle">Jun</text>
-                      <text x="132" y="163" text-anchor="middle">Jul</text>
-                      <text x="166" y="163" text-anchor="middle">Aug</text>
-                      <text x="200" y="163" text-anchor="middle">Sep</text>
-                      <text x="234" y="163" text-anchor="middle">Oct</text>
-                      <text x="268" y="163" text-anchor="middle">Nov</text>
-                      <text x="302" y="163" text-anchor="middle">Dec</text>
-                      <text x="336" y="163" text-anchor="middle">Jan</text>
-                      <text x="370" y="163" text-anchor="middle">Feb</text>
-                      <text x="404" y="163" text-anchor="middle">Mar</text>
-                      <text x="438" y="163" text-anchor="middle">Apr</text>
-                      <text x="472" y="163" text-anchor="middle">May</text>
+                      {% for label in ar_current_vs_past_due_trend.labels %}
+                        <text x="{{ label.x }}" y="163" text-anchor="middle">{{ label.text }}</text>
+                      {% endfor %}
                     </g>
                   </svg>
                 </div>
@@ -914,16 +909,34 @@
                       </tr>
                     </thead>
                     <tbody>
-                      <tr><td>Customer 1</td><td>$</td><td>$</td><td>$</td><td>$</td><td>$</td><td>$</td></tr>
-                      <tr><td>Customer 2</td><td>$</td><td>$</td><td>$</td><td>$</td><td>$</td><td>$</td></tr>
-                      <tr><td>Customer 3</td><td>$</td><td>$</td><td>$</td><td>$</td><td>$</td><td>$</td></tr>
-                      <tr><td>Customer 4</td><td>$</td><td>$</td><td>$</td><td>$</td><td>$</td><td>$</td></tr>
-                      <tr><td>Customer 5</td><td>$</td><td>$</td><td>$</td><td>$</td><td>$</td><td>$</td></tr>
-                      <tr><td>Customer 6</td><td>$</td><td>$</td><td>$</td><td>$</td><td>$</td><td>$</td></tr>
-                      <tr><td>Customer 7</td><td>$</td><td>$</td><td>$</td><td>$</td><td>$</td><td>$</td></tr>
-                      <tr><td>Customer 8</td><td>$</td><td>$</td><td>$</td><td>$</td><td>$</td><td>$</td></tr>
-                      <tr><td>Customer 9</td><td>$</td><td>$</td><td>$</td><td>$</td><td>$</td><td>$</td></tr>
-                      <tr><td>Customer 10</td><td>$</td><td>$</td><td>$</td><td>$</td><td>$</td><td>$</td></tr>
+                      {% if ar_top_by_total_rows %}
+                        {% for row in ar_top_by_total_rows %}
+                          <tr>
+                            <td>{{ row.customer }}</td>
+                            <td>{{ row.current }}</td>
+                            <td>{{ row.col_0_30 }}</td>
+                            <td>{{ row.col_31_60 }}</td>
+                            <td>{{ row.col_61_90 }}</td>
+                            <td>{{ row.col_91_plus }}</td>
+                            <td>{{ row.total }}</td>
+                          </tr>
+                        {% endfor %}
+                        {% if ar_top_by_total_grand %}
+                          <tr class="total">
+                            <td>{{ ar_top_by_total_grand.customer }}</td>
+                            <td>{{ ar_top_by_total_grand.current }}</td>
+                            <td>{{ ar_top_by_total_grand.col_0_30 }}</td>
+                            <td>{{ ar_top_by_total_grand.col_31_60 }}</td>
+                            <td>{{ ar_top_by_total_grand.col_61_90 }}</td>
+                            <td>{{ ar_top_by_total_grand.col_91_plus }}</td>
+                            <td>{{ ar_top_by_total_grand.total }}</td>
+                          </tr>
+                        {% endif %}
+                      {% else %}
+                        <tr>
+                          <td colspan="7">No data available</td>
+                        </tr>
+                      {% endif %}
                     </tbody>
                   </table>
                 </div>
@@ -942,16 +955,34 @@
                       </tr>
                     </thead>
                     <tbody>
-                      <tr><td>Customer 1</td><td>$</td><td>$</td><td>$</td><td>$</td><td>$</td><td>$</td></tr>
-                      <tr><td>Customer 2</td><td>$</td><td>$</td><td>$</td><td>$</td><td>$</td><td>$</td></tr>
-                      <tr><td>Customer 3</td><td>$</td><td>$</td><td>$</td><td>$</td><td>$</td><td>$</td></tr>
-                      <tr><td>Customer 4</td><td>$</td><td>$</td><td>$</td><td>$</td><td>$</td><td>$</td></tr>
-                      <tr><td>Customer 5</td><td>$</td><td>$</td><td>$</td><td>$</td><td>$</td><td>$</td></tr>
-                      <tr><td>Customer 6</td><td>$</td><td>$</td><td>$</td><td>$</td><td>$</td><td>$</td></tr>
-                      <tr><td>Customer 7</td><td>$</td><td>$</td><td>$</td><td>$</td><td>$</td><td>$</td></tr>
-                      <tr><td>Customer 8</td><td>$</td><td>$</td><td>$</td><td>$</td><td>$</td><td>$</td></tr>
-                      <tr><td>Customer 9</td><td>$</td><td>$</td><td>$</td><td>$</td><td>$</td><td>$</td></tr>
-                      <tr><td>Customer 10</td><td>$</td><td>$</td><td>$</td><td>$</td><td>$</td><td>$</td></tr>
+                      {% if ar_top_by_past_due_rows %}
+                        {% for row in ar_top_by_past_due_rows %}
+                          <tr>
+                            <td>{{ row.customer }}</td>
+                            <td>{{ row.current }}</td>
+                            <td>{{ row.col_0_30 }}</td>
+                            <td>{{ row.col_31_60 }}</td>
+                            <td>{{ row.col_61_90 }}</td>
+                            <td>{{ row.col_91_plus }}</td>
+                            <td>{{ row.total }}</td>
+                          </tr>
+                        {% endfor %}
+                        {% if ar_top_by_past_due_grand %}
+                          <tr class="total">
+                            <td>{{ ar_top_by_past_due_grand.customer }}</td>
+                            <td>{{ ar_top_by_past_due_grand.current }}</td>
+                            <td>{{ ar_top_by_past_due_grand.col_0_30 }}</td>
+                            <td>{{ ar_top_by_past_due_grand.col_31_60 }}</td>
+                            <td>{{ ar_top_by_past_due_grand.col_61_90 }}</td>
+                            <td>{{ ar_top_by_past_due_grand.col_91_plus }}</td>
+                            <td>{{ ar_top_by_past_due_grand.total }}</td>
+                          </tr>
+                        {% endif %}
+                      {% else %}
+                        <tr>
+                          <td colspan="7">No data available</td>
+                        </tr>
+                      {% endif %}
                     </tbody>
                   </table>
                 </div>
@@ -977,16 +1008,26 @@
                       </tr>
                     </thead>
                     <tbody>
-                      <tr><td>Past Due Over 60 Days</td><td class="align-right">$184,520</td><td class="align-right">60%</td></tr>
-                      <tr><td>Dilution</td><td class="align-right">$84,210</td><td class="align-right">12%</td></tr>
-                      <tr><td>Cross Age</td><td class="align-right">$58,400</td><td class="align-right">8%</td></tr>
-                      <tr><td>Concentration Over Cap</td><td class="align-right">$40,130</td><td class="align-right">6%</td></tr>
-                      <tr><td>Foreign Receivable</td><td class="align-right">$28,600</td><td class="align-right">4%</td></tr>
-                      <tr><td>Government Receivable</td><td class="align-right">$19,900</td><td class="align-right">3%</td></tr>
-                      <tr><td>Intercompany Receivable</td><td class="align-right">$18,000</td><td class="align-right">3%</td></tr>
-                      <tr><td>Contra Receivable</td><td class="align-right">$12,000</td><td class="align-right">2%</td></tr>
-                      <tr><td>Other</td><td class="align-right">$6,859</td><td class="align-right">1%</td></tr>
-                      <tr class="total"><td>Total</td><td class="align-right">$1,326,619</td><td class="align-right">100%</td></tr>
+                      {% if ar_ineligible_overview_rows %}
+                        {% for row in ar_ineligible_overview_rows %}
+                          <tr>
+                            <td>{{ row.label }}</td>
+                            <td class="align-right">{{ row.amount }}</td>
+                            <td class="align-right">{{ row.pct }}</td>
+                          </tr>
+                        {% endfor %}
+                        {% if ar_ineligible_overview_total %}
+                          <tr class="total">
+                            <td>{{ ar_ineligible_overview_total.label }}</td>
+                            <td class="align-right">{{ ar_ineligible_overview_total.amount }}</td>
+                            <td class="align-right">{{ ar_ineligible_overview_total.pct }}</td>
+                          </tr>
+                        {% endif %}
+                      {% else %}
+                        <tr>
+                          <td colspan="3">No data available</td>
+                        </tr>
+                      {% endif %}
                     </tbody>
                   </table>
                 </div>
@@ -1008,25 +1049,16 @@
                       <text x="10" y="53">90%</text>
                     </g>
                     <polyline fill="none" stroke="var(--blue-3)" stroke-width="2.5"
-                      points="60,140 105,120 150,100 195,92 240,104 285,110 330,120 375,145 420,160 465,140 490,128"/>
+                      points="{{ ar_ineligible_trend.points }}"/>
                     <g fill="#fff" stroke="var(--blue-3)" stroke-width="2">
-                      <circle cx="60" cy="140" r="3.2"/>
-                      <circle cx="195" cy="92" r="3.2"/>
-                      <circle cx="420" cy="160" r="3.2"/>
-                      <circle cx="490" cy="128" r="3.2"/>
+                      {% for dot in ar_ineligible_trend.dots %}
+                        <circle cx="{{ dot.cx }}" cy="{{ dot.cy }}" r="3.2"/>
+                      {% endfor %}
                     </g>
                     <g fill="rgba(15,23,42,.45)" font-size="9">
-                      <text x="60" y="194" text-anchor="middle">May</text>
-                      <text x="105" y="194" text-anchor="middle">Jun</text>
-                      <text x="150" y="194" text-anchor="middle">Jul</text>
-                      <text x="195" y="194" text-anchor="middle">Aug</text>
-                      <text x="240" y="194" text-anchor="middle">Sep</text>
-                      <text x="285" y="194" text-anchor="middle">Oct</text>
-                      <text x="330" y="194" text-anchor="middle">Nov</text>
-                      <text x="375" y="194" text-anchor="middle">Dec</text>
-                      <text x="420" y="194" text-anchor="middle">Jan</text>
-                      <text x="465" y="194" text-anchor="middle">Feb</text>
-                      <text x="490" y="194" text-anchor="middle">Mar</text>
+                      {% for label in ar_ineligible_trend.labels %}
+                        <text x="{{ label.x }}" y="194" text-anchor="middle">{{ label.text }}</text>
+                      {% endfor %}
                     </g>
                     <text x="18" y="120" fill="rgba(15,23,42,.45)" font-size="10" transform="rotate(-90 18 120)">
                       % of Accounts Receivable
@@ -1056,16 +1088,20 @@
                       </tr>
                     </thead>
                     <tbody>
-                      <tr><td>Customer 1</td><td class="align-center">$</td><td class="align-center">$</td><td class="align-center">$</td></tr>
-                      <tr><td>Customer 2</td><td class="align-center">$</td><td class="align-center">$</td><td class="align-center">$</td></tr>
-                      <tr><td>Customer 3</td><td class="align-center">$</td><td class="align-center">$</td><td class="align-center">$</td></tr>
-                      <tr><td>Customer 4</td><td class="align-center">$</td><td class="align-center">$</td><td class="align-center">$</td></tr>
-                      <tr><td>Customer 5</td><td class="align-center">$</td><td class="align-center">$</td><td class="align-center">$</td></tr>
-                      <tr><td>Customer 6</td><td class="align-center">$</td><td class="align-center">$</td><td class="align-center">$</td></tr>
-                      <tr><td>Customer 7</td><td class="align-center">$</td><td class="align-center">$</td><td class="align-center">$</td></tr>
-                      <tr><td>Customer 8</td><td class="align-center">$</td><td class="align-center">$</td><td class="align-center">$</td></tr>
-                      <tr><td>Customer 9</td><td class="align-center">$</td><td class="align-center">$</td><td class="align-center">$</td></tr>
-                      <tr><td>Customer 10</td><td class="align-center">$</td><td class="align-center">$</td><td class="align-center">$</td></tr>
+                      {% if ar_concentration_rows %}
+                        {% for row in ar_concentration_rows %}
+                          <tr>
+                            <td>{{ row.customer }}</td>
+                            <td class="align-center">{{ row.current }}</td>
+                            <td class="align-center">{{ row.average }}</td>
+                            <td class="align-center">{{ row.variance }}</td>
+                          </tr>
+                        {% endfor %}
+                      {% else %}
+                        <tr>
+                          <td colspan="4" class="align-center">No data available</td>
+                        </tr>
+                      {% endif %}
                     </tbody>
                   </table>
                 </div>
@@ -1080,16 +1116,19 @@
                       </tr>
                     </thead>
                     <tbody>
-                      <tr><td class="align-center">$</td><td class="align-center">$</td><td class="align-center">$</td></tr>
-                      <tr><td class="align-center">$</td><td class="align-center">$</td><td class="align-center">$</td></tr>
-                      <tr><td class="align-center">$</td><td class="align-center">$</td><td class="align-center">$</td></tr>
-                      <tr><td class="align-center">$</td><td class="align-center">$</td><td class="align-center">$</td></tr>
-                      <tr><td class="align-center">$</td><td class="align-center">$</td><td class="align-center">$</td></tr>
-                      <tr><td class="align-center">$</td><td class="align-center">$</td><td class="align-center">$</td></tr>
-                      <tr><td class="align-center">$</td><td class="align-center">$</td><td class="align-center">$</td></tr>
-                      <tr><td class="align-center">$</td><td class="align-center">$</td><td class="align-center">$</td></tr>
-                      <tr><td class="align-center">$</td><td class="align-center">$</td><td class="align-center">$</td></tr>
-                      <tr><td class="align-center">$</td><td class="align-center">$</td><td class="align-center">$</td></tr>
+                      {% if ar_ado_rows %}
+                        {% for row in ar_ado_rows %}
+                          <tr>
+                            <td class="align-center">{{ row.current }}</td>
+                            <td class="align-center">{{ row.average }}</td>
+                            <td class="align-center">{{ row.variance }}</td>
+                          </tr>
+                        {% endfor %}
+                      {% else %}
+                        <tr>
+                          <td colspan="3" class="align-center">No data available</td>
+                        </tr>
+                      {% endif %}
                     </tbody>
                   </table>
                 </div>
@@ -1104,16 +1143,19 @@
                       </tr>
                     </thead>
                     <tbody>
-                      <tr><td class="align-center">$</td><td class="align-center">$</td><td class="align-center">$</td></tr>
-                      <tr><td class="align-center">$</td><td class="align-center">$</td><td class="align-center">$</td></tr>
-                      <tr><td class="align-center">$</td><td class="align-center">$</td><td class="align-center">$</td></tr>
-                      <tr><td class="align-center">$</td><td class="align-center">$</td><td class="align-center">$</td></tr>
-                      <tr><td class="align-center">$</td><td class="align-center">$</td><td class="align-center">$</td></tr>
-                      <tr><td class="align-center">$</td><td class="align-center">$</td><td class="align-center">$</td></tr>
-                      <tr><td class="align-center">$</td><td class="align-center">$</td><td class="align-center">$</td></tr>
-                      <tr><td class="align-center">$</td><td class="align-center">$</td><td class="align-center">$</td></tr>
-                      <tr><td class="align-center">$</td><td class="align-center">$</td><td class="align-center">$</td></tr>
-                      <tr><td class="align-center">$</td><td class="align-center">$</td><td class="align-center">$</td></tr>
+                      {% if ar_dso_rows %}
+                        {% for row in ar_dso_rows %}
+                          <tr>
+                            <td class="align-center">{{ row.current }}</td>
+                            <td class="align-center">{{ row.average }}</td>
+                            <td class="align-center">{{ row.variance }}</td>
+                          </tr>
+                        {% endfor %}
+                      {% else %}
+                        <tr>
+                          <td colspan="3" class="align-center">No data available</td>
+                        </tr>
+                      {% endif %}
                     </tbody>
                   </table>
                 </div>
