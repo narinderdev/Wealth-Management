@@ -1,0 +1,163 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Borrower Login Information</title>
+    <style>
+        * {
+            box-sizing: border-box;
+        }
+        body {
+            font-family: Arial, sans-serif;
+            background-color: #f5f5f5;
+            margin: 0;
+            padding: 0;
+        }
+        .container {
+            width: 80%;
+            margin: 50px auto;
+            padding: 20px;
+            background-color: #fff;
+            border-radius: 8px;
+            box-shadow: 0 4px 8px rgba(0, 0, 0, 0.1);
+        }
+        .form-header {
+            font-size: 20px;
+            font-weight: bold;
+            margin-bottom: 20px;
+            display: flex;
+            align-items: center;
+        }
+        .form-header img {
+            margin-right: 10px;
+            width: 20px; /* Size of the icon */
+        }
+        .form-group {
+            margin-bottom: 15px;
+        }
+        .form-group label {
+            display: block;
+            margin-bottom: 5px;
+            font-size: 14px;
+            color: #555;
+        }
+        .form-group input, .form-group select {
+            width: 100%;
+            padding: 10px;
+            border: 1px solid #ccc;
+            border-radius: 4px;
+            font-size: 14px;
+        }
+        .form-group input[type="checkbox"] {
+            width: auto;
+            margin-right: 10px;
+        }
+        .form-group.checkbox-group {
+            display: flex;
+            align-items: center;
+        }
+        .form-group.checkbox-group label {
+            margin-bottom: 0;
+        }
+        .form-row {
+            display: flex;
+            flex-wrap: wrap;
+            justify-content: space-between;
+            gap: 20px;
+        }
+        .form-row .form-group {
+            flex: 1 1 calc(33.333% - 20px);
+            min-width: 220px;
+        }
+        .form-row.single {
+            justify-content: flex-start;
+        }
+        .form-row.single .form-group {
+            flex: 0 0 calc(33.333% - 20px);
+            max-width: calc(33.333% - 20px);
+        }
+        @media (max-width: 900px) {
+            .container {
+                width: 95%;
+                margin: 20px auto;
+            }
+            .form-row .form-group,
+            .form-row.single .form-group {
+                flex: 1 1 100%;
+                max-width: 100%;
+            }
+        }
+        .form-actions {
+            display: flex;
+            justify-content: flex-end;
+            align-items: center;
+            gap: 10px;
+            margin-top: 20px;
+        }
+        .form-actions button {
+            padding: 10px 20px;
+            border: none;
+            border-radius: 4px;
+            font-size: 14px;
+            cursor: pointer;
+        }
+        .form-actions button.cancel {
+            background-color: #f1f1f1;
+            color: #555;
+        }
+        .form-actions button.save {
+            background-color: #007bff;
+            color: white;
+        }
+    </style>
+</head>
+<body>
+
+<div class="container">
+    <div class="form-header">
+        <img src="https://img.icons8.com/ios-filled/50/000000/user.png" alt="icon"> 
+        Borrower Login Information
+    </div>
+    <form action="#" method="POST">
+        <div class="form-row">
+            <div class="form-group">
+                <label for="borrower">Borrower</label>
+                <select id="borrower" name="borrower">
+                    <option value="">Select Borrower</option>
+                    <!-- Add options dynamically here -->
+                </select>
+            </div>
+
+            <div class="form-group">
+                <label for="email">Email</label>
+                <input type="email" id="email" name="email" placeholder="Enter Borrower Primary Contact Email" required>
+            </div>
+
+            <div class="form-group">
+                <label for="password">Password</label>
+                <input type="password" id="password" name="password" placeholder="Enter Password" required>
+            </div>
+        </div>
+
+        <div class="form-row single">
+            <div class="form-group">
+                <label for="confirm-password">Confirm Password</label>
+                <input type="password" id="confirm-password" name="confirm-password" placeholder="Enter Password" required>
+            </div>
+        </div>
+
+        <div class="form-group checkbox-group">
+            <input type="checkbox" id="active" name="active">
+            <label for="active">Active</label>
+        </div>
+
+        <div class="form-actions">
+            <button type="button" class="cancel">Cancel</button>
+            <button type="submit" class="save">Save</button>
+        </div>
+    </form>
+</div>
+
+</body>
+</html>

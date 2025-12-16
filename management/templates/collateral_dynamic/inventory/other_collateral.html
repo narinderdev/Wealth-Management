@@ -1,387 +1,359 @@
-<!doctype html>
-<html lang="en">
-<head>
-  <meta charset="utf-8" />
-  <meta name="viewport" content="width=device-width, initial-scale=1" />
-  <title>Value Monitor + Value Analysis (Static)</title>
-  <style>
-    :root{
-      --bg:#f4f7fb;
-      --card:#fff;
-      --ink:#101828;
-      --muted:#667085;
-      --muted2:#98A2B3;
-      --border:#E6EAF2;
-      --grid:#EEF2F7;
-      --shadow: 0 1px 2px rgba(16,24,40,.06);
-      --r:12px;
+<style>
+  :root{
+    --bg:#f4f7fb;
+    --card:#fff;
+    --ink:#101828;
+    --muted:#667085;
+    --muted2:#98A2B3;
+    --border:#E6EAF2;
+    --grid:#EEF2F7;
+    --shadow: 0 1px 2px rgba(16,24,40,.06);
+    --r:12px;
 
-      --blue:#175CD3;
-      --blue2:#2E90FA;
-      --indigo:#3B4BD8;
-      --danger:#F04438;
-      --success:#12B76A;
-    }
-    *{box-sizing:border-box}
-    body{
-      margin:0;
-      font-family: ui-sans-serif,system-ui,-apple-system,Segoe UI,Roboto,Helvetica,Arial,"Apple Color Emoji","Segoe UI Emoji";
-      background:var(--bg);
-      color:var(--ink);
-      line-height:1.35;
-    }
-    .wrap{max-width:1180px;margin:14px auto;padding:0 18px 34px;}
-    .card{
-      background:var(--card);
-      border:1px solid var(--border);
-      border-radius:var(--r);
-      box-shadow:var(--shadow);
-      overflow:hidden;
-    }
-    .divider{height:1px;background:var(--border);}
-    .card-head{
-      display:flex;align-items:center;gap:8px;
-      padding:12px 14px;
-      font-size:12px;font-weight:950;color:#344054;
-    }
-    .ico{
-      width:16px;height:16px;border-radius:6px;
-      background: rgba(23,92,211,.10);
-      border:1px solid rgba(23,92,211,.18);
-      display:grid;place-items:center;flex:0 0 auto;
-    }
-    .ico svg{width:10px;height:10px;fill:var(--blue);opacity:.95}
+    --purple:#845bf5;
+    --blue:#175CD3;
+    --blue2:#2E90FA;
+    --indigo:#3B4BD8;
+    --danger:#F04438;
+    --success:#12B76A;
+  }
+  *{box-sizing:border-box;}
+  .other-collateral{
+    font-family: ui-sans-serif,system-ui,-apple-system,Segoe UI,Roboto,Helvetica,Arial,"Apple Color Emoji","Segoe UI Emoji";
+    color:var(--ink);
+    background:var(--bg);
+  }
+  .other-collateral .page{
+    max-width:1180px;
+    margin:14px auto;
+    padding:0 18px 34px;
+  }
+  .other-collateral .card{
+    background:var(--card);
+    border:1px solid var(--border);
+    border-radius:var(--r);
+    box-shadow:var(--shadow);
+    overflow:hidden;
+  }
+  .other-collateral .section{margin-top:12px;}
+  .other-collateral .card-head{
+    display:flex;
+    align-items:center;
+    gap:8px;
+    padding:12px 14px;
+    font-size:12px;
+    font-weight:950;
+    color:#344054;
+  }
+  .other-collateral .ico{
+    width:16px;
+    height:16px;
+    border-radius:6px;
+    background: rgba(23,92,211,.10);
+    border:1px solid rgba(23,92,211,.18);
+    display:grid;
+    place-items:center;
+  }
+  .other-collateral .ico svg{width:10px;height:10px;fill:var(--blue);opacity:.95}
 
-    /* ----- Value Monitor top cards ----- */
-    .kpi-row{display:grid;grid-template-columns: repeat(3, 1fr); gap:12px; padding: 0 14px 14px;}
-    @media (max-width: 980px){ .kpi-row{grid-template-columns:1fr;} }
+  .other-collateral .kpi-row{display:grid;grid-template-columns:repeat(3,1fr);gap:12px;padding:0 14px 14px;}
+  @media (max-width:980px){.other-collateral .kpi-row{grid-template-columns:1fr;}}
+  .other-collateral .kpi{
+    border:1px solid var(--border);
+    border-radius:12px;
+    background:#fff;
+    padding:12px;
+    display:flex;
+    justify-content:space-between;
+    gap:12px;
+  }
+  .other-collateral .kpi .left .t{
+    font-size:11px;
+    font-weight:950;
+    color:#475467;
+    margin-bottom:8px;
+  }
+  .other-collateral .kpi .big{
+    font-size:18px;
+    font-weight:1000;
+    color:#1D2939;
+    letter-spacing:.1px;
+    margin-bottom:10px;
+  }
+  .other-collateral .kpi .pair{
+    display:flex;
+    justify-content:space-between;
+    gap:10px;
+    font-size:11px;
+    color:#475467;
+    margin-top:6px;
+  }
+  .other-collateral .kpi .pair b{color:#1D2939;font-weight:950;}
+  .other-collateral .kpi .right{display:flex;flex-direction:column;align-items:flex-end;gap:8px;min-width:56px;}
+  .other-collateral .info{
+    width:18px;
+    height:18px;
+    border-radius:999px;
+    border:1px solid rgba(152,162,179,.45);
+    color:#98A2B3;
+    display:grid;
+    place-items:center;
+    font-size:12px;
+    font-weight:900;
+  }
+  .other-collateral .delta{
+    font-size:11px;
+    font-weight:950;
+    display:flex;
+    align-items:center;
+    gap:6px;
+    color:var(--danger);
+  }
+  .other-collateral .delta.good{color:var(--success);}
+  .other-collateral .arrow{font-size:12px;line-height:1;}
 
-    .kpi{
-      border:1px solid var(--border);
-      border-radius:12px;
-      background:#fff;
-      padding:12px 12px;
-      display:flex;
-      justify-content:space-between;
-      gap:12px;
-    }
-    .kpi .left .t{
-      font-size:11px;font-weight:950;color:#475467;margin-bottom:8px;
-    }
-    .kpi .big{
-      font-size:18px;font-weight:1000;color:#1D2939;letter-spacing:.1px;
-      margin-bottom:10px;
-    }
-    .kpi .pair{
-      display:flex;justify-content:space-between;gap:10px;
-      font-size:11px;color:#475467;
-      margin-top:6px;
-    }
-    .kpi .pair b{color:#1D2939;font-weight:950}
-    .kpi .right{
-      display:flex;flex-direction:column;align-items:flex-end;gap:8px;
-      min-width:56px;
-    }
-    .info{
-      width:18px;height:18px;border-radius:999px;
-      border:1px solid rgba(152,162,179,.45);
-      color:#98A2B3;
-      display:grid;place-items:center;
-      font-size:12px;font-weight:900;
-    }
-    .delta{
-      font-size:11px;
-      font-weight:950;
-      display:flex;align-items:center;gap:6px;
-      color:var(--danger);
-      margin-top: 18px;
-    }
-    .delta.good{color:var(--success)}
-    .arrow{font-size:12px;line-height:1}
+  .other-collateral .divider{height:1px;background:var(--border);}
+  .other-collateral .chart-head{padding: 10px 14px 0;display:flex;justify-content:space-between;align-items:center;gap:12px;}
+  .other-collateral .legend{display:flex;gap:12px;align-items:center;font-size:11px;color:var(--muted);flex-wrap:wrap;}
+  .other-collateral .litem{display:flex;align-items:center;gap:6px;}
+    .other-collateral .sw{width:10px;height:10px;border-radius:3px;background:var(--purple);}
+    .other-collateral .sw.ind{background:var(--blue);}
+  .other-collateral .toggle{display:inline-flex;gap:2px;padding:2px;border:1px solid var(--border);border-radius:10px;background:#fff;user-select:none;}
+  .other-collateral .toggle span{padding:6px 10px;border-radius:8px;font-size:11px;font-weight:950;color:var(--muted);}
+  .other-collateral .toggle span.active{background:#EEF4FF;color:#344054;}
+  .other-collateral .svg-wrap{padding:6px 10px 14px;}
+  .other-collateral svg{width:100%;height:auto;display:block;}
+  .other-collateral .axis text{fill:var(--muted2);font-size:10px;}
+  .other-collateral .gridline{stroke:var(--grid);stroke-width:1;}
+  .other-collateral .borderline{stroke:var(--border);stroke-width:1;fill:none;}
+    .other-collateral .lineA{stroke:var(--purple);stroke-width:2.6;fill:none;stroke-linecap:round;stroke-linejoin:round;}
+    .other-collateral .lineB{stroke:var(--blue);stroke-width:2.2;fill:none;stroke-linecap:round;stroke-linejoin:round;}
+    .other-collateral .pt{fill:#fff;stroke:var(--purple);stroke-width:2;}
+    .other-collateral .ptb{fill:#fff;stroke:var(--blue);stroke-width:2;}
 
-    /* ----- Value Trend chart ----- */
-    .chart-head{
-      padding: 10px 14px 0;
-      display:flex;justify-content:space-between;align-items:center;gap:12px;
-    }
-    .legend{
-      display:flex;gap:12px;align-items:center;
-      font-size:11px;color:var(--muted);
-      flex-wrap:wrap;
-    }
-    .litem{display:flex;align-items:center;gap:6px;}
-    .sw{width:10px;height:10px;border-radius:3px;background:var(--blue)}
-    .sw.ind{background:var(--indigo)}
-    .toggle{
-      display:inline-flex;
-      gap:2px;
-      padding:2px;
-      border:1px solid var(--border);
-      border-radius:10px;
-      background:#fff;
-      user-select:none;
-    }
-    .toggle span{
-      padding:6px 10px;
-      border-radius:8px;
-      font-size:11px;
-      font-weight:950;
-      color:var(--muted);
-    }
-    .toggle span.active{
-      background:#EEF4FF;
-      color:#344054;
-    }
+  .other-collateral .table-scroll{
+    overflow:auto;
+    max-height:420px;
+  }
+  .other-collateral table.data{width:100%;border-collapse:collapse;font-size:10.5px;min-width: 980px;}
+  .other-collateral table.data thead th{position:sticky;top:0;background:#FBFCFE;color:#475467;font-weight:950;text-align:left;padding:10px 12px;border-bottom:1px solid var(--border);white-space:nowrap;}
+  .other-collateral table.data tbody td{padding:10px 12px;border-bottom:1px solid rgba(230,234,242,.65);color:#344054;white-space:nowrap;}
+  .other-collateral table.data tbody tr:last-child td{border-bottom:none;}
+  .other-collateral tbody tr:hover td{background:#FAFCFF;}
+  .other-collateral .numR{text-align:right;}
+  .other-collateral .grouphead{font-size:10px;font-weight:950;color:#475467;background:#FBFCFE;}
+  .other-collateral .mini-note{font-size:12px;color:var(--muted);margin:12px;}
+</style>
 
-    .svg-wrap{padding: 6px 10px 14px;}
-    svg{width:100%;height:auto;display:block}
-    .axis text{fill:var(--muted2);font-size:10px}
-    .gridline{stroke:var(--grid);stroke-width:1}
-    .borderline{stroke:var(--border);stroke-width:1;fill:none}
-    .lineA{stroke:var(--blue);stroke-width:2.6;fill:none;stroke-linecap:round;stroke-linejoin:round}
-    .lineB{stroke:var(--indigo);stroke-width:2.2;fill:none;stroke-linecap:round;stroke-linejoin:round}
-    .pt{fill:#fff;stroke:var(--blue);stroke-width:2}
-    .ptb{fill:#fff;stroke:var(--indigo);stroke-width:2}
-
-    /* ----- Tables ----- */
-    .table-scroll{overflow:auto;}
-    table.data{
-      width:100%;
-      border-collapse:collapse;
-      font-size:10.5px;
-      min-width: 980px;
-    }
-    table.data thead th{
-      position:sticky; top:0;
-      background:#FBFCFE;
-      color:#475467;
-      font-weight:950;
-      text-align:left;
-      padding:10px 12px;
-      border-bottom:1px solid var(--border);
-      white-space:nowrap;
-    }
-    table.data tbody td{
-      padding:10px 12px;
-      border-bottom:1px solid rgba(230,234,242,.65);
-      color:#344054;
-      white-space:nowrap;
-    }
-    table.data tbody tr:last-child td{border-bottom:none}
-    tbody tr:hover td{background:#FAFCFF}
-    .numR{text-align:right}
-    .grouphead{font-size:10px;font-weight:950;color:#475467;background:#FBFCFE}
-    .section{margin-top:12px;}
-  </style>
-</head>
-<body>
-  <div class="wrap">
-
-    <!-- ===================== SCREEN 1 ===================== -->
-    <div class="card">
-      <div class="card-head">
-        <span class="ico" aria-hidden="true"><svg viewBox="0 0 24 24"><path d="M12 2l4 8h6l-5 4 2 8-7-4-7 4 2-8-5-4h6l4-8z"/></svg></span>
-        Value Monitor
-      </div>
-      <div class="kpi-row">
+<div class="page other-collateral">
+  <div class="card">
+    <div class="card-head">
+      <span class="ico" aria-hidden="true"><svg viewBox="0 0 24 24"><path d="M12 2l4 8h6l-5 4 2 8-7-4-7 4 2-8-5-4h6l4-8z"/></svg></span>
+      Value Monitor
+    </div>
+    <div class="kpi-row">
+      {% for card in other_collateral_value_monitor %}
         <div class="kpi">
           <div class="left">
-            <div class="t">Appraised Values</div>
-            <div class="big">14.80M</div>
-            <div class="pair"><span>Fair Market Value</span><b>14.80M</b></div>
-            <div class="pair"><span>Orderly Liquidation Value</span><b>14.89M</b></div>
+            <div class="t">{{ card.title }}</div>
+            <div class="big">{{ card.big }}</div>
+            {% for row in card.rows %}
+              <div class="pair"><span>{{ row.label }}</span><b>{{ row.value }}</b></div>
+            {% endfor %}
           </div>
           <div class="right">
-            <div class="info">i</div>
+            <div class="info" aria-hidden="true">{{ card.info }}</div>
+            {% for delta in card.deltas %}
+              <div class="delta {{ delta.delta_class }}" title="{{ delta.label }}">
+                <span class="arrow">{{ delta.symbol }}</span>
+                {{ delta.value }}
+              </div>
+            {% endfor %}
           </div>
         </div>
-
+      {% empty %}
         <div class="kpi">
           <div class="left">
-            <div class="t">Estimated Values</div>
-            <div class="big">Fair Market Value</div>
-            <div class="pair"><span>Fair Market Value</span><b>14.89M</b></div>
-            <div class="pair"><span>Orderly Liquidation Value</span><b>14.89M</b></div>
+            <div class="t">Awaiting data</div>
+            <div class="big">—</div>
           </div>
-          <div class="right">
-            <div class="info">i</div>
-          </div>
+          <div class="right"></div>
         </div>
-
-        <div class="kpi">
-          <div class="left">
-            <div class="t">Change in Value</div>
-            <div class="big">Fair Market Value</div>
-            <div class="pair"><span>Fair Market Value</span><b>14.89M</b></div>
-            <div class="pair"><span>Orderly Liquidation Value</span><b>14.89M</b></div>
-          </div>
-          <div class="right">
-            <div class="info">i</div>
-            <div class="delta"><span class="arrow">▼</span> 0.48%</div>
-            <div class="delta good" style="margin-top:0"><span class="arrow">▲</span> 1.10%</div>
-          </div>
-        </div>
-      </div>
-
-      <div class="divider"></div>
-      <div class="card-head" style="padding-bottom:0">
-        <span class="ico" aria-hidden="true"><svg viewBox="0 0 24 24"><path d="M4 17l5-6 4 4 7-10 0 3-7 10-4-4-5 6z"/></svg></span>
-        Value Trend
-      </div>
-      <div class="chart-head">
-        <div class="legend">
-          <div class="litem"><span class="sw"></span>Collateralized</div>
-          <div class="litem"><span class="sw ind"></span>Appraisal</div>
-        </div>
-        <div class="toggle" aria-label="Toggle">
-          <span class="active">Collateralized</span>
-          <span>Appraisal</span>
-        </div>
-      </div>
-      <div class="svg-wrap" data-chart="valueTrend"></div>
+      {% endfor %}
     </div>
-
-    <!-- ===================== SCREEN 2 ===================== -->
-    <div class="section card">
-      <div class="card-head">
-        <span class="ico" aria-hidden="true"><svg viewBox="0 0 24 24"><path d="M3 4h18v16H3V4zm2 4h14V6H5v2zm0 3h6V9H5v2zm0 3h14v-2H5v2z"/></svg></span>
-        Value Analysis
-      </div>
-      <div class="divider"></div>
-      <div class="table-scroll">
-        <table class="data" aria-label="Value Analysis Table">
-          <thead>
-            <tr>
-              <th rowspan="2">ID</th>
-              <th rowspan="2">Equipment Type</th>
-              <th rowspan="2">Manufacturer</th>
-              <th class="numR" colspan="2">Appraised Values</th>
-              <th class="numR" colspan="2">Estimated</th>
-              <th class="numR" colspan="2">Variance</th>
-            </tr>
-            <tr class="grouphead">
-              <th class="numR">FMV</th><th class="numR">OLV</th>
-              <th class="numR">FMV</th><th class="numR">OLV</th>
-              <th class="numR">FMV $</th><th class="numR">FMV %</th>
-            </tr>
-          </thead>
-          <tbody>
-            <tr><td>1001</td><td>Hydraulic Truck Crane</td><td>Tadano</td><td class="numR">475,000</td><td class="numR">350,000</td><td class="numR">465,500</td><td class="numR">341,250</td><td class="numR">-9,500</td><td class="numR">-2.0%</td></tr>
-            <tr><td>1002</td><td>Hydraulic Truck Crane</td><td>Tadano</td><td class="numR">475,000</td><td class="numR">350,000</td><td class="numR">465,500</td><td class="numR">341,250</td><td class="numR">-9,500</td><td class="numR">-2.0%</td></tr>
-            <tr><td>1003</td><td>Hydraulic Truck Crane</td><td>Tadano</td><td class="numR">475,000</td><td class="numR">350,000</td><td class="numR">465,500</td><td class="numR">341,250</td><td class="numR">-9,500</td><td class="numR">-2.0%</td></tr>
-            <tr><td>1004</td><td>Hydraulic Truck Crane</td><td>Tadano</td><td class="numR">475,000</td><td class="numR">350,000</td><td class="numR">465,500</td><td class="numR">341,250</td><td class="numR">-9,500</td><td class="numR">-2.0%</td></tr>
-            <tr><td>1005</td><td>Hydraulic Truck Crane</td><td>Tadano</td><td class="numR">475,000</td><td class="numR">350,000</td><td class="numR">465,500</td><td class="numR">341,250</td><td class="numR">-9,500</td><td class="numR">-2.0%</td></tr>
-            <tr><td>1006</td><td>Hydraulic Truck Crane</td><td>Tadano</td><td class="numR">475,000</td><td class="numR">350,000</td><td class="numR">465,500</td><td class="numR">341,250</td><td class="numR">-9,500</td><td class="numR">-2.0%</td></tr>
-            <tr><td>1007</td><td>Hydraulic Truck Crane</td><td>Tadano</td><td class="numR">475,000</td><td class="numR">350,000</td><td class="numR">465,500</td><td class="numR">341,250</td><td class="numR">-9,500</td><td class="numR">-2.0%</td></tr>
-            <tr><td>1008</td><td>Hydraulic Truck Crane</td><td>Tadano</td><td class="numR">475,000</td><td class="numR">350,000</td><td class="numR">465,500</td><td class="numR">341,250</td><td class="numR">-9,500</td><td class="numR">-2.0%</td></tr>
-            <tr><td>1009</td><td>Hydraulic Truck Crane</td><td>Tadano</td><td class="numR">475,000</td><td class="numR">350,000</td><td class="numR">465,500</td><td class="numR">341,250</td><td class="numR">-9,500</td><td class="numR">-2.0%</td></tr>
-            <tr><td>1010</td><td>Hydraulic Truck Crane</td><td>Tadano</td><td class="numR">475,000</td><td class="numR">350,000</td><td class="numR">465,500</td><td class="numR">341,250</td><td class="numR">-9,500</td><td class="numR">-2.0%</td></tr>
-          </tbody>
-        </table>
+    <div class="divider"></div>
+    <div class="card-head" style="padding-bottom:0">
+      <span class="ico" aria-hidden="true"><svg viewBox="0 0 24 24"><path d="M4 17l5-6 4 4 7-10 0 3-7 10-4-4-5 6z"/></svg></span>
+      Value Trend
+    </div>
+    <div class="chart-head">
+      <div class="legend">
+        <div class="litem"><span class="sw"></span>Estimated OLV</div>
+        <div class="litem"><span class="sw ind"></span>Appraisal OLV</div>
       </div>
     </div>
-
-    <div class="section card">
-      <div class="card-head">
-        <span class="ico" aria-hidden="true"><svg viewBox="0 0 24 24"><path d="M4 6h16v2H4V6zm0 5h16v2H4v-2zm0 5h16v2H4v-2z"/></svg></span>
-        Appraisal Asset Register
-      </div>
-      <div class="divider"></div>
-      <div class="table-scroll">
-        <table class="data" aria-label="Appraisal Asset Register">
-          <thead>
-            <tr>
-              <th>Item ID</th>
-              <th>Equipment Type</th>
-              <th>Manufacturer</th>
-              <th>Serial Number</th>
-              <th class="numR">Year</th>
-              <th>Condition</th>
-              <th class="numR">Fair Market Value</th>
-              <th class="numR">Orderly Liquidation Value</th>
-            </tr>
-          </thead>
-          <tbody>
-            <tr><td>1001</td><td>Hydraulic Truck Crane</td><td>Tadano</td><td>TDN-09H-61337</td><td class="numR">2018</td><td>Good</td><td class="numR">475,000</td><td class="numR">350,000</td></tr>
-            <tr><td>1002</td><td>Hydraulic Truck Crane</td><td>Tadano</td><td>TDN-09H-61338</td><td class="numR">2018</td><td>Good</td><td class="numR">475,000</td><td class="numR">350,000</td></tr>
-            <tr><td>1003</td><td>Hydraulic Truck Crane</td><td>Tadano</td><td>TDN-09H-61339</td><td class="numR">2018</td><td>Good</td><td class="numR">475,000</td><td class="numR">350,000</td></tr>
-            <tr><td>1004</td><td>Hydraulic Truck Crane</td><td>Tadano</td><td>TDN-09H-61340</td><td class="numR">2018</td><td>Good</td><td class="numR">475,000</td><td class="numR">350,000</td></tr>
-            <tr><td>1005</td><td>Hydraulic Truck Crane</td><td>Tadano</td><td>TDN-09H-61341</td><td class="numR">2018</td><td>Good</td><td class="numR">475,000</td><td class="numR">350,000</td></tr>
-            <tr><td>1006</td><td>Hydraulic Truck Crane</td><td>Tadano</td><td>TDN-09H-61342</td><td class="numR">2018</td><td>Good</td><td class="numR">475,000</td><td class="numR">350,000</td></tr>
-            <tr><td>1007</td><td>Hydraulic Truck Crane</td><td>Tadano</td><td>TDN-09H-61343</td><td class="numR">2018</td><td>Good</td><td class="numR">475,000</td><td class="numR">350,000</td></tr>
-            <tr><td>1008</td><td>Hydraulic Truck Crane</td><td>Tadano</td><td>TDN-09H-61344</td><td class="numR">2018</td><td>Good</td><td class="numR">475,000</td><td class="numR">350,000</td></tr>
-            <tr><td>1009</td><td>Hydraulic Truck Crane</td><td>Tadano</td><td>TDN-09H-61345</td><td class="numR">2018</td><td>Good</td><td class="numR">475,000</td><td class="numR">350,000</td></tr>
-            <tr><td>1010</td><td>Hydraulic Truck Crane</td><td>Tadano</td><td>TDDN-09H-61346</td><td class="numR">2018</td><td>Good</td><td class="numR">475,000</td><td class="numR">350,000</td></tr>
-          </tbody>
-        </table>
-      </div>
-    </div>
-
+    <div class="svg-wrap" data-chart="valueTrend"></div>
   </div>
 
-  <script>
-    function linePath(pts){
-      return pts.map((p,i)=> (i===0?`M ${p[0]} ${p[1]}`:`L ${p[0]} ${p[1]}`)).join(" ");
+  <div class="section card">
+    <div class="card-head">
+      <span class="ico" aria-hidden="true"><svg viewBox="0 0 24 24"><path d="M3 4h18v16H3V4zm2 4h14V6H5v2zm0 3h6V9H5v2zm0 3h14v-2H5v2z"/></svg></span>
+      Value Analysis
+    </div>
+    <div class="divider"></div>
+    <div class="table-scroll">
+      <table class="data" aria-label="Value Analysis Table">
+        <thead>
+          <tr>
+            <th rowspan="2">ID</th>
+            <th rowspan="2">Equipment Type</th>
+            <th rowspan="2">Manufacturer</th>
+            <th class="numR" colspan="2">Appraised Values</th>
+            <th class="numR" colspan="2">Estimated</th>
+            <th class="numR" colspan="2">Variance</th>
+          </tr>
+          <tr class="grouphead">
+            <th class="numR">FMV</th><th class="numR">OLV</th>
+            <th class="numR">FMV</th><th class="numR">OLV</th>
+            <th class="numR">FMV $</th><th class="numR">FMV %</th>
+          </tr>
+        </thead>
+        <tbody>
+          {% for row in other_collateral_value_analysis_rows %}
+            <tr>
+              <td>{{ row.id }}</td>
+              <td>{{ row.equipment_type }}</td>
+              <td>{{ row.manufacturer }}</td>
+              <td class="numR">{{ row.fmv }}</td>
+              <td class="numR">{{ row.olv }}</td>
+              <td class="numR">{{ row.estimated_fmv }}</td>
+              <td class="numR">{{ row.estimated_olv }}</td>
+              <td class="numR">{{ row.variance_amount }}</td>
+              <td class="numR">{{ row.variance_pct }}</td>
+            </tr>
+          {% empty %}
+            <tr><td colspan="9" class="numR">Value analysis data not available.</td></tr>
+          {% endfor %}
+        </tbody>
+      </table>
+    </div>
+  </div>
+
+  <div class="section card">
+    <div class="card-head">
+      <span class="ico" aria-hidden="true"><svg viewBox="0 0 24 24"><path d="M4 6h16v2H4V6zm0 5h16v2H4v-2zm0 5h16v2H4v-2z"/></svg></span>
+      Appraisal Asset Register
+    </div>
+    <div class="divider"></div>
+    <div class="table-scroll">
+      <table class="data" aria-label="Appraisal Asset Register">
+        <thead>
+          <tr>
+            <th>Item ID</th>
+            <th>Equipment Type</th>
+            <th>Manufacturer</th>
+            <th>Serial Number</th>
+            <th class="numR">Year</th>
+            <th>Condition</th>
+            <th class="numR">Fair Market Value</th>
+            <th class="numR">Orderly Liquidation Value</th>
+          </tr>
+        </thead>
+        <tbody>
+          {% for row in other_collateral_asset_rows %}
+            <tr>
+              <td>{{ row.id }}</td>
+              <td>{{ row.equipment_type }}</td>
+              <td>{{ row.manufacturer }}</td>
+              <td>{{ row.serial_number }}</td>
+              <td class="numR">{{ row.year }}</td>
+              <td>{{ row.condition }}</td>
+              <td class="numR">{{ row.fmv }}</td>
+              <td class="numR">{{ row.olv }}</td>
+            </tr>
+          {% empty %}
+            <tr><td colspan="8" class="numR">Asset register data not available.</td></tr>
+          {% endfor %}
+        </tbody>
+      </table>
+    </div>
+  </div>
+</div>
+
+{{ other_collateral_value_trend_config|json_script:"otherCollateralValueTrendData" }}
+<script>
+  function linePath(pts){
+    return pts.map((p,i)=> (i===0?`M ${p[0]} ${p[1]}`:`L ${p[0]} ${p[1]}`)).join(" ");
+  }
+  function renderTwoLine(el,cfg){
+    const W=980, H=260;
+    const pad={l:46,r:14,t:14,b:34};
+    const plotW=W-pad.l-pad.r, plotH=H-pad.t-pad.b;
+    const seriesEstimated = cfg.estimated||[];
+    const seriesAppraisal = cfg.appraisal||[];
+    const all = [...seriesEstimated, ...seriesAppraisal];
+    if(!all.length){
+      el.innerHTML="<div class='mini-note'>Value trend data is unavailable.</div>";
+      return;
     }
+    const formatCurrencyLabel = val => `$${Math.round(val).toLocaleString('en-US')}`;
+    let min = Math.min(...all);
+    let max = Math.max(...all);
+    if(min === Infinity) min = 0;
+    if(max === -Infinity) max = 0;
+    const range = (max-min)||1;
+    min -= range*0.12;
+    max += range*0.12;
+    const totalPoints = cfg.labels?.length || Math.max(seriesEstimated.length, seriesAppraisal.length);
+    const denominator = totalPoints>1 ? totalPoints-1 : 1;
+    const x = i => pad.l + (i/denominator)*plotW;
+    const y = v => pad.t + (1-(v-min)/(max-min))*plotH;
+    const ptsEst = seriesEstimated.map((v,i)=>[x(i),y(v)]);
+    const ptsApp = seriesAppraisal.map((v,i)=>[x(i),y(v)]);
+    const ticks=6;
+    const yTicks = Array.from({length:ticks},(_,i)=>{
+      const t=i/(ticks-1);
+      const val=max - t*(max-min);
+      return {val, yy:y(val)};
+    });
+    const xStep = (cfg.labels?.length || 0) > 10 ? 2 : 1;
+    el.innerHTML = `
+      <svg viewBox="0 0 ${W} ${H}" role="img" aria-label="${cfg.title||'Value Trend'}">
+        <rect x="${pad.l}" y="${pad.t}" width="${plotW}" height="${plotH}" class="borderline"></rect>
+        ${yTicks.map(t=>`
+          <line x1="${pad.l}" y1="${t.yy}" x2="${W-pad.r}" y2="${t.yy}" class="gridline"></line>
+          <g class="axis"><text x="${pad.l-8}" y="${t.yy+3}" text-anchor="end">${formatCurrencyLabel(t.val)}</text></g>
+        `).join("")}
+        <g class="axis">
+          ${(cfg.labels||[]).map((lab,i)=>{
+            if(i%xStep!==0) return "";
+            return `<text x="${x(i)}" y="${H-10}" text-anchor="middle">${lab}</text>`;
+          }).join("")}
+        </g>
+        <path d="${linePath(ptsEst)}" class="lineA"></path>
+        <path d="${linePath(ptsApp)}" class="lineB"></path>
+        ${ptsEst.map((p,i)=> i%2===1 ? `<circle cx="${p[0]}" cy="${p[1]}" r="3" class="pt"></circle>`:"").join("")}
+        ${ptsApp.map((p,i)=> i%2===1 ? `<circle cx="${p[0]}" cy="${p[1]}" r="3" class="ptb"></circle>`:"").join("")}
+      </svg>
+    `;
+  }
 
-    function renderTwoLine(el, cfg){
-      const W=980, H=260;
-      const pad={l:46,r:14,t:14,b:34};
-      const plotW=W-pad.l-pad.r, plotH=H-pad.t-pad.b;
-
-      const all = [...cfg.a, ...cfg.b];
-      let min = Math.min(...all), max = Math.max(...all);
-      const range = (max-min)||1;
-      min -= range*0.12; max += range*0.12;
-
-      const x = i => pad.l + (i/(cfg.labels.length-1))*plotW;
-      const y = v => pad.t + (1-(v-min)/(max-min))*plotH;
-
-      const ptsA = cfg.a.map((v,i)=>[x(i),y(v)]);
-      const ptsB = cfg.b.map((v,i)=>[x(i),y(v)]);
-
-      const ticks=6;
-      const yTicks = Array.from({length:ticks},(_,i)=>{
-        const t=i/(ticks-1);
-        const val=max - t*(max-min);
-        return {val, yy:y(val)};
-      });
-
-      const xStep = cfg.labels.length>10 ? 2 : 1;
-
-      el.innerHTML = `
-        <svg viewBox="0 0 ${W} ${H}" role="img" aria-label="${cfg.title}">
-          <rect x="${pad.l}" y="${pad.t}" width="${plotW}" height="${plotH}" class="borderline"></rect>
-
-          ${yTicks.map(t=>`
-            <line x1="${pad.l}" y1="${t.yy}" x2="${W-pad.r}" y2="${t.yy}" class="gridline"></line>
-            <g class="axis"><text x="${pad.l-8}" y="${t.yy+3}" text-anchor="end">${Math.round(t.val/10)*10}</text></g>
-          `).join("")}
-
-          <g class="axis">
-            ${cfg.labels.map((lab,i)=>{
-              if(i%xStep!==0) return "";
-              return `<text x="${x(i)}" y="${H-10}" text-anchor="middle">${lab}</text>`;
-            }).join("")}
-          </g>
-
-          <path d="${linePath(ptsA)}" class="lineA"></path>
-          <path d="${linePath(ptsB)}" class="lineB"></path>
-
-          ${ptsA.map((p,i)=> i%2===1 ? `<circle cx="${p[0]}" cy="${p[1]}" r="3" class="pt"></circle>`:"").join("")}
-          ${ptsB.map((p,i)=> i%2===1 ? `<circle cx="${p[0]}" cy="${p[1]}" r="3" class="ptb"></circle>`:"").join("")}
-        </svg>
-      `;
+  const initializeValueTrend = () => {
+    const chartEl = document.querySelector('[data-chart="valueTrend"]');
+    const dataEl = document.getElementById("otherCollateralValueTrendData");
+    const cfg = dataEl ? JSON.parse(dataEl.textContent || "{}") : {};
+    if(chartEl){
+      if(cfg.labels && cfg.labels.length){
+        renderTwoLine(chartEl,cfg);
+      } else {
+        chartEl.innerHTML="<div class='mini-note'>Value trend data is unavailable.</div>";
+      }
     }
+  };
 
-    const valueTrend = {
-      title:"Value Trend",
-      labels:["May 23","Jun 23","Jul 23","Aug 23","Sep 23","Oct 23","Nov 23","Dec 23","Jan 24","Feb 24","Mar 24","Apr 24","May 24"],
-      a:[260, 268, 275, 270, 272, 272, 272, 250, 235, 245, 258, 258, 270],
-      b:[220, 240, 265, 255, 245, 230, 210, 175, 205, 235, 245, 245, 245]
-    };
-
-    renderTwoLine(document.querySelector('[data-chart="valueTrend"]'), valueTrend);
-  </script>
-</body>
-</html>
+  if(document.readyState === "loading"){
+    document.addEventListener("DOMContentLoaded", initializeValueTrend);
+  } else {
+    initializeValueTrend();
+  }
+</script>

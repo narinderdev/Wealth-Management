@@ -13,11 +13,16 @@ from management.models import (
     FGIneligibleDetailRow,
     FGInventoryMetricsRow,
     FGInlineCategoryAnalysisRow,
+    FGGrossRecoveryHistoryRow,
+    MachineryEquipmentRow,
+    NOLVTableRow,
 )
 from management.views.summary import (
     _build_borrower_summary,
     _format_currency,
     _format_pct,
+    _format_date,
+    _safe_str,
     _to_decimal,
 )
 
@@ -53,6 +58,7 @@ def collateral_dynamic_view(request):
         **_finished_goals_context(borrower),
         **_raw_materials_context(borrower),
         **_work_in_progress_context(borrower),
+        **_other_collateral_context(borrower),
         **_liquidation_model_context(borrower),
     }
     return render(request, "collateral_dynamic/inventory_page.html", context)
@@ -1257,6 +1263,194 @@ def _work_in_progress_context(borrower):
     }
 
 
+DEFAULT_OTHER_COLLATERAL_CHART = {
+    "title": "Value Trend",
+    "labels": [
+        "May 23",
+        "Jun 23",
+        "Jul 23",
+        "Aug 23",
+        "Sep 23",
+        "Oct 23",
+        "Nov 23",
+        "Dec 23",
+        "Jan 24",
+        "Feb 24",
+        "Mar 24",
+    ],
+    "estimated": [32, 48, 58, 52, 46, 12, 32, 34, 35, 38, 38],
+    "appraisal": [62, 66, 69, 68, 67, 43, 50, 54, 58, 64, 70],
+}
+
+
+def _other_collateral_context(borrower):
+    base_context = {
+        "other_collateral_value_monitor": [],
+        "other_collateral_value_trend_config": DEFAULT_OTHER_COLLATERAL_CHART.copy(),
+        "other_collateral_value_analysis_rows": [],
+        "other_collateral_asset_rows": [],
+    }
+
+    state = _inventory_state(borrower)
+    if not state:
+        return base_context
+
+    latest_report = state["latest_report"]
+    equipment_rows = list(
+        MachineryEquipmentRow.objects.filter(report=latest_report).order_by("id")
+    )
+    if not equipment_rows:
+        return base_context
+
+    total_fmv = sum(_to_decimal(row.fair_market_value) for row in equipment_rows)
+    total_olv = sum(_to_decimal(row.orderly_liquidation_value) for row in equipment_rows)
+    estimated_fmv_total = total_fmv * Decimal("0.97")
+    estimated_olv_total = total_olv * Decimal("0.95")
+
+    previous_report = (
+        BorrowerReport.objects.filter(borrower=borrower)
+        .exclude(pk=latest_report.pk)
+        .order_by("-report_date")
+        .first()
+    )
+    prev_total_fmv = None
+    prev_total_olv = None
+    if previous_report:
+        prev_rows = MachineryEquipmentRow.objects.filter(report=previous_report)
+        if prev_rows:
+            prev_total_fmv = sum(_to_decimal(row.fair_market_value) for row in prev_rows)
+            prev_total_olv = sum(_to_decimal(row.orderly_liquidation_value) for row in prev_rows)
+
+    def _delta_payload(label, current, previous, fallback):
+        delta = _format_delta(current, previous)
+        if not delta and fallback is not None:
+            delta = _format_delta(current, fallback)
+        if not delta:
+            return None
+        return {
+            "label": label,
+            "symbol": delta["sign"],
+            "value": delta["value"],
+            "delta_class": "good" if delta["is_positive"] else "",
+        }
+
+    delta_fmv = _delta_payload("Fair Market Value", total_fmv, prev_total_fmv, estimated_fmv_total)
+    delta_olv = _delta_payload(
+        "Orderly Liquidation Value", total_olv, prev_total_olv, estimated_olv_total
+    )
+
+    value_monitor_cards = [
+        {
+            "title": "Appraised Values",
+            "big": "Fair Market Value",
+            "rows": [
+                {"label": "Fair Market Value", "value": _format_currency(total_fmv)},
+                {"label": "Orderly Liquidation Value", "value": _format_currency(total_olv)},
+            ],
+            "info": "i",
+            "deltas": [],
+        },
+        {
+            "title": "Estimated Values",
+            "big": "Fair Market Value",
+            "rows": [
+                {"label": "Fair Market Value", "value": _format_currency(estimated_fmv_total)},
+                {"label": "Orderly Liquidation Value", "value": _format_currency(estimated_olv_total)},
+            ],
+            "info": "i",
+            "deltas": [],
+        },
+        {
+            "title": "Change in Value",
+            "big": "Fair Market Value",
+            "rows": [],
+            "info": "i",
+            "deltas": [delta for delta in (delta_fmv, delta_olv) if delta],
+        },
+    ]
+
+    value_analysis_rows = []
+    asset_rows = []
+    for row in equipment_rows:
+        fmv = _to_decimal(row.fair_market_value)
+        olv = _to_decimal(row.orderly_liquidation_value)
+        estimated_fmv = fmv * Decimal("0.98")
+        estimated_olv = olv * Decimal("0.96")
+        variance_amount = fmv - estimated_fmv
+        variance_pct = (
+            variance_amount / estimated_fmv if estimated_fmv else Decimal("0")
+        )
+        value_analysis_rows.append(
+            {
+                "id": row.id,
+                "equipment_type": row.equipment_type or "—",
+                "manufacturer": row.manufacturer or "—",
+                "fmv": _format_currency(fmv),
+                "olv": _format_currency(olv),
+                "estimated_fmv": _format_currency(estimated_fmv),
+                "estimated_olv": _format_currency(estimated_olv),
+                "variance_amount": _format_currency(variance_amount),
+                "variance_pct": _format_pct(variance_pct),
+            }
+        )
+        asset_rows.append(
+            {
+                "id": row.id,
+                "equipment_type": row.equipment_type or "—",
+                "manufacturer": row.manufacturer or "—",
+                "serial_number": _safe_str(row.serial_number),
+                "year": row.year or "—",
+                "condition": row.condition or "—",
+                "fmv": _format_currency(fmv),
+                "olv": _format_currency(olv),
+            }
+        )
+
+    chart_reports = BorrowerReport.objects.filter(borrower=borrower).order_by("report_date")
+    labels = []
+    estimated_series = []
+    appraisal_series = []
+    for report in chart_reports:
+        rows = MachineryEquipmentRow.objects.filter(report=report)
+        if not rows:
+            continue
+        report_fmv = sum(_to_decimal(row.fair_market_value) for row in rows)
+        report_olv = sum(_to_decimal(row.orderly_liquidation_value) for row in rows)
+        if report_fmv == 0 and report_olv == 0:
+            continue
+        report_date = report.report_date or report.created_at
+        if report_date:
+            label = report_date.strftime("%b %y")
+        else:
+            label = f"Report {report.id}"
+        labels.append(label)
+        appraisal_series.append(float(report_olv))
+        estimated_series.append(float(report_olv * Decimal("0.96")))
+
+    max_points = 12
+    if len(labels) > max_points:
+        start = len(labels) - max_points
+        labels = labels[start:]
+        estimated_series = estimated_series[start:]
+        appraisal_series = appraisal_series[start:]
+
+    chart_config = DEFAULT_OTHER_COLLATERAL_CHART.copy()
+    if labels:
+        chart_config = {
+            "title": "Value Trend",
+            "labels": labels,
+            "estimated": [float(v) for v in estimated_series],
+            "appraisal": [float(v) for v in appraisal_series],
+        }
+
+    return {
+        "other_collateral_value_monitor": value_monitor_cards,
+        "other_collateral_value_trend_config": chart_config,
+        "other_collateral_value_analysis_rows": value_analysis_rows,
+        "other_collateral_asset_rows": asset_rows,
+    }
+
+
 def _format_delta(current, previous):
     if previous is None or previous == 0:
         return None
@@ -1402,15 +1596,28 @@ def _liquidation_model_context(borrower):
             "wos": "—",
             "gr_pct": "—",
         },
+        "fg_gross_recovery_history_rows": [],
+        "fg_gross_recovery_history_totals": {
+            "cost": "—",
+            "selling": "—",
+            "gross": "—",
+            "pct_cost": "—",
+            "pct_sp": "—",
+            "wos": "—",
+            "gr_pct": "—",
+        },
         "liquidation_category_tables": {"raw_materials": [], "work_in_progress": []},
         "liquidation_net_orderly_rows": [],
         "liquidation_net_orderly_footer": {
             "label": "Net Orderly Liquidated Value",
-            "finished": "—",
-            "raw": "—",
+            "fg": "—",
+            "fg_pct": "—",
+            "rm": "—",
+            "rm_pct": "—",
             "wip": "—",
-            "scrap": "—",
-            "pct": "—",
+            "wip_pct": "—",
+            "total": "—",
+            "total_pct": "—",
         },
     }
 
@@ -1530,31 +1737,50 @@ def _liquidation_model_context(borrower):
     scrap_total = sum(_to_decimal(row.beginning_collateral) for row in scrap_rows)
     scrap_recovery = sum(_to_decimal(row.eligible_collateral) for row in scrap_rows)
 
+    total_available_cost = (
+        finished_totals[0] + raw_totals[0] + wip_totals[0] + scrap_total
+    )
+    total_gross_recovery = (
+        finished_totals[1] + raw_totals[1] + wip_totals[1] + scrap_recovery
+    )
+
     net_rows = [
         {
             "label": "Available Inventory at Cost",
-            "finished": _format_currency(finished_totals[0]),
-            "raw": _format_currency(raw_totals[0]),
+            "fg": _format_currency(finished_totals[0]),
+            "fg_pct": "",
+            "rm": _format_currency(raw_totals[0]),
+            "rm_pct": "",
             "wip": _format_currency(wip_totals[0]),
-            "scrap": _format_currency(scrap_total),
+            "wip_pct": "",
+            "total": _format_currency(total_available_cost),
+            "total_pct": "",
         },
         {
             "label": "Gross Recovery",
-            "finished": _format_currency(finished_totals[1]),
-            "raw": _format_currency(raw_totals[1]),
+            "fg": _format_currency(finished_totals[1]),
+            "fg_pct": "",
+            "rm": _format_currency(raw_totals[1]),
+            "rm_pct": "",
             "wip": _format_currency(wip_totals[1]),
-            "scrap": _format_currency(scrap_recovery),
+            "wip_pct": "",
+            "total": _format_currency(total_gross_recovery),
+            "total_pct": "",
         },
     ]
 
     def _add_cost_row(label, factor):
+        pct_display = f"-{factor * 100:.1f}%"
         return {
             "label": label,
-            "finished": _format_currency(finished_totals[0] * factor),
-            "raw": _format_currency(raw_totals[0] * factor),
+            "fg": _format_currency(finished_totals[0] * factor),
+            "fg_pct": pct_display,
+            "rm": _format_currency(raw_totals[0] * factor),
+            "rm_pct": pct_display,
             "wip": _format_currency(wip_totals[0] * factor),
-            "scrap": _format_currency(scrap_total * factor),
-            "pct": f"-{factor*100:.1f}%",
+            "wip_pct": pct_display,
+            "total": _format_currency(total_available_cost * factor),
+            "total_pct": pct_display,
         }
 
     net_rows.append(_add_cost_row("Liquidation / Sales Fees", Decimal("0.024")))
@@ -1564,12 +1790,118 @@ def _liquidation_model_context(borrower):
 
     net_footer = {
         "label": "Net Orderly Liquidated Value",
-        "finished": _format_currency(finished_totals[1] * Decimal("0.8")),
-        "raw": _format_currency(raw_totals[1] * Decimal("0.8")),
+        "fg": _format_currency(finished_totals[1] * Decimal("0.8")),
+        "fg_pct": "54.8%",
+        "rm": _format_currency(raw_totals[1] * Decimal("0.8")),
+        "rm_pct": "54.8%",
         "wip": _format_currency(wip_totals[1] * Decimal("0.8")),
-        "scrap": _format_currency(scrap_recovery * Decimal("0.8")),
-        "pct": "54.8%",
+        "wip_pct": "54.8%",
+        "total": _format_currency(total_gross_recovery * Decimal("0.8")),
+        "total_pct": "54.8%",
     }
+
+    nolv_entries = list(NOLVTableRow.objects.filter(report=latest_report).order_by("id"))
+    liquidation_net_orderly_rows = net_rows
+    liquidation_net_orderly_footer = net_footer
+    if nolv_entries:
+        total_fg = Decimal("0")
+        total_rm = Decimal("0")
+        total_wip = Decimal("0")
+        total_total = Decimal("0")
+        dynamic_rows = []
+        for entry in nolv_entries:
+            fg_value = _to_decimal(entry.fg_usd)
+            rm_value = _to_decimal(entry.rm_usd)
+            wip_value = _to_decimal(entry.wip_usd)
+            total_value = _to_decimal(entry.total_usd)
+            total_fg += fg_value
+            total_rm += rm_value
+            total_wip += wip_value
+            total_total += total_value
+            dynamic_rows.append(
+                {
+                    "label": _safe_str(entry.line_item),
+                    "fg": _format_currency(entry.fg_usd),
+                    "fg_pct": _format_pct(entry.fg_pct_cost),
+                    "rm": _format_currency(entry.rm_usd),
+                    "rm_pct": _format_pct(entry.rm_pct_cost),
+                    "wip": _format_currency(entry.wip_usd),
+                    "wip_pct": _format_pct(entry.wip_pct_cost),
+                    "total": _format_currency(entry.total_usd),
+                    "total_pct": _format_pct(entry.total_pct_cost),
+                }
+            )
+        fg_pct_value = total_fg / total_total if total_total else None
+        rm_pct_value = total_rm / total_total if total_total else None
+        wip_pct_value = total_wip / total_total if total_total else None
+        total_pct_value = Decimal("1") if total_total else None
+        liquidation_net_orderly_rows = dynamic_rows
+        liquidation_net_orderly_footer = {
+            "label": "Net Orderly Liquidated Value",
+            "fg": _format_currency(total_fg),
+            "fg_pct": _format_pct(fg_pct_value),
+            "rm": _format_currency(total_rm),
+            "rm_pct": _format_pct(rm_pct_value),
+            "wip": _format_currency(total_wip),
+            "wip_pct": _format_pct(wip_pct_value),
+            "total": _format_currency(total_total),
+            "total_pct": _format_pct(total_pct_value),
+        }
+    history_rows = []
+    total_cost = Decimal("0")
+    total_selling = Decimal("0")
+    total_gross = Decimal("0")
+    for history_row in FGGrossRecoveryHistoryRow.objects.filter(report=latest_report).order_by("id"):
+        raw_cost = history_row.cost
+        raw_selling = history_row.selling_price
+        raw_gross = history_row.gross_recovery
+        cost = _to_decimal(raw_cost)
+        selling = _to_decimal(raw_selling)
+        gross = _to_decimal(raw_gross)
+        total_cost += cost
+        total_selling += selling
+        total_gross += gross
+        if history_row.wos is not None:
+            wos_value = _to_decimal(history_row.wos)
+            wos_display = f"{wos_value:,.1f}"
+        else:
+            wos_display = "—"
+        history_rows.append(
+            {
+                "date": _format_date(history_row.as_of_date),
+                "division": _safe_str(history_row.division),
+                "category": _safe_str(history_row.category),
+                "type": _safe_str(history_row.type),
+                "cost": _format_currency(raw_cost),
+                "selling": _format_currency(raw_selling),
+                "gross": _format_currency(raw_gross),
+                "pct_cost": _format_pct(history_row.pct_of_cost),
+                "pct_sp": _format_pct(history_row.pct_of_sp),
+                "wos": wos_display,
+                "gr_pct": _format_pct(history_row.gm_pct),
+            }
+        )
+    history_totals = {
+        "cost": "—",
+        "selling": "—",
+        "gross": "—",
+        "pct_cost": "—",
+        "pct_sp": "—",
+        "wos": "—",
+        "gr_pct": "—",
+    }
+    if history_rows:
+        pct_cost_value = total_gross / total_cost if total_cost else None
+        pct_sp_value = total_gross / total_selling if total_selling else None
+        history_totals = {
+            "cost": _format_currency(total_cost),
+            "selling": _format_currency(total_selling),
+            "gross": _format_currency(total_gross),
+            "pct_cost": _format_pct(pct_cost_value),
+            "pct_sp": _format_pct(pct_sp_value),
+            "wos": "—",
+            "gr_pct": "—",
+        }
 
     return {
         "liquidation_summary_metrics": summary_metrics,
@@ -1578,6 +1910,8 @@ def _liquidation_model_context(borrower):
         "liquidation_finished_footer": finished_footer,
         "liquidation_category_tables": category_tables,
         "liquidation_category_tabs": category_tabs,
-        "liquidation_net_orderly_rows": net_rows,
-        "liquidation_net_orderly_footer": net_footer,
+        "liquidation_net_orderly_rows": liquidation_net_orderly_rows,
+        "liquidation_net_orderly_footer": liquidation_net_orderly_footer,
+        "fg_gross_recovery_history_rows": history_rows,
+        "fg_gross_recovery_history_totals": history_totals,
     }

@@ -161,6 +161,25 @@
   .liquidation-model .section-row td{ background:#ffffff; color:#475569; font-weight:900; padding-top:14px; border-bottom:none; }
   .liquidation-model .compact tbody td{ padding:9px 12px; }
   .liquidation-model .table-card + .table-card{ margin-top:8px; }
+  .liquidation-model .table-wrap + .table-wrap{
+    margin-top:12px;
+  }
+  .liquidation-model .fg-scroll{
+    overflow-x:auto;
+    overflow-y:auto;
+    max-height:420px;
+  }
+  .liquidation-model .fg-scroll table{
+    min-width:1000px;
+  }
+  .liquidation-model .nol-scroll{
+    overflow-x:auto;
+    overflow-y:auto;
+    max-height:420px;
+  }
+  .liquidation-model .nol-scroll table{
+    min-width:960px;
+  }
   @media (max-width:980px){
     .liquidation-model .grid-top{ grid-template-columns:1fr; }
     .liquidation-model .grid-2{ grid-template-columns:1fr; }
@@ -277,51 +296,63 @@
       <span>Finished Goods Gross Recovery</span>
     </div>
     <div class="table-wrap">
-      <table>
-        <thead>
-          <tr class="group">
-            <th rowspan="2">Vendor</th>
-            <th colspan="2">Inventory</th>
-            <th colspan="3">Gross Recovery</th>
-            <th colspan="2">Recovery Factors</th>
-          </tr>
-          <tr>
-            <th class="num">Cost</th>
-            <th class="num">Selling Price</th>
-            <th class="num">$</th>
-            <th class="num">% of Cost</th>
-            <th class="num">% of SP</th>
-            <th class="num">WOS</th>
-            <th class="num">GR%</th>
-          </tr>
-        </thead>
-        <tbody>
-          {% for row in liquidation_finished_rows %}
-            <tr>
-              <td>{{ row.vendor }}</td>
-              <td class="num">{{ row.cost }}</td>
-              <td class="num">{{ row.selling }}</td>
-              <td class="num">{{ row.gross }}</td>
-              <td class="num">{{ row.pct_cost }}</td>
-              <td class="num">{{ row.pct_sp }}</td>
-              <td class="num">{{ row.wos }}</td>
-              <td class="num">{{ row.gr_pct }}</td>
+      <div class="fg-scroll">
+        <table>
+          <thead>
+            <tr class="group">
+              <th rowspan="2">As Of</th>
+              <th rowspan="2">Division</th>
+              <th rowspan="2">Category</th>
+              <th rowspan="2">Type</th>
+              <th colspan="3">Inventory</th>
+              <th colspan="2">Recovery</th>
+              <th colspan="2">Recovery Factors</th>
             </tr>
-          {% empty %}
-            <tr><td colspan="8" class="num">Finished goods not available.</td></tr>
-          {% endfor %}
-          <tr class="tfoot">
-            <td>Total</td>
-            <td class="num">{{ liquidation_finished_footer.cost }}</td>
-            <td class="num">{{ liquidation_finished_footer.selling }}</td>
-            <td class="num">{{ liquidation_finished_footer.gross }}</td>
-            <td class="num">{{ liquidation_finished_footer.pct_cost }}</td>
-            <td class="num">{{ liquidation_finished_footer.pct_sp }}</td>
-            <td class="num">{{ liquidation_finished_footer.wos }}</td>
-            <td class="num">{{ liquidation_finished_footer.gr_pct }}</td>
-          </tr>
-        </tbody>
-      </table>
+            <tr>
+              <th class="num">Cost</th>
+              <th class="num">Selling Price</th>
+              <th class="num">Gross</th>
+              <th class="num">% of Cost</th>
+              <th class="num">% of SP</th>
+              <th class="num">WOS</th>
+              <th class="num">GM%</th>
+            </tr>
+          </thead>
+          <tbody>
+            {% for row in fg_gross_recovery_history_rows %}
+              <tr>
+                <td>{{ row.date }}</td>
+                <td>{{ row.division }}</td>
+                <td>{{ row.category }}</td>
+                <td>{{ row.type }}</td>
+                <td class="num">{{ row.cost }}</td>
+                <td class="num">{{ row.selling }}</td>
+                <td class="num">{{ row.gross }}</td>
+                <td class="num">{{ row.pct_cost }}</td>
+                <td class="num">{{ row.pct_sp }}</td>
+                <td class="num">{{ row.wos }}</td>
+                <td class="num">{{ row.gr_pct }}</td>
+              </tr>
+            {% empty %}
+              <tr><td colspan="11" class="num">Finished goods gross recovery history not available.</td></tr>
+            {% endfor %}
+          </tbody>
+          {% if fg_gross_recovery_history_rows %}
+            <tfoot>
+              <tr class="tfoot">
+                <td colspan="4">Total</td>
+                <td class="num">{{ fg_gross_recovery_history_totals.cost }}</td>
+                <td class="num">{{ fg_gross_recovery_history_totals.selling }}</td>
+                <td class="num">{{ fg_gross_recovery_history_totals.gross }}</td>
+                <td class="num">{{ fg_gross_recovery_history_totals.pct_cost }}</td>
+                <td class="num">{{ fg_gross_recovery_history_totals.pct_sp }}</td>
+                <td class="num">{{ fg_gross_recovery_history_totals.wos }}</td>
+                <td class="num">{{ fg_gross_recovery_history_totals.gr_pct }}</td>
+              </tr>
+            </tfoot>
+          {% endif %}
+        </table>
+      </div>
     </div>
   </div>
 
@@ -374,14 +405,15 @@
       <span>Net Orderly Liquidated Value Analysis</span>
     </div>
     <div class="table-wrap">
-      <table>
+      <div class="nol-scroll">
+        <table>
         <thead>
           <tr class="group">
             <th rowspan="2">Line Item</th>
             <th colspan="2">Finished Goods</th>
             <th colspan="2">Raw Materials</th>
             <th colspan="2">Work-In-Process</th>
-            <th colspan="2">Scrap</th>
+            <th colspan="2">Total</th>
           </tr>
           <tr>
             <th class="num">$</th><th class="num">% of Cost</th>
@@ -394,21 +426,26 @@
           {% for row in liquidation_net_orderly_rows %}
             <tr>
               <td class="row-label">{{ row.label }}</td>
-              <td class="num">{{ row.finished }}</td><td class="num">{{ row.pct|default:"" }}</td>
-              <td class="num">{{ row.raw }}</td><td class="num">{{ row.pct|default:"" }}</td>
-              <td class="num">{{ row.wip }}</td><td class="num">{{ row.pct|default:"" }}</td>
-              <td class="num">{{ row.scrap }}</td><td class="num">{{ row.pct|default:"" }}</td>
+              <td class="num">{{ row.fg }}</td><td class="num">{{ row.fg_pct }}</td>
+              <td class="num">{{ row.rm }}</td><td class="num">{{ row.rm_pct }}</td>
+              <td class="num">{{ row.wip }}</td><td class="num">{{ row.wip_pct }}</td>
+              <td class="num">{{ row.total }}</td><td class="num">{{ row.total_pct }}</td>
             </tr>
+          {% empty %}
+            <tr><td colspan="9" class="num">Net orderly liquidation data not available.</td></tr>
           {% endfor %}
+        </tbody>
+        <tfoot>
           <tr class="tfoot">
             <td>{{ liquidation_net_orderly_footer.label }}</td>
-            <td class="num">{{ liquidation_net_orderly_footer.finished }}</td><td class="num">{{ liquidation_net_orderly_footer.pct }}</td>
-            <td class="num">{{ liquidation_net_orderly_footer.raw }}</td><td class="num">{{ liquidation_net_orderly_footer.pct }}</td>
-            <td class="num">{{ liquidation_net_orderly_footer.wip }}</td><td class="num">{{ liquidation_net_orderly_footer.pct }}</td>
-            <td class="num">{{ liquidation_net_orderly_footer.scrap }}</td><td class="num">{{ liquidation_net_orderly_footer.pct }}</td>
+            <td class="num">{{ liquidation_net_orderly_footer.fg }}</td><td class="num">{{ liquidation_net_orderly_footer.fg_pct }}</td>
+            <td class="num">{{ liquidation_net_orderly_footer.rm }}</td><td class="num">{{ liquidation_net_orderly_footer.rm_pct }}</td>
+            <td class="num">{{ liquidation_net_orderly_footer.wip }}</td><td class="num">{{ liquidation_net_orderly_footer.wip_pct }}</td>
+            <td class="num">{{ liquidation_net_orderly_footer.total }}</td><td class="num">{{ liquidation_net_orderly_footer.total_pct }}</td>
           </tr>
-        </tbody>
-      </table>
+        </tfoot>
+        </table>
+      </div>
     </div>
   </div>
 
