@@ -143,13 +143,14 @@ TEMPLATES[0]["DIRS"] = [BASE_DIR / "templates"]
 # Static files
 STATIC_URL = '/static/'  # URL to access static files
 
-# Directory where collected static files will be stored
-STATIC_ROOT = os.path.join(BASE_DIR, 'static')  # This should be your target directory
+# Directory where collected static files will be stored (should not be inside static folder)
+STATIC_ROOT = os.path.join(BASE_DIR, 'staticfiles')   # This should be the directory where collectstatic places files
 
-# If you have additional static directories, you can specify them in STATICFILES_DIRS
+# Directory for additional static files (this is your management/static folder)
 STATICFILES_DIRS = [
-    os.path.join(BASE_DIR, 'staticfiles'),  # Add this only if you're using additional directories
+    os.path.join(BASE_DIR, 'management/static'),  # Correct path for additional static files
 ]
+
 
 
 # Authentication helpers

@@ -16,6 +16,8 @@ Including another URLconf
 from django.contrib import admin
 from django.urls import path
 from django.views.generic import RedirectView
+from django.conf.urls.static import static
+from django.conf import settings
 
 from management import views as management_views
 
@@ -45,3 +47,7 @@ urlpatterns = [
     path('admin/borrower/', management_views.admin_borrower_view, name='admin_borrower'),
     path('admin/', admin.site.urls),
 ]
+# Add this line at the end of the file to serve static files in development
+if settings.DEBUG:
+    urlpatterns += static(settings.STATIC_URL, document_root=settings.STATIC_ROOT)
+
