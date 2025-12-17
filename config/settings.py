@@ -10,6 +10,7 @@ For the full list of settings and their values, see
 https://docs.djangoproject.com/en/3.2/ref/settings/
 """
 
+import os
 from pathlib import Path
 
 # Build paths inside the project like this: BASE_DIR / 'subdir'.
@@ -140,11 +141,16 @@ BASE_DIR = Path(__file__).resolve().parent.parent
 TEMPLATES[0]["DIRS"] = [BASE_DIR / "templates"]
 
 # Static files
-STATIC_URL = "/static/"
+STATIC_URL = '/static/'  # URL to access static files
 
+# Directory where collected static files will be stored
+STATIC_ROOT = os.path.join(BASE_DIR, 'static')  # This should be your target directory
+
+# If you have additional static directories, you can specify them in STATICFILES_DIRS
 STATICFILES_DIRS = [
-    BASE_DIR / "static",
+    os.path.join(BASE_DIR, 'staticfiles'),  # Add this only if you're using additional directories
 ]
+
 
 # Authentication helpers
 LOGIN_URL = 'login'
