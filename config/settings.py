@@ -74,17 +74,29 @@ WSGI_APPLICATION = 'config.wsgi.application'
 # Database
 # https://docs.djangoproject.com/en/3.2/ref/settings/#databases
 
+##### POSTGRESQL DATABASE CONFIGURATION
 DATABASES = {
   "default": {
     "ENGINE": "django.db.backends.postgresql",
-    "NAME": "wealth_managment",
-    "USER": "wealth_user",
-    "PASSWORD": "Dev@Apnitor!23",
-    "HOST": "localhost",
-    "PORT": "5432",
+    "NAME": "coradb",
+    "USER": "postgres",
+    "PASSWORD": "DevApnitor23",
+    'HOST': 'coradb.c1osuwkqcrl0.us-east-2.rds.amazonaws.com',  # your RDS endpoint
+    'PORT': '5432',  # default PostgreSQL port
   }
 }
+##### LOCAL POSTGRESQL DATABASE CONFIGURATION
 
+# DATABASES = {
+#   "default": {
+#     "ENGINE": "django.db.backends.postgresql",
+#     "NAME": "wealth_managment",
+#     "USER": "wealth_user",
+#     "PASSWORD": "Dev@Apnitor!23",
+#     "HOST": "localhost",
+#     "PORT": "5432",
+#   }
+# }
 
 # Password validation
 # https://docs.djangoproject.com/en/3.2/ref/settings/#auth-password-validators
