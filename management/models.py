@@ -1,5 +1,5 @@
 from django.conf import settings
-from django.contrib.auth.hashers import check_password as hash_check_password, is_password_usable, make_password
+from django.contrib.auth.hashers import check_password, make_password
 from django.db import models
 
 
@@ -30,30 +30,21 @@ class Company(TimeStampedModel):
     industry = models.CharField(max_length=255, null=True, blank=True)
     primary_naics = models.BigIntegerField(null=True, blank=True)
     website = models.CharField(max_length=255, null=True, blank=True)
-    
-    # New fields to match the updated database schema
-    company_email = models.CharField(max_length=255, null=True, blank=True)
-    company_password = models.CharField(max_length=255, null=True, blank=True)
+    email = models.EmailField(max_length=255, null=True, blank=True)
+    password = models.CharField(max_length=128, null=True, blank=True)
 
     def __str__(self):
         return self.company or str(self.company_id)
 
-    # Method to check password for company login
-    def check_password(self, raw_password):
-        if not self.company_password:
-            return False
-        if is_password_usable(self.company_password):
-            return hash_check_password(raw_password, self.company_password)
-        if raw_password == self.company_password:
-            self.set_password(raw_password)
-            return True
-        return False
-
-    # Method to set password for company
     def set_password(self, raw_password, save=True):
-        self.company_password = make_password(raw_password)
+        self.password = make_password(raw_password)
         if save:
-            self.save(update_fields=['company_password'])
+            self.save(update_fields=["password"])
+
+    def check_password(self, raw_password):
+        if not self.password:
+            return False
+        return check_password(raw_password, self.password)
 
 
 class Borrower(TimeStampedModel):
@@ -72,9 +63,29 @@ class Borrower(TimeStampedModel):
         return f"{self.company} - {self.primary_contact or 'Borrower'}"
 
 
-# =========================
 # Removed BorrowerUser to ensure Borrower cannot log in
-# =========================
+
+class BorrowerReport(TimeStampedModel):
+    borrower = models.ForeignKey(Borrower, on_delete=models.CASCADE, related_name='reports')
+    source_file = models.CharField(max_length=255, null=True, blank=True)
+    report_date = models.DateField(null=True, blank=True)
+
+    def __str__(self):
+        borrower_name = self.borrower.company.company if self.borrower and self.borrower.company else "Borrower"
+        return f"{borrower_name} - {self.report_date or 'report'}"
+
+
+class ReportRow(TimeStampedModel):
+    report = models.ForeignKey(
+        BorrowerReport,
+        on_delete=models.CASCADE,
+        related_name="%(class)s_rows",
+        null=True,
+        blank=True,
+    )
+
+    class Meta:
+        abstract = True
 
 
 class SpecificIndividual(TimeStampedModel):
@@ -140,7 +151,7 @@ class CollateralOverviewRow(TimeStampedModel):
 # -------------------------
 # Sheet: Machinery & Equipment 
 # -------------------------
-class MachineryEquipmentRow(TimeStampedModel):
+class MachineryEquipmentRow(ReportRow):
     equipment_type = models.CharField(max_length=255, null=True, blank=True)  # Equipment Type
     manufacturer = models.CharField(max_length=255, null=True, blank=True)  # Manufacturer
     serial_number = models.CharField(max_length=255, null=True, blank=True)  # Serial Number
@@ -166,7 +177,7 @@ class MachineryEquipmentRow(TimeStampedModel):
 # -------------------------
 # Sheet: Aging Composition
 # -------------------------
-class AgingCompositionRow(TimeStampedModel):
+class AgingCompositionRow(ReportRow):
     division = models.CharField(max_length=255, null=True, blank=True)  # Division
     as_of_date = models.DateField(null=True, blank=True)  # AsOfDate
     bucket = models.CharField(max_length=255, null=True, blank=True)  # Bucket
@@ -210,7 +221,7 @@ class ARMetricsRow(TimeStampedModel):
 # -------------------------
 # Sheet: Ineligible_Trend
 # -------------------------
-class IneligibleTrendRow(TimeStampedModel):
+class IneligibleTrendRow(ReportRow):
     date = models.DateField(null=True, blank=True)  # Date
     division = models.CharField(max_length=255, null=True, blank=True)  # Division
     total_ar = MoneyField()  # Total AR
@@ -231,7 +242,7 @@ class IneligibleTrendRow(TimeStampedModel):
 # -------------------------
 # Sheet: Ineligible_Overview
 # -------------------------
-class IneligibleOverviewRow(TimeStampedModel):
+class IneligibleOverviewRow(ReportRow):
     date = models.DateField(null=True, blank=True)  # Date
     division = models.CharField(max_length=255, null=True, blank=True)  # Division
     past_due_gt_90_days = MoneyField()  # Past Due >90 Days
@@ -260,7 +271,7 @@ class IneligibleOverviewRow(TimeStampedModel):
 # -------------------------
 # Sheet: Concentration_ADO_DSO
 # -------------------------
-class ConcentrationADODSORow(TimeStampedModel):
+class ConcentrationADODSORow(ReportRow):
     division = models.CharField(max_length=255, null=True, blank=True)  # Division
     as_of_date = models.DateField(null=True, blank=True)  # AsOfDate
     customer = models.CharField(max_length=255, null=True, blank=True)  # Customer
@@ -289,6 +300,13 @@ class ConcentrationADODSORow(TimeStampedModel):
 # Sheet: FG_Inventory_Metrics
 # -------------------------
 class FGInventoryMetricsRow(TimeStampedModel):
+    borrower = models.ForeignKey(
+        "Borrower",
+        on_delete=models.CASCADE,
+        related_name="fg_inventory_metrics_rows",
+        null=True,
+        blank=True,
+    )
     inventory_type = models.CharField(max_length=255, null=True, blank=True)  # InventoryType
     division = models.CharField(max_length=255, null=True, blank=True)  # Division
     as_of_date = models.DateField(null=True, blank=True)  # AsOfDate
@@ -312,6 +330,13 @@ class FGInventoryMetricsRow(TimeStampedModel):
 # Sheet: FG_Ineligible_detail
 # -------------------------
 class FGIneligibleDetailRow(TimeStampedModel):
+    borrower = models.ForeignKey(
+        "Borrower",
+        on_delete=models.CASCADE,
+        related_name="fg_ineligible_detail_rows",
+        null=True,
+        blank=True,
+    )
     date = models.DateField(null=True, blank=True)  # Date
     inventory_type = models.CharField(max_length=255, null=True, blank=True)  # InventoryType
     division = models.CharField(max_length=255, null=True, blank=True)  # Division
@@ -338,6 +363,13 @@ class FGIneligibleDetailRow(TimeStampedModel):
 # Sheet: FG_Composition
 # -------------------------
 class FGCompositionRow(TimeStampedModel):
+    borrower = models.ForeignKey(
+        "Borrower",
+        on_delete=models.CASCADE,
+        related_name="fg_composition_rows",
+        null=True,
+        blank=True,
+    )
     division = models.CharField(max_length=255, null=True, blank=True)  # Division
     as_of_date = models.DateField(null=True, blank=True)  # AsOfDate
     fg_available = MoneyField()  # FG_Available
@@ -365,6 +397,13 @@ class FGCompositionRow(TimeStampedModel):
 # Sheet: FG_Inline_Category_Analysis
 # -------------------------
 class FGInlineCategoryAnalysisRow(TimeStampedModel):
+    borrower = models.ForeignKey(
+        "Borrower",
+        on_delete=models.CASCADE,
+        related_name="fg_inline_category_analysis_rows",
+        null=True,
+        blank=True,
+    )
     division = models.CharField(max_length=255, null=True, blank=True)  # Division
     as_of_date = models.DateField(null=True, blank=True)  # AsOfDate
     category = models.CharField(max_length=255, null=True, blank=True)  # Category
@@ -393,6 +432,13 @@ class FGInlineCategoryAnalysisRow(TimeStampedModel):
 # Sheet: Sales_GM_Trend
 # -------------------------
 class SalesGMTrendRow(TimeStampedModel):
+    borrower = models.ForeignKey(
+        "Borrower",
+        on_delete=models.CASCADE,
+        related_name="sales_gm_trend_rows",
+        null=True,
+        blank=True,
+    )
     division = models.CharField(max_length=255, null=True, blank=True)  # Division
     as_of_date = models.DateField(null=True, blank=True)  # AsOfDate
     net_sales = MoneyField()  # NetSales
@@ -420,6 +466,13 @@ class SalesGMTrendRow(TimeStampedModel):
 # Sheet: FG_Inline_Excess_By_Category
 # -------------------------
 class FGInlineExcessByCategoryRow(TimeStampedModel):
+    borrower = models.ForeignKey(
+        "Borrower",
+        on_delete=models.CASCADE,
+        related_name="fg_inline_excess_by_category_rows",
+        null=True,
+        blank=True,
+    )
     division = models.CharField(max_length=255, null=True, blank=True)  # Division
     as_of_date = models.DateField(null=True, blank=True)  # AsOfDate
     category = models.CharField(max_length=255, null=True, blank=True)  # Category
@@ -443,7 +496,7 @@ class FGInlineExcessByCategoryRow(TimeStampedModel):
 # -------------------------
 # Sheet: Historical_Top_20_SKUs
 # -------------------------
-class HistoricalTop20SKUsRow(TimeStampedModel):
+class HistoricalTop20SKUsRow(ReportRow):
     division = models.CharField(max_length=255, null=True, blank=True)  # Division
     as_of_date = models.DateField(null=True, blank=True)  # AsOfDate
     item_number = models.DecimalField(max_digits=20, decimal_places=6, null=True, blank=True)  # ItemNumber
@@ -470,7 +523,7 @@ class HistoricalTop20SKUsRow(TimeStampedModel):
 # -------------------------
 # Sheet: RM_Inventory_Metrics
 # -------------------------
-class RMInventoryMetricsRow(TimeStampedModel):
+class RMInventoryMetricsRow(ReportRow):
     inventory_type = models.CharField(max_length=255, null=True, blank=True)  # InventoryType
     division = models.CharField(max_length=255, null=True, blank=True)  # Division
     as_of_date = models.DateField(null=True, blank=True)  # AsOfDate
@@ -493,7 +546,7 @@ class RMInventoryMetricsRow(TimeStampedModel):
 # -------------------------
 # Sheet: RM_Ineligible_Overview
 # -------------------------
-class RMIneligibleOverviewRow(TimeStampedModel):
+class RMIneligibleOverviewRow(ReportRow):
     date = models.DateField(null=True, blank=True)  # Date
     inventory_type = models.CharField(max_length=255, null=True, blank=True)  # InventoryType
     division = models.CharField(max_length=255, null=True, blank=True)  # Division
@@ -520,7 +573,7 @@ class RMIneligibleOverviewRow(TimeStampedModel):
 # -------------------------
 # Sheet: RM_Category_History
 # -------------------------
-class RMCategoryHistoryRow(TimeStampedModel):
+class RMCategoryHistoryRow(ReportRow):
     date = models.DateField(null=True, blank=True)  # Date
     inventory_type = models.CharField(max_length=255, null=True, blank=True)  # InventoryType
     division = models.CharField(max_length=255, null=True, blank=True)  # Division
@@ -544,7 +597,7 @@ class RMCategoryHistoryRow(TimeStampedModel):
 # -------------------------
 # Sheet: RM_Top20_History
 # -------------------------
-class RMTop20HistoryRow(TimeStampedModel):
+class RMTop20HistoryRow(ReportRow):
     inventory_type = models.CharField(max_length=255, null=True, blank=True)  # InventoryType
     division = models.CharField(max_length=255, null=True, blank=True)  # Division
     as_of_date = models.DateField(null=True, blank=True)  # AsOfDate
@@ -571,7 +624,7 @@ class RMTop20HistoryRow(TimeStampedModel):
 # -------------------------
 # Sheet: WIP_Inventory_Metrics
 # -------------------------
-class WIPInventoryMetricsRow(TimeStampedModel):
+class WIPInventoryMetricsRow(ReportRow):
     inventory_type = models.CharField(max_length=255, null=True, blank=True)  # InventoryType
     division = models.CharField(max_length=255, null=True, blank=True)  # Division
     as_of_date = models.DateField(null=True, blank=True)  # AsOfDate
@@ -594,7 +647,7 @@ class WIPInventoryMetricsRow(TimeStampedModel):
 # -------------------------
 # Sheet: WIP_Ineligible_Overview
 # -------------------------
-class WIPIneligibleOverviewRow(TimeStampedModel):
+class WIPIneligibleOverviewRow(ReportRow):
     date = models.DateField(null=True, blank=True)  # Date
     inventory_type = models.CharField(max_length=255, null=True, blank=True)  # InventoryType
     division = models.CharField(max_length=255, null=True, blank=True)  # Division
@@ -621,7 +674,7 @@ class WIPIneligibleOverviewRow(TimeStampedModel):
 # -------------------------
 # Sheet: WIP_Category_History
 # -------------------------
-class WIPCategoryHistoryRow(TimeStampedModel):
+class WIPCategoryHistoryRow(ReportRow):
     date = models.DateField(null=True, blank=True)  # Date
     inventory_type = models.CharField(max_length=255, null=True, blank=True)  # InventoryType
     division = models.CharField(max_length=255, null=True, blank=True)  # Division
@@ -645,7 +698,7 @@ class WIPCategoryHistoryRow(TimeStampedModel):
 # -------------------------
 # Sheet: WIP_Top20_History
 # -------------------------
-class WIPTop20HistoryRow(TimeStampedModel):
+class WIPTop20HistoryRow(ReportRow):
     inventory_type = models.CharField(max_length=255, null=True, blank=True)  # InventoryType
     division = models.CharField(max_length=255, null=True, blank=True)  # Division
     as_of_date = models.DateField(null=True, blank=True)  # AsOfDate
@@ -672,6 +725,13 @@ class WIPTop20HistoryRow(TimeStampedModel):
 # Sheet: FG_Gross_Recovery_History
 # -------------------------
 class FGGrossRecoveryHistoryRow(TimeStampedModel):
+    borrower = models.ForeignKey(
+        "Borrower",
+        on_delete=models.CASCADE,
+        related_name="fg_gross_recovery_history_rows",
+        null=True,
+        blank=True,
+    )
     as_of_date = models.DateField(null=True, blank=True)  # AsOfDate
     division = models.CharField(max_length=255, null=True, blank=True)  # Division
     category = models.CharField(max_length=255, null=True, blank=True)  # Category
@@ -698,7 +758,7 @@ class FGGrossRecoveryHistoryRow(TimeStampedModel):
 # -------------------------
 # Sheet: WIP_Recovery
 # -------------------------
-class WIPRecoveryRow(TimeStampedModel):
+class WIPRecoveryRow(ReportRow):
     date = models.DateField(null=True, blank=True)  # Date
     inventory_type = models.CharField(max_length=255, null=True, blank=True)  # InventoryType
     division = models.CharField(max_length=255, null=True, blank=True)  # Division
@@ -724,7 +784,7 @@ class WIPRecoveryRow(TimeStampedModel):
 # -------------------------
 # Sheet: Raw_Material_Recovery
 # -------------------------
-class RawMaterialRecoveryRow(TimeStampedModel):
+class RawMaterialRecoveryRow(ReportRow):
     date = models.DateField(null=True, blank=True)  # Date
     inventory_type = models.CharField(max_length=255, null=True, blank=True)  # InventoryType
     division = models.CharField(max_length=255, null=True, blank=True)  # Division
@@ -750,7 +810,7 @@ class RawMaterialRecoveryRow(TimeStampedModel):
 # -------------------------
 # Sheet: NOLV_Table
 # -------------------------
-class NOLVTableRow(TimeStampedModel):
+class NOLVTableRow(ReportRow):
     date = models.DateField(null=True, blank=True)  # Date
     division = models.CharField(max_length=255, null=True, blank=True)  # Division
     line_item = models.CharField(max_length=255, null=True, blank=True)  # LineItem
@@ -824,7 +884,7 @@ class CompositeIndexRow(TimeStampedModel):
 # -------------------------
 # Sheet: Forecast
 # -------------------------
-class ForecastRow(TimeStampedModel):
+class ForecastRow(ReportRow):
     as_of_date = models.DateField(null=True, blank=True)  # AsOfDate
     period = models.DateField(null=True, blank=True)  # Period
     actual_forecast = models.CharField(max_length=255, null=True, blank=True)  # ActualForecast
@@ -850,7 +910,7 @@ class ForecastRow(TimeStampedModel):
 
 # -------------------------
 # Sheet: Availability Forecast
-class AvailabilityForecastRow(TimeStampedModel):
+class AvailabilityForecastRow(ReportRow):
     date = models.DateField(null=True, blank=True)  # Date
     category = models.CharField(max_length=255, null=True, blank=True)  # Category
     x = models.DecimalField(max_digits=20, decimal_places=6, null=True, blank=True)  # X
@@ -882,7 +942,7 @@ class AvailabilityForecastRow(TimeStampedModel):
 # -------------------------
 # Sheet: Current Week Variance
 # -------------------------
-class CurrentWeekVarianceRow(TimeStampedModel):
+class CurrentWeekVarianceRow(ReportRow):
     date = models.DateField(null=True, blank=True)  # Date 
     category = models.CharField(max_length=255, null=True, blank=True)  # Category
     projected = models.DecimalField(max_digits=20, decimal_places=6, null=True, blank=True)  # Projected
@@ -904,7 +964,7 @@ class CurrentWeekVarianceRow(TimeStampedModel):
 # -------------------------
 # Sheet: Cummulative Variance
 # -------------------------
-class CummulativeVarianceRow(TimeStampedModel):
+class CummulativeVarianceRow(ReportRow):
     date = models.DateField(null=True, blank=True)  # Date 
     category = models.CharField(max_length=255, null=True, blank=True)  # Category
     projected = models.DecimalField(max_digits=20, decimal_places=6, null=True, blank=True)  # Projected
@@ -947,7 +1007,7 @@ class CollateralLimitsRow(TimeStampedModel):
 # -------------------------
 # Sheet: Ineligibles
 # -------------------------
-class IneligiblesRow(TimeStampedModel):
+class IneligiblesRow(ReportRow):
     division = models.CharField(max_length=255, null=True, blank=True)  # Division
     collateral_type = models.CharField(max_length=255, null=True, blank=True)  # Collateral Type 
     collateral_sub_type = models.CharField(max_length=255, null=True, blank=True)  # Collateral Sub-Type 

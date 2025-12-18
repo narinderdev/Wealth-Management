@@ -1,14 +1,5 @@
-from django.shortcuts import render
+from management.views.admin_portal import admin_component_view
 
 
 def admin_borrower_view(request):
-    """
-    Render static borrower admin form shell.
-    """
-    return render(
-        request,
-        "admin/borrower_form.html",
-        {
-            "active_nav": "borrower",
-        },
-    )
+    return admin_component_view(request, component_slug="borrowers")

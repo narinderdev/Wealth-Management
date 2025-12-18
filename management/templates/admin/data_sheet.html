@@ -1,0 +1,41 @@
+{% extends "admin/admin_base.html" %}
+{% load static %}
+
+{% block page_title %}Data Sheet{% endblock %}
+{% block header_title %}CORA{% endblock %}
+
+{% block extra_head %}
+  <link rel="stylesheet" href="{% static 'css/data_sheet.css' %}">
+  <style>
+    .content > .panel{
+      background:transparent;
+      border:none;
+      box-shadow:none;
+      padding:0;
+    }
+  </style>
+{% endblock %}
+
+{% block top_section %}
+  <div class="panel" style="display:flex; align-items:center; justify-content:space-between; gap:16px;">
+  </div>
+{% endblock %}
+
+{% block admin_screens %}
+  <div id="data-sheet-app"
+       class="data-sheet-app"
+       data-default-entity="{{ default_entity|default:'companies' }}">
+  </div>
+  <div id="ds-modal-root" class="ds-modal-root" aria-hidden="true"></div>
+  <div id="ds-confirm-root" class="ds-confirm-root" aria-hidden="true"></div>
+  <div id="ds-toast-root" class="ds-toast-stack" aria-live="polite" aria-atomic="true"></div>
+{% endblock %}
+
+{% block extra_scripts %}
+  <script>
+    window.CORA_DATA_SHEET = {
+      defaultEntity: "{{ default_entity|default:'companies' }}",
+    };
+  </script>
+  <script src="{% static 'js/data_sheet.js' %}"></script>
+{% endblock %}

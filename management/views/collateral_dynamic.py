@@ -776,7 +776,7 @@ def _inventory_state(borrower):
         return None
 
     collateral_rows = list(
-        CollateralOverviewRow.objects.filter(report=latest_report).order_by("id")
+        CollateralOverviewRow.objects.filter(borrower=borrower).order_by("id")
     )
     inventory_rows = [
         row for row in collateral_rows if row.main_type and "inventory" in row.main_type.lower()
@@ -2626,13 +2626,17 @@ def _liquidation_model_context(borrower):
         return base_context
 
     latest_report = state["latest_report"]
-    metrics_rows = list(FGInventoryMetricsRow.objects.filter(report=latest_report).order_by("-as_of_date"))
+    metrics_rows = list(
+        FGInventoryMetricsRow.objects.filter(borrower=borrower).order_by("-as_of_date")
+    )
     current_metrics = metrics_rows[0] if metrics_rows else None
     previous_metrics = metrics_rows[1] if len(metrics_rows) > 1 else None
 
     summary_metrics = _build_liquidation_metrics(current_metrics, previous_metrics)
 
-    fg_expenses = FGIneligibleDetailRow.objects.filter(report=latest_report).order_by("-date").first()
+    fg_expenses = (
+        FGIneligibleDetailRow.objects.filter(borrower=borrower).order_by("-date").first()
+    )
     groups = []
     if fg_expenses:
         reason_fields = [
@@ -2851,7 +2855,7 @@ def _liquidation_model_context(borrower):
     total_cost = Decimal("0")
     total_selling = Decimal("0")
     total_gross = Decimal("0")
-    for history_row in FGGrossRecoveryHistoryRow.objects.filter(report=latest_report).order_by("id"):
+    for history_row in FGGrossRecoveryHistoryRow.objects.filter(borrower=borrower).order_by("id"):
         raw_cost = history_row.cost
         raw_selling = history_row.selling_price
         raw_gross = history_row.gross_recovery

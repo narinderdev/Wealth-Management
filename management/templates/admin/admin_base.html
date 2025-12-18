@@ -5,10 +5,13 @@
   <meta charset="utf-8" />
   <meta name="viewport" content="width=device-width,initial-scale=1" />
   <title>CORA Admin - {% block page_title %}Company{% endblock %}</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&display=swap" rel="stylesheet">
   <style>
     :root{
-      --navy:#214c8f;
-      --blue:#0b73d9;
+      --navy:#1f55c7;
+      --blue:#1f55c7;
       --bg:#f3f6fb;
       --card:#ffffff;
       --text:#0f172a;
@@ -18,12 +21,19 @@
       --shadow:0 10px 22px rgba(15, 23, 42, .08);
       --radius:10px;
       --inputRadius:6px;
+      --sidebar-bg:linear-gradient(180deg, #064B83 0%, #064B83 100%);
+      --sidebar-panel:#111c34;
+      --sidebar-hover:#1d2a44;
+      --sidebar-active:#1f55c7;
+      --sidebar-text:#d5dbf5;
+      --sidebar-muted:#8ba2c9;
+      --sidebar-border:#1c2540;
     }
 
     *{ box-sizing:border-box; }
     body{
       margin:0;
-      font-family: ui-sans-serif, system-ui, -apple-system, Segoe UI, Roboto, Helvetica, Arial;
+      font-family: 'Inter', ui-sans-serif, system-ui, -apple-system, Segoe UI, Roboto, Helvetica, Arial;
       background:var(--bg);
       color:var(--text);
     }
@@ -35,70 +45,212 @@
 
     /* Sidebar */
     .sidebar{
-      width:220px;
-      background:#fff;
-      border-right:1px solid var(--line2);
-      padding:14px 12px;
+      width:260px;
+      background:var(--sidebar-bg);
+      color:var(--sidebar-text);
+      padding:26px 22px 30px;
+      display:flex;
+      flex-direction:column;
+      gap:22px;
+      box-shadow:8px 0 30px rgba(2, 6, 23, .4);
+      height:100vh;
+      overflow-y:auto;
+      position:sticky;
+      top:0;
+      flex-shrink:0;
+      -webkit-overflow-scrolling:touch;
     }
-
-    .brand{
+    .sidebar::-webkit-scrollbar{
+      width:6px;
+    }
+    .sidebar::-webkit-scrollbar-track{
+      background:rgba(255,255,255,.1);
+    }
+    .sidebar::-webkit-scrollbar-thumb{
+      background:rgba(255,255,255,.4);
+      border-radius:999px;
+    }
+    .sidebar-brand{
       display:flex;
       align-items:center;
-      gap:10px;
-      padding:6px 6px 12px;
-      margin-bottom:8px;
+      gap:12px;
     }
-    .brand img{
-      height:34px;
-      width:auto;
-      max-width:100%;
-      flex:0 0 auto;
+    .sidebar-logo{
+      width:46px;
+      height:46px;
+      border-radius:16px;
+      background:rgba(31,85,199,.18);
+      display:grid;
+      place-items:center;
+      flex-shrink:0;
+      color:#cfd9ff;
     }
-    .brand .name{
-      line-height:1.15;
-      white-space:normal;
-      word-break:break-word;
+    .sidebar-logo svg{
+      width:26px;
+      height:26px;
     }
-    .brand .name strong{
-      display:block;
+    .sidebar-title{
+      font-size:17px;
       font-weight:900;
-      letter-spacing:.2px;
-      font-size:15px;
-      color:#163777;
+      color:#fff;
+      letter-spacing:.02em;
     }
-    .brand .name span{display:none}
-
-    .nav{
-      margin-top:6px;
+    .sidebar-subtitle{
+      font-size:12px;
+      font-weight:600;
+      color:var(--sidebar-muted);
+    }
+    .sidebar-divider{
+      height:1px;
+      background:var(--sidebar-border);
+      opacity:.65;
+    }
+    .sidebar-nav{
+      display:flex;
+      flex-direction:column;
+      gap:18px;
+    }
+    .sidebar-section{
+      display:flex;
+      flex-direction:column;
+      gap:8px;
+      padding:0 0 12px;
+      border-radius:0;
+      background:transparent;
+      border:none;
+      border-bottom:1px solid rgba(255,255,255,.15);
+    }
+    .sidebar-section:last-child{
+      border-bottom:none;
+    }
+    .sidebar-collapsible{
+      transition:color .2s ease;
+    }
+    .sidebar-collapsible.has-active{
+      color:#fff;
+    }
+    .section-trigger{
+      display:flex;
+      align-items:center;
+      justify-content:space-between;
+      gap:12px;
+      width:100%;
+      background:transparent;
+      border:none;
+      padding:6px 4px;
+      color:var(--sidebar-muted);
+      font-size:13px;
+      font-weight:800;
+      letter-spacing:.05em;
+      text-transform:uppercase;
+      cursor:pointer;
+    }
+    .section-trigger .label-left{
+      display:flex;
+      align-items:center;
+      gap:8px;
+      flex:1;
+      text-align:left;
+    }
+    .section-trigger .ico{
+      width:20px;
+      height:20px;
+      display:grid;
+      place-items:center;
+      flex-shrink:0;
+      color:var(--sidebar-muted);
+    }
+    .section-trigger .chevron{
+      width:18px;
+      height:18px;
+      display:grid;
+      place-items:center;
+      color:var(--sidebar-muted);
+      transition:transform .2s ease;
+    }
+    .section-trigger:focus-visible{
+      outline:2px solid var(--sidebar-active);
+      border-radius:10px;
+    }
+    .sidebar-collapsible.is-open .section-trigger{
+      color:var(--sidebar-text);
+    }
+    .sidebar-collapsible.has-active .section-trigger{
+      color:#fff;
+    }
+    .sidebar-collapsible:not(.is-open) .section-trigger .chevron{
+      transform:rotate(-90deg);
+    }
+    .sidebar-children{
+      display:flex;
+      flex-direction:column;
+      gap:4px;
+      margin-top:8px;
+    }
+    .sidebar-collapsible:not(.is-open) .sidebar-children{
+      display:none;
+    }
+    .sidebar-links{
       display:flex;
       flex-direction:column;
       gap:4px;
     }
-    .nav a{
+    .sidebar-link{
       display:flex;
       align-items:center;
-      gap:10px;
-      padding:8px 10px;
-      border-radius:7px;
+      gap:12px;
+      padding:8px 12px 8px 38px;
+      border-radius:12px;
       text-decoration:none;
-      color:#334155;
       font-weight:700;
-      font-size:11px;
+      font-size:13px;
+      color:var(--sidebar-text);
+      transition:background .2s ease, color .2s ease, box-shadow .2s ease;
     }
-    .nav a .ico{
-      width:18px;height:18px;
-      display:grid;place-items:center;
-      color:#8aa2c7;
-      flex:0 0 auto;
+    .sidebar-link .ico{
+      width:20px;
+      height:20px;
+      display:grid;
+      place-items:center;
+      flex-shrink:0;
+      color:var(--sidebar-muted);
     }
-    .nav a:hover{
-      background:#f2f7ff;
+    .sidebar-link .chevron{
+      margin-left:auto;
+      display:grid;
+      place-items:center;
+      color:var(--sidebar-muted);
     }
-    .nav a.active{
-      background:var(--blue);
+    .sidebar-link:hover{
+      background:var(--sidebar-hover);
+    }
+    .sidebar-link.active{
+      background:var(--sidebar-active);
       color:#fff;
     }
-    .nav a.active .ico{ color:#fff; }
+    .sidebar-link.active .ico,
+    .sidebar-link.active .chevron{
+      color:#fff;
+    }
+    .sidebar-sub-link{
+      display:block;
+      padding:8px 12px 8px 38px;
+      border-radius:10px;
+      text-decoration:none;
+      color:#f3f5ff;
+      font-size:13px;
+      font-weight:600;
+      transition:background .2s ease, color .2s ease, box-shadow .2s ease;
+    }
+    .sidebar-sub-link:hover{
+      background:var(--sidebar-hover);
+      color:#fff;
+    }
+    .sidebar-sub-link.active{
+      background:#0f2c68;
+      color:#fff;
+      box-shadow:0 0 0 1px rgba(15,44,104,.7);
+    }
 
     /* Main */
     .main{
@@ -120,12 +272,8 @@
     }
     .topbar .title{
       font-weight:800;
-      font-size:12px;
+      font-size:inherit;
       letter-spacing:.2px;
-    }
-    .topbar .right{
-      font-weight:900;
-      letter-spacing:.8px;
     }
 
     .content{
@@ -200,6 +348,263 @@
       position:relative;
     }
     .admin-screen{display:block;}
+    .component-shell{
+      background:#fff;
+      border:1px solid #e6edf6;
+      border-radius:18px;
+      padding:24px;
+      display:flex;
+      flex-direction:column;
+      gap:16px;
+    }
+    .component-actions{
+      display:flex;
+      justify-content:flex-end;
+    }
+    .component-shell-head h2{
+      margin:0;
+      font-size:20px;
+      font-weight:800;
+      color:#0f172a;
+    }
+    .component-shell-subtext{
+      margin:0;
+      color:#64748b;
+      font-size:14px;
+    }
+    .component-shell-label{
+      margin:0;
+      text-transform:uppercase;
+      letter-spacing:.2em;
+      font-size:11px;
+      color:#94a3b8;
+      font-weight:800;
+    }
+    .component-grid{
+      display:flex;
+      flex-wrap:wrap;
+      gap:18px;
+    }
+    .component-form-card{
+      flex:1 1 320px;
+      border:1px solid #e2e8f0;
+      border-radius:14px;
+      padding:18px;
+      background:#f9fbff;
+    }
+    .component-form-card h3{
+      margin:0 0 12px;
+      font-size:16px;
+      color:#0f172a;
+    }
+    .component-form .component-field{
+      display:flex;
+      flex-direction:column;
+      gap:4px;
+      margin-bottom:10px;
+      font-size:13px;
+      color:#0f172a;
+    }
+    .component-form .component-field label{
+      font-weight:700;
+      color:#13213d;
+    }
+    .password-input{
+      position:relative;
+      display:flex;
+      align-items:center;
+    }
+    .password-input input{
+      width:100%;
+      padding-right:70px;
+    }
+    .password-toggle{
+      position:absolute;
+      right:8px;
+      top:50%;
+      transform:translateY(-50%);
+      border:none;
+      background:rgba(15,23,42,.08);
+      color:#0f172a;
+      border-radius:18px;
+      padding:4px 10px;
+      font-size:11px;
+      font-weight:700;
+      cursor:pointer;
+      transition:background .2s ease;
+    }
+    .password-toggle:hover{
+      background:rgba(15,23,42,.15);
+    }
+    .component-input{
+      border:1px solid #d9e2ef;
+      border-radius:8px;
+      padding:6px 10px;
+      font-size:13px;
+    }
+    .component-input:focus{
+      border-color:#1f55c7;
+      box-shadow:0 0 0 2px rgba(31,85,199,.2);
+      outline:none;
+    }
+    .component-form-actions{
+      display:flex;
+      gap:12px;
+      align-items:center;
+    }
+    .component-error{
+      color:#b91c1c;
+      font-size:12px;
+    }
+    .component-alert{
+      border-radius:12px;
+      padding:14px 16px;
+      background:rgba(185,28,28,.08);
+      border:1px solid rgba(185,28,28,.2);
+      color:#7f1d1d;
+      font-weight:600;
+      margin-bottom:16px;
+    }
+    .component-help{
+      font-size:11px;
+      color:#64748b;
+      margin:0;
+    }
+    .component-table{
+      width:100%;
+      overflow:auto;
+    }
+    .admin-table{
+      width:100%;
+      border-collapse:collapse;
+      font-size:13px;
+    }
+    .admin-table th,
+    .admin-table td{
+      border-bottom:1px solid #e2e8f0;
+      padding:10px 8px;
+      text-align:left;
+    }
+    .admin-table th{
+      text-transform:uppercase;
+      letter-spacing:.08em;
+      font-size:11px;
+      color:#475569;
+    }
+    .table-actions{
+      display:flex;
+      gap:10px;
+      align-items:center;
+    }
+    .inline-form{
+      display:inline;
+    }
+    .link{
+      color:#1f55c7;
+      text-decoration:none;
+      font-weight:600;
+    }
+    .link-danger{
+      color:#b91c1c;
+    }
+    .link-muted{
+      color:#94a3b8;
+      font-size:12px;
+    }
+    .component-modal{
+      position:fixed;
+      inset:0;
+      background:rgba(4,9,20,.65);
+      backdrop-filter:blur(10px);
+      -webkit-backdrop-filter:blur(10px);
+      display:none;
+      align-items:center;
+      justify-content:center;
+      padding:32px 18px;
+      z-index:2000;
+      animation:componentModalFade .25s ease;
+    }
+    .component-modal.is-open{
+      display:flex;
+    }
+    .component-modal-dialog{
+      width:min(720px, 94vw);
+      border-radius:26px;
+      background:linear-gradient(145deg, #e3f0ff, #c2ddff 55%, #a5c8ff);
+      color:#0f172a;
+      border:1px solid rgba(15,23,42,.08);
+      box-shadow:0 45px 120px rgba(3,7,18,.25);
+      display:flex;
+      flex-direction:column;
+      padding:28px 30px;
+      gap:18px;
+      position:relative;
+      overflow:hidden;
+    }
+    .component-modal-dialog::after{
+      content:"";
+      position:absolute;
+      inset:12px;
+      border-radius:22px;
+      border:1px solid rgba(15,23,42,.06);
+      pointer-events:none;
+    }
+    .component-modal-head{
+      display:flex;
+      justify-content:space-between;
+      align-items:flex-start;
+      gap:12px;
+      position:relative;
+      z-index:1;
+    }
+    .component-modal-head h3{
+      margin:0;
+      font-size:20px;
+      font-weight:800;
+      color:#0f172a;
+      letter-spacing:-.01em;
+    }
+    .modal-close{
+      border:none;
+      background:rgba(15,23,42,.12);
+      color:#0f172a;
+      font-size:20px;
+      width:34px;
+      height:34px;
+      border-radius:50%;
+      cursor:pointer;
+      transition:background .2s ease, transform .2s ease;
+    }
+    .modal-close:hover{
+      background:rgba(15,23,42,.2);
+      transform:translateY(-1px);
+    }
+    .component-modal-body{
+      position:relative;
+      z-index:1;
+      display:flex;
+      flex-direction:column;
+      gap:12px;
+      max-height:60vh;
+      overflow:auto;
+      padding-right:6px;
+    }
+    .component-modal-footer{
+      position:relative;
+      z-index:1;
+      display:flex;
+      justify-content:flex-end;
+      gap:12px;
+      padding-top:14px;
+      border-top:1px solid rgba(226,232,240,.18);
+    }
+    .component-modal-footer .btn{
+      min-width:120px;
+    }
+    @keyframes componentModalFade{
+      from{opacity:0; transform:scale(.96);}
+      to{opacity:1; transform:scale(1);}
+    }
 
     .panel-head{
       display:flex;
@@ -277,16 +682,36 @@
       font-weight:800;
       border:1px solid transparent;
       cursor:pointer;
+      display:inline-flex;
+      align-items:center;
+      justify-content:center;
+      text-decoration:none;
+      line-height:1;
     }
     .btn.cancel{
       background:#e6e6e6;
       color:#7a7a7a;
       cursor:not-allowed;
     }
+    .btn.secondary{
+      background:rgba(15,23,42,.08);
+      color:#0f172a;
+      border:1px solid rgba(15,23,42,.4);
+    }
+    .btn.secondary:hover{
+      background:rgba(15,23,42,.12);
+    }
+    .btn.ghost{
+      background:transparent;
+      color:#0f172a;
+      border:1px solid rgba(15,23,42,.2);
+    }
+    .btn.ghost:hover{
+      background:rgba(15,23,42,.06);
+    }
     .btn.save{
       background:var(--blue);
       color:#fff;
-      box-shadow:0 8px 16px rgba(11,115,217,.22);
     }
     .screen-placeholder{
       padding:60px 20px;
@@ -343,8 +768,93 @@
       border-radius:4px;
     }
 
+    /* Confirm dialog */
+    .cora-confirm-root{
+      position:fixed;
+      inset:0;
+      display:none;
+      align-items:center;
+      justify-content:center;
+      padding:24px;
+      background:rgba(8,7,6,.78);
+      backdrop-filter:blur(3px);
+      z-index:2000;
+    }
+    .cora-confirm-root.is-open{
+      display:flex;
+    }
+    .cora-confirm{
+      width:min(420px, 100%);
+      background:#1c1411;
+      color:#f7ebe4;
+      border-radius:26px;
+      padding:28px 32px 26px;
+      text-align:center;
+      box-shadow:0 35px 80px rgba(10,0,0,.55);
+      border:1px solid rgba(255,255,255,.08);
+    }
+    .cora-confirm-eyebrow{
+      font-size:10px;
+      text-transform:uppercase;
+      letter-spacing:.45em;
+      color:#d8aa96;
+      font-weight:800;
+    }
+    .cora-confirm h3{
+      margin:14px 0 8px;
+      font-size:18px;
+      font-weight:800;
+      color:#ffe1d5;
+    }
+    .cora-confirm p{
+      margin:0;
+      color:#f7d7ce;
+      font-size:14px;
+      line-height:1.6;
+    }
+    .cora-confirm-actions{
+      margin-top:22px;
+      display:flex;
+      justify-content:center;
+      gap:14px;
+      flex-wrap:wrap;
+    }
+    .cora-confirm-actions button{
+      min-width:120px;
+      border:none;
+      border-radius:999px;
+      font-size:13px;
+      font-weight:800;
+      padding:10px 24px;
+      cursor:pointer;
+      transition:transform .2s ease, opacity .2s ease;
+    }
+    .cora-confirm-actions button:hover{
+      opacity:.9;
+      transform:translateY(-1px);
+    }
+    .cora-confirm-actions button:focus-visible{
+      outline:2px solid rgba(255,255,255,.4);
+      outline-offset:2px;
+    }
+    .cora-confirm .btn-cancel{
+      background:#3d1f1a;
+      color:#f8d6ca;
+    }
+    .cora-confirm .btn-confirm{
+      background:#f3b5a7;
+      color:#2f100a;
+    }
+    .cora-confirm--danger .btn-confirm{
+      background:#ed8a77;
+      color:#2d100c;
+    }
+
     @media (max-width: 980px){
-      .sidebar{ width:200px; }
+      .sidebar{
+        width:220px;
+        padding:20px 16px 24px;
+      }
       .form-grid{ grid-template-columns:1fr; max-width: 520px; }
       .empty{ display:none; }
     }
@@ -354,61 +864,278 @@
 
 <body>
   <div class="app">
-    <aside class="sidebar">
-      <div class="brand">
-        <img src="{% static 'images/logo.png' %}" alt="CORA logo">
+    <aside class="sidebar" aria-label="Admin navigation">
+      <div class="sidebar-brand">
+        <div class="sidebar-logo" aria-hidden="true">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8">
+            <path d="M12 2.5v4.5M12 17v4.5M21.5 12H17m-10 0H2.5" stroke-linecap="round" />
+            <path d="M16.5 7.5 15 9m-6 6-1.5 1.5m0-9L9 9m6 6 1.5 1.5" stroke-linecap="round" stroke-linejoin="round" />
+            <circle cx="12" cy="12" r="3.5" stroke-linejoin="round" />
+          </svg>
+        </div>
+        <div>
+          <div class="sidebar-title">Admin Panel</div>
+          <div class="sidebar-subtitle">Borrower Management System</div>
+        </div>
       </div>
 
+      <div class="sidebar-divider" aria-hidden="true"></div>
+
       {% with current_nav=active_nav|default:'dashboard' %}
-      <nav class="nav">
-        <a class="{% if current_nav == 'dashboard' %}active{% endif %}" href="{% url 'admin_dashboard' %}">
-          <span class="ico" aria-hidden="true">
-            <svg viewBox="0 0 24 24" width="16" height="16" fill="none">
-              <path d="M4 13l5-4 4 3 7-6" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/>
-              <path d="M4 19h16" stroke="currentColor" stroke-width="2" stroke-linecap="round"/>
-            </svg>
-          </span>
-          Dashboard
-        </a>
+      <nav class="sidebar-nav" aria-label="Primary navigation">
+        <!-- <div class="sidebar-links">
+          <a class="sidebar-link {% if current_nav == 'dashboard' %}active{% endif %}" href="{% url 'admin_dashboard' %}">
+            <span class="ico" aria-hidden="true">
+              <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linejoin="round">
+                <rect x="4" y="4" width="7" height="7" rx="1" />
+                <rect x="13" y="4" width="7" height="4" rx="1" />
+                <rect x="13" y="10" width="7" height="10" rx="1" />
+                <rect x="4" y="13" width="7" height="7" rx="1" />
+              </svg>
+            </span>
+            <span>Dashboard</span>
+          </a>
+        </div> -->
 
-        <a class="{% if current_nav == 'company' %}active{% endif %}" href="{% url 'admin_company' %}">
-          <span class="ico" aria-hidden="true">
-            <svg viewBox="0 0 24 24" width="16" height="16" fill="none">
-              <path d="M5 20V7l7-3 7 3v13" stroke="currentColor" stroke-width="2" stroke-linejoin="round"/>
-              <path d="M9 20v-8h6v8" stroke="currentColor" stroke-width="2" stroke-linejoin="round"/>
-            </svg>
-          </span>
-          Company
-        </a>
+        <section class="sidebar-section sidebar-collapsible is-open{% if current_nav == 'company' or current_nav == 'borrower' or current_nav == 'individual' or current_nav == 'reports' %} has-active{% endif %}" data-collapsible>
+          <button class="section-trigger" type="button" aria-expanded="true" aria-controls="sidebar-core-panel">
+            <span class="label-left">
+              <span class="ico" aria-hidden="true">
+                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                  <ellipse cx="12" cy="6" rx="7" ry="3" />
+                  <path d="M5 6v6c0 1.7 3 3 7 3s7-1.3 7-3V6" stroke-linecap="round" stroke-linejoin="round" />
+                  <path d="M5 12v6c0 1.7 3 3 7 3s7-1.3 7-3v-6" stroke-linecap="round" stroke-linejoin="round" />
+                </svg>
+              </span>
+              <span>Core Entities</span>
+            </span>
+            <span class="chevron" aria-hidden="true">
+              <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                <path d="M6 9l6 6 6-6" stroke-linecap="round" stroke-linejoin="round" />
+              </svg>
+            </span>
+          </button>
+          <div class="sidebar-children" id="sidebar-core-panel">
+            <div class="sidebar-links">
+              <a class="sidebar-link{% if current_nav == 'company' %} active{% endif %}" href="{% url 'admin_component' 'companies' %}" data-entity="companies">
+                <span>Companies</span>
+              </a>
 
-        <a class="{% if current_nav == 'borrower' %}active{% endif %}" href="{% url 'admin_borrower' %}">
-          <span class="ico" aria-hidden="true">
-            <svg viewBox="0 0 24 24" width="16" height="16" fill="none">
-              <path d="M16 11a4 4 0 1 1-8 0 4 4 0 0 1 8 0Z" stroke="currentColor" stroke-width="2"/>
-              <path d="M4 20a8 8 0 0 1 16 0" stroke="currentColor" stroke-width="2" stroke-linecap="round"/>
-            </svg>
-          </span>
-          Borrower
-        </a>
+              <a class="sidebar-link{% if current_nav == 'borrower' %} active{% endif %}" href="{% url 'admin_component' 'borrowers' %}" data-entity="borrowers">
+                <span>Borrowers</span>
+              </a>
 
-        <a class="{% if current_nav == 'individual' %}active{% endif %}" href="#">
-          <span class="ico" aria-hidden="true">
-            <svg viewBox="0 0 24 24" width="16" height="16" fill="none">
-              <path d="M12 12a4 4 0 1 0-4-4 4 4 0 0 0 4 4Z" stroke="currentColor" stroke-width="2"/>
-              <path d="M6 22a6 6 0 0 1 12 0" stroke="currentColor" stroke-width="2" stroke-linecap="round"/>
-            </svg>
-          </span>
-          Specific Individual
-        </a>
+              <a class="sidebar-link{% if current_nav == 'individual' %} active{% endif %}" href="{% url 'admin_component' 'specificIndividuals' %}" data-entity="specificIndividuals">
+                <span>Specific Individuals</span>
+              </a>
 
-        <a class="{% if current_nav == 'collateral' %}active{% endif %}" href="#">
-          <span class="ico" aria-hidden="true">
-            <svg viewBox="0 0 24 24" width="16" height="16" fill="none">
-              <path d="M4 7h16M4 12h16M4 17h10" stroke="currentColor" stroke-width="2" stroke-linecap="round"/>
-            </svg>
-          </span>
-          Collateral
-        </a>
+              <a class="sidebar-link{% if current_nav == 'reports' %} active{% endif %}" href="{% url 'admin_component' 'borrowerReports' %}" data-entity="borrowerReports">
+                <span>Borrower Reports</span>
+              </a>
+            </div>
+          </div>
+        </section>
+
+        <section class="sidebar-section sidebar-collapsible is-open{% if current_nav == 'accounts' or current_nav == 'collateral_overview' or current_nav == 'accounts_machinery' or current_nav == 'accounts_aging' or current_nav == 'accounts_metrics' or current_nav == 'accounts_ineligible_trend' or current_nav == 'accounts_ineligible_overview' or current_nav == 'accounts_concentration' %} has-active{% endif %}" data-collapsible>
+          <button class="section-trigger" type="button" aria-expanded="true" aria-controls="sidebar-accounts-panel">
+            <span class="label-left">
+              <span class="ico" aria-hidden="true">
+                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                  <circle cx="12" cy="12" r="7" />
+                  <path d="M12 7v10" stroke-linecap="round" />
+                  <path d="M10 9h4a2 2 0 0 1 0 4h-2a2 2 0 0 0 0 4h2" stroke-linecap="round" stroke-linejoin="round" />
+                </svg>
+              </span>
+              <span>Accounts Receivable</span>
+            </span>
+            <span class="chevron" aria-hidden="true">
+              <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                <path d="M6 9l6 6 6-6" stroke-linecap="round" stroke-linejoin="round" />
+              </svg>
+            </span>
+          </button>
+          <div class="sidebar-children" id="sidebar-accounts-panel">
+            <a class="sidebar-sub-link{% if current_nav == 'accounts' or current_nav == 'collateral_overview' %} active{% endif %}" href="{% url 'admin_component' 'collateralOverview' %}" data-entity="collateralOverview">Collateral Overview</a>
+            <a class="sidebar-sub-link{% if current_nav == 'accounts_machinery' %} active{% endif %}" href="{% url 'admin_component' 'machineryEquipment' %}" data-entity="machineryEquipment">Machinery &amp; Equipment</a>
+            <a class="sidebar-sub-link{% if current_nav == 'accounts_aging' %} active{% endif %}" href="{% url 'admin_component' 'agingComposition' %}" data-entity="agingComposition">Aging Composition</a>
+            <a class="sidebar-sub-link{% if current_nav == 'accounts_metrics' %} active{% endif %}" href="{% url 'admin_component' 'arMetrics' %}" data-entity="arMetrics">AR Metrics</a>
+            <a class="sidebar-sub-link{% if current_nav == 'accounts_ineligible_trend' %} active{% endif %}" href="{% url 'admin_component' 'ineligibleTrend' %}" data-entity="ineligibleTrend">Ineligible Trend</a>
+            <a class="sidebar-sub-link{% if current_nav == 'accounts_ineligible_overview' %} active{% endif %}" href="{% url 'admin_component' 'ineligibleOverview' %}" data-entity="ineligibleOverview">Ineligible Overview</a>
+            <a class="sidebar-sub-link{% if current_nav == 'accounts_concentration' %} active{% endif %}" href="{% url 'admin_component' 'concentrationADODSO' %}" data-entity="concentrationADODSO">Concentration ADO/DSO</a>
+          </div>
+        </section>
+
+        <section class="sidebar-section sidebar-collapsible is-open{% if current_nav == 'fg_inventory' or current_nav == 'fg_metrics' or current_nav == 'fg_ineligible_detail' or current_nav == 'fg_composition' or current_nav == 'fg_inline_category' or current_nav == 'sales_gm_trend' or current_nav == 'fg_inline_excess' %} has-active{% endif %}" data-collapsible>
+          <button class="section-trigger" type="button" aria-expanded="true" aria-controls="sidebar-fg-panel">
+            <span class="label-left">
+              <span class="ico" aria-hidden="true">
+                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                  <path d="M12 3 4 7v10l8 4 8-4V7z" stroke-linejoin="round" />
+                  <path d="M12 3v18" />
+                  <path d="m4 7 8 4 8-4" stroke-linejoin="round" />
+                </svg>
+              </span>
+              <span>FG Inventory</span>
+            </span>
+            <span class="chevron" aria-hidden="true">
+              <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                <path d="M6 9l6 6 6-6" stroke-linecap="round" stroke-linejoin="round" />
+              </svg>
+            </span>
+          </button>
+          <div class="sidebar-children" id="sidebar-fg-panel">
+            <a class="sidebar-sub-link{% if current_nav == 'fg_inventory' or current_nav == 'fg_metrics' %} active{% endif %}" href="{% url 'admin_component' 'fgInventoryMetrics' %}" data-entity="fgInventoryMetrics">FG Inventory Metrics</a>
+            <a class="sidebar-sub-link{% if current_nav == 'fg_ineligible_detail' %} active{% endif %}" href="{% url 'admin_component' 'fgIneligibleDetail' %}" data-entity="fgIneligibleDetail">FG Ineligible Detail</a>
+            <a class="sidebar-sub-link{% if current_nav == 'fg_composition' %} active{% endif %}" href="{% url 'admin_component' 'fgComposition' %}" data-entity="fgComposition">FG Composition</a>
+            <a class="sidebar-sub-link{% if current_nav == 'fg_inline_category' %} active{% endif %}" href="{% url 'admin_component' 'fgInlineCategoryAnalysis' %}" data-entity="fgInlineCategoryAnalysis">FG Inline Category Analysis</a>
+            <a class="sidebar-sub-link{% if current_nav == 'sales_gm_trend' %} active{% endif %}" href="{% url 'admin_component' 'salesGMTrend' %}" data-entity="salesGMTrend">Sales/GM Trend</a>
+            <a class="sidebar-sub-link{% if current_nav == 'fg_inline_excess' %} active{% endif %}" href="{% url 'admin_component' 'fgInlineExcessByCategory' %}" data-entity="fgInlineExcessByCategory">FG Inline Excess By Category</a>
+          </div>
+        </section>
+
+        <section class="sidebar-section sidebar-collapsible is-open{% if current_nav == 'rm_inventory' or current_nav == 'rm_metrics' or current_nav == 'rm_ineligible_overview' or current_nav == 'rm_category_history' %} has-active{% endif %}" data-collapsible>
+          <button class="section-trigger" type="button" aria-expanded="true" aria-controls="sidebar-rm-panel">
+            <span class="label-left">
+              <span class="ico" aria-hidden="true">
+                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                  <path d="M5 20V9M10 20V4M15 20v-7M20 20v-5" stroke-linecap="round" />
+                </svg>
+              </span>
+              <span>RM Inventory</span>
+            </span>
+            <span class="chevron" aria-hidden="true">
+              <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                <path d="M6 9l6 6 6-6" stroke-linecap="round" stroke-linejoin="round" />
+              </svg>
+            </span>
+          </button>
+          <div class="sidebar-children" id="sidebar-rm-panel">
+            <a class="sidebar-sub-link{% if current_nav == 'rm_inventory' or current_nav == 'rm_metrics' %} active{% endif %}" href="{% url 'admin_component' 'rmInventoryMetrics' %}" data-entity="rmInventoryMetrics">RM Inventory Metrics</a>
+            <a class="sidebar-sub-link{% if current_nav == 'rm_ineligible_overview' %} active{% endif %}" href="{% url 'admin_component' 'rmIneligibleOverview' %}" data-entity="rmIneligibleOverview">RM Ineligible Overview</a>
+            <a class="sidebar-sub-link{% if current_nav == 'rm_category_history' %} active{% endif %}" href="{% url 'admin_component' 'rmCategoryHistory' %}" data-entity="rmCategoryHistory">RM Category History</a>
+          </div>
+        </section>
+
+        <section class="sidebar-section sidebar-collapsible is-open{% if current_nav == 'wip_inventory' or current_nav == 'wip_metrics' or current_nav == 'wip_ineligible_overview' or current_nav == 'wip_category_history' %} has-active{% endif %}" data-collapsible>
+          <button class="section-trigger" type="button" aria-expanded="true" aria-controls="sidebar-wip-panel">
+            <span class="label-left">
+              <span class="ico" aria-hidden="true">
+                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                  <path d="M4 6h16M4 12h16M4 18h16" stroke-linecap="round" />
+                  <path d="M8 6v12M16 6v12" stroke-linecap="round" />
+                </svg>
+              </span>
+              <span>WIP Inventory</span>
+            </span>
+            <span class="chevron" aria-hidden="true">
+              <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                <path d="M6 9l6 6 6-6" stroke-linecap="round" stroke-linejoin="round" />
+              </svg>
+            </span>
+          </button>
+          <div class="sidebar-children" id="sidebar-wip-panel">
+            <a class="sidebar-sub-link{% if current_nav == 'wip_inventory' or current_nav == 'wip_metrics' %} active{% endif %}" href="{% url 'admin_component' 'wipInventoryMetrics' %}" data-entity="wipInventoryMetrics">WIP Inventory Metrics</a>
+            <a class="sidebar-sub-link{% if current_nav == 'wip_ineligible_overview' %} active{% endif %}" href="{% url 'admin_component' 'wipIneligibleOverview' %}" data-entity="wipIneligibleOverview">WIP Ineligible Overview</a>
+            <a class="sidebar-sub-link{% if current_nav == 'wip_category_history' %} active{% endif %}" href="{% url 'admin_component' 'wipCategoryHistory' %}" data-entity="wipCategoryHistory">WIP Category History</a>
+          </div>
+        </section>
+
+        <section class="sidebar-section sidebar-collapsible is-open{% if current_nav == 'recovery' or current_nav == 'fg_recovery_history' or current_nav == 'wip_recovery' or current_nav == 'raw_material_recovery' %} has-active{% endif %}" data-collapsible>
+          <button class="section-trigger" type="button" aria-expanded="true" aria-controls="sidebar-recovery-panel">
+            <span class="label-left">
+              <span class="ico" aria-hidden="true">
+                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                  <path d="M20 11v7h-7" stroke-linecap="round" stroke-linejoin="round" />
+                  <path d="m20 18-6-6" stroke-linecap="round" stroke-linejoin="round" />
+                  <path d="M4 13a6 6 0 0 1 10-4" stroke-linecap="round" />
+                </svg>
+              </span>
+              <span>Recovery</span>
+            </span>
+            <span class="chevron" aria-hidden="true">
+              <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                <path d="M6 9l6 6 6-6" stroke-linecap="round" stroke-linejoin="round" />
+              </svg>
+            </span>
+          </button>
+          <div class="sidebar-children" id="sidebar-recovery-panel">
+            <a class="sidebar-sub-link{% if current_nav == 'recovery' or current_nav == 'fg_recovery_history' %} active{% endif %}" href="{% url 'admin_component' 'fgGrossRecoveryHistory' %}" data-entity="fgGrossRecoveryHistory">FG Gross Recovery History</a>
+            <a class="sidebar-sub-link{% if current_nav == 'wip_recovery' %} active{% endif %}" href="{% url 'admin_component' 'wipRecovery' %}" data-entity="wipRecovery">WIP Recovery</a>
+            <a class="sidebar-sub-link{% if current_nav == 'raw_material_recovery' %} active{% endif %}" href="{% url 'admin_component' 'rawMaterialRecovery' %}" data-entity="rawMaterialRecovery">Raw Material Recovery</a>
+          </div>
+        </section>
+
+        <section class="sidebar-section sidebar-collapsible is-open{% if current_nav == 'risk' or current_nav == 'nolv_table' or current_nav == 'risk_subfactors' or current_nav == 'risk_composite_index' %} has-active{% endif %}" data-collapsible>
+          <button class="section-trigger" type="button" aria-expanded="true" aria-controls="sidebar-risk-panel">
+            <span class="label-left">
+              <span class="ico" aria-hidden="true">
+                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                  <path d="M12 4 3 19h18Z" stroke-linejoin="round" />
+                  <path d="M12 10v4" stroke-linecap="round" />
+                  <path d="M12 16h.01" stroke-linecap="round" />
+                </svg>
+              </span>
+              <span>Risk &amp; Analytics</span>
+            </span>
+            <span class="chevron" aria-hidden="true">
+              <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                <path d="M6 9l6 6 6-6" stroke-linecap="round" stroke-linejoin="round" />
+              </svg>
+            </span>
+          </button>
+          <div class="sidebar-children" id="sidebar-risk-panel">
+            <a class="sidebar-sub-link{% if current_nav == 'risk' or current_nav == 'nolv_table' %} active{% endif %}" href="{% url 'admin_component' 'nolvTable' %}" data-entity="nolvTable">NOLV Table</a>
+            <a class="sidebar-sub-link{% if current_nav == 'risk_subfactors' %} active{% endif %}" href="{% url 'admin_component' 'riskSubfactors' %}" data-entity="riskSubfactors">Risk Subfactors</a>
+            <a class="sidebar-sub-link{% if current_nav == 'risk_composite_index' %} active{% endif %}" href="{% url 'admin_component' 'compositeIndex' %}" data-entity="compositeIndex">Composite Index</a>
+          </div>
+        </section>
+
+        <section class="sidebar-section sidebar-collapsible is-open{% if current_nav == 'forecast' or current_nav == 'availability_forecast' or current_nav == 'current_week_variance' or current_nav == 'cumulative_variance' %} has-active{% endif %}" data-collapsible>
+          <button class="section-trigger" type="button" aria-expanded="true" aria-controls="sidebar-forecast-panel">
+            <span class="label-left">
+              <span class="ico" aria-hidden="true">
+                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                  <path d="M4 17 10 11l4 4 6-8" stroke-linecap="round" stroke-linejoin="round" />
+                  <path d="M14 7h6v6" stroke-linecap="round" stroke-linejoin="round" />
+                </svg>
+              </span>
+              <span>Forecasting</span>
+            </span>
+            <span class="chevron" aria-hidden="true">
+              <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                <path d="M6 9l6 6 6-6" stroke-linecap="round" stroke-linejoin="round" />
+              </svg>
+            </span>
+          </button>
+          <div class="sidebar-children" id="sidebar-forecast-panel">
+            <a class="sidebar-sub-link{% if current_nav == 'forecast' %} active{% endif %}" href="{% url 'admin_component' 'forecast' %}" data-entity="forecast">Forecast</a>
+            <a class="sidebar-sub-link{% if current_nav == 'current_week_variance' %} active{% endif %}" href="{% url 'admin_component' 'currentWeekVariance' %}" data-entity="currentWeekVariance">Current Week Variance</a>
+            <a class="sidebar-sub-link{% if current_nav == 'cumulative_variance' %} active{% endif %}" href="{% url 'admin_component' 'cumulativeVariance' %}" data-entity="cumulativeVariance">Cumulative Variance</a>
+          </div>
+        </section>
+
+        <section class="sidebar-section sidebar-collapsible is-open{% if current_nav == 'settings' or current_nav == 'collateral_limits' or current_nav == 'settings_ineligibles' %} has-active{% endif %}" data-collapsible>
+          <button class="section-trigger" type="button" aria-expanded="true" aria-controls="sidebar-settings-panel">
+            <span class="label-left">
+              <span class="ico" aria-hidden="true">
+                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                  <circle cx="12" cy="12" r="3" />
+                  <path d="m19.4 15 .6 2-1.8 1.8-2-.6a7.8 7.8 0 0 1-1.7 1l-.3 2.1h-2.6l-.3-2.1a7.8 7.8 0 0 1-1.7-1l-2 .6L4 17l.6-2a7.8 7.8 0 0 1 0-2L4 11l1.8-1.8 2 .6a7.8 7.8 0 0 1 1.7-1l.3-2.1h2.6l.3 2.1a7.8 7.8 0 0 1 1.7 1l2-.6L20 11l-.6 2a7.8 7.8 0 0 1 0 2Z" stroke-linecap="round" stroke-linejoin="round" />
+                </svg>
+              </span>
+              <span>Settings</span>
+            </span>
+            <span class="chevron" aria-hidden="true">
+              <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                <path d="M6 9l6 6 6-6" stroke-linecap="round" stroke-linejoin="round" />
+              </svg>
+            </span>
+          </button>
+          <div class="sidebar-children" id="sidebar-settings-panel">
+            <a class="sidebar-sub-link{% if current_nav == 'settings' or current_nav == 'collateral_limits' %} active{% endif %}" href="{% url 'admin_component' 'collateralLimits' %}" data-entity="collateralLimits">Collateral Limits</a>
+            <a class="sidebar-sub-link{% if current_nav == 'settings_ineligibles' %} active{% endif %}" href="{% url 'admin_component' 'ineligibles' %}" data-entity="ineligibles">Ineligibles</a>
+          </div>
+        </section>
       </nav>
       {% endwith %}
     </aside>
@@ -416,7 +1143,6 @@
     <main class="main">
       <header class="topbar">
         <div class="title">{% block header_title %}Company Form{% endblock %}</div>
-        <div class="right">CORA</div>
       </header>
 
       <div class="content">
@@ -428,6 +1154,209 @@
     </main>
   </div>
 
+  <div id="cora-confirm-root" class="cora-confirm-root" aria-hidden="true"></div>
+
+  <script>
+    document.addEventListener("DOMContentLoaded", function(){
+      document.querySelectorAll("[data-collapsible]").forEach(function(section){
+        var trigger = section.querySelector(".section-trigger");
+        var content = section.querySelector(".sidebar-children");
+        if (!trigger || !content) {
+          return;
+        }
+
+        function setState(open) {
+          section.classList.toggle("is-open", open);
+          trigger.setAttribute("aria-expanded", open ? "true" : "false");
+          content.hidden = !open;
+        }
+
+        setState(section.classList.contains("is-open"));
+
+        trigger.addEventListener("click", function(){
+          setState(!section.classList.contains("is-open"));
+        });
+      });
+    });
+  </script>
+  <script>
+    document.addEventListener('DOMContentLoaded', function(){
+      document.querySelectorAll('[data-password-toggle]').forEach(function(toggle){
+        toggle.addEventListener('click', function(){
+          var input = toggle.closest('.password-input');
+          if (!input) return;
+          input = input.querySelector('[data-password-input]');
+          if (!input) return;
+          var isHidden = input.getAttribute('type') === 'password';
+          input.setAttribute('type', isHidden ? 'text' : 'password');
+          toggle.textContent = isHidden ? 'Hide' : 'Show';
+          toggle.setAttribute('aria-pressed', isHidden ? 'true' : 'false');
+        });
+      });
+    });
+  </script>
+  <script>
+    (function(){
+      var sidebar = document.querySelector('.sidebar-content') || document.querySelector('.sidebar');
+      if (!sidebar || !window.sessionStorage) return;
+      var key = 'cora-admin-sidebar-scroll';
+
+      function applyScroll(){
+        var stored = sessionStorage.getItem(key);
+        if (stored) {
+          sidebar.scrollTop = parseInt(stored, 10) || 0;
+        }
+      }
+
+      function saveScroll(){
+        sessionStorage.setItem(key, sidebar.scrollTop);
+      }
+
+      applyScroll();
+      window.addEventListener('pageshow', applyScroll);
+      sidebar.addEventListener('scroll', saveScroll, { passive: true });
+      window.addEventListener('beforeunload', saveScroll);
+      sidebar.querySelectorAll('a').forEach(function(link){
+        link.addEventListener('click', saveScroll);
+      });
+    })();
+  </script>
+  <script>
+    (function(){
+      var modals = document.querySelectorAll('.component-modal');
+      if (!modals.length) return;
+
+      function openModal(id){
+        var modal = document.getElementById(id);
+        if (!modal) return;
+        modal.classList.add('is-open');
+        modal.setAttribute('aria-hidden', 'false');
+      }
+
+      function closeModal(modal){
+        modal.classList.remove('is-open');
+        modal.setAttribute('aria-hidden', 'true');
+      }
+
+      document.querySelectorAll('[data-modal-open]').forEach(function(trigger){
+        trigger.addEventListener('click', function(){
+          var id = trigger.getAttribute('data-modal-open');
+          if (id) openModal(id);
+        });
+      });
+
+      modals.forEach(function(modal){
+        modal.addEventListener('click', function(event){
+          if (event.target === modal) closeModal(modal);
+        });
+        modal.querySelectorAll('[data-modal-close]').forEach(function(btn){
+          btn.addEventListener('click', function(){
+            closeModal(modal);
+          });
+        });
+      });
+
+      document.addEventListener('keydown', function(event){
+        if (event.key === 'Escape'){
+          document.querySelectorAll('.component-modal.is-open').forEach(closeModal);
+        }
+      });
+
+      document.querySelectorAll('.component-modal[data-modal-auto-open="true"]').forEach(function(modal){
+        openModal(modal.id);
+      });
+    })();
+  </script>
+  <script>
+    (function(){
+      var root = document.getElementById('cora-confirm-root');
+      if (!root) return;
+      var listeners = { backdrop: null, keydown: null };
+
+      function encode(value){
+        return String(value || '')
+          .replace(/&/g, '&amp;')
+          .replace(/</g, '&lt;')
+          .replace(/>/g, '&gt;')
+          .replace(/"/g, '&quot;')
+          .replace(/'/g, '&#039;');
+      }
+
+      function cleanup(resolve, result){
+        if (listeners.backdrop){
+          root.removeEventListener('click', listeners.backdrop);
+          listeners.backdrop = null;
+        }
+        if (listeners.keydown){
+          document.removeEventListener('keydown', listeners.keydown);
+          listeners.keydown = null;
+        }
+        root.classList.remove('is-open');
+        root.setAttribute('aria-hidden', 'true');
+        root.innerHTML = '';
+        resolve(result);
+      }
+
+      function openConfirm(options){
+        var defaults = {
+          eyebrow: 'Please confirm',
+          title: 'Delete this record?',
+          message: 'This action cannot be undone.',
+          confirmLabel: 'OK',
+          cancelLabel: 'Cancel',
+          tone: '',
+        };
+        var settings = Object.assign({}, defaults, options || {});
+        if (!root) {
+          var fallback = window.confirm(settings.message);
+          return Promise.resolve(fallback);
+        }
+        return new Promise(function(resolve){
+          var toneClass = settings.tone ? ' cora-confirm--' + settings.tone : '';
+          root.innerHTML = `
+            <div class="cora-confirm${toneClass}" role="dialog" aria-modal="true" aria-label="${encode(settings.title)}">
+              <div class="cora-confirm-eyebrow">${encode(settings.eyebrow)}</div>
+              <h3>${encode(settings.title)}</h3>
+              <p>${encode(settings.message)}</p>
+              <div class="cora-confirm-actions">
+                <button type="button" class="btn-cancel" data-cancel>${encode(settings.cancelLabel)}</button>
+                <button type="button" class="btn-confirm" data-confirm>${encode(settings.confirmLabel)}</button>
+              </div>
+            </div>`;
+          root.classList.add('is-open');
+          root.setAttribute('aria-hidden', 'false');
+
+          if (listeners.backdrop) {
+            root.removeEventListener('click', listeners.backdrop);
+          }
+          listeners.backdrop = function(event){
+            if (event.target === root) cleanup(resolve, false);
+          };
+          root.addEventListener('click', listeners.backdrop);
+
+          if (listeners.keydown){
+            document.removeEventListener('keydown', listeners.keydown);
+          }
+          listeners.keydown = function(event){
+            if (event.key === 'Escape') {
+              cleanup(resolve, false);
+            }
+          };
+          document.addEventListener('keydown', listeners.keydown);
+
+          root.querySelector('[data-cancel]').addEventListener('click', function(){
+            cleanup(resolve, false);
+          });
+          root.querySelector('[data-confirm]').addEventListener('click', function(){
+            cleanup(resolve, true);
+          });
+        });
+      }
+
+      window.CORA = window.CORA || {};
+      window.CORA.confirm = openConfirm;
+    })();
+  </script>
   {% block extra_scripts %}{% endblock %}
 </body>
 </html>

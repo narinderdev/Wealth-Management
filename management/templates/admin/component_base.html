@@ -1,0 +1,17 @@
+{% extends "admin/admin_base.html" %}
+
+{% block page_title %}{{ component_meta.title }}{% endblock %}
+{% block header_title %}{{ component_meta.title }}{% endblock %}
+
+{% block admin_screens %}
+  {% if component_data.db_error %}
+    <div class="component-shell">
+      <div class="component-shell-body">
+        <div class="component-alert">
+          Data for “{{ component_meta.title }}” is not available. {{ component_data.db_error }}
+        </div>
+      </div>
+    </div>
+  {% endif %}
+  {% include component_meta.template with component_meta=component_meta component_data=component_data %}
+{% endblock %}

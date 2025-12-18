@@ -162,10 +162,13 @@ def import_sheet_rows(model_cls, df, report, borrower=None):
     """
     model_fields = {f.name: f for f in model_cls._meta.fields}
     allowed = set(model_fields.keys()) - {"id", "created_at", "updated_at", "report"}
+    has_report_field = "report" in model_fields
 
     objs = []
     for _, row in df.iterrows():
-        data = {"report": report}
+        data = {}
+        if has_report_field:
+            data["report"] = report
         if borrower and "borrower" in allowed:
             data["borrower"] = borrower
 
@@ -187,7 +190,11 @@ def import_sheet_rows(model_cls, df, report, borrower=None):
                     data[k] = None if is_nan(val) else val
 
         # skip rows where everything (except report) is empty
-        non_empty = any(v not in (None, "") for kk, v in data.items() if kk != "report")
+        non_empty = any(
+            v not in (None, "")
+            for kk, v in data.items()
+            if not (has_report_field and kk == "report")
+        )
         if non_empty:
             objs.append(model_cls(**data))
 
