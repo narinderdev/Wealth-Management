@@ -1,48 +1,35 @@
 from django.contrib import messages
-from django.contrib.auth import authenticate, get_user_model, login, logout
+from django.contrib.auth import get_user_model, login, logout
 from django.shortcuts import redirect, render
 
-from management.models import Borrower, BorrowerUser
+from management.models import Company
 
 User = get_user_model()
 
 
-def _authenticate_by_email_or_username(request, identifier, password):
-    if not identifier or not password:
-        return None
 
-    account = User.objects.filter(email__iexact=identifier).first()
-    if account:
-        user = authenticate(
-            request, username=account.get_username(), password=password
-        )
-        if user:
-            return user
-
-    return authenticate(request, username=identifier, password=password)
-
-
-def _find_borrower_by_identifier(identifier):
+def _find_company_by_identifier(identifier):
     if not identifier:
         return None
 
     identifier = identifier.strip()
-    borrower = None
+    company = None
     if identifier.isdigit():
-        borrower = Borrower.objects.filter(pk=int(identifier)).first()
-    if not borrower:
-        borrower = Borrower.objects.filter(
-            primary_contact_email__iexact=identifier
-        ).first()
-    if not borrower:
-        borrower = Borrower.objects.filter(company__company__iexact=identifier).first()
-    return borrower
+        company = Company.objects.filter(company_id=int(identifier)).first()
+    if not company:
+        company = Company.objects.filter(company_email__iexact=identifier).first()
+    if not company:
+        company = Company.objects.filter(company__iexact=identifier).first()
+    return company
 
 
-def _authenticate_by_borrower(identifier, password):
-    borrower = _find_borrower_by_identifier(identifier)
-    if borrower and borrower.check_password(password):
-        return borrower
+def _authenticate_by_company(identifier, password):
+    company = _find_company_by_identifier(identifier)
+    if company and company.check_password(password):
+        return company
+    if company and company.company_password and company.company_password == password:
+        company.set_password(password)
+        return company
     return None
 
 
@@ -76,6 +63,22 @@ def _ensure_user_for_borrower(borrower):
     return user
 
 
+def _ensure_user_for_company(company):
+    if not company:
+        return None
+
+    username = f"company_{company.company_id}"
+    user, created = User.objects.get_or_create(
+        username=username,
+        defaults={"email": company.company_email or ""},
+    )
+    if created:
+        user.set_unusable_password()
+        user.save(update_fields=["password"])
+
+    return user
+
+
 def login_view(request):
     if request.user.is_authenticated:
         return redirect("dashboard")
@@ -84,16 +87,14 @@ def login_view(request):
     if request.method == "POST":
         identifier = request.POST.get("email", "").strip()
         password = request.POST.get("password", "")
-        user = _authenticate_by_email_or_username(request, identifier, password)
-        if user:
+        company = _authenticate_by_company(identifier, password)
+        if company:
+            user = _ensure_user_for_company(company)
             login(request, user)
-            return redirect("dashboard")
-
-        borrower = _authenticate_by_borrower(identifier, password)
-        if borrower:
-            user = _ensure_user_for_borrower(borrower)
-            login(request, user)
-            return redirect("dashboard")
+            request.session["company_id"] = company.id
+            request.session.pop("selected_borrower_id", None)
+            request.session.modified = True
+            return redirect("borrower_portfolio")
 
         error_message = "Invalid email or password."
 
@@ -104,4 +105,6 @@ def login_view(request):
 def logout_view(request):
     logout(request)
     messages.success(request, "You have been signed out.")
+    request.session.pop("company_id", None)
+    request.session.pop("selected_borrower_id", None)
     return redirect("login")

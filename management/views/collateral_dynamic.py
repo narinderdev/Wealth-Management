@@ -9,19 +9,20 @@ from django.shortcuts import redirect, render
 from management.models import (
     ARMetricsRow,
     AgingCompositionRow,
-    BorrowerReport,
+    AvailabilityForecastRow,
     CollateralOverviewRow,
     ConcentrationADODSORow,
+    CurrentWeekVarianceRow,
+    CummulativeVarianceRow,
     FGIneligibleDetailRow,
     FGInventoryMetricsRow,
     FGInlineCategoryAnalysisRow,
     FGGrossRecoveryHistoryRow,
+    ForecastRow,
     IneligibleOverviewRow,
     IneligibleTrendRow,
     MachineryEquipmentRow,
     NOLVTableRow,
-    Top20ByPastDueRow,
-    Top20ByTotalARRow,
 )
 from management.views.summary import (
     _build_borrower_summary,
@@ -73,11 +74,542 @@ def collateral_dynamic_view(request):
 
 @login_required(login_url="login")
 def collateral_static_view(request):
-    return render(
-        request,
-        "collateral_dynamic/static_insights.html",
-        {"active_tab": "collateral_static"},
+    borrower_profile = getattr(request.user, "borrower_profile", None)
+    borrower = borrower_profile.borrower if borrower_profile else None
+    context = {
+        "active_tab": "collateral_static",
+        "week_summary": _week_summary_context(borrower),
+    }
+    return render(request, "week_summary.html", context)
+
+
+def _week_summary_context(borrower):
+    placeholder_stats = [
+        {"label": "Beginning Cash", "value": "$—"},
+        {"label": "Total Receipts", "value": "$—"},
+        {"label": "Total Disbursement", "value": "$—"},
+        {"label": "Net Cash Flow", "value": "$—"},
+        {"label": "Ending Cash", "value": "$—"},
+    ]
+
+    def _make_placeholders():
+        return {"name": "—", "value": "$—"}
+
+    def _format_money(value):
+        formatted = _format_currency(value)
+        return formatted if formatted != "—" else "$—"
+
+    def _find_variance_row(rows, keywords):
+        keywords = [kw.lower() for kw in keywords]
+        for row in rows:
+            if not row.category:
+                continue
+            cat = row.category.lower()
+            if any(keyword in cat for keyword in keywords):
+                return row
+        return None
+
+    def _collect_top_receipts(rows, limit=5):
+        sorted_rows = sorted(
+            rows,
+            key=lambda row: _to_decimal(row.total_ar or 0),
+            reverse=True,
+        )
+        output = []
+        for row in sorted_rows[:limit]:
+            name = _safe_str(row.customer) if row.customer else "Customer"
+            amount = _format_money(row.total_ar)
+            output.append({"name": name, "value": amount})
+        while len(output) < limit:
+            output.append(_make_placeholders())
+        return output
+
+    def _collect_top_spend(rows, limit=5):
+        spend_candidates = [
+            row
+            for row in rows
+            if row.category
+            and not any(
+                keyword in row.category.lower()
+                for keyword in ("receipt", "collection", "cash", "net")
+            )
+        ]
+        sorted_spend = sorted(
+            spend_candidates,
+            key=lambda row: _to_decimal(row.actual or row.projected or 0),
+            reverse=True,
+        )
+        output = []
+        for row in sorted_spend[:limit]:
+            name = _safe_str(row.category)
+            amount = _format_money(row.actual or row.projected)
+            output.append({"name": name, "value": amount})
+        while len(output) < limit:
+            output.append(_make_placeholders())
+        return output
+
+    def _build_chart_rows(rows, max_points=9):
+        if not rows:
+            return [
+                {
+                    "label": None,
+                    "collections": Decimal("0"),
+                    "disbursements": Decimal("0"),
+                }
+                for _ in range(max_points)
+            ]
+        values = []
+        for row in rows:
+            def _pick_value(attr_names):
+                for attr in attr_names:
+                    val = getattr(row, attr, None)
+                    if val is not None:
+                        return _to_decimal(val)
+                return Decimal("0")
+
+            values.append(
+                {
+                    "label": row.period or row.as_of_date or getattr(row.report, "report_date", None),
+                    "collections": _pick_value(["net_sales", "ar", "available_collateral"]),
+                    "disbursements": _pick_value(["loan_balance", "available_collateral"]),
+                }
+            )
+        return values[-max_points:]
+
+    def _format_chart_label(value):
+        if isinstance(value, str):
+            return value
+        if hasattr(value, "strftime"):
+            return value.strftime("%b %d")
+        return "Week"
+
+    def _sort_forecast_rows(rows):
+        def _row_key(row):
+            date_val = row.period or row.as_of_date
+            if not date_val and getattr(row, "report", None):
+                date_val = getattr(row.report, "report_date", None)
+            has_date = 1 if date_val else 0
+            key_date = date_val if date_val else getattr(row, "id", 0)
+            return (has_date, key_date, getattr(row, "id", 0))
+
+        return sorted(rows, key=_row_key)
+
+    def _prepare_column_entries(sorted_rows):
+        if not sorted_rows:
+            return [], []
+        actual_candidates = [
+            row for row in sorted_rows if row.actual_forecast and "actual" in row.actual_forecast.lower()
+        ]
+        actual_row = actual_candidates[0] if actual_candidates else sorted_rows[0]
+        ordered_rows = [actual_row] + [
+            row for row in sorted_rows if row is not actual_row
+        ]
+        column_rows = ordered_rows[:13]
+        entries = []
+        for idx, row in enumerate(column_rows):
+            date_val = row.period or row.as_of_date
+            if not date_val and getattr(row, "report", None):
+                date_val = getattr(row.report, "report_date", None)
+            if idx == 0:
+                label = f"Actual<br/>{_format_date(date_val)}" if date_val else "Actual"
+            else:
+                week_number = idx
+                formatted = _format_date(date_val) if date_val else None
+                label = (
+                    f"Forecast<br/>Week {week_number}<br/>{formatted}"
+                    if formatted
+                    else f"Forecast<br/>Week {week_number}"
+                )
+            entries.append({"row": row, "label": label, "is_actual": idx == 0})
+        return entries, ordered_rows
+
+    context = {
+        "stats": placeholder_stats[:],
+        "period_label": None,
+        "top_receipts": [_make_placeholders() for _ in range(5)],
+        "top_spend": [_make_placeholders() for _ in range(5)],
+        "chart": {"collections_bars": [], "disbursement_bars": [], "labels": []},
+        "cashflow_actual_label": "Actual",
+        "cashflow_forecast_labels": [],
+        "cashflow_table_rows": [],
+        "cashflow_cash_rows": [],
+        "availability_actual_label": "Actual",
+        "availability_week_labels": [f"Week {i}" for i in range(1, 14)],
+        "availability_rows": [],
+        "liquidity_series": [],
+        "liquidity_labels": [],
+        "variance_current_rows": [],
+        "variance_cumulative_rows": [],
+    }
+
+    def _latest_report_info():
+        candidates = []
+        report_models = [
+            ForecastRow,
+            CurrentWeekVarianceRow,
+            CummulativeVarianceRow,
+            AvailabilityForecastRow,
+        ]
+        for model in report_models:
+            row = (
+                model.objects.filter(report__borrower=borrower)
+                .order_by(
+                    "-report__report_date",
+                    "-report__created_at",
+                    "-report_id",
+                )
+                .values(
+                    "report_id",
+                    "report__report_date",
+                    "report__created_at",
+                )
+                .first()
+            )
+            if not row or not row.get("report_id"):
+                continue
+            timestamp = row.get("report__report_date") or row.get("report__created_at")
+            if timestamp is None:
+                timestamp = 0
+            candidates.append(
+                {
+                    "report_id": row["report_id"],
+                    "date": timestamp,
+                }
+            )
+        if not candidates:
+            return None
+        candidates.sort(key=lambda entry: entry["date"], reverse=True)
+        return candidates[0]
+
+    if not borrower:
+        return context
+    latest_info = _latest_report_info()
+    if not latest_info:
+        return context
+    report_id = latest_info["report_id"]
+    report_date = latest_info["date"]
+    cw_rows = list(
+        CurrentWeekVarianceRow.objects.filter(report_id=report_id).order_by("category", "id")
     )
+    cum_rows = list(
+        CummulativeVarianceRow.objects.filter(report_id=report_id).order_by("category", "id")
+    )
+    forecast_rows = list(ForecastRow.objects.filter(report_id=report_id))
+    availability_rows_qs = list(
+        AvailabilityForecastRow.objects.filter(report_id=report_id).order_by("id")
+    )
+    stats = []
+    summary_map = [
+        ("Beginning Cash", ["beginning cash"]),
+        ("Total Receipts", ["total receipts"]),
+        ("Total Disbursement", ["total disbursement", "total disbursements"]),
+        ("Net Cash Flow", ["net cash flow"]),
+        ("Ending Cash", ["ending cash"]),
+    ]
+    for label, keywords in summary_map:
+        row = _find_variance_row(cw_rows, keywords)
+        value = (
+            row.actual
+            if row and row.actual is not None
+            else row.projected
+            if row
+            else None
+        )
+        stats.append({"label": label, "value": _format_money(value)})
+
+    sorted_forecast_rows = _sort_forecast_rows(forecast_rows)
+    column_entries, ordered_forecast_rows = _prepare_column_entries(sorted_forecast_rows)
+    chart_rows = _build_chart_rows(ordered_forecast_rows or sorted_forecast_rows)
+    actual_bars, forecast_bars, chart_labels = _build_chart_bars(chart_rows)
+
+    if column_entries:
+        cashflow_actual_label = column_entries[0]["label"]
+        cashflow_forecast_labels = [entry["label"] for entry in column_entries[1:]]
+    else:
+        cashflow_actual_label = "Actual"
+        cashflow_forecast_labels = []
+
+    while len(cashflow_forecast_labels) < 12:
+        cashflow_forecast_labels.append("Forecast")
+
+    base_forecast_row = (
+        column_entries[0]["row"]
+        if column_entries
+        else sorted_forecast_rows[-1]
+        if sorted_forecast_rows
+        else None
+    )
+    fallback_stats = _build_forecast_stats(base_forecast_row)
+    if fallback_stats and not any(_has_valid_stat(stat) for stat in stats):
+        stats = fallback_stats
+
+    def _get_column_value(accessor, index):
+        if not column_entries or index >= len(column_entries):
+            return None
+        row = column_entries[index]["row"]
+        if not row or not accessor:
+            return None
+        value = accessor(row)
+        return _to_decimal(value) if value is not None else None
+
+    def _build_table_row(label, accessor=None, row_class=""):
+        actual_val = _get_column_value(accessor, 0)
+        forecast_vals = [
+            _get_column_value(accessor, idx + 1)
+            for idx in range(max(0, len(column_entries) - 1))
+        ]
+        total_candidates = [val for val in ([actual_val] + forecast_vals) if val is not None]
+        total_val = sum(total_candidates, Decimal("0")) if total_candidates else None
+        return {
+            "label": label,
+            "actual": _format_money(actual_val),
+            "forecasts": [_format_money(val) for val in forecast_vals],
+            "total": _format_money(total_val),
+            "row_class": row_class,
+        }
+
+    def _value_for_field(row, field):
+        if not row:
+            return None
+        value = getattr(row, field, None)
+        return _to_decimal(value) if value is not None else None
+
+    def _sum_fields(row, fields):
+        total = Decimal("0")
+        present = False
+        for field in fields:
+            value = getattr(row, field, None)
+            if value is not None:
+                total += _to_decimal(value)
+                present = True
+        return total if present else None
+
+    def _difference_fields(row, positive_fields, negative_fields):
+        positive = Decimal("0")
+        negative = Decimal("0")
+        has_positive = False
+        has_negative = False
+        for field in positive_fields:
+            value = getattr(row, field, None)
+            if value is not None:
+                positive += _to_decimal(value)
+                has_positive = True
+        for field in negative_fields:
+            value = getattr(row, field, None)
+            if value is not None:
+                negative += _to_decimal(value)
+                has_negative = True
+        if not has_positive and not has_negative:
+            return None
+        return positive - negative
+
+    def _has_valid_stat(stat):
+        return stat.get("value") not in (None, "$—", "—")
+
+    def _build_forecast_stats(row):
+        if not row:
+            return None
+        beginning = _value_for_field(row, "available_collateral")
+        receipts = _sum_fields(row, ["net_sales", "ar"])
+        disbursements = _value_for_field(row, "loan_balance")
+        net_cash_flow = _difference_fields(row, ["net_sales", "ar"], ["loan_balance"])
+        ending = beginning
+        return [
+            {"label": "Beginning Cash", "value": _format_money(beginning)},
+            {"label": "Total Receipts", "value": _format_money(receipts)},
+            {"label": "Total Disbursement", "value": _format_money(disbursements)},
+            {"label": "Net Cash Flow", "value": _format_money(net_cash_flow)},
+            {"label": "Ending Cash", "value": _format_money(ending)},
+        ]
+
+    cashflow_metric_defs = [
+        ("Collections", lambda row: _value_for_field(row, "net_sales"), ""),
+        ("Other Receipts", lambda row: _value_for_field(row, "ar"), ""),
+        (
+            "Total Receipts",
+            lambda row: _sum_fields(row, ["net_sales", "ar"]),
+            "title-row",
+        ),
+        (
+            "Operating Disbursements",
+            lambda row: _value_for_field(row, "loan_balance"),
+            "title-row",
+        ),
+        ("Payroll", lambda row: None, ""),
+        ("Rent", lambda row: None, ""),
+        ("Utilities", lambda row: None, ""),
+        ("Property Tax", lambda row: None, ""),
+        ("Insurance", lambda row: None, ""),
+        ("Professional Services", lambda row: None, ""),
+        ("Software Expenses", lambda row: None, ""),
+        ("Repairs / Maintenance", lambda row: None, ""),
+        ("Other Disbursements", lambda row: None, ""),
+        (
+            "Total Operating Disbursements",
+            lambda row: _value_for_field(row, "loan_balance"),
+            "title-row",
+        ),
+        ("Non-Operating Disbursements", lambda row: None, "title-row"),
+        ("Interest Expense", lambda row: None, ""),
+        ("Non-Recurring Tax Payments", lambda row: None, ""),
+        ("One-Time Professional Fees", lambda row: None, ""),
+        ("Total Non-Operating Disbursements", lambda row: None, "title-row"),
+        (
+            "Total Disbursements",
+            lambda row: _value_for_field(row, "loan_balance"),
+            "title-row",
+        ),
+        (
+            "Net Cash Flow",
+            lambda row: _difference_fields(row, ["net_sales", "ar"], ["loan_balance"]),
+            "title-row",
+        ),
+    ]
+    cashflow_table_rows = [
+        _build_table_row(label, accessor, row_class)
+        for label, accessor, row_class in cashflow_metric_defs
+    ]
+    cashflow_cash_defs = [
+        ("Beginning Cash", lambda row: _value_for_field(row, "available_collateral"), ""),
+        (
+            "Net Cash Flow",
+            lambda row: _difference_fields(row, ["net_sales", "ar"], ["loan_balance"]),
+            "",
+        ),
+        (
+            "Revolver Draw / Paydown",
+            lambda row: _value_for_field(row, "revolver_availability"),
+            "",
+        ),
+        ("Ending Cash", lambda row: _value_for_field(row, "available_collateral"), ""),
+        ("Minimum Cash Requirement", lambda row: None, ""),
+        ("Cash Cushion / Deficit", lambda row: None, ""),
+    ]
+    cashflow_cash_rows = [
+        _build_table_row(label, accessor, row_class)
+        for label, accessor, row_class in cashflow_cash_defs
+    ]
+
+    availability_rows = []
+    week_fields = [f"week_{i}" for i in range(1, 14)]
+    for row in availability_rows_qs:
+        week_values = [
+            _format_money(getattr(row, field)) for field in week_fields
+        ]
+        total_val = sum(
+            (_to_decimal(getattr(row, field)) for field in week_fields if getattr(row, field) is not None),
+            Decimal("0"),
+        )
+        availability_rows.append(
+            {
+                "label": _safe_str(row.category, default="Availability"),
+                "actual": _format_money(row.x),
+                "weeks": week_values,
+                "total": _format_money(total_val),
+            }
+        )
+
+    if availability_rows:
+        context["availability_actual_label"] = cashflow_actual_label
+
+    liquidity_fields = [
+        ("available_collateral", "#2563eb"),
+        ("revolver_availability", "#6574cd"),
+        ("net_sales", "#1d4ed8"),
+    ]
+    liquidity_series = []
+    label_points = []
+    trend_rows = ordered_forecast_rows[-len(TREND_X_POSITIONS) :]
+    if not trend_rows:
+        trend_rows = ordered_forecast_rows[-1:] if ordered_forecast_rows else sorted_forecast_rows[-1:]
+    period_labels = [
+        _format_chart_label(
+            getattr(row, "period", None)
+            or getattr(row, "as_of_date", None)
+            or getattr(getattr(row, "report", None), "report_date", None)
+        )
+        for row in trend_rows
+    ]
+    for field, color in liquidity_fields:
+        values = [
+            float(
+                _to_decimal(getattr(row, field, None) or Decimal("0"))
+            )
+            for row in trend_rows
+        ]
+        if not values:
+            values = [0.0]
+        trend = _build_trend_points(values, labels=period_labels)
+        liquidity_series.append({"points": trend["points"], "color": color})
+        if not label_points:
+            label_points = trend["labels"]
+
+    def _variance_rows(rows):
+        output = []
+        for row in rows:
+            category = _safe_str(row.category, default="—")
+            proj = _format_money(row.projected)
+            actual = _format_money(row.actual)
+            variance_amount = _format_money(row.variance)
+            variance_pct = _format_pct(row.variance_pct)
+            variance_text = f"{variance_amount} / {variance_pct}"
+            row_class = "title-row" if "total" in category.lower() or "net" in category.lower() else ""
+            output.append(
+                {
+                    "category": category,
+                    "projected": proj,
+                    "actual": actual,
+                    "variance": variance_text,
+                    "row_class": row_class,
+                }
+            )
+        if not output:
+            output.append(
+                {
+                    "category": "—",
+                    "projected": "$—",
+                    "actual": "$—",
+                    "variance": "$— / —%",
+                    "row_class": "",
+                }
+            )
+        return output
+
+    variance_current = _variance_rows(cw_rows)
+    variance_cumulative = _variance_rows(cum_rows)
+
+    context.update(
+        {
+            "stats": stats,
+            "period_label": _format_date(
+                chart_rows[-1]["label"]
+                if chart_rows and chart_rows[-1]["label"]
+                else report_date
+            )
+            if chart_rows or report_date
+            else None,
+            "top_spend": _collect_top_spend(cw_rows),
+            "chart": {
+                "collections_bars": actual_bars,
+                "disbursement_bars": forecast_bars,
+                "labels": chart_labels,
+                "legend": [
+                    {"label": "Collections", "color": "#1d4ed8"},
+                    {"label": "Disbursements", "color": "#f97316"},
+                ],
+            },
+            "cashflow_actual_label": cashflow_actual_label,
+            "cashflow_forecast_labels": cashflow_forecast_labels,
+            "cashflow_table_rows": cashflow_table_rows,
+            "cashflow_cash_rows": cashflow_cash_rows,
+            "availability_rows": availability_rows,
+            "liquidity_series": liquidity_series,
+            "liquidity_labels": label_points,
+            "variance_current_rows": variance_current,
+            "variance_cumulative_rows": variance_cumulative,
+        }
+    )
+    return context
 
 
 MONTH_POSITIONS = [80, 135, 190, 245, 300, 355, 410, 465, 520, 575, 630, 685]
@@ -489,10 +1021,6 @@ def _accounts_receivable_context(borrower):
         "ar_borrowing_base_kpis": [],
         "ar_aging_chart_buckets": [],
         "ar_current_vs_past_due_trend": {"bars": [], "labels": []},
-        "ar_top_by_total_rows": [],
-        "ar_top_by_total_grand": None,
-        "ar_top_by_past_due_rows": [],
-        "ar_top_by_past_due_grand": None,
         "ar_ineligible_overview_rows": [],
         "ar_ineligible_overview_total": None,
         "ar_ineligible_trend": {"points": "", "dots": [], "labels": []},
@@ -517,8 +1045,6 @@ def _accounts_receivable_context(borrower):
         return base_context
 
     aging_rows = list(AgingCompositionRow.objects.filter(report=latest_report))
-    top_total_rows = list(Top20ByTotalARRow.objects.filter(report=latest_report))
-    top_past_rows = list(Top20ByPastDueRow.objects.filter(report=latest_report))
     ineligible_overview = (
         IneligibleOverviewRow.objects.filter(report=latest_report)
         .order_by("-date", "-id")
@@ -752,53 +1278,6 @@ def _accounts_receivable_context(borrower):
         )
         trend_labels.append({"x": label_x, "text": entry["label"]})
 
-    def _prepare_customer_table(rows, total_key):
-        if not rows:
-            return [], None
-        sorted_rows = sorted(
-            rows,
-            key=lambda row: _to_decimal(getattr(row, total_key) or 0),
-            reverse=True,
-        )
-        formatted = []
-        fields = ["current", "col_0_30", "col_31_60", "col_61_90", "col_91_plus"]
-        for row in sorted_rows[:10]:
-            formatted.append(
-                {
-                    "customer": _safe_str(row.customer),
-                    "current": _format_currency(row.current),
-                    "col_0_30": _format_currency(row.col_0_30),
-                    "col_31_60": _format_currency(row.col_31_60),
-                    "col_61_90": _format_currency(row.col_61_90),
-                    "col_91_plus": _format_currency(row.col_91_plus),
-                    "total": _format_currency(getattr(row, total_key)),
-                }
-            )
-        totals = {
-            field: sum(_to_decimal(getattr(row, field) or 0) for row in rows)
-            for field in fields
-        }
-        totals["total"] = sum(
-            _to_decimal(getattr(row, total_key) or 0) for row in rows
-        )
-        total_entry = {
-            "customer": "Total",
-            "current": _format_currency(totals["current"]),
-            "col_0_30": _format_currency(totals["col_0_30"]),
-            "col_31_60": _format_currency(totals["col_31_60"]),
-            "col_61_90": _format_currency(totals["col_61_90"]),
-            "col_91_plus": _format_currency(totals["col_91_plus"]),
-            "total": _format_currency(totals["total"]),
-        }
-        return formatted, total_entry
-
-    top_by_total_rows, top_by_total_grand = _prepare_customer_table(
-        top_total_rows, "total_ar"
-    )
-    top_by_past_due_rows, top_by_past_due_grand = _prepare_customer_table(
-        top_past_rows, "total_past_due"
-    )
-
     ineligible_rows = []
     ineligible_total_row = None
     if ineligible_overview:
@@ -891,10 +1370,6 @@ def _accounts_receivable_context(borrower):
         "ar_borrowing_base_kpis": kpis,
         "ar_aging_chart_buckets": aging_buckets,
         "ar_current_vs_past_due_trend": {"bars": trend_bars, "labels": trend_labels},
-        "ar_top_by_total_rows": top_by_total_rows,
-        "ar_top_by_total_grand": top_by_total_grand,
-        "ar_top_by_past_due_rows": top_by_past_due_rows,
-        "ar_top_by_past_due_grand": top_by_past_due_grand,
         "ar_ineligible_overview_rows": ineligible_rows,
         "ar_ineligible_overview_total": ineligible_total_row,
         "ar_ineligible_trend": {

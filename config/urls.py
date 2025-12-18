@@ -24,6 +24,7 @@ from management import views as management_views
 urlpatterns = [
     path('', RedirectView.as_view(pattern_name='login', permanent=False)),
     path('login/', management_views.login_view, name='login'),
+    path('portfolio/', management_views.borrower_portfolio_view, name='borrower_portfolio'),
     path('dashboard/', management_views.summary_view, name='dashboard'),
     path('collateral-dynamic/', management_views.collateral_dynamic_view, name='collateral_dynamic'),
     path('collateral-dynamic/static/', management_views.collateral_static_view, name='collateral_static'),
@@ -50,4 +51,3 @@ urlpatterns = [
 # Add this line at the end of the file to serve static files in development
 if settings.DEBUG:
     urlpatterns += static(settings.STATIC_URL, document_root=settings.STATIC_ROOT)
-

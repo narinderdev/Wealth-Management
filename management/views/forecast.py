@@ -2,12 +2,11 @@
 from django.contrib.auth.decorators import login_required
 from django.shortcuts import render
 
-from management.views.summary import _build_borrower_summary
+from management.views.summary import _build_borrower_summary, get_preferred_borrower
 
 
 def _borrower_context(request):
-    borrower_profile = getattr(request.user, "borrower_profile", None)
-    borrower = borrower_profile.borrower if borrower_profile else None
+    borrower = get_preferred_borrower(request)
     return {"borrower_summary": _build_borrower_summary(borrower)}
 
 

@@ -8,6 +8,7 @@ html[data-theme="light"],
     --primary: #79aec8;
     --secondary: #417690;
     --accent: #f5dd5d;
+    --blue: #1d4089;
     --primary-fg: #fff;
 
     --body-fg: #333;
@@ -557,7 +558,9 @@ a.button {
     padding: 4px 5px;
 }
 
-.button:active, input[type=submit]:active, input[type=button]:active,
+.button:active, input[type=submit]:active, input[type=button]:active {
+    background: var(--blue);
+}
 .button:focus, input[type=submit]:focus, input[type=button]:focus,
 .button:hover, input[type=submit]:hover, input[type=button]:hover {
     background: var(--button-hover-bg);

@@ -7,16 +7,15 @@ import pandas as pd
 from django.conf import settings
 from django.contrib.auth.decorators import login_required
 from django.http import FileResponse, Http404
-from django.shortcuts import get_object_or_404, render
+from django.shortcuts import render
 from django.urls import reverse
 
 from management.models import (
     ARMetricsRow,
     BorrowerOverviewRow,
-    BorrowerReport,
     CollateralOverviewRow,
 )
-from management.views.summary import _build_borrower_summary
+from management.views.summary import _build_borrower_summary, get_preferred_borrower
 
 REPORT_MENU = [
     {"key": "borrowing_base", "label": "Borrowing Base Report", "icon": "document"},
@@ -27,24 +26,12 @@ REPORT_MENU = [
 REPORT_SECTIONS = {
     "borrowing_base": {
         "title": "Borrowing Base Reports",
-        "description": "Latest BBC packages generated for BlueRidge Materials Group.",
-        "rows": [
-            {"name": "BlueRidge Materials Group – BBC – 10/31/2025"},
-            {"name": "BlueRidge Materials Group – BBC – 11/07/2025"},
-            {"name": "BlueRidge Materials Group – BBC – 11/14/2025"},
-        ],
+        "description": "Latest BBC-style snapshots generated from the live borrower data.",
+        "rows": [],
     },
     "complete_analysis": {
         "title": "Report Title",
-
-        "rows": [
-            {
-                "name": "BlueRidge Materials Group – CORA Analysis – 10/31/2025",
-                "highlight": True,
-            },
-            {"name": "BlueRidge Materials Group – CORA Analysis – 11/7/2025"},
-            {"name": "BlueRidge Materials Group – CORA Analysis – 11/14/2025"},
-        ],
+        "rows": [],
     },
     "cashflow": {
         "title": "Report title",
@@ -58,8 +45,7 @@ REPORT_SECTIONS = {
 
 
 def _borrower_context(request):
-    borrower_profile = getattr(request.user, "borrower_profile", None)
-    borrower = borrower_profile.borrower if borrower_profile else None
+    borrower = get_preferred_borrower(request)
     return {
         "borrower": borrower,
         "borrower_summary": _build_borrower_summary(borrower),
@@ -73,29 +59,43 @@ PREFIX_MAP = {
 }
 
 
-def _build_report_rows(report_type, borrower_reports, company_label):
+def _borrower_report_timestamps(borrower, limit=5):
+    timestamps = (
+        CollateralOverviewRow.objects.filter(borrower=borrower)
+        .order_by("-created_at")
+        .values_list("created_at", flat=True)
+        .distinct()
+    )
+    return list(timestamps[:limit])
+
+
+def _build_report_rows(report_type, timestamps, company_label):
     prefix = PREFIX_MAP.get(report_type, "Report")
     rows = []
-    for idx, report in enumerate(borrower_reports):
-        label = report.report_date.strftime("%m/%d/%Y") if report.report_date else "Unknown"
+    for idx, ts in enumerate(timestamps):
+        label = ts.strftime("%m/%d/%Y %H:%M") if ts else "Unknown"
         rows.append({
             "name": f"{company_label} – {prefix} – {label}",
             "highlight": idx == 0,
-            "report_date": report.report_date,
-            "download_url": reverse("reports_generate_bbc") if report_type == "borrowing_base" else reverse("reports_download", args=[report.id]),
+            "report_date": ts,
+            "download_url": reverse("reports_generate_bbc") if report_type == "borrowing_base" else reverse("reports_download", args=[idx]),
         })
     if not rows:
-        rows = [{"name": "No borrower reports uploaded yet", "highlight": False}]
+        rows = [{"name": "No borrower reports available", "highlight": False}]
     return rows
 
 
 @login_required(login_url="login")
 def reports_download(request, report_id):
-    borrower_profile = getattr(request.user, "borrower_profile", None)
-    borrower = borrower_profile.borrower if borrower_profile else None
-    report = get_object_or_404(BorrowerReport, id=report_id, borrower=borrower)
-    workbook = _build_bbc_workbook(report)
-    file_name = f"{borrower.company.company if borrower and borrower.company else 'BBC'} - BBC {report.report_date or 'latest'}.xlsx"
+    borrower = get_preferred_borrower(request)
+    if not borrower:
+        raise Http404("No borrower selected")
+    timestamps = _borrower_report_timestamps(borrower)
+    if report_id < 0 or report_id >= len(timestamps):
+        raise Http404("Report not found")
+    workbook = _build_bbc_workbook(borrower)
+    report_date = timestamps[report_id]
+    file_name = f"{borrower.company.company if borrower and borrower.company else 'BBC'} - BBC {report_date or 'latest'}.xlsx"
     response = FileResponse(
         workbook,
         content_type="application/vnd.openxmlformats-officedocument.spreadsheetml.sheet",
@@ -119,29 +119,29 @@ def _ensure_naive(value):
     return value
 
 
-def _build_bbc_workbook(report):
+def _build_bbc_workbook(borrower):
     buffer = BytesIO()
     with pd.ExcelWriter(buffer, engine="openpyxl") as writer:
-        _write_sheet(writer, "Borrower Overview", BorrowerOverviewRow.objects.filter(report=report))
-        _write_sheet(writer, "Collateral Overview", CollateralOverviewRow.objects.filter(report=report))
-        _write_sheet(writer, "AR Metrics", ARMetricsRow.objects.filter(report=report))
+        _write_sheet(
+            writer,
+            "Borrower Overview",
+            BorrowerOverviewRow.objects.filter(company_id=borrower.company.company_id if borrower.company else None),
+        )
+        _write_sheet(writer, "Collateral Overview", CollateralOverviewRow.objects.filter(borrower=borrower))
+        _write_sheet(writer, "AR Metrics", ARMetricsRow.objects.filter(borrower=borrower))
     buffer.seek(0)
     return buffer
 
 
 @login_required(login_url="login")
 def reports_generate_bbc(request):
-    borrower_profile = getattr(request.user, "borrower_profile", None)
-    borrower = borrower_profile.borrower if borrower_profile else None
-    report = (
-        BorrowerReport.objects.filter(borrower=borrower).order_by("-report_date").first()
-        if borrower
-        else None
-    )
-    if not borrower or not report:
+    borrower = get_preferred_borrower(request)
+    if not borrower:
         raise Http404("No BBC report available")
-    workbook = _build_bbc_workbook(report)
-    file_name = f"{borrower.company.company if borrower and borrower.company else 'BBC'} - BBC {report.report_date or 'latest'}.xlsx"
+    workbook = _build_bbc_workbook(borrower)
+    timestamps = _borrower_report_timestamps(borrower, limit=1)
+    latest_timestamp = timestamps[0] if timestamps else None
+    file_name = f"{borrower.company.company if borrower and borrower.company else 'BBC'} - BBC {latest_timestamp or 'latest'}.xlsx"
     response = FileResponse(
         workbook,
         content_type="application/vnd.openxmlformats-officedocument.spreadsheetml.sheet",
@@ -158,11 +158,10 @@ def reports_view(request):
 
     context = _borrower_context(request)
     borrower = context.get("borrower")
-    borrower_reports = (
-        BorrowerReport.objects.filter(borrower=borrower).order_by("-report_date")[:5]
-        if borrower
-        else []
-    )
+    if not borrower:
+        borrower_reports = []
+    else:
+        borrower_reports = _borrower_report_timestamps(borrower)
     report_section = dict(REPORT_SECTIONS[requested_report])
     report_section["rows"] = _build_report_rows(
         requested_report,

@@ -2,7 +2,6 @@ from django.contrib.auth.decorators import login_required
 from django.shortcuts import render
 
 from management.models import (
-    BorrowerReport,
     CollateralLimitsRow,
     CollateralOverviewRow,
 )
@@ -10,12 +9,12 @@ from management.views.summary import (
     _build_borrower_summary,
     _format_currency,
     _format_pct,
+    get_preferred_borrower,
 )
 
 
 def _borrower_context(request):
-    borrower_profile = getattr(request.user, "borrower_profile", None)
-    borrower = borrower_profile.borrower if borrower_profile else None
+    borrower = get_preferred_borrower(request)
     return {
         "borrower": borrower,
         "borrower_summary": _build_borrower_summary(borrower),
@@ -27,14 +26,9 @@ def limits_view(request):
     context = _borrower_context(request)
     context["active_tab"] = "limits"
     borrower = context.get("borrower")
-    latest_report = (
-        BorrowerReport.objects.filter(borrower=borrower).order_by("-report_date").first()
-        if borrower
-        else None
-    )
     limits = []
-    if latest_report:
-        for row in CollateralLimitsRow.objects.filter(report=latest_report).order_by("id"):
+    if borrower:
+        for row in CollateralLimitsRow.objects.filter(borrower=borrower).order_by("id"):
             limits.append({
                 "division": row.division or "—",
                 "collateral_type": row.collateral_type or "—",
@@ -43,7 +37,7 @@ def limits_view(request):
                 "pct_limit": _format_pct(row.pct_limit),
             })
         ineligibles = []
-        for row in CollateralOverviewRow.objects.filter(report=latest_report):
+        for row in CollateralOverviewRow.objects.filter(borrower=borrower):
             if not row.ineligibles:
                 continue
             ineligibles.append({

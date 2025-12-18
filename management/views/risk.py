@@ -2,11 +2,10 @@ from collections import defaultdict
 from decimal import Decimal
 
 from django.contrib.auth.decorators import login_required
-from django.shortcuts import render
+from django.shortcuts import redirect, render
 
 from management.models import (
     ARMetricsRow,
-    BorrowerReport,
     CollateralOverviewRow,
     CompositeIndexRow,
     RiskSubfactorsRow,
@@ -17,12 +16,12 @@ from management.views.summary import (
     _format_pct,
     _normalize_pct,
     _to_decimal,
+    get_preferred_borrower,
 )
 
 
 def _borrower_context(request):
-    borrower_profile = getattr(request.user, "borrower_profile", None)
-    borrower = borrower_profile.borrower if borrower_profile else None
+    borrower = get_preferred_borrower(request)
     return {
         "borrower": borrower,
         "borrower_summary": _build_borrower_summary(borrower),
@@ -33,20 +32,15 @@ def _borrower_context(request):
 def risk_view(request):
     context = _borrower_context(request)
     borrower = context.get("borrower")
-    latest_report = (
-        BorrowerReport.objects.filter(borrower=borrower).order_by("-report_date").first()
-        if borrower
-        else None
-    )
+    if not borrower:
+        return redirect("borrower_portfolio")
     ar_row = (
-        ARMetricsRow.objects.filter(report=latest_report).order_by("-as_of_date").first()
-        if latest_report
-        else None
+        ARMetricsRow.objects.filter(borrower=borrower)
+        .order_by("-as_of_date", "-created_at")
+        .first()
     )
-    composite_rows = (
-        list(CompositeIndexRow.objects.filter(report=latest_report).order_by("date"))
-        if latest_report
-        else []
+    composite_rows = list(
+        CompositeIndexRow.objects.filter(borrower=borrower).order_by("date")
     )
     composite_latest = composite_rows[-1] if composite_rows else None
 
@@ -69,11 +63,14 @@ def risk_view(request):
                 "value": _format_pct(weight),
                 "class": pill_colors[idx % len(pill_colors)],
             })
+    ineligibles_sum = sum(
+        (_to_decimal(row.ineligibles) for row in CollateralOverviewRow.objects.filter(borrower=borrower))
+    )
     snapshot_text = (
         f"Latest composite score {overall_score:.2f}/5 · "
-        f"AR past due {_format_pct(ar_row.pct_past_due)} · "
-        f"Inventory ineligibles {_format_currency(sum((row.ineligibles or 0) for row in CollateralOverviewRow.objects.filter(report=latest_report)))}"
-        if latest_report
+        f"AR past due {_format_pct(ar_row.pct_past_due) if ar_row and ar_row.pct_past_due is not None else '—'} · "
+        f"Inventory ineligibles {_format_currency(ineligibles_sum)}"
+        if composite_latest or ar_row
         else "Awaiting borrower data"
     )
 
@@ -92,7 +89,7 @@ def risk_view(request):
     high_factors = []
     prior_scores = {}
     history_map = {}
-    for row in RiskSubfactorsRow.objects.filter(report=latest_report).order_by("-risk_score", "-date")[:12]:
+    for row in RiskSubfactorsRow.objects.filter(borrower=borrower).order_by("-risk_score", "-date")[:12]:
         key = (row.sub_risk or row.high_impact_factor or row.main_category or "Risk").strip()
         if not key:
             continue
@@ -142,7 +139,9 @@ def risk_view(request):
     ar_past_due_pct = _normalize_pct(ar_row.pct_past_due) if ar_row and ar_row.pct_past_due is not None else Decimal("0")
     ar_score = max(Decimal("0"), min(Decimal("5"), Decimal("5") - (ar_past_due_pct / Decimal("20"))))
 
-    risk_rows = list(RiskSubfactorsRow.objects.filter(report=latest_report).order_by("main_category", "sub_risk"))
+    risk_rows = list(
+        RiskSubfactorsRow.objects.filter(borrower=borrower).order_by("main_category", "sub_risk")
+    )
     rows_by_category = defaultdict(list)
     for row in risk_rows:
         key = (row.main_category or "").strip().lower()

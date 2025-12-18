@@ -1,0 +1,501 @@
+{% extends "layout/app_base.html" %}
+
+{% block title %}Collateral Dynamic{% endblock %}
+
+{% block body_class %}collateral-static{% endblock %}
+
+{% block extra_head %}
+  {{ block.super }}
+  <style>
+    .cd-static{
+      margin-top:12px;
+      display:grid;
+      grid-template-columns:280px 1fr;
+      grid-auto-rows:auto;
+      gap:18px;
+      align-items:start;
+    }
+    .cd-card{
+      background:#fff;
+      border:1px solid #e3e8f4;
+      border-radius:16px;
+      box-shadow:0 12px 28px rgba(15,23,42,.08);
+    }
+    .summary-card{
+      padding:16px;
+      display:flex;
+      flex-direction:column;
+      gap:16px;
+      align-self:stretch;
+      height:100%;
+    }
+    .summary-title{
+      font-size:13px;
+      font-weight:600;
+      color:#0f1f44;
+      letter-spacing:.02em;
+      margin-bottom:4px;
+    }
+    .kv-pair{
+      display:flex;
+      justify-content:space-between;
+      font-size:12px;
+      color:#475569;
+      padding:6px 0;
+      border-bottom:1px solid #eef1f6;
+    }
+    .kv-pair:last-child{border-bottom:none}
+    .kv-pair span:last-child{
+      font-weight:600;
+      color:#0f172a;
+    }
+    .section-block{
+      border-top:1px solid #eef1f6;
+      padding-top:10px;
+    }
+    .section-block .summary-title{
+      margin-bottom:6px;
+    }
+    .stacked-list{
+      display:flex;
+      flex-direction:column;
+      gap:4px;
+      font-size:12px;
+      color:#475569;
+    }
+    .stacked-list span{
+      display:flex;
+      justify-content:space-between;
+    }
+    .cashflow-card{
+      padding:18px;
+      display:flex;
+      flex-direction:column;
+      gap:16px;
+      min-height:560px;
+    }
+    .cashflow-header{
+      display:flex;
+      justify-content:space-between;
+      align-items:flex-start;
+      font-size:14px;
+      font-weight:600;
+      color:#0f1f44;
+    }
+    .stat-row{
+      display:grid;
+      grid-template-columns:repeat(auto-fit,minmax(180px,1fr));
+      gap:12px;
+    }
+    .stat-card{
+      border:1px solid #dfe6f6;
+      border-radius:14px;
+      padding:14px;
+      background:#f8fbff;
+      display:flex;
+      flex-direction:column;
+      gap:6px;
+    }
+    .stat-card small{
+      font-size:11px;
+      color:#64748b;
+      text-transform:uppercase;
+      letter-spacing:.04em;
+    }
+    .stat-value{
+      font-size:22px;
+      font-weight:700;
+      color:#0f172a;
+    }
+    .stat-delta{
+      font-size:11px;
+      font-weight:600;
+    }
+    .stat-delta.down{color:#e11d48}
+    .stat-delta.up{color:#16a34a}
+    .chart-panel{
+      border:1px solid #c7d5f4;
+      border-radius:18px;
+      padding:18px;
+      background:#fdfefe;
+    }
+    .chart-panel svg{
+      width:100%;
+      height:auto;
+      display:block;
+    }
+    .snapshot-card{
+      padding:18px;
+    }
+    .snapshot-card h3{
+      margin:0 0 8px;
+      font-size:14px;
+      color:#0f1f44;
+      font-weight:600;
+    }
+    .snapshot-card p{
+      margin:0;
+      color:#475569;
+      font-size:13px;
+      line-height:1.6;
+    }
+    body.collateral-static .tabs-shell{
+      display:none;
+    }
+    .forecast-card{
+      padding:18px;
+      display:flex;
+      flex-direction:column;
+      gap:12px;
+      margin-bottom:18px;
+    }
+    .forecast-header{
+      display:flex;
+      justify-content:space-between;
+      align-items:center;
+      font-size:13px;
+      font-weight:600;
+      color:#0f1f44;
+    }
+    .table-wrapper{
+      overflow-x:auto;
+    }
+    .cash-table{
+      width:100%;
+      border-collapse:separate;
+      border-spacing:0;
+      font-size:11px;
+      color:#475569;
+      min-width:900px;
+    }
+    .cash-table thead th{
+      font-size:10px;
+      text-transform:uppercase;
+      letter-spacing:.03em;
+      background:#f8fbff;
+      padding:10px;
+      color:#64748b;
+      border-bottom:1px solid #e3e8f4;
+      text-align:left;
+      white-space:nowrap;
+    }
+    .cash-table tbody td{
+      padding:10px;
+      border-bottom:1px solid #f0f2f7;
+      white-space:nowrap;
+    }
+    .cash-table tbody tr:nth-child(even) td{
+      background:#fbfcfe;
+    }
+    .cash-table tbody tr.title-row td{
+      font-weight:600;
+      color:#0f1f44;
+      background:#f5f7fb;
+    }
+    .cd-static .wide{
+      grid-column:1/3;
+    }
+    .cd-stack{
+      grid-column:1/3;
+      display:flex;
+      flex-direction:column;
+      gap:18px;
+      margin-top:18px;
+    }
+  </style>
+{% endblock %}
+
+{% block page_content %}
+  <div class="cd-static">
+    <aside class="cd-card summary-card">
+      <div>
+        <p class="summary-title">Current Week Summary</p>
+        <div>
+          {% for stat in week_summary.stats %}
+            <div class="kv-pair">
+              <span>{{ stat.label }}</span>
+              <span>{{ stat.value }}</span>
+            </div>
+          {% endfor %}
+        </div>
+      </div>
+      <div class="section-block">
+        <p class="summary-title">Top Customer Receipts</p>
+        <div class="stacked-list">
+          {% for item in week_summary.top_receipts %}
+            <span><strong>{{ item.name }}</strong><span>{{ item.value }}</span></span>
+          {% endfor %}
+        </div>
+      </div>
+      <div class="section-block">
+        <p class="summary-title">Top Spend Categories</p>
+        <div class="stacked-list">
+          {% for item in week_summary.top_spend %}
+            <span><strong>{{ item.name }}</strong><span>{{ item.value }}</span></span>
+          {% endfor %}
+        </div>
+      </div>
+    </aside>
+
+    <div class="cd-card cashflow-card">
+      <div class="cashflow-header">
+        <span>13 Week Cash Flow Summary</span>
+        <span style="font-size:11px;color:#64748b;">
+          As of week ending {{ week_summary.period_label|default:"—" }}
+        </span>
+      </div>
+
+      <div class="stat-row">
+        <div class="stat-card">
+          <small>Ending Cash</small>
+          <div class="stat-value">$987,225</div>
+          <div class="stat-delta down">-8.09%</div>
+        </div>
+        <div class="stat-card">
+          <small>Total Receipts</small>
+          <div class="stat-value">$5,556</div>
+          <div class="stat-delta down">-5.09%</div>
+        </div>
+        <div class="stat-card">
+          <small>Total Disbursements</small>
+          <div class="stat-value">$435,987</div>
+          <div class="stat-delta up">+8.09%</div>
+        </div>
+      </div>
+
+      <div class="chart-panel">
+        <svg viewBox="0 0 620 280" preserveAspectRatio="none">
+          <rect x="0" y="0" width="620" height="280" fill="#f8fbff" stroke="#dfe6f6"/>
+          <g stroke="#dce3f5">
+            <line x1="60" y1="220" x2="580" y2="220"/>
+            <line x1="60" y1="180" x2="580" y2="180"/>
+            <line x1="60" y1="140" x2="580" y2="140"/>
+            <line x1="60" y1="100" x2="580" y2="100"/>
+            <line x1="60" y1="60" x2="580" y2="60"/>
+          </g>
+          <g fill="#1d4ed8">
+            {% for bar in week_summary.chart.collections_bars %}
+              <rect x="{{ bar.x }}" y="{{ bar.y }}" width="{{ bar.width }}" height="{{ bar.height }}"/>
+            {% endfor %}
+          </g>
+          <g fill="#f97316">
+            {% for bar in week_summary.chart.disbursement_bars %}
+              <rect x="{{ bar.x }}" y="{{ bar.y }}" width="{{ bar.width }}" height="{{ bar.height }}"/>
+            {% endfor %}
+          </g>
+          <g fill="#94a3b8" font-size="11">
+            {% for label in week_summary.chart.labels %}
+              <text x="{{ label.x }}" y="235">{{ label.text }}</text>
+            {% endfor %}
+          </g>
+          <g font-size="12" font-weight="600" fill="#0f1f44">
+            <text x="500" y="70">Collections</text>
+            <text x="500" y="95">Disbursements</text>
+          </g>
+          <rect x="470" y="58" width="20" height="10" fill="#1d4ed8" rx="2"/>
+          <rect x="470" y="83" width="20" height="10" fill="#f97316" rx="2"/>
+        </svg>
+      </div>
+    </div>
+
+    <div class="cd-card snapshot-card wide">
+      <h3>Snapshot Summary</h3>
+      <p>
+        The forecast highlights tightening liquidity with limited availability across the next 13 weeks. Receipts remain volatile and insufficient to fully cover vendor and payroll obligations in several weeks,
+        requiring reliance on the borrowing base or timing adjustments. Immediate focus should be placed on collections, expense reductions, and negotiating payment terms to maintain stability.
+      </p>
+    </div>
+
+    <div class="cd-card forecast-card wide">
+      <div class="forecast-header">
+        <span>13-Week Cash Flow Forecast</span>
+        <span style="font-size:11px;color:#64748b;">Updated 11/14/2025</span>
+      </div>
+      <div class="table-wrapper">
+        <table class="cash-table">
+            <thead>
+            <tr>
+                <th>Receipts</th>
+                <th>{{ week_summary.cashflow_actual_label|safe }}</th>
+                {% for forecast_label in week_summary.cashflow_forecast_labels %}
+                  <th>{{ forecast_label|safe }}</th>
+                {% endfor %}
+                <th>13-Week<br/>Total</th>
+              </tr>
+            </thead>
+            <tbody>
+              {% for row in week_summary.cashflow_table_rows %}
+                <tr{% if row.row_class %} class="{{ row.row_class }}"{% endif %}>
+                  <td>{{ row.label }}</td>
+                  <td>{{ row.actual }}</td>
+                  {% for forecast in row.forecasts %}
+                    <td>{{ forecast }}</td>
+                  {% endfor %}
+                  <td>{{ row.total }}</td>
+                </tr>
+              {% endfor %}
+            </tbody>
+          </table>
+        </div>
+      </div>
+    </div>
+
+    <div class="cd-card forecast-card wide">
+      <div class="forecast-header">
+        <span>Cash Forecast</span>
+        <span style="font-size:11px;color:#64748b;">Updated 11/14/2025</span>
+      </div>
+      <div class="table-wrapper">
+        <table class="cash-table">
+            <thead>
+              <tr>
+                <th>Metric</th>
+                <th>{{ week_summary.cashflow_actual_label|safe }}</th>
+                {% for forecast_label in week_summary.cashflow_forecast_labels %}
+                  <th>{{ forecast_label|safe }}</th>
+                {% endfor %}
+                <th>13-Week<br/>Total</th>
+              </tr>
+            </thead>
+            <tbody>
+              {% for row in week_summary.cashflow_cash_rows %}
+                <tr{% if row.row_class %} class="{{ row.row_class }}"{% endif %}>
+                  <td>{{ row.label }}</td>
+                  <td>{{ row.actual }}</td>
+                  {% for forecast in row.forecasts %}
+                    <td>{{ forecast }}</td>
+                  {% endfor %}
+                  <td>{{ row.total }}</td>
+                </tr>
+              {% endfor %}
+            </tbody>
+          </table>
+      </div>
+    </div>
+
+  <div class="cd-stack">
+  <div class="cd-card forecast-card">
+    <div class="forecast-header">
+      <span>Availability Forecast</span>
+      <span style="font-size:11px;color:#64748b;">Collateral view + cash cushion</span>
+    </div>
+    <div class="table-wrapper">
+        <table class="cash-table">
+        <thead>
+          <tr>
+            <th>Availability</th>
+            <th>{{ week_summary.availability_actual_label|safe }}</th>
+            {% for label in week_summary.availability_week_labels %}
+              <th>{{ label }}</th>
+            {% endfor %}
+            <th>13-Week<br/>Total</th>
+          </tr>
+        </thead>
+        <tbody>
+          {% if week_summary.availability_rows %}
+            {% for row in week_summary.availability_rows %}
+              <tr>
+                <td>{{ row.label }}</td>
+                <td>{{ row.actual }}</td>
+                {% for value in row.weeks %}
+                  <td>{{ value }}</td>
+                {% endfor %}
+                <td>{{ row.total }}</td>
+              </tr>
+            {% endfor %}
+            {% else %}
+              <tr>
+                <td colspan="{{ week_summary.availability_week_labels|length|add:'2' }}">$&nbsp;—</td>
+              </tr>
+            {% endif %}
+        </tbody>
+      </table>
+    </div>
+  </div>
+
+  <div class="cd-card forecast-card">
+    <div class="forecast-header">
+      <span>13-Week Liquidity Forecast</span>
+      <span style="font-size:11px;color:#64748b;">Modeled availability bands</span>
+    </div>
+    <div class="chart-panel">
+      <svg viewBox="0 0 800 280">
+        <rect x="0" y="0" width="800" height="280" fill="#f8fbff" stroke="#dfe6f6"/>
+        <g stroke="#dce3f5">
+          <line x1="70" y1="220" x2="730" y2="220"/>
+          <line x1="70" y1="180" x2="730" y2="180"/>
+          <line x1="70" y1="140" x2="730" y2="140"/>
+          <line x1="70" y1="100" x2="730" y2="100"/>
+          <line x1="70" y1="60" x2="730" y2="60"/>
+        </g>
+        {% for series in week_summary.liquidity_series %}
+          <polyline
+            fill="none"
+            stroke="{{ series.color }}"
+            stroke-width="3"
+            stroke-linecap="round"
+            points="{{ series.points }}"
+          />
+        {% endfor %}
+        <g fill="#94a3b8" font-size="11">
+          {% for label in week_summary.liquidity_labels %}
+            <text x="{{ label.x }}" y="240">{{ label.text }}</text>
+          {% endfor %}
+        </g>
+        <rect x="640" y="50" width="14" height="14" fill="#2563eb" rx="3"/><text x="660" y="61" font-size="11" fill="#0f1f44">Collateral Availability</text>
+        <rect x="640" y="70" width="14" height="14" fill="#6574cd" rx="3"/><text x="660" y="81" font-size="11" fill="#0f1f44">Revolver Availability</text>
+        <rect x="640" y="90" width="14" height="14" fill="#1d4ed8" rx="3"/><text x="660" y="101" font-size="11" fill="#0f1f44">Revolver + Cash</text>
+      </svg>
+    </div>
+  </div>
+
+  <div class="cd-card forecast-card">
+    <div class="forecast-header">
+      <span>Variance Reporting</span>
+      <span style="font-size:11px;color:#64748b;">Current vs. cumulative</span>
+    </div>
+    <div class="table-wrapper" style="display:grid;grid-template-columns:repeat(auto-fit,minmax(320px,1fr));gap:16px;">
+      <table class="cash-table">
+        <thead>
+          <tr><th colspan="4">Current Week Variance Report</th></tr>
+          <tr><th></th><th>Projected</th><th>Actual</th><th>Variance / %</th></tr>
+        </thead>
+        <tbody>
+          {% for row in week_summary.variance_current_rows %}
+            <tr{% if row.row_class %} class="{{ row.row_class }}"{% endif %}>
+              <td>{{ row.category }}</td>
+              <td>{{ row.projected }}</td>
+              <td>{{ row.actual }}</td>
+              <td>{{ row.variance }}</td>
+            </tr>
+          {% endfor %}
+        </tbody>
+      </table>
+      <table class="cash-table">
+        <thead>
+          <tr><th colspan="4">Cumulative Variance Report</th></tr>
+          <tr><th></th><th>Projected</th><th>Actual</th><th>Variance / %</th></tr>
+        </thead>
+        <tbody>
+          {% for row in week_summary.variance_cumulative_rows %}
+            <tr{% if row.row_class %} class="{{ row.row_class }}"{% endif %}>
+              <td>{{ row.category }}</td>
+              <td>{{ row.projected }}</td>
+              <td>{{ row.actual }}</td>
+              <td>{{ row.variance }}</td>
+            </tr>
+          {% endfor %}
+        </tbody>
+      </table>
+    </div>
+  </div>
+  </div>
+</div>
+{% endblock %}
+
+{% block extra_scripts %}
+  {{ block.super }}
+  <script>
+    document.body.classList.add('collateral-static');
+  </script>
+{% endblock %}

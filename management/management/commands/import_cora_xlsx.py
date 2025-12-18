@@ -11,15 +11,13 @@ from management.models import (
     Company,
     Borrower,
     SpecificIndividual,
-    BorrowerReport,
+    # BorrowerReport,
 
     BorrowerOverviewRow,
     CollateralOverviewRow,
     MachineryEquipmentRow,
     AgingCompositionRow,
     ARMetricsRow,
-    Top20ByTotalARRow,
-    Top20ByPastDueRow,
     IneligibleTrendRow,
     IneligibleOverviewRow,
     ConcentrationADODSORow,
@@ -156,7 +154,7 @@ def read_df(xlsx_path, sheet_name):
     return df
 
 
-def import_sheet_rows(model_cls, df, report):
+def import_sheet_rows(model_cls, df, report, borrower=None):
     """
     Generic importer:
     - Only sets fields that exist on model
@@ -168,6 +166,8 @@ def import_sheet_rows(model_cls, df, report):
     objs = []
     for _, row in df.iterrows():
         data = {"report": report}
+        if borrower and "borrower" in allowed:
+            data["borrower"] = borrower
 
         for k in allowed:
             if k in df.columns:
@@ -269,7 +269,7 @@ class Command(BaseCommand):
         # also store Borrower Overview into borrower_overview table
         bo_df = pd.read_excel(xlsx_path, sheet_name="Borrower Overview", header=1).dropna(how="all")
         bo_df.columns = [normalize_header(c) for c in bo_df.columns]
-        import_sheet_rows(BorrowerOverviewRow, bo_df, report)
+        import_sheet_rows(BorrowerOverviewRow, bo_df, report, borrower=borrower)
 
         # ---------------------------
         # 2) Map other sheets -> models
@@ -331,6 +331,6 @@ class Command(BaseCommand):
             if df.empty:
                 continue
 
-            import_sheet_rows(model_cls, df, report)
+            import_sheet_rows(model_cls, df, report, borrower=borrower)
 
         self.stdout.write(self.style.SUCCESS(f"✅ Imported XLSX into report_id={report.id} for borrower_id={borrower.id}"))

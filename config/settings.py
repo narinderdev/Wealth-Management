@@ -64,6 +64,7 @@ TEMPLATES = [
                 'django.template.context_processors.request',
                 'django.contrib.auth.context_processors.auth',
                 'django.contrib.messages.context_processors.messages',
+                'management.context_processors.company_context',
             ],
         },
     },
@@ -76,28 +77,28 @@ WSGI_APPLICATION = 'config.wsgi.application'
 # https://docs.djangoproject.com/en/3.2/ref/settings/#databases
 
 ##### POSTGRESQL DATABASE CONFIGURATION
-DATABASES = {
-  "default": {
-    "ENGINE": "django.db.backends.postgresql",
-    "NAME": "coradb",
-    "USER": "postgres",
-    "PASSWORD": "DevApnitor23",
-    'HOST': 'coradb.c1osuwkqcrl0.us-east-2.rds.amazonaws.com',  # your RDS endpoint
-    'PORT': '5432',  # default PostgreSQL port
-  }
-}
-##### LOCAL POSTGRESQL DATABASE CONFIGURATION
-
 # DATABASES = {
 #   "default": {
 #     "ENGINE": "django.db.backends.postgresql",
-#     "NAME": "wealth_managment",
-#     "USER": "wealth_user",
-#     "PASSWORD": "Dev@Apnitor!23",
-#     "HOST": "localhost",
-#     "PORT": "5432",
+#     "NAME": "coradb",
+#     "USER": "postgres",
+#     "PASSWORD": "DevApnitor23",
+#     'HOST': 'coradb.c1osuwkqcrl0.us-east-2.rds.amazonaws.com',  # your RDS endpoint
+#     'PORT': '5432',  # default PostgreSQL port
 #   }
 # }
+##### LOCAL POSTGRESQL DATABASE CONFIGURATION
+
+DATABASES = {
+  "default": {
+    "ENGINE": "django.db.backends.postgresql",
+    "NAME": "wealth_managment",
+    "USER": "wealth_user",
+    "PASSWORD": "Dev@Apnitor!23",
+    "HOST": "localhost",
+    "PORT": "5432",
+  }
+}
 
 # Password validation
 # https://docs.djangoproject.com/en/3.2/ref/settings/#auth-password-validators
@@ -155,7 +156,7 @@ STATICFILES_DIRS = [
 
 # Authentication helpers
 LOGIN_URL = 'login'
-LOGIN_REDIRECT_URL = 'collateral_dynamic'
+LOGIN_REDIRECT_URL = 'borrower_portfolio'
 
 
 # Default primary key field type
