@@ -17,7 +17,7 @@ def _find_company_by_identifier(identifier):
     if identifier.isdigit():
         company = Company.objects.filter(company_id=int(identifier)).first()
     if not company:
-        company = Company.objects.filter(email__iexact=identifier).first()
+        company = Company.objects.filter(company_email__iexact=identifier).first()
     if not company:
         company = Company.objects.filter(company__iexact=identifier).first()
     return company
@@ -67,7 +67,7 @@ def _ensure_user_for_company(company):
     username = f"company_{company.company_id}"
     user, created = User.objects.get_or_create(
         username=username,
-        defaults={"email": company.email or ""},
+        defaults={"email": company.company_email or ""},
     )
     if created:
         user.set_unusable_password()

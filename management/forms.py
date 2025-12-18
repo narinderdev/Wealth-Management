@@ -4,7 +4,6 @@ from .models import (
     ARMetricsRow,
     AgingCompositionRow,
     Borrower,
-    BorrowerReport,
     CollateralOverviewRow,
     Company,
     ConcentrationADODSORow,
@@ -53,23 +52,6 @@ class StyledModelForm(forms.ModelForm):
             field.widget.attrs["class"] = f"{classes} {self.input_class}".strip()
             if getattr(field.widget, "input_type", "") == "password":
                 field.widget.attrs["data-password-input"] = "true"
-
-
-class ReportRowForm(StyledModelForm):
-    def __init__(self, *args, **kwargs):
-        super().__init__(*args, **kwargs)
-        report_field = self.fields.get("report")
-        if report_field:
-            report_field.queryset = BorrowerReport.objects.select_related(
-                "borrower", "borrower__company"
-            ).order_by("-report_date", "borrower__company__company")
-
-            def label_from_instance(obj):
-                borrower = obj.borrower.company.company if obj.borrower and obj.borrower.company else "Borrower"
-                date = obj.report_date or "No Date"
-                return f"{borrower} · {date}"
-
-            report_field.label_from_instance = label_from_instance
 
 
 class CompanyForm(StyledModelForm):
@@ -134,19 +116,6 @@ class SpecificIndividualForm(StyledModelForm):
         self.fields["borrower"].queryset = Borrower.objects.select_related("company").order_by("company__company")
 
 
-class BorrowerReportForm(StyledModelForm):
-    class Meta:
-        model = BorrowerReport
-        fields = ["borrower", "source_file", "report_date"]
-        widgets = {
-            "report_date": forms.DateInput(attrs={"type": "date"}),
-        }
-
-    def __init__(self, *args, **kwargs):
-        super().__init__(*args, **kwargs)
-        self.fields["borrower"].queryset = Borrower.objects.select_related("company").order_by("company__company")
-
-
 class CollateralOverviewForm(StyledModelForm):
     class Meta:
         model = CollateralOverviewRow
@@ -168,11 +137,10 @@ class CollateralOverviewForm(StyledModelForm):
         ]
 
 
-class MachineryEquipmentForm(ReportRowForm):
+class MachineryEquipmentForm(StyledModelForm):
     class Meta:
         model = MachineryEquipmentRow
         fields = [
-            "report",
             "equipment_type",
             "manufacturer",
             "serial_number",
@@ -186,11 +154,10 @@ class MachineryEquipmentForm(ReportRowForm):
         ]
 
 
-class AgingCompositionForm(ReportRowForm):
+class AgingCompositionForm(StyledModelForm):
     class Meta:
         model = AgingCompositionRow
         fields = [
-            "report",
             "division",
             "as_of_date",
             "bucket",
@@ -220,11 +187,10 @@ class ARMetricsForm(StyledModelForm):
         }
 
 
-class IneligibleTrendForm(ReportRowForm):
+class IneligibleTrendForm(StyledModelForm):
     class Meta:
         model = IneligibleTrendRow
         fields = [
-            "report",
             "date",
             "division",
             "total_ar",
@@ -236,11 +202,10 @@ class IneligibleTrendForm(ReportRowForm):
         }
 
 
-class IneligibleOverviewForm(ReportRowForm):
+class IneligibleOverviewForm(StyledModelForm):
     class Meta:
         model = IneligibleOverviewRow
         fields = [
-            "report",
             "date",
             "division",
             "past_due_gt_90_days",
@@ -260,11 +225,10 @@ class IneligibleOverviewForm(ReportRowForm):
         }
 
 
-class ConcentrationADODSOForm(ReportRowForm):
+class ConcentrationADODSOForm(StyledModelForm):
     class Meta:
         model = ConcentrationADODSORow
         fields = [
-            "report",
             "division",
             "as_of_date",
             "customer",
@@ -283,7 +247,7 @@ class ConcentrationADODSOForm(ReportRowForm):
         }
 
 
-class FGInventoryMetricsForm(ReportRowForm):
+class FGInventoryMetricsForm(StyledModelForm):
     class Meta:
         model = FGInventoryMetricsRow
         fields = [
@@ -301,7 +265,7 @@ class FGInventoryMetricsForm(ReportRowForm):
         }
 
 
-class FGIneligibleDetailForm(ReportRowForm):
+class FGIneligibleDetailForm(StyledModelForm):
     class Meta:
         model = FGIneligibleDetailRow
         fields = [
@@ -323,7 +287,7 @@ class FGIneligibleDetailForm(ReportRowForm):
         }
 
 
-class FGCompositionForm(ReportRowForm):
+class FGCompositionForm(StyledModelForm):
     class Meta:
         model = FGCompositionRow
         fields = [
@@ -345,7 +309,7 @@ class FGCompositionForm(ReportRowForm):
         }
 
 
-class FGInlineCategoryAnalysisForm(ReportRowForm):
+class FGInlineCategoryAnalysisForm(StyledModelForm):
     class Meta:
         model = FGInlineCategoryAnalysisRow
         fields = [
@@ -368,7 +332,7 @@ class FGInlineCategoryAnalysisForm(ReportRowForm):
         }
 
 
-class SalesGMTrendForm(ReportRowForm):
+class SalesGMTrendForm(StyledModelForm):
     class Meta:
         model = SalesGMTrendRow
         fields = [
@@ -390,7 +354,7 @@ class SalesGMTrendForm(ReportRowForm):
         }
 
 
-class FGInlineExcessByCategoryForm(ReportRowForm):
+class FGInlineExcessByCategoryForm(StyledModelForm):
     class Meta:
         model = FGInlineExcessByCategoryRow
         fields = [
@@ -409,11 +373,10 @@ class FGInlineExcessByCategoryForm(ReportRowForm):
         }
 
 
-class RMInventoryMetricsForm(ReportRowForm):
+class RMInventoryMetricsForm(StyledModelForm):
     class Meta:
         model = RMInventoryMetricsRow
         fields = [
-            "report",
             "inventory_type",
             "division",
             "as_of_date",
@@ -427,11 +390,10 @@ class RMInventoryMetricsForm(ReportRowForm):
         }
 
 
-class RMIneligibleOverviewForm(ReportRowForm):
+class RMIneligibleOverviewForm(StyledModelForm):
     class Meta:
         model = RMIneligibleOverviewRow
         fields = [
-            "report",
             "date",
             "inventory_type",
             "division",
@@ -449,11 +411,10 @@ class RMIneligibleOverviewForm(ReportRowForm):
         }
 
 
-class RMCategoryHistoryForm(ReportRowForm):
+class RMCategoryHistoryForm(StyledModelForm):
     class Meta:
         model = RMCategoryHistoryRow
         fields = [
-            "report",
             "date",
             "inventory_type",
             "division",
@@ -468,11 +429,10 @@ class RMCategoryHistoryForm(ReportRowForm):
         }
 
 
-class WIPInventoryMetricsForm(ReportRowForm):
+class WIPInventoryMetricsForm(StyledModelForm):
     class Meta:
         model = WIPInventoryMetricsRow
         fields = [
-            "report",
             "inventory_type",
             "division",
             "as_of_date",
@@ -486,11 +446,10 @@ class WIPInventoryMetricsForm(ReportRowForm):
         }
 
 
-class WIPIneligibleOverviewForm(ReportRowForm):
+class WIPIneligibleOverviewForm(StyledModelForm):
     class Meta:
         model = WIPIneligibleOverviewRow
         fields = [
-            "report",
             "date",
             "inventory_type",
             "division",
@@ -508,11 +467,10 @@ class WIPIneligibleOverviewForm(ReportRowForm):
         }
 
 
-class WIPCategoryHistoryForm(ReportRowForm):
+class WIPCategoryHistoryForm(StyledModelForm):
     class Meta:
         model = WIPCategoryHistoryRow
         fields = [
-            "report",
             "date",
             "inventory_type",
             "division",
@@ -527,7 +485,7 @@ class WIPCategoryHistoryForm(ReportRowForm):
         }
 
 
-class FGGrossRecoveryHistoryForm(ReportRowForm):
+class FGGrossRecoveryHistoryForm(StyledModelForm):
     class Meta:
         model = FGGrossRecoveryHistoryRow
         fields = [
@@ -549,11 +507,10 @@ class FGGrossRecoveryHistoryForm(ReportRowForm):
         }
 
 
-class WIPRecoveryForm(ReportRowForm):
+class WIPRecoveryForm(StyledModelForm):
     class Meta:
         model = WIPRecoveryRow
         fields = [
-            "report",
             "date",
             "inventory_type",
             "division",
@@ -570,11 +527,10 @@ class WIPRecoveryForm(ReportRowForm):
         }
 
 
-class RawMaterialRecoveryForm(ReportRowForm):
+class RawMaterialRecoveryForm(StyledModelForm):
     class Meta:
         model = RawMaterialRecoveryRow
         fields = [
-            "report",
             "date",
             "inventory_type",
             "division",
@@ -591,11 +547,10 @@ class RawMaterialRecoveryForm(ReportRowForm):
         }
 
 
-class NOLVTableForm(ReportRowForm):
+class NOLVTableForm(StyledModelForm):
     class Meta:
         model = NOLVTableRow
         fields = [
-            "report",
             "date",
             "division",
             "line_item",
@@ -613,7 +568,7 @@ class NOLVTableForm(ReportRowForm):
         }
 
 
-class RiskSubfactorsForm(ReportRowForm):
+class RiskSubfactorsForm(StyledModelForm):
     class Meta:
         model = RiskSubfactorsRow
         fields = [
@@ -629,7 +584,7 @@ class RiskSubfactorsForm(ReportRowForm):
         }
 
 
-class CompositeIndexForm(ReportRowForm):
+class CompositeIndexForm(StyledModelForm):
     class Meta:
         model = CompositeIndexRow
         fields = [
@@ -648,11 +603,10 @@ class CompositeIndexForm(ReportRowForm):
         widgets = {
             "date": forms.DateInput(attrs={"type": "date"}),
         }
-class ForecastForm(ReportRowForm):
+class ForecastForm(StyledModelForm):
     class Meta:
         model = ForecastRow
         fields = [
-            "report",
             "as_of_date",
             "period",
             "actual_forecast",
@@ -672,11 +626,10 @@ class ForecastForm(ReportRowForm):
         }
 
 
-class AvailabilityForecastForm(ReportRowForm):
+class AvailabilityForecastForm(StyledModelForm):
     class Meta:
         model = AvailabilityForecastRow
         fields = [
-            "report",
             "date",
             "category",
             "x",
@@ -699,11 +652,10 @@ class AvailabilityForecastForm(ReportRowForm):
         }
 
 
-class CurrentWeekVarianceForm(ReportRowForm):
+class CurrentWeekVarianceForm(StyledModelForm):
     class Meta:
         model = CurrentWeekVarianceRow
         fields = [
-            "report",
             "date",
             "category",
             "projected",
@@ -716,11 +668,10 @@ class CurrentWeekVarianceForm(ReportRowForm):
         }
 
 
-class CumulativeVarianceForm(ReportRowForm):
+class CumulativeVarianceForm(StyledModelForm):
     class Meta:
         model = CummulativeVarianceRow
         fields = [
-            "report",
             "date",
             "category",
             "projected",
@@ -733,7 +684,7 @@ class CumulativeVarianceForm(ReportRowForm):
         }
 
 
-class CollateralLimitsForm(ReportRowForm):
+class CollateralLimitsForm(StyledModelForm):
     class Meta:
         model = CollateralLimitsRow
         fields = [
@@ -746,11 +697,10 @@ class CollateralLimitsForm(ReportRowForm):
         ]
 
 
-class IneligiblesForm(ReportRowForm):
+class IneligiblesForm(StyledModelForm):
     class Meta:
         model = IneligiblesRow
         fields = [
-            "report",
             "division",
             "collateral_type",
             "collateral_sub_type",

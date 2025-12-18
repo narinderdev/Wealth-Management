@@ -11,7 +11,7 @@ def company_context(request):
         company = Company.objects.filter(pk=company_id).first()
         if company:
             company_name = company.company or f"Company {company.company_id}"
-            company_contact = company.email or "Contact"
+            company_contact = company.company_email or "Contact"
     return {
         "company_name": company_name,
         "company_contact": company_contact,
