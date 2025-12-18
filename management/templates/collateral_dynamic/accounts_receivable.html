@@ -558,6 +558,55 @@
     }
     .collateral-dynamic .ar-section .kpi .delta.up{color:var(--teal);}
     .collateral-dynamic .ar-section .kpi .delta.down{color:#e05555;}
+    .collateral-dynamic .borrowing-base-grid{
+      display:grid;
+      grid-template-columns:repeat(auto-fit,minmax(240px,1fr));
+      gap:16px;
+    }
+    .collateral-dynamic .borrowing-base-card{
+      border:1px solid #dfe4f2;
+      border-radius:18px;
+      padding:16px;
+      box-shadow:0 20px 30px rgba(15,23,42,.08);
+      background:linear-gradient(180deg,#ffffff,#f7fbff);
+      display:flex;
+      flex-direction:column;
+      gap:10px;
+    }
+    .collateral-dynamic .borrowing-base-card .title-row{
+      display:flex;
+      align-items:center;
+      justify-content:space-between;
+    }
+    .collateral-dynamic .borrowing-base-card .kpi-label{
+      font-size:12px;
+      color:#475569;
+      font-weight:600;
+    }
+    .collateral-dynamic .borrowing-base-card .kpi-value{
+      font-size:26px;
+      font-weight:800;
+      color:#0f172a;
+    }
+    .collateral-dynamic .borrowing-base-card .kpi-delta{
+      font-size:12px;
+      font-weight:700;
+      display:flex;
+      align-items:center;
+      gap:6px;
+    }
+    .collateral-dynamic .borrowing-base-card .kpi-delta.up{color:var(--teal);}
+    .collateral-dynamic .borrowing-base-card .kpi-delta.down{color:#e05555;}
+    .collateral-dynamic .borrowing-base-card .borrowing-base-chart{
+      border-radius:12px;
+      background:#fff;
+      border:1px solid rgba(15,23,42,.08);
+      padding:8px;
+    }
+    .collateral-dynamic .borrowing-base-card svg{
+      width:100%;
+      height:120px;
+    }
     .collateral-dynamic .ar-section .kpi .mini{
       border-top:1px solid rgba(226,232,248,.7);
       padding-top:6px;
@@ -719,6 +768,52 @@
       display:inline-flex;
       align-items:center;
     }
+    .collateral-dynamic .ar-risk-panel{
+      border:1px solid rgba(15,23,42,.08);
+      border-radius:12px;
+      padding:18px;
+      background:#fff;
+      box-shadow:0 12px 30px rgba(15,23,42,.06);
+    }
+    .collateral-dynamic .ar-risk-content{
+      margin-top:12px;
+    }
+    .collateral-dynamic .ar-risk-list{
+      display:flex;
+      flex-direction:column;
+      gap:10px;
+    }
+    .collateral-dynamic .ar-risk-row{
+      display:flex;
+      justify-content:space-between;
+      align-items:flex-start;
+      border-bottom:1px solid rgba(15,23,42,.08);
+      padding-bottom:10px;
+    }
+    .collateral-dynamic .ar-risk-row:last-child{
+      border-bottom:none;
+      padding-bottom:0;
+    }
+    .collateral-dynamic .ar-risk-label{
+      font-size:14px;
+      font-weight:600;
+      color:#0b2a66;
+    }
+    .collateral-dynamic .ar-risk-note{
+      font-size:12px;
+      color:#475569;
+      margin-top:4px;
+    }
+    .collateral-dynamic .ar-risk-score{
+      font-size:18px;
+      font-weight:700;
+      color:#0a6af0;
+    }
+    .collateral-dynamic .ar-risk-empty{
+      font-size:13px;
+      color:#6b7280;
+      text-align:center;
+    }
   </style>
 {% endblock %}
 
@@ -753,7 +848,6 @@
                 Rising aging and concentrated exposure increase sensitivity of the borrowing base to slowdowns in collections.
               </p>
             </section>
-
             <section class="card">
               <div class="h2">
                 <svg class="spark" viewBox="0 0 24 24" fill="none">
@@ -761,51 +855,52 @@
                 </svg>
                 Borrowing Base Insight
               </div>
-              <div class="kpis">
+              <div class="borrowing-base-grid">
                 {% if ar_borrowing_base_kpis %}
                   {% for kpi in ar_borrowing_base_kpis %}
-                    <div class="kpi">
-                      <div class="info">i</div>
-                      <div class="label">{{ kpi.label }}</div>
-                      <div class="value">{{ kpi.value }}</div>
-                    {% if kpi.delta %}
-                        <div class="delta {{ kpi.delta_class }}">
+                    <article class="borrowing-base-card">
+                      <div class="title-row">
+                        <span class="kpi-label">{{ kpi.label }}</span>
+                        <div class="info">i</div>
+                      </div>
+                      <div class="kpi-value">{{ kpi.value }}</div>
+                      {% if kpi.delta %}
+                        <div class="kpi-delta {{ kpi.delta_class }}">
                           <span class="delta-symbol">{{ kpi.symbol }}</span>
-                          <span class="delta-value">{{ kpi.delta }}</span>
+                          <span>{{ kpi.delta }} vs prior</span>
                         </div>
                       {% endif %}
-                      <div class="mini">
-                        <svg viewBox="0 0 260 64" width="100%" height="64" aria-label="{{ kpi.label }} mini trend">
+                      <div class="borrowing-base-chart">
+                        <svg viewBox="0 0 260 120" role="presentation">
                           <g stroke="rgba(15,23,42,.08)" stroke-width="1">
-                            <path d="M0 52H260"/>
-                            <path d="M0 36H260"/>
-                            <path d="M0 20H260"/>
+                            <line x1="0" y1="96" x2="260" y2="96"></line>
+                            <line x1="0" y1="68" x2="260" y2="68"></line>
+                            <line x1="0" y1="40" x2="260" y2="40"></line>
+                            <line x1="0" y1="0" x2="0" y2="120"></line>
                           </g>
                           <polyline fill="none" stroke="{{ kpi.color }}" stroke-width="2.5"
-                            points="{{ kpi.spark_points }}"/>
+                            points="{{ kpi.chart_points|default:'' }}"/>
                           <g fill="#fff" stroke="{{ kpi.color }}" stroke-width="2">
-                            {% for dot in kpi.spark_dots %}
-                              <circle cx="{{ dot.cx }}" cy="{{ dot.cy }}" r="3.2"/>
+                            {% for dot in kpi.chart_dots %}
+                              <circle cx="{{ dot.cx }}" cy="{{ dot.cy }}" r="3"/>
                             {% endfor %}
                           </g>
                         </svg>
                       </div>
-                    </div>
+                    </article>
                   {% endfor %}
                 {% else %}
-                  <div class="kpi">
-                    <div class="info">i</div>
-                    <div class="label">Balance</div>
-                    <div class="value">—</div>
-                    <div class="mini">
-                      <svg viewBox="0 0 260 64" width="100%" height="64" aria-label="No data mini trend">
+                  <div class="borrowing-base-card">
+                    <div class="kpi-label">Balance</div>
+                    <div class="kpi-value">—</div>
+                    <div class="borrowing-base-chart">
+                      <svg viewBox="0 0 260 120" role="presentation">
                         <g stroke="rgba(15,23,42,.08)" stroke-width="1">
-                          <path d="M0 52H260"/>
-                          <path d="M0 36H260"/>
-                          <path d="M0 20H260"/>
+                          <line x1="0" y1="96" x2="260" y2="96"></line>
+                          <line x1="0" y1="68" x2="260" y2="68"></line>
+                          <line x1="0" y1="40" x2="260" y2="40"></line>
+                          <line x1="0" y1="0" x2="0" y2="120"></line>
                         </g>
-                        <polyline fill="none" stroke="var(--blue-3)" stroke-width="2.5"
-                          points="10,42 45,18 80,28 115,55 150,30 185,32 220,36 250,40"/>
                       </svg>
                     </div>
                   </div>

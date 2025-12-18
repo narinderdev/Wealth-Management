@@ -23,6 +23,7 @@ from management.models import (
     IneligibleTrendRow,
     MachineryEquipmentRow,
     NOLVTableRow,
+    RiskSubfactorsRow,
 )
 from management.views.summary import (
     _build_borrower_summary,
@@ -607,6 +608,7 @@ def _week_summary_context(borrower):
             "liquidity_labels": label_points,
             "variance_current_rows": variance_current,
             "variance_cumulative_rows": variance_cumulative,
+            "ar_risk_rows": _accounts_receivable_risk_rows(borrower),
         }
     )
     return context
@@ -662,6 +664,28 @@ def _build_spark_points(values, width=260, height=64, padding=10):
         points.append(f"{x:.2f},{y:.2f}")
         dots.append({"cx": round(x, 1), "cy": round(y, 1)})
 
+    return {"points": " ".join(points), "dots": dots}
+
+
+def _build_trend_chart(values, width=260, height=120, padding=18):
+    if not values:
+        return {"points": "", "dots": []}
+    decimals = [_to_decimal(v) for v in values]
+    max_val = max(decimals)
+    min_val = min(decimals)
+    span = max_val - min_val
+    if span == 0:
+        span = Decimal("1")
+    point_count = len(decimals)
+    step = (width - 2 * padding) / (point_count - 1 if point_count > 1 else 1)
+    points = []
+    dots = []
+    for idx, val in enumerate(decimals):
+        ratio = (val - min_val) / span
+        x = padding + step * idx
+        y = height - padding - float(ratio) * (height - 2 * padding)
+        points.append(f"{x:.2f},{y:.2f}")
+        dots.append({"cx": round(x, 1), "cy": round(y, 1)})
     return {"points": " ".join(points), "dots": dots}
 
 
@@ -1027,10 +1051,21 @@ def _accounts_receivable_context(borrower):
         "ar_concentration_rows": [],
         "ar_ado_rows": [],
         "ar_dso_rows": [],
+        "ar_risk_rows": [],
     }
 
     if not borrower:
         return base_context
+
+def _accounts_receivable_risk_rows(borrower):
+    if not borrower:
+        return []
+    return list(
+        RiskSubfactorsRow.objects.filter(
+            borrower=borrower,
+            main_category__iexact="Accounts Receivable",
+        ).order_by("sub_risk")
+    )
 
     latest_report = (
         BorrowerReport.objects.filter(borrower=borrower)
@@ -1172,6 +1207,7 @@ def _accounts_receivable_context(borrower):
     kpis = []
     for spec in kpi_specs:
         spark = _build_spark_points([row[spec["key"]] for row in history])
+        chart = _build_trend_chart([row[spec["key"]] for row in history])
         delta = _delta_payload(
             current_snapshot[spec["key"]],
             previous_snapshot[spec["key"]] if previous_snapshot else None,
@@ -1187,6 +1223,8 @@ def _accounts_receivable_context(borrower):
                 "delta": delta["value"] if delta else None,
                 "symbol": delta["symbol"] if delta else "",
                 "delta_class": delta["delta_class"] if delta else "",
+                "chart_points": chart["points"],
+                "chart_dots": chart["dots"],
             }
         )
 

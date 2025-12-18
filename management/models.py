@@ -151,6 +151,13 @@ class MachineryEquipmentRow(TimeStampedModel):
     total_asset_count = models.IntegerField(null=True, blank=True)  # Total Asset Count 
     total_fair_market_value = MoneyField()  # Total Fair Market Value 
     total_orderly_liquidation_value = models.BigIntegerField(null=True, blank=True)  # Total Orderly Liquidation Value 
+    borrower = models.ForeignKey(
+        "Borrower",
+        on_delete=models.CASCADE,
+        related_name="machinery_equipment_rows",
+        null=True,
+        blank=True,
+    )
 
     class Meta:
         db_table = 'machinery_and_equipment'
@@ -165,6 +172,13 @@ class AgingCompositionRow(TimeStampedModel):
     bucket = models.CharField(max_length=255, null=True, blank=True)  # Bucket
     pct_of_total = PctField()  # PctOfTotal
     amount = MoneyField()  # Amount
+    borrower = models.ForeignKey(
+        "Borrower",
+        on_delete=models.CASCADE,
+        related_name="aging_composition_rows",
+        null=True,
+        blank=True,
+    )
 
     class Meta:
         db_table = 'aging_composition'
@@ -202,6 +216,13 @@ class IneligibleTrendRow(TimeStampedModel):
     total_ar = MoneyField()  # Total AR
     total_ineligible = MoneyField()  # Total Ineligible
     ineligible_pct_of_ar = PctField()  # Ineligible % of AR
+    borrower = models.ForeignKey(
+        "Borrower",
+        on_delete=models.CASCADE,
+        related_name="ineligible_trend",
+        null=True,
+        blank=True,
+    )
 
     class Meta:
         db_table = 'ineligible_trend'
@@ -224,6 +245,13 @@ class IneligibleOverviewRow(TimeStampedModel):
     other = models.DecimalField(max_digits=20, decimal_places=6, null=True, blank=True)  # Other
     total_ineligible = MoneyField()  # Total Ineligible
     ineligible_pct_of_ar = PctField()  # Ineligible % of AR
+    borrower = models.ForeignKey(   
+        "Borrower",
+        on_delete=models.CASCADE,
+        related_name="ineligible_overview",
+        null=True,
+        blank=True,
+    )
 
     class Meta:
         db_table = 'ineligible_overview'
@@ -245,6 +273,13 @@ class ConcentrationADODSORow(TimeStampedModel):
     current_dso_days = MoneyField()  # Current DSO (Days)
     avg_ttm_dso_days = models.DecimalField(max_digits=20, decimal_places=6, null=True, blank=True)  # Avg TTM DSO (Days)
     variance_dso_days = MoneyField()  # Variance DSO (Days)
+    borrower = models.ForeignKey(   
+        "Borrower",
+        on_delete=models.CASCADE,
+        related_name="concentration_ado_dso",
+        null=True,
+        blank=True,
+    )
 
     class Meta:
         db_table = 'concentration_ado_dso'
@@ -261,6 +296,13 @@ class FGInventoryMetricsRow(TimeStampedModel):
     ineligible_inventory = MoneyField()  # IneligibleInventory
     available_inventory = MoneyField()  # AvailableInventory
     ineligible_pct_of_inventory = PctField()  # IneligiblePctOfInventory
+    borrower = models.ForeignKey(
+        "Borrower",
+        on_delete=models.CASCADE,
+        related_name="fg_inventory_metrics",
+        null=True,
+        blank=True,
+    )
 
     class Meta:
         db_table = 'fg_inventory_metrics'
@@ -281,6 +323,13 @@ class FGIneligibleDetailRow(TimeStampedModel):
     damaged_non_saleable = models.DecimalField(max_digits=20, decimal_places=6, null=True, blank=True)  # Damaged/Non-Saleable
     total_ineligible = MoneyField()  # Total Ineligible
     ineligible_pct_of_inventory = PctField()  # Ineligible % of Inventory
+    borrower = models.ForeignKey(
+        "Borrower",
+        on_delete=models.CASCADE,
+        related_name="fg_ineligible_detail",
+        null=True,
+        blank=True,
+    )
 
     class Meta:
         db_table = 'fg_ineligible_detail'
@@ -300,6 +349,13 @@ class FGCompositionRow(TimeStampedModel):
     fg_no_sales = MoneyField()  # FG_NoSales
     inline_pct = PctField()  # InlinePct
     excess_pct = PctField()  # ExcessPct
+    borrower = models.ForeignKey(
+        "Borrower",
+        on_delete=models.CASCADE,
+        related_name="fg_composition",
+        null=True,
+        blank=True,
+    )
 
     class Meta:
         db_table = 'fg_composition'
@@ -321,6 +377,13 @@ class FGInlineCategoryAnalysisRow(TimeStampedModel):
     gm = models.DecimalField(max_digits=20, decimal_places=6, null=True, blank=True)  # GM
     gm_pct = PctField()  # GM%
     weeks_of_supply = models.DecimalField(max_digits=20, decimal_places=6, null=True, blank=True)  # Weeks_of_Supply
+    borrower = models.ForeignKey(
+        "Borrower",
+        on_delete=models.CASCADE,
+        related_name="fg_inline_category_analysis",
+        null=True,
+        blank=True,
+    )
 
     class Meta:
         db_table = 'fg_inline_category_analysis'
@@ -341,6 +404,13 @@ class SalesGMTrendRow(TimeStampedModel):
     ma3 = models.DecimalField(max_digits=20, decimal_places=6, null=True, blank=True)  # MA3
     ma3_prior = models.DecimalField(max_digits=20, decimal_places=6, null=True, blank=True)  # MA3_prior
     trend_3_m_pct = PctField()  # Trend_3M_Pct
+    borrower = models.ForeignKey(
+        "Borrower",
+        on_delete=models.CASCADE,
+        related_name="sales_gm_trend",
+        null=True,
+        blank=True,
+    )
 
     class Meta:
         db_table = 'sales_gm_trend'
@@ -358,6 +428,13 @@ class FGInlineExcessByCategoryRow(TimeStampedModel):
     inline_pct = PctField()  # Inline_Pct
     excess_dollars = MoneyField()  # Excess_Dollars
     excess_pct = PctField()  # Excess_Pct
+    borrower = models.ForeignKey(
+        "Borrower",
+        on_delete=models.CASCADE,
+        related_name="fg_inline_excess_by_category",
+        null=True,
+        blank=True,
+    )
 
     class Meta:
         db_table = 'fg_inline_excess_by_category'
@@ -378,6 +455,13 @@ class HistoricalTop20SKUsRow(TimeStampedModel):
     gm = models.DecimalField(max_digits=20, decimal_places=6, null=True, blank=True)  # GM
     gm_pct = PctField()  # GM%
     wos = models.DecimalField(max_digits=20, decimal_places=6, null=True, blank=True)  # WOS
+    borrower = models.ForeignKey(
+        "Borrower",
+        on_delete=models.CASCADE,
+        related_name="historical_top_20_sk_us",
+        null=True,
+        blank=True,
+    )
 
     class Meta:
         db_table = 'historical_top_20_sk_us'
@@ -394,6 +478,13 @@ class RMInventoryMetricsRow(TimeStampedModel):
     ineligible_inventory = MoneyField()  # IneligibleInventory
     available_inventory = MoneyField()  # AvailableInventory
     ineligible_pct_of_inventory = PctField()  # IneligiblePctOfInventory
+    borrower = models.ForeignKey(
+        "Borrower",
+        on_delete=models.CASCADE,
+        related_name="rm_inventory_metrics",
+        null=True,
+        blank=True,
+    )
 
     class Meta:
         db_table = 'rm_inventory_metrics'
@@ -414,6 +505,13 @@ class RMIneligibleOverviewRow(TimeStampedModel):
     damaged_non_saleable = models.DecimalField(max_digits=20, decimal_places=6, null=True, blank=True)  # Damaged/Non-Saleable
     total_ineligible = MoneyField()  # Total Ineligible
     ineligible_pct_of_inventory = PctField()  # Ineligible % of Inventory
+    borrower = models.ForeignKey(
+        "Borrower",
+        on_delete=models.CASCADE,
+        related_name="rm_ineligible_overview",
+        null=True,
+        blank=True,
+    )
 
     class Meta:
         db_table = 'rm_ineligible_overview'
@@ -431,6 +529,13 @@ class RMCategoryHistoryRow(TimeStampedModel):
     ineligible_inventory = MoneyField()  # IneligibleInventory
     available_inventory = MoneyField()  # AvailableInventory
     pct_available = PctField()  # %Available
+    borrower = models.ForeignKey(
+        "Borrower",
+        on_delete=models.CASCADE,
+        related_name="rm_category_history",
+        null=True,
+        blank=True,
+    )
 
     class Meta:
         db_table = 'rm_category_history'
@@ -450,6 +555,13 @@ class RMTop20HistoryRow(TimeStampedModel):
     units = models.DecimalField(max_digits=20, decimal_places=6, null=True, blank=True)  # Units
     usd_unit = MoneyField()  # $/Unit
     pct_available = PctField()  # %Available
+    borrower = models.ForeignKey(
+        "Borrower",
+        on_delete=models.CASCADE,
+        related_name="rm_top20_history",
+        null=True,
+        blank=True,
+    )
 
     class Meta:
         db_table = 'rm_top20_history'
@@ -467,6 +579,13 @@ class WIPInventoryMetricsRow(TimeStampedModel):
     ineligible_inventory = MoneyField()  # IneligibleInventory
     available_inventory = MoneyField()  # AvailableInventory
     ineligible_pct_of_inventory = PctField()  # IneligiblePctOfInventory
+    borrower = models.ForeignKey(
+        "Borrower",
+        on_delete=models.CASCADE,
+        related_name="wip_inventory_metrics",
+        null=True,
+        blank=True,
+    )
 
     class Meta:
         db_table = 'wip_inventory_metrics'
@@ -487,6 +606,13 @@ class WIPIneligibleOverviewRow(TimeStampedModel):
     damaged_non_saleable = models.DecimalField(max_digits=20, decimal_places=6, null=True, blank=True)  # Damaged/Non-Saleable
     total_ineligible = MoneyField()  # Total Ineligible
     ineligible_pct_of_inventory = PctField()  # Ineligible % of Inventory
+    borrower = models.ForeignKey(
+        "Borrower",
+        on_delete=models.CASCADE,
+        related_name="wip_ineligible_overview",
+        null=True,
+        blank=True,
+    )
 
     class Meta:
         db_table = 'wip_ineligible_overview'
@@ -504,6 +630,13 @@ class WIPCategoryHistoryRow(TimeStampedModel):
     ineligible_inventory = MoneyField()  # IneligibleInventory
     available_inventory = MoneyField()  # AvailableInventory
     pct_available = PctField()  # %Available
+    borrower = models.ForeignKey(
+        "Borrower",
+        on_delete=models.CASCADE,
+        related_name="wip_category_history",
+        null=True,
+        blank=True,
+    )
 
     class Meta:
         db_table = 'wip_category_history'
@@ -523,6 +656,13 @@ class WIPTop20HistoryRow(TimeStampedModel):
     units = models.DecimalField(max_digits=20, decimal_places=6, null=True, blank=True)  # Units
     usd_unit = MoneyField()  # $/Unit
     pct_available = PctField()  # %Available
+    borrower = models.ForeignKey(
+        "Borrower",
+        on_delete=models.CASCADE,
+        related_name="wip_top20_history",
+        null=True,
+        blank=True,
+    )
 
     class Meta:
         db_table = 'wip_top20_history'
@@ -543,6 +683,13 @@ class FGGrossRecoveryHistoryRow(TimeStampedModel):
     pct_of_sp = PctField()  # Pct_of_SP
     wos = models.DecimalField(max_digits=20, decimal_places=6, null=True, blank=True)  # WOS
     gm_pct = PctField()  # GM%
+    borrower = models.ForeignKey(
+        "Borrower",
+        on_delete=models.CASCADE,
+        related_name="fg_gross_recovery_history",
+        null=True,
+        blank=True,
+    )
 
     class Meta:
         db_table = 'fg_gross_recovery_history'
@@ -562,6 +709,13 @@ class WIPRecoveryRow(TimeStampedModel):
     pct_available = PctField()  # %Available
     recovery_pct = PctField()  # RecoveryPct
     gross_recovery = MoneyField()  # GrossRecovery
+    borrower = models.ForeignKey(
+        "Borrower",
+        on_delete=models.CASCADE,
+        related_name="wip_recovery",
+        null=True,
+        blank=True,
+    )
 
     class Meta:
         db_table = 'wip_recovery'
@@ -581,6 +735,13 @@ class RawMaterialRecoveryRow(TimeStampedModel):
     pct_available = PctField()  # %Available
     recovery_pct = PctField()  # RecoveryPct
     gross_recovery = MoneyField()  # GrossRecovery
+    borrower = models.ForeignKey(
+        "Borrower",
+        on_delete=models.CASCADE,
+        related_name="raw_material_recovery",
+        null=True,
+        blank=True,
+    )
 
     class Meta:
         db_table = 'raw_material_recovery'
@@ -601,6 +762,13 @@ class NOLVTableRow(TimeStampedModel):
     wip_pct_cost = PctField()  # WIP_%Cost
     total_usd = MoneyField()  # Total_$
     total_pct_cost = PctField()  # Total_%Cost
+    borrower = models.ForeignKey(
+        "Borrower",
+        on_delete=models.CASCADE,
+        related_name="nolv_table",
+        null=True,
+        blank=True,
+    )
 
     class Meta:
         db_table = 'nolv_table'
@@ -669,6 +837,13 @@ class ForecastRow(TimeStampedModel):
     finished_goods = models.DecimalField(max_digits=20, decimal_places=6, null=True, blank=True)  # FinishedGoods
     raw_materials = models.DecimalField(max_digits=20, decimal_places=6, null=True, blank=True)  # RawMaterials
     work_in_process = models.DecimalField(max_digits=20, decimal_places=6, null=True, blank=True)  # WorkInProcess
+    borrower = models.ForeignKey(
+        "Borrower",
+        on_delete=models.CASCADE,
+        related_name="forecast",
+        null=True,
+        blank=True,
+    )
 
     class Meta:
         db_table = 'forecast'
@@ -692,6 +867,14 @@ class AvailabilityForecastRow(TimeStampedModel):
     week_11 = models.DecimalField(max_digits=20, decimal_places=6, null=True, blank=True)  # Week 11
     week_12 = models.DecimalField(max_digits=20, decimal_places=6, null=True, blank=True)  # Week 12
     week_13 = models.DecimalField(max_digits=20, decimal_places=6, null=True, blank=True)  # Week 13
+    borrower = models.ForeignKey(
+        "Borrower",
+        on_delete=models.CASCADE,
+        related_name="availability_forecast",
+        null=True,
+        blank=True,
+    )
+    
 
     class Meta:
         db_table = 'availability_forecast'
@@ -706,6 +889,13 @@ class CurrentWeekVarianceRow(TimeStampedModel):
     actual = models.DecimalField(max_digits=20, decimal_places=6, null=True, blank=True)  # Actual
     variance = MoneyField()  # Variance
     variance_pct = PctField()  # Variance %
+    borrower = models.ForeignKey(
+        "Borrower",
+        on_delete=models.CASCADE,
+        related_name="current_week_variance",
+        null=True,
+        blank=True,
+    )
 
     class Meta:
         db_table = 'current_week_variance'
@@ -721,6 +911,13 @@ class CummulativeVarianceRow(TimeStampedModel):
     actual = models.DecimalField(max_digits=20, decimal_places=6, null=True, blank=True)  # Actual
     variance = MoneyField()  # Variance
     variance_pct = PctField()  # Variance %
+    borrower = models.ForeignKey(
+        "Borrower",
+        on_delete=models.CASCADE,
+        related_name="cummulative_variance",
+        null=True,
+        blank=True,
+    )
 
     class Meta:
         db_table = 'cummulative_variance'
@@ -754,6 +951,13 @@ class IneligiblesRow(TimeStampedModel):
     division = models.CharField(max_length=255, null=True, blank=True)  # Division
     collateral_type = models.CharField(max_length=255, null=True, blank=True)  # Collateral Type 
     collateral_sub_type = models.CharField(max_length=255, null=True, blank=True)  # Collateral Sub-Type 
+    borrower = models.ForeignKey(
+        "Borrower",
+        on_delete=models.CASCADE,
+        related_name="ineligibles_rows",
+        null=True,
+        blank=True,
+    )
 
     class Meta:
         db_table = 'ineligibles'
