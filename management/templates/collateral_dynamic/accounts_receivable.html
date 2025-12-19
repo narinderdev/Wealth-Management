@@ -403,6 +403,27 @@
       border-radius:12px;
       padding:12px;
     }
+    .collateral-dynamic .chart-wrap{position:relative;}
+    .collateral-dynamic .chart-tooltip{
+      position:absolute;
+      padding:6px 10px;
+      background:#111827;
+      color:#fff;
+      font-size:12px;
+      border-radius:8px;
+      box-shadow:0 12px 22px rgba(15,23,42,.2);
+      pointer-events:none;
+      opacity:0;
+      transform:translate(-50%,-120%);
+      transition:opacity .15s ease;
+      display:flex;
+      flex-direction:column;
+      gap:2px;
+      z-index:5;
+    }
+    .collateral-dynamic .chart-tooltip strong{font-size:11px;font-weight:700;}
+    .collateral-dynamic .chart-tooltip span{font-size:12px;}
+    .collateral-dynamic .chart-tooltip.is-visible{opacity:1;}
     .collateral-dynamic .chart-card header{
       font-size:13px;
       font-weight:600;
@@ -891,31 +912,35 @@
                         <div style="font-size:10px;color:rgba(15,23,42,.45)">%</div>
                       </div>
 
-                      <svg viewBox="0 0 440 170" width="100%" height="170" aria-label="Aging composition bar chart">
-                        <g stroke="rgba(15,23,42,.08)" stroke-width="1">
-                          <path d="M40 140H420"/>
-                          <path d="M40 110H420"/>
-                          <path d="M40 80H420"/>
-                          <path d="M40 50H420"/>
-                        </g>
+                      <div class="chart-wrap ar-chart">
+                        <svg viewBox="0 0 440 170" width="100%" height="170" aria-label="Aging composition bar chart">
+                          <g stroke="rgba(15,23,42,.08)" stroke-width="1">
+                            <path d="M40 140H420"/>
+                            <path d="M40 110H420"/>
+                            <path d="M40 80H420"/>
+                            <path d="M40 50H420"/>
+                          </g>
 
-                        <g fill="rgba(15,23,42,.45)" font-size="10">
-                          <text x="10" y="143">$20</text>
-                          <text x="10" y="113">$40</text>
-                          <text x="10" y="83">$60</text>
-                          <text x="10" y="53">$80</text>
-                        </g>
+                          <g fill="rgba(15,23,42,.45)" font-size="10">
+                            <text x="10" y="143">$20</text>
+                            <text x="10" y="113">$40</text>
+                            <text x="10" y="83">$60</text>
+                            <text x="10" y="53">$80</text>
+                          </g>
 
-                        <g>
-                          {% for bucket in ar_aging_chart_buckets %}
-                            <rect x="{{ bucket.x }}" y="{{ bucket.y }}" width="{{ bucket.width }}" height="{{ bucket.height }}" rx="6" fill="{{ bucket.color }}"/>
-                            <text x="{{ bucket.text_x }}" y="{{ bucket.percent_y }}" text-anchor="middle" font-size="10" fill="rgba(15,23,42,.55)">{{ bucket.percent_display }}</text>
-                            <text x="{{ bucket.text_x }}" y="{{ bucket.label_y }}" text-anchor="middle" font-size="10" fill="rgba(15,23,42,.55)">{{ bucket.label }}</text>
-                          {% empty %}
-                            <text x="220" y="96" text-anchor="middle" font-size="12" fill="rgba(15,23,42,.45)">No aging data</text>
-                          {% endfor %}
-                        </g>
-                      </svg>
+                          <g>
+                            {% for bucket in ar_aging_chart_buckets %}
+                              <rect x="{{ bucket.x }}" y="{{ bucket.y }}" width="{{ bucket.width }}" height="{{ bucket.height }}" rx="6" fill="{{ bucket.color }}"
+                                class="ar-tip" data-label="{{ bucket.label }}" data-value="{{ bucket.percent_display }}" data-extra="{{ bucket.amount_display }}"/>
+                              <text x="{{ bucket.text_x }}" y="{{ bucket.percent_y }}" text-anchor="middle" font-size="10" fill="rgba(15,23,42,.55)">{{ bucket.percent_display }}</text>
+                              <text x="{{ bucket.text_x }}" y="{{ bucket.label_y }}" text-anchor="middle" font-size="10" fill="rgba(15,23,42,.55)">{{ bucket.label }}</text>
+                            {% empty %}
+                              <text x="220" y="96" text-anchor="middle" font-size="12" fill="rgba(15,23,42,.45)">No aging data</text>
+                            {% endfor %}
+                          </g>
+                        </svg>
+                        <div class="chart-tooltip" aria-hidden="true"></div>
+                      </div>
                     </div>
 
                     <!-- Current vs Past Due Trend -->
@@ -933,37 +958,42 @@
                         </div>
                       </div>
 
-                      <svg viewBox="0 0 520 170" width="100%" height="170" aria-label="Current vs Past Due grouped bar chart">
-                        <g stroke="rgba(15,23,42,.08)" stroke-width="1">
-                          <path d="M40 140H500"/>
-                          <path d="M40 110H500"/>
-                          <path d="M40 80H500"/>
-                          <path d="M40 50H500"/>
-                        </g>
-                        <g fill="rgba(15,23,42,.45)" font-size="10">
-                          <text x="10" y="143">0%</text>
-                          <text x="10" y="113">20%</text>
-                          <text x="10" y="83">40%</text>
-                          <text x="10" y="53">60%</text>
-                        </g>
+                      <div class="chart-wrap ar-chart">
+                        <svg viewBox="0 0 520 170" width="100%" height="170" aria-label="Current vs Past Due grouped bar chart">
+                          <g stroke="rgba(15,23,42,.08)" stroke-width="1">
+                            <path d="M40 140H500"/>
+                            <path d="M40 110H500"/>
+                            <path d="M40 80H500"/>
+                            <path d="M40 50H500"/>
+                          </g>
+                          <g fill="rgba(15,23,42,.45)" font-size="10">
+                            <text x="10" y="143">0%</text>
+                            <text x="10" y="113">20%</text>
+                            <text x="10" y="83">40%</text>
+                            <text x="10" y="53">60%</text>
+                          </g>
 
-                        <g>
-                          {% if ar_current_vs_past_due_trend.bars %}
-                            {% for bar in ar_current_vs_past_due_trend.bars %}
-                              <rect x="{{ bar.past_due_x }}" y="{{ bar.past_due_y }}" width="8" height="{{ bar.past_due_height }}" rx="3" fill="#1b2a55"/>
-                              <rect x="{{ bar.current_x }}" y="{{ bar.current_y }}" width="8" height="{{ bar.current_height }}" rx="3" fill="var(--blue-2)"/>
+                          <g>
+                            {% if ar_current_vs_past_due_trend.bars %}
+                              {% for bar in ar_current_vs_past_due_trend.bars %}
+                                <rect x="{{ bar.past_due_x }}" y="{{ bar.past_due_y }}" width="8" height="{{ bar.past_due_height }}" rx="3" fill="#1b2a55"
+                                  class="ar-tip" data-label="{{ bar.label }}" data-series="Past Due" data-value="{{ bar.past_due_pct }}"/>
+                                <rect x="{{ bar.current_x }}" y="{{ bar.current_y }}" width="8" height="{{ bar.current_height }}" rx="3" fill="var(--blue-2)"
+                                  class="ar-tip" data-label="{{ bar.label }}" data-series="Current" data-value="{{ bar.current_pct }}"/>
+                              {% endfor %}
+                            {% else %}
+                              <text x="260" y="110" fill="rgba(15,23,42,.45)" font-size="12" text-anchor="middle">No trend data</text>
+                            {% endif %}
+                          </g>
+
+                          <g fill="rgba(15,23,42,.45)" font-size="9">
+                            {% for label in ar_current_vs_past_due_trend.labels %}
+                              <text x="{{ label.x }}" y="163" text-anchor="middle">{{ label.text }}</text>
                             {% endfor %}
-                          {% else %}
-                            <text x="260" y="110" fill="rgba(15,23,42,.45)" font-size="12" text-anchor="middle">No trend data</text>
-                          {% endif %}
-                        </g>
-
-                        <g fill="rgba(15,23,42,.45)" font-size="9">
-                          {% for label in ar_current_vs_past_due_trend.labels %}
-                            <text x="{{ label.x }}" y="163" text-anchor="middle">{{ label.text }}</text>
-                          {% endfor %}
-                        </g>
-                      </svg>
+                          </g>
+                        </svg>
+                        <div class="chart-tooltip" aria-hidden="true"></div>
+                      </div>
                     </div>
                   </div>
 
@@ -1093,46 +1123,47 @@
                         </div>
                       </div>
 
-                      <svg viewBox="0 0 520 210" width="100%" height="210" aria-label="Ineligible AR trend line chart">
-                        <g stroke="rgba(15,23,42,.08)" stroke-width="1">
-                          <path d="M50 170H500"/>
-                          <path d="M50 140H500"/>
-                          <path d="M50 110H500"/>
-                          <path d="M50 80H500"/>
-                          <path d="M50 50H500"/>
-                        </g>
-
-                        <g fill="rgba(15,23,42,.45)" font-size="10">
-                          <text x="10" y="173">10%</text>
-                          <text x="10" y="143">30%</text>
-                          <text x="10" y="113">50%</text>
-                          <text x="10" y="83">70%</text>
-                          <text x="10" y="53">90%</text>
-                        </g>
-
-                        {% if ar_ineligible_trend.points %}
-                          <polyline fill="none" stroke="var(--blue-3)" stroke-width="2.5"
-                            points="{{ ar_ineligible_trend.points }}"/>
-                          <g fill="#fff" stroke="var(--blue-3)" stroke-width="2">
-                            {% for dot in ar_ineligible_trend.dots %}
-                              <circle cx="{{ dot.cx }}" cy="{{ dot.cy }}" r="3.2"/>
-                            {% endfor %}
+                      <div class="chart-wrap ar-chart">
+                        <svg viewBox="0 0 520 210" width="100%" height="210" aria-label="Ineligible AR trend line chart">
+                          <g stroke="rgba(15,23,42,.08)" stroke-width="1">
+                            <path d="M50 170H500"/>
+                            <path d="M50 140H500"/>
+                            <path d="M50 110H500"/>
+                            <path d="M50 80H500"/>
+                            <path d="M50 50H500"/>
                           </g>
-                          <g fill="rgba(15,23,42,.45)" font-size="9">
-                            {% for label in ar_ineligible_trend.labels %}
-                              <text x="{{ label.x }}" y="194" text-anchor="middle">{{ label.text }}</text>
-                            {% endfor %}
-                          </g>
-                        {% else %}
-                          <text x="260" y="110" text-anchor="middle" fill="rgba(15,23,42,.45)" font-size="12">
-                            No ineligible trend data
-                          </text>
-                        {% endif %}
 
-                        <text x="18" y="120" fill="rgba(15,23,42,.45)" font-size="10" transform="rotate(-90 18 120)">
-                          % Of Accounts Receivable
-                        </text>
-                      </svg>
+                          <g fill="rgba(15,23,42,.45)" font-size="10">
+                            <text x="10" y="173">10%</text>
+                            <text x="10" y="143">30%</text>
+                            <text x="10" y="113">50%</text>
+                            <text x="10" y="83">70%</text>
+                            <text x="10" y="53">90%</text>
+                          </g>
+
+                          {% if ar_ineligible_trend.points %}
+                            <polyline fill="none" stroke="var(--blue-3)" stroke-width="2.5"
+                              points="{{ ar_ineligible_trend.points }}"/>
+                            <g fill="#fff" stroke="var(--blue-3)" stroke-width="2">
+                              {% for dot in ar_ineligible_trend.dots %}
+                                <circle cx="{{ dot.cx }}" cy="{{ dot.cy }}" r="3.2"
+                                  class="ar-tip" data-label="{{ dot.label }}" data-value="{{ dot.value }}"/>
+                              {% endfor %}
+                            </g>
+                            <g fill="rgba(15,23,42,.45)" font-size="9">
+                              {% for label in ar_ineligible_trend.labels %}
+                                <text x="{{ label.x }}" y="194" text-anchor="middle">{{ label.text }}</text>
+                              {% endfor %}
+                            </g>
+                          {% else %}
+                            <text x="260" y="110" text-anchor="middle" fill="rgba(15,23,42,.45)" font-size="12">
+                              No ineligible trend data
+                            </text>
+                          {% endif %}
+                        </svg>
+                        <div class="chart-tooltip" aria-hidden="true"></div>
+                      </div>
+
                     </div>
                   </div>
                 </section>
@@ -1250,4 +1281,48 @@
       </div>
     </div>
   </div>
+
+  <script>
+    (function(){
+      function positionTooltip(wrap, event){
+        const rect = wrap.getBoundingClientRect();
+        const x = event.clientX - rect.left;
+        const y = event.clientY - rect.top;
+        return {x,y};
+      }
+      function attachArTooltips(){
+        document.querySelectorAll(".ar-chart").forEach(chart=>{
+          const tooltip = chart.querySelector(".chart-tooltip");
+          if(!tooltip) return;
+          const targets = chart.querySelectorAll(".ar-tip");
+          const show = (event)=>{
+            const target = event.currentTarget;
+            const label = (target.dataset.label||"").replace(/\n/g," ");
+            const series = target.dataset.series||"";
+            const value = target.dataset.value||"";
+            const extra = target.dataset.extra||"";
+            const title = series ? `${label} • ${series}` : label;
+            tooltip.innerHTML = `<strong>${value}</strong><span>${title}</span>${extra ? `<span>${extra}</span>` : ""}`;
+            const {x,y} = positionTooltip(chart, event);
+            tooltip.style.left = `${Math.max(12, Math.min(chart.clientWidth-12, x))}px`;
+            tooltip.style.top = `${Math.max(18, Math.min(chart.clientHeight-12, y-12))}px`;
+            tooltip.classList.add("is-visible");
+          };
+          const hide = ()=>tooltip.classList.remove("is-visible");
+          targets.forEach(target=>{
+            target.style.cursor = "pointer";
+            target.addEventListener("mousemove", show);
+            target.addEventListener("mouseenter", show);
+            target.addEventListener("mouseleave", hide);
+            target.addEventListener("blur", hide);
+          });
+        });
+      }
+      if(document.readyState === "loading"){
+        document.addEventListener("DOMContentLoaded", attachArTooltips);
+      } else {
+        attachArTooltips();
+      }
+    })();
+  </script>
 {% endblock %}

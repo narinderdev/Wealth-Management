@@ -129,6 +129,27 @@
     padding:12px 12px 8px;
     background:#fff;
   }
+  .work-in-progress .chart-wrap{position:relative;}
+  .work-in-progress .chart-tooltip{
+    position:absolute;
+    padding:6px 10px;
+    background:#0f172a;
+    color:#fff;
+    font-size:12px;
+    border-radius:8px;
+    box-shadow:0 12px 20px rgba(15,23,42,.18);
+    pointer-events:none;
+    opacity:0;
+    transform:translate(-50%,-120%);
+    transition:opacity .15s ease;
+    display:flex;
+    flex-direction:column;
+    gap:2px;
+    z-index:5;
+  }
+  .work-in-progress .chart-tooltip strong{font-size:11px;font-weight:700;}
+  .work-in-progress .chart-tooltip span{font-size:12px;}
+  .work-in-progress .chart-tooltip.is-visible{opacity:1;}
   .work-in-progress .chart-note{
     font-size:12px;
     color:var(--muted);
@@ -411,13 +432,45 @@
             <text x="55" y="${t.yy+4}" fill="#94a3b8" font-size="12" font-weight="700" text-anchor="end">${fmtY(t.val,c)}</text>
           `).join("")}
           <path d="${pathFrom(points)}" fill="none" stroke="${c.color||'#1e6fe0'}" stroke-width="4" stroke-linecap="round" stroke-linejoin="round" clip-path="url(#clip-wip)"></path>
-          ${points.map((p,i)=>`<circle cx="${p[0]}" cy="${p[1]}" r="6" fill="${c.color||'#1e6fe0'}"></circle>`).join("")}
+          ${points.map((p,i)=>`<circle cx="${p[0]}" cy="${p[1]}" r="6" fill="${c.color||'#1e6fe0'}" class="wip-point" data-label="${c.labels[i]}" data-value="${fmtY(c.values[i],c)}"></circle>`).join("")}
           <g fill="#94a3b8" font-size="12" font-weight="700">
             ${c.labels.map((lab,i)=>`<text x="${x(i)}" y="${H-20}" text-anchor="middle">${lab}</text>`).join("")}
           </g>
         </svg>
+        <div class="chart-tooltip" aria-hidden="true"></div>
       </div>
     `;
+    attachWipTooltip(el);
+  }
+  function positionTooltip(el,event){
+    const rect = el.getBoundingClientRect();
+    const x = event.clientX - rect.left;
+    const y = event.clientY - rect.top;
+    return {x,y};
+  }
+  function attachWipTooltip(el){
+    const wrap = el.querySelector(".chart-wrap");
+    const tooltip = el.querySelector(".chart-tooltip");
+    if (!wrap || !tooltip) return;
+    const points = el.querySelectorAll(".wip-point");
+    const show = (event)=>{
+      const target = event.currentTarget;
+      const label = (target.dataset.label||"").replace(/\n/g," ");
+      const value = target.dataset.value||"";
+      tooltip.innerHTML = `<strong>${value}</strong><span>${label}</span>`;
+      const {x,y} = positionTooltip(wrap,event);
+      tooltip.style.left = `${Math.max(14, Math.min(wrap.clientWidth-14, x))}px`;
+      tooltip.style.top = `${Math.max(18, Math.min(wrap.clientHeight-14, y-12))}px`;
+      tooltip.classList.add("is-visible");
+    };
+    const hide = ()=>tooltip.classList.remove("is-visible");
+    points.forEach(point=>{
+      point.style.cursor = "pointer";
+      point.addEventListener("mousemove", show);
+      point.addEventListener("mouseenter", show);
+      point.addEventListener("mouseleave", hide);
+      point.addEventListener("blur", hide);
+    });
   }
   document.addEventListener("DOMContentLoaded", ()=>{
     const chartElements = document.querySelectorAll("[data-chart]");

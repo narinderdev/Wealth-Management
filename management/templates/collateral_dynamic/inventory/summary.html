@@ -80,7 +80,9 @@
                 <rect x="{{ bar.x }}" y="{{ bar.y }}" width="{{ bar.width }}" height="{{ bar.height }}"
                       fill="{{ bar.color }}"
                       data-label="{{ column.month_label }} · {{ bar.series_label }}"
-                      data-value="{{ bar.percentage_display }}"/>
+                      data-value="{{ bar.percentage_display }}">
+                  <title>{{ column.month_label }} · {{ bar.series_label }} · {{ bar.percentage_display }}</title>
+                </rect>
               {% endfor %}
             {% endfor %}
           </g>
@@ -182,7 +184,9 @@
         <g>
           {% for point in series.points_list %}
           <circle cx="{{ point.x }}" cy="{{ point.y }}" r="2.8" fill="{{ series.color }}"
-                  data-label="{{ point.label }}" data-value="{{ point.value }}" />
+                  data-label="{{ point.label }}" data-value="{{ point.value }}">
+            <title>{{ point.label }} – {{ point.value }}</title>
+          </circle>
           {% endfor %}
         </g>
         {% endfor %}

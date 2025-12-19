@@ -129,6 +129,38 @@
     padding:12px 12px 8px;
     background:#fff;
   }
+  .raw-materials .chart-wrap{
+    position:relative;
+  }
+  .raw-materials .chart-tooltip{
+    position:absolute;
+    left:0;
+    top:0;
+    min-width:88px;
+    padding:6px 10px;
+    background:var(--text);
+    color:#fff;
+    border-radius:8px;
+    font-size:12px;
+    pointer-events:none;
+    opacity:0;
+    transform:translate(-50%,-110%);
+    transition:opacity .2s ease;
+    box-shadow:0 12px 24px rgba(15,23,42,.2);
+    z-index:5;
+  }
+  .raw-materials .chart-tooltip strong{
+    font-size:11px;
+    display:block;
+    margin-bottom:2px;
+  }
+  .raw-materials .chart-tooltip span{
+    font-size:12px;
+    font-weight:600;
+  }
+  .raw-materials .chart-tooltip.is-visible{
+    opacity:1;
+  }
   .raw-materials .chart-note{
     font-size:12px;
     color:var(--muted);
@@ -410,13 +442,43 @@
             <text x="55" y="${t.yy+4}" fill="#94a3b8" font-size="12" font-weight="700" text-anchor="end">${fmtY(t.val,c)}</text>
           `).join("")}
           <path d="${pathFrom(points)}" fill="none" stroke="${c.color||'#1e6fe0'}" stroke-width="4" stroke-linecap="round" stroke-linejoin="round" clip-path="url(#clip)"></path>
-          ${points.map((p,i)=>`<circle cx="${p[0]}" cy="${p[1]}" r="6" fill="${c.color||'#1e6fe0'}"></circle>`).join("")}
+          ${points.map((p,i)=>`<circle cx="${p[0]}" cy="${p[1]}" r="6" fill="${c.color||'#1e6fe0'}"
+            data-label="${c.labels[i]}" data-value="${fmtY(c.values[i],c)}"
+            class="raw-trend-point"></circle>`).join("")}
           <g fill="#94a3b8" font-size="12" font-weight="700">
             ${c.labels.map((lab,i)=>`<text x="${x(i)}" y="${H-20}" text-anchor="middle">${lab}</text>`).join("")}
           </g>
         </svg>
+        <div class="chart-tooltip" aria-hidden="true"></div>
       </div>
     `;
+    attachTrendTooltips(el);
+  }
+
+  function attachTrendTooltips(el){
+    const tooltip = el.querySelector(".chart-tooltip");
+    if(!tooltip) return;
+    const points = el.querySelectorAll(".raw-trend-point");
+    const show = (event) =>{
+      const target = event.currentTarget;
+      const label = target.dataset.label||"";
+      const value = target.dataset.value||"";
+      tooltip.innerHTML = `<strong>${value}</strong><span>${label}</span>`;
+      const rect = el.getBoundingClientRect();
+      const x = event.clientX - rect.left;
+      const y = event.clientY - rect.top;
+      tooltip.style.left = `${Math.max(12, Math.min(rect.width-12, x))}px`;
+      tooltip.style.top = `${Math.max(18, y-10)}px`;
+      tooltip.classList.add("is-visible");
+    };
+    const hide = () => tooltip.classList.remove("is-visible");
+    points.forEach(point=>{
+      point.style.cursor="pointer";
+      point.addEventListener("mousemove", show);
+      point.addEventListener("mouseenter", show);
+      point.addEventListener("mouseleave", hide);
+      point.addEventListener("blur", hide);
+    });
   }
   document.querySelectorAll("[data-chart]").forEach(el=>{
     const key = el.getAttribute("data-chart");

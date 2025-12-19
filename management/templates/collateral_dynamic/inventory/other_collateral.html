@@ -122,6 +122,28 @@
   .other-collateral .toggle span{padding:6px 10px;border-radius:8px;font-size:11px;font-weight:950;color:var(--muted);}
   .other-collateral .toggle span.active{background:#EEF4FF;color:#344054;}
   .other-collateral .svg-wrap{padding:6px 10px 14px;}
+  .other-collateral .chart-wrap{position:relative;}
+  .other-collateral .chart-tooltip{
+    position:absolute;
+    padding:6px 10px;
+    background:#101828;
+    color:#fff;
+    font-size:12px;
+    border-radius:8px;
+    box-shadow:0 12px 22px rgba(15,23,42,.2);
+    pointer-events:none;
+    opacity:0;
+    transform:translate(-50%,-120%);
+    transition:opacity .15s ease;
+    display:flex;
+    flex-direction:column;
+    gap:2px;
+    z-index:5;
+  }
+  .other-collateral .chart-tooltip strong{font-size:11px;font-weight:700;}
+  .other-collateral .chart-tooltip span{font-size:12px;}
+  .other-collateral .chart-tooltip.is-visible{opacity:1;}
+  .other-collateral .hit{fill:transparent;pointer-events:all;}
   .other-collateral svg{width:100%;height:auto;display:block;}
   .other-collateral .axis text{fill:var(--muted2);font-size:10px;}
   .other-collateral .gridline{stroke:var(--grid);stroke-width:1;}
@@ -289,8 +311,8 @@
     const W=980, H=260;
     const pad={l:46,r:14,t:14,b:34};
     const plotW=W-pad.l-pad.r, plotH=H-pad.t-pad.b;
-    const seriesEstimated = cfg.estimated||[];
-    const seriesAppraisal = cfg.appraisal||[];
+    const seriesEstimated = (cfg.estimated||[]).map(val => Number(val) || 0);
+    const seriesAppraisal = (cfg.appraisal||[]).map(val => Number(val) || 0);
     const all = [...seriesEstimated, ...seriesAppraisal];
     if(!all.length){
       el.innerHTML="<div class='mini-note'>Value trend data is unavailable.</div>";
@@ -318,7 +340,8 @@
     });
     const xStep = (cfg.labels?.length || 0) > 10 ? 2 : 1;
     el.innerHTML = `
-      <svg viewBox="0 0 ${W} ${H}" role="img" aria-label="${cfg.title||'Value Trend'}">
+      <div class="chart-wrap">
+        <svg viewBox="0 0 ${W} ${H}" role="img" aria-label="${cfg.title||'Value Trend'}">
         <rect x="${pad.l}" y="${pad.t}" width="${plotW}" height="${plotH}" class="borderline"></rect>
         ${yTicks.map(t=>`
           <line x1="${pad.l}" y1="${t.yy}" x2="${W-pad.r}" y2="${t.yy}" class="gridline"></line>
@@ -332,10 +355,52 @@
         </g>
         <path d="${linePath(ptsEst)}" class="lineA"></path>
         <path d="${linePath(ptsApp)}" class="lineB"></path>
-        ${ptsEst.map((p,i)=> i%2===1 ? `<circle cx="${p[0]}" cy="${p[1]}" r="3" class="pt"></circle>`:"").join("")}
-        ${ptsApp.map((p,i)=> i%2===1 ? `<circle cx="${p[0]}" cy="${p[1]}" r="3" class="ptb"></circle>`:"").join("")}
+        ${ptsEst.map((p,i)=> (ptsEst.length <= 2 || i%2===1) ? `<circle cx="${p[0]}" cy="${p[1]}" r="3" class="pt"></circle>`:"").join("")}
+        ${ptsApp.map((p,i)=> (ptsApp.length <= 2 || i%2===1) ? `<circle cx="${p[0]}" cy="${p[1]}" r="3" class="ptb"></circle>`:"").join("")}
+        ${ptsEst.map((p,i)=>`<circle cx="${p[0]}" cy="${p[1]}" r="8" class="hit oc-point"
+          data-label="${(cfg.labels||[])[i]||''}" data-value="${formatCurrencyLabel(seriesEstimated[i]||0)}"
+          data-series="Estimated OLV"></circle>`).join("")}
+        ${ptsApp.map((p,i)=>`<circle cx="${p[0]}" cy="${p[1]}" r="8" class="hit oc-point"
+          data-label="${(cfg.labels||[])[i]||''}" data-value="${formatCurrencyLabel(seriesAppraisal[i]||0)}"
+          data-series="Appraisal OLV"></circle>`).join("")}
       </svg>
+        <div class="chart-tooltip" aria-hidden="true"></div>
+      </div>
     `;
+    attachOtherCollateralTooltip(el);
+  }
+
+  function positionTooltip(el,event){
+    const rect = el.getBoundingClientRect();
+    const x = event.clientX - rect.left;
+    const y = event.clientY - rect.top;
+    return {x,y};
+  }
+
+  function attachOtherCollateralTooltip(el){
+    const wrap = el.querySelector(".chart-wrap");
+    const tooltip = el.querySelector(".chart-tooltip");
+    if (!wrap || !tooltip) return;
+    const points = el.querySelectorAll(".oc-point");
+    const show = (event)=>{
+      const target = event.currentTarget;
+      const label = (target.dataset.label||"").replace(/\n/g," ");
+      const value = target.dataset.value||"";
+      const series = target.dataset.series||"";
+      tooltip.innerHTML = `<strong>${value}</strong><span>${label}${series ? ` • ${series}` : ""}</span>`;
+      const {x,y} = positionTooltip(wrap,event);
+      tooltip.style.left = `${Math.max(14, Math.min(wrap.clientWidth-14, x))}px`;
+      tooltip.style.top = `${Math.max(18, Math.min(wrap.clientHeight-14, y-12))}px`;
+      tooltip.classList.add("is-visible");
+    };
+    const hide = ()=>tooltip.classList.remove("is-visible");
+    points.forEach(point=>{
+      point.style.cursor = "pointer";
+      point.addEventListener("mousemove", show);
+      point.addEventListener("mouseenter", show);
+      point.addEventListener("mouseleave", hide);
+      point.addEventListener("blur", hide);
+    });
   }
 
   const initializeValueTrend = () => {

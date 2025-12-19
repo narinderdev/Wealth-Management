@@ -19,13 +19,16 @@ from management.models import (
     FGIneligibleDetailRow,
     FGInventoryMetricsRow,
     FGInlineCategoryAnalysisRow,
+    FGInlineExcessByCategoryRow,
     FGGrossRecoveryHistoryRow,
+    HistoricalTop20SKUsRow,
     ForecastRow,
     IneligibleOverviewRow,
     IneligibleTrendRow,
     MachineryEquipmentRow,
     NOLVTableRow,
     RiskSubfactorsRow,
+    SalesGMTrendRow,
 )
 from management.views.summary import (
     _build_borrower_summary,
@@ -186,6 +189,151 @@ def _week_summary_context(borrower):
             return value.strftime("%b %d")
         return "Week"
 
+    def _trim_axis_value(value):
+        text = f"{value:.1f}"
+        return text.rstrip("0").rstrip(".")
+
+    def _format_axis_value(value):
+        val = float(value)
+        abs_val = abs(val)
+        if abs_val >= 1_000_000_000:
+            return f"${_trim_axis_value(val / 1_000_000_000)}B"
+        if abs_val >= 1_000_000:
+            return f"${_trim_axis_value(val / 1_000_000)}M"
+        if abs_val >= 1_000:
+            return f"${_trim_axis_value(val / 1_000)}k"
+        return f"${val:,.0f}"
+
+    def _nice_step(value):
+        if value <= 0:
+            return 1.0
+        exponent = math.floor(math.log10(value))
+        magnitude = 10 ** exponent
+        fraction = value / magnitude
+        if fraction <= 1:
+            nice = 1
+        elif fraction <= 2:
+            nice = 2
+        elif fraction <= 5:
+            nice = 5
+        else:
+            nice = 10
+        return nice * magnitude
+
+    def _build_chart_bars(rows, width=620, height=280, left=60, right=40, top=40, bottom=60):
+        if not rows:
+            return [], [], [], []
+        max_value = max(
+            [_to_decimal(row.get("collections")) for row in rows]
+            + [_to_decimal(row.get("disbursements")) for row in rows]
+            + [Decimal("0")]
+        )
+        if max_value <= 0:
+            max_value = Decimal("1")
+        max_float = float(max_value)
+        magnitude = 10 ** max(0, int(math.floor(math.log10(max_float))) - 1)
+        step = magnitude if magnitude else 1
+        axis_max = math.ceil(max_float / step) * step if step else max_float
+        if axis_max <= 0:
+            axis_max = 1
+        plot_width = width - left - right
+        plot_height = height - top - bottom
+        group_count = len(rows)
+        group_width = plot_width / max(group_count, 1)
+        bar_gap = 4
+        bar_width = min(16, max(6, (group_width - bar_gap) / 2))
+        baseline_y = top + plot_height
+        collections_bars = []
+        disbursement_bars = []
+        label_points = []
+        ticks = []
+        tick_count = 6
+        for idx in range(tick_count):
+            ratio = idx / (tick_count - 1)
+            value = axis_max * (1 - ratio)
+            y = top + plot_height * ratio
+            ticks.append({"y": y, "label": _format_axis_value(value)})
+        for idx, row in enumerate(rows):
+            group_x = left + idx * group_width
+            total_bar_width = bar_width * 2 + bar_gap
+            start_x = group_x + max(0, (group_width - total_bar_width) / 2)
+            collections_val = _to_decimal(row.get("collections"))
+            disbursement_val = _to_decimal(row.get("disbursements"))
+            collections_height = float(collections_val / Decimal(str(axis_max))) * plot_height
+            disbursement_height = float(disbursement_val / Decimal(str(axis_max))) * plot_height
+            label_text = _format_chart_label(row.get("label"))
+            collections_bars.append(
+                {
+                    "x": start_x,
+                    "y": baseline_y - collections_height,
+                    "width": bar_width,
+                    "height": collections_height,
+                    "label": label_text,
+                    "value": _format_money(collections_val),
+                }
+            )
+            disbursement_bars.append(
+                {
+                    "x": start_x + bar_width + bar_gap,
+                    "y": baseline_y - disbursement_height,
+                    "width": bar_width,
+                    "height": disbursement_height,
+                    "label": label_text,
+                    "value": _format_money(disbursement_val),
+                }
+            )
+            label_points.append(
+                {
+                    "x": start_x + bar_width + bar_gap / 2,
+                    "text": label_text,
+                }
+            )
+        return collections_bars, disbursement_bars, label_points, ticks
+
+    def _build_liquidity_chart(series_values, labels, width=800, height=280, left=70, right=60, top=40, bottom=40):
+        if not series_values or not labels:
+            return {"series": [], "labels": [], "ticks": []}
+        all_values = [value for series in series_values for value in series]
+        max_value = max(all_values + [0.0])
+        if max_value <= 0:
+            max_value = 1.0
+        tick_count = 5
+        step_value = _nice_step(max_value / (tick_count - 1))
+        axis_max = step_value * (tick_count - 1)
+        if axis_max <= 0:
+            axis_max = max_value
+        total_width = width - left - right
+        step_x = total_width / max(1, len(labels) - 1)
+        chart_height = height - top - bottom
+        ticks = []
+        for idx in range(tick_count):
+            value = axis_max * (tick_count - 1 - idx) / (tick_count - 1)
+            y = top + (chart_height * idx / (tick_count - 1))
+            ticks.append({"y": round(y, 1), "label": _format_axis_value(value)})
+        label_points = []
+        for idx, label in enumerate(labels):
+            label_points.append({"x": round(left + idx * step_x, 1), "text": label})
+        series_output = []
+        for series in series_values:
+            points = []
+            dots = []
+            for idx, value in enumerate(series):
+                ratio = value / axis_max if axis_max else 0
+                ratio = max(0.0, min(1.0, ratio))
+                x = left + idx * step_x
+                y = top + (1 - ratio) * chart_height
+                points.append(f"{x:.1f},{y:.1f}")
+                dots.append(
+                    {
+                        "cx": round(x, 1),
+                        "cy": round(y, 1),
+                        "label": label_points[idx]["text"] if idx < len(label_points) else "",
+                        "value": _format_currency(value),
+                    }
+                )
+            series_output.append({"points": " ".join(points), "dots": dots})
+        return {"series": series_output, "labels": label_points, "ticks": ticks}
+
     def _sort_forecast_rows(rows):
         def _row_key(row):
             date_val = row.period or row.as_of_date or getattr(row, "id", None)
@@ -237,66 +385,71 @@ def _week_summary_context(borrower):
         "availability_rows": [],
         "liquidity_series": [],
         "liquidity_labels": [],
+        "liquidity_ticks": [],
+        "liquidity_legend": [],
         "variance_current_rows": [],
         "variance_cumulative_rows": [],
     }
 
-    def _latest_report_info():
-        candidates = []
-        report_models = [
-            ForecastRow,
-            CurrentWeekVarianceRow,
-            CummulativeVarianceRow,
-            AvailabilityForecastRow,
-        ]
-        for model in report_models:
-            row = (
-                model.objects.filter(report__borrower=borrower)
-                .order_by(
-                    "-report__report_date",
-                    "-report__created_at",
-                    "-report_id",
-                )
-                .values(
-                    "report_id",
-                    "report__report_date",
-                    "report__created_at",
-                )
-                .first()
-            )
-            if not row or not row.get("report_id"):
-                continue
-            timestamp = row.get("report__report_date") or row.get("report__created_at")
-            if timestamp is None:
-                timestamp = 0
-            candidates.append(
-                {
-                    "report_id": row["report_id"],
-                    "date": timestamp,
-                }
-            )
-        if not candidates:
-            return None
-        candidates.sort(key=lambda entry: entry["date"], reverse=True)
-        return candidates[0]
-
     if not borrower:
         return context
-    latest_info = _latest_report_info()
-    if not latest_info:
-        return context
-    report_id = latest_info["report_id"]
-    report_date = latest_info["date"]
-    cw_rows = list(
-        CurrentWeekVarianceRow.objects.filter(report_id=report_id).order_by("category", "id")
+
+    forecast_qs = ForecastRow.objects.filter(borrower=borrower)
+    latest_forecast = (
+        forecast_qs.exclude(as_of_date__isnull=True)
+        .order_by("-as_of_date", "-created_at", "-id")
+        .first()
     )
-    cum_rows = list(
-        CummulativeVarianceRow.objects.filter(report_id=report_id).order_by("category", "id")
+    if latest_forecast and latest_forecast.as_of_date:
+        forecast_rows = list(forecast_qs.filter(as_of_date=latest_forecast.as_of_date))
+    else:
+        forecast_rows = list(forecast_qs.order_by("created_at", "id"))
+
+    cw_qs = CurrentWeekVarianceRow.objects.filter(borrower=borrower)
+    latest_cw = (
+        cw_qs.exclude(date__isnull=True)
+        .order_by("-date", "-created_at", "-id")
+        .first()
     )
-    forecast_rows = list(ForecastRow.objects.filter(report_id=report_id))
-    availability_rows_qs = list(
-        AvailabilityForecastRow.objects.filter(report_id=report_id).order_by("id")
+    if latest_cw and latest_cw.date:
+        cw_rows = list(cw_qs.filter(date=latest_cw.date).order_by("category", "id"))
+    else:
+        cw_rows = list(cw_qs.order_by("created_at", "id"))
+
+    cum_qs = CummulativeVarianceRow.objects.filter(borrower=borrower)
+    latest_cum = (
+        cum_qs.exclude(date__isnull=True)
+        .order_by("-date", "-created_at", "-id")
+        .first()
     )
+    if latest_cum and latest_cum.date:
+        cum_rows = list(cum_qs.filter(date=latest_cum.date).order_by("category", "id"))
+    else:
+        cum_rows = list(cum_qs.order_by("created_at", "id"))
+
+    availability_qs = AvailabilityForecastRow.objects.filter(borrower=borrower)
+    latest_availability = (
+        availability_qs.exclude(date__isnull=True)
+        .order_by("-date", "-created_at", "-id")
+        .first()
+    )
+    if latest_availability and latest_availability.date:
+        availability_rows_qs = list(
+            availability_qs.filter(date=latest_availability.date).order_by("id")
+        )
+    else:
+        availability_rows_qs = list(availability_qs.order_by("id"))
+
+    report_date_candidates = []
+    if latest_forecast:
+        report_date_candidates.append(latest_forecast.as_of_date or latest_forecast.period)
+    if latest_cw:
+        report_date_candidates.append(latest_cw.date)
+    if latest_cum:
+        report_date_candidates.append(latest_cum.date)
+    if latest_availability:
+        report_date_candidates.append(latest_availability.date)
+    report_date = next((val for val in report_date_candidates if val), None)
     stats = []
     summary_map = [
         ("Beginning Cash", ["beginning cash"]),
@@ -319,7 +472,7 @@ def _week_summary_context(borrower):
     sorted_forecast_rows = _sort_forecast_rows(forecast_rows)
     column_entries, ordered_forecast_rows = _prepare_column_entries(sorted_forecast_rows)
     chart_rows = _build_chart_rows(ordered_forecast_rows or sorted_forecast_rows)
-    actual_bars, forecast_bars, chart_labels = _build_chart_bars(chart_rows)
+    actual_bars, forecast_bars, chart_labels, chart_ticks = _build_chart_bars(chart_rows)
 
     if column_entries:
         cashflow_actual_label = column_entries[0]["label"]
@@ -338,10 +491,6 @@ def _week_summary_context(borrower):
         if sorted_forecast_rows
         else None
     )
-    fallback_stats = _build_forecast_stats(base_forecast_row)
-    if fallback_stats and not any(_has_valid_stat(stat) for stat in stats):
-        stats = fallback_stats
-
     def _get_column_value(accessor, index):
         if not column_entries or index >= len(column_entries):
             return None
@@ -402,9 +551,6 @@ def _week_summary_context(borrower):
             return None
         return positive - negative
 
-    def _has_valid_stat(stat):
-        return stat.get("value") not in (None, "$—", "—")
-
     def _build_forecast_stats(row):
         if not row:
             return None
@@ -421,52 +567,61 @@ def _week_summary_context(borrower):
             {"label": "Ending Cash", "value": _format_money(ending)},
         ]
 
-    cashflow_metric_defs = [
-        ("Collections", lambda row: _value_for_field(row, "net_sales"), ""),
-        ("Other Receipts", lambda row: _value_for_field(row, "ar"), ""),
-        (
+    def _has_valid_stat(stat):
+        return stat.get("value") not in (None, "$—", "—")
+
+    fallback_stats = _build_forecast_stats(base_forecast_row)
+    if fallback_stats and not any(_has_valid_stat(stat) for stat in stats):
+        stats = fallback_stats
+
+    def _section_row(label):
+        return {
+            "label": label,
+            "actual": "",
+            "forecasts": ["" for _ in range(max(0, len(column_entries) - 1))],
+            "total": "",
+            "row_class": "section-row",
+        }
+
+    cashflow_table_rows = [
+        _section_row("Receipts"),
+        _build_table_row("Collections", lambda row: _value_for_field(row, "net_sales"), ""),
+        _build_table_row("Other Receipts", lambda row: _value_for_field(row, "ar"), ""),
+        _build_table_row(
             "Total Receipts",
             lambda row: _sum_fields(row, ["net_sales", "ar"]),
             "title-row",
         ),
-        (
-            "Operating Disbursements",
-            lambda row: _value_for_field(row, "loan_balance"),
-            "title-row",
-        ),
-        ("Payroll", lambda row: None, ""),
-        ("Rent", lambda row: None, ""),
-        ("Utilities", lambda row: None, ""),
-        ("Property Tax", lambda row: None, ""),
-        ("Insurance", lambda row: None, ""),
-        ("Professional Services", lambda row: None, ""),
-        ("Software Expenses", lambda row: None, ""),
-        ("Repairs / Maintenance", lambda row: None, ""),
-        ("Other Disbursements", lambda row: None, ""),
-        (
+        _section_row("Operating Disbursements"),
+        _build_table_row("Payroll", lambda row: None, ""),
+        _build_table_row("Rent", lambda row: None, ""),
+        _build_table_row("Utilities", lambda row: None, ""),
+        _build_table_row("Property Tax", lambda row: None, ""),
+        _build_table_row("Insurance", lambda row: None, ""),
+        _build_table_row("Professional Services", lambda row: None, ""),
+        _build_table_row("Software Expenses", lambda row: None, ""),
+        _build_table_row("Repairs / Maintenance", lambda row: None, ""),
+        _build_table_row("Other Disbursements", lambda row: None, ""),
+        _build_table_row(
             "Total Operating Disbursements",
             lambda row: _value_for_field(row, "loan_balance"),
             "title-row",
         ),
-        ("Non-Operating Disbursements", lambda row: None, "title-row"),
-        ("Interest Expense", lambda row: None, ""),
-        ("Non-Recurring Tax Payments", lambda row: None, ""),
-        ("One-Time Professional Fees", lambda row: None, ""),
-        ("Total Non-Operating Disbursements", lambda row: None, "title-row"),
-        (
+        _section_row("Non-Operating Disbursements"),
+        _build_table_row("Interest Expense", lambda row: None, ""),
+        _build_table_row("Non-Recurring Tax Payments", lambda row: None, ""),
+        _build_table_row("One-Time Professional Fees", lambda row: None, ""),
+        _build_table_row("Total Non-Operating Disbursements", lambda row: None, "title-row"),
+        _build_table_row(
             "Total Disbursements",
             lambda row: _value_for_field(row, "loan_balance"),
             "title-row",
         ),
-        (
+        _build_table_row(
             "Net Cash Flow",
             lambda row: _difference_fields(row, ["net_sales", "ar"], ["loan_balance"]),
             "title-row",
         ),
-    ]
-    cashflow_table_rows = [
-        _build_table_row(label, accessor, row_class)
-        for label, accessor, row_class in cashflow_metric_defs
     ]
     cashflow_cash_defs = [
         ("Beginning Cash", lambda row: _value_for_field(row, "available_collateral"), ""),
@@ -512,12 +667,14 @@ def _week_summary_context(borrower):
         context["availability_actual_label"] = cashflow_actual_label
 
     liquidity_fields = [
-        ("available_collateral", "#2563eb"),
-        ("revolver_availability", "#6574cd"),
-        ("net_sales", "#1d4ed8"),
+        ("available_collateral", "Collateral Availability", "#2563eb"),
+        ("revolver_availability", "Revolver Availability", "#6574cd"),
+        ("net_sales", "Revolver Availability + Cash", "#1d4ed8"),
     ]
     liquidity_series = []
-    label_points = []
+    liquidity_labels = []
+    liquidity_ticks = []
+    liquidity_legend = []
     trend_rows = ordered_forecast_rows[-len(TREND_X_POSITIONS) :]
     if not trend_rows:
         trend_rows = ordered_forecast_rows[-1:] if ordered_forecast_rows else sorted_forecast_rows[-1:]
@@ -529,36 +686,57 @@ def _week_summary_context(borrower):
         )
         for row in trend_rows
     ]
-    for field, color in liquidity_fields:
+    series_values = []
+    for field, label, color in liquidity_fields:
         values = [
-            float(
-                _to_decimal(getattr(row, field, None) or Decimal("0"))
-            )
+            float(_to_decimal(getattr(row, field, None) or Decimal("0")))
             for row in trend_rows
         ]
         if not values:
             values = [0.0]
-        trend = _build_trend_points(values, labels=period_labels)
-        liquidity_series.append({"points": trend["points"], "color": color})
-        if not label_points:
-            label_points = trend["labels"]
+        series_values.append(values)
+        liquidity_legend.append({"label": label, "color": color})
+    if series_values and period_labels:
+        chart = _build_liquidity_chart(series_values, period_labels)
+        liquidity_labels = chart["labels"]
+        liquidity_ticks = chart["ticks"]
+        for idx, (_, label, color) in enumerate(liquidity_fields):
+            series_entry = chart["series"][idx] if idx < len(chart["series"]) else {"points": "", "dots": []}
+            liquidity_series.append(
+                {
+                    "points": series_entry["points"],
+                    "dots": series_entry["dots"],
+                    "color": color,
+                    "label": label,
+                }
+            )
 
     def _variance_rows(rows):
         output = []
+        section_headers = {
+            "receipts",
+            "operating disbursements",
+            "non-operating disbursements",
+        }
         for row in rows:
             category = _safe_str(row.category, default="—")
             proj = _format_money(row.projected)
             actual = _format_money(row.actual)
             variance_amount = _format_money(row.variance)
             variance_pct = _format_pct(row.variance_pct)
-            variance_text = f"{variance_amount} / {variance_pct}"
-            row_class = "title-row" if "total" in category.lower() or "net" in category.lower() else ""
+            category_lower = category.lower()
+            row_class = ""
+            if category_lower in section_headers:
+                row_class = "section-row"
+            elif "total" in category_lower or "net" in category_lower:
+                row_class = "title-row"
             output.append(
                 {
                     "category": category,
                     "projected": proj,
                     "actual": actual,
-                    "variance": variance_text,
+                    "variance_amount": variance_amount,
+                    "variance_pct": variance_pct,
                     "row_class": row_class,
                 }
             )
@@ -568,7 +746,8 @@ def _week_summary_context(borrower):
                     "category": "—",
                     "projected": "$—",
                     "actual": "$—",
-                    "variance": "$— / —%",
+                    "variance_amount": "$—",
+                    "variance_pct": "—%",
                     "row_class": "",
                 }
             )
@@ -580,6 +759,18 @@ def _week_summary_context(borrower):
     context.update(
         {
             "stats": stats,
+            "summary_cards": [
+                {"label": "Ending Cash", "value": next((s["value"] for s in stats if s["label"] == "Ending Cash"), "—")},
+                {"label": "Total Receipts", "value": next((s["value"] for s in stats if s["label"] == "Total Receipts"), "—")},
+                {"label": "Total Disbursement", "value": next((s["value"] for s in stats if s["label"] == "Total Disbursement"), "—")},
+            ],
+            "forecast_updated_label": _format_date(report_date) if report_date else "—",
+            "snapshot_summary": (
+                f"Collections total {_format_money(sum((_to_decimal(row.get('collections')) for row in chart_rows), Decimal('0')))} "
+                f"with disbursements {_format_money(sum((_to_decimal(row.get('disbursements')) for row in chart_rows), Decimal('0')))} "
+                f"across {len(chart_rows)} weeks."
+                if chart_rows else "Snapshot summary not available."
+            ),
             "period_label": _format_date(
                 chart_rows[-1]["label"]
                 if chart_rows and chart_rows[-1]["label"]
@@ -592,6 +783,7 @@ def _week_summary_context(borrower):
                 "collections_bars": actual_bars,
                 "disbursement_bars": forecast_bars,
                 "labels": chart_labels,
+                "ticks": chart_ticks,
                 "legend": [
                     {"label": "Collections", "color": "#1d4ed8"},
                     {"label": "Disbursements", "color": "#f97316"},
@@ -603,10 +795,11 @@ def _week_summary_context(borrower):
             "cashflow_cash_rows": cashflow_cash_rows,
             "availability_rows": availability_rows,
             "liquidity_series": liquidity_series,
-            "liquidity_labels": label_points,
+            "liquidity_labels": liquidity_labels,
+            "liquidity_ticks": liquidity_ticks,
+            "liquidity_legend": liquidity_legend,
             "variance_current_rows": variance_current,
             "variance_cumulative_rows": variance_cumulative,
-            "ar_risk_rows": _accounts_receivable_risk_rows(borrower),
         }
     )
     return context
@@ -1269,6 +1462,7 @@ def _accounts_receivable_context(borrower):
                 "width": 40,
                 "color": bucket["color"],
                 "percent_display": _format_pct(percent_ratio),
+                "amount_display": _format_currency(amount),
                 "label": bucket["label"],
                 "percent_y": max(24, y_position - 6),
                 "label_y": 160,
@@ -1296,6 +1490,9 @@ def _accounts_receivable_context(borrower):
                 "current_x": current_x,
                 "current_y": current_y,
                 "current_height": current_height,
+                "past_due_pct": f"{past_pct:.1f}%",
+                "current_pct": f"{current_pct:.1f}%",
+                "label": entry["label"],
             }
         )
         trend_labels.append({"x": label_x, "text": entry["label"]})
@@ -1384,6 +1581,19 @@ def _accounts_receivable_context(borrower):
         trend_points = trend_points[-max_trend:]
         trend_texts = trend_texts[-max_trend:]
     trend_chart = _build_trend_points(trend_points, trend_texts)
+    trend_dots = []
+    for idx, dot in enumerate(trend_chart["dots"]):
+        value = trend_points[idx] if idx < len(trend_points) else None
+        label = trend_texts[idx] if idx < len(trend_texts) else ""
+        trend_dots.append(
+            {
+                "cx": dot["cx"],
+                "cy": dot["cy"],
+                "label": label,
+                "value": f"{value:.1f}%" if value is not None else "—",
+            }
+        )
+    trend_chart["dots"] = trend_dots
 
     concentration_entries = []
     for row in sorted(
@@ -1450,8 +1660,12 @@ def _accounts_receivable_context(borrower):
 def _finished_goals_context(borrower):
     base_context = {
         "finished_goals_metrics": [],
+        "finished_goals_sales_insights": [],
         "finished_goals_highlights": [],
         "finished_goals_chart_config": {},
+        "finished_goals_inline_excess_by_category": [],
+        "finished_goals_inline_excess_totals": {},
+        "finished_goals_top_skus": [],
         "finished_goals_ar_concentration": [],
         "finished_goals_ar_aging": {
             "buckets": [],
@@ -1480,25 +1694,158 @@ def _finished_goals_context(borrower):
         .first()
     )
 
+    available_pct = (
+        (inventory_available_total / inventory_total) if inventory_total else Decimal("0")
+    )
+    ineligible_pct = (
+        (inventory_ineligible / inventory_total) if inventory_total else Decimal("0")
+    )
+    total_quality = (
+        (inventory_net_total / inventory_total) if inventory_total else Decimal("0")
+    )
+
+    total_delta = (
+        (total_quality - Decimal("0.8")) * Decimal("100") if inventory_total else None
+    )
+    ineligible_delta = (
+        (Decimal("0.2") - ineligible_pct) * Decimal("100") if inventory_total else None
+    )
+    available_delta = (
+        (available_pct - Decimal("0.5")) * Decimal("100") if inventory_total else None
+    )
+
     metric_defs = [
-        ("Total Inventory", inventory_total, None),
-        ("Raw Materials", category_metrics["raw_materials"]["eligible"], None),
-        ("Work in Process", category_metrics["work_in_progress"]["eligible"], None),
-        ("Finished Goods", category_metrics["finished_goods"]["eligible"], None),
+        ("Total Inventory", _format_currency(inventory_total), total_delta),
+        ("Ineligible Inventory", _format_currency(inventory_ineligible), ineligible_delta),
+        ("Available Inventory", _format_pct(available_pct), available_delta),
     ]
 
     metrics = []
-    for label, amount, delta in metric_defs:
+    for label, value, delta in metric_defs:
         metrics.append(
             {
                 "label": label,
-                "value": _format_currency(amount),
-                "delta": delta,
-                "delta_class": "good" if delta and delta.startswith("▲") else "bad"
-                if delta
+                "value": value,
+                "delta": f"{abs(delta):.2f}%" if delta is not None else None,
+                "delta_class": "good" if delta is not None and delta >= 0 else "bad"
+                if delta is not None
                 else "",
             }
         )
+
+    def _dec_or_none(value):
+        if value is None:
+            return None
+        try:
+            return Decimal(value)
+        except Exception:
+            try:
+                return Decimal(str(value))
+            except Exception:
+                return None
+
+    def _format_item_number(value):
+        dec = _dec_or_none(value)
+        if dec is None:
+            return "—"
+        try:
+            if dec == dec.to_integral_value():
+                return str(int(dec))
+        except Exception:
+            pass
+        return f"{dec.normalize():f}"
+
+    def _format_wos(value):
+        dec = _dec_or_none(value)
+        if dec is None:
+            return "—"
+        return f"{dec:.1f}"
+
+    def _pct_change(current, previous):
+        curr = _dec_or_none(current)
+        prev = _dec_or_none(previous)
+        if curr is None or prev is None or prev == 0:
+            return None
+        return (curr - prev) / abs(prev) * Decimal("100")
+
+    def _pct_point_change(current, previous):
+        curr = _dec_or_none(current)
+        prev = _dec_or_none(previous)
+        if curr is None or prev is None:
+            return None
+        if abs(curr) <= 1 and abs(prev) <= 1:
+            return (curr - prev) * Decimal("100")
+        return curr - prev
+
+    def _delta_payload(delta):
+        if delta is None:
+            return {"delta": None, "delta_class": ""}
+        return {
+            "delta": f"{abs(delta):.2f}%",
+            "delta_class": "good" if delta >= 0 else "bad",
+        }
+
+    sales_rows = list(
+        SalesGMTrendRow.objects.filter(borrower=borrower)
+        .order_by("-as_of_date", "-created_at", "-id")[:2]
+    )
+    latest_sales = sales_rows[0] if sales_rows else None
+    previous_sales = sales_rows[1] if len(sales_rows) > 1 else None
+
+    if latest_sales:
+        net_sales_delta = (
+            _pct_change(latest_sales.net_sales, previous_sales.net_sales)
+            if previous_sales
+            else None
+        )
+        gross_margin_delta = (
+            _pct_point_change(
+                latest_sales.gross_margin_pct, previous_sales.gross_margin_pct
+            )
+            if previous_sales
+            else None
+        )
+        trend_value = (
+            latest_sales.trend_ttm_pct
+            if latest_sales.trend_ttm_pct is not None
+            else _pct_change(latest_sales.ttm_sales, latest_sales.ttm_sales_prior)
+        )
+        trend_delta = (
+            _pct_point_change(
+                latest_sales.trend_ttm_pct, previous_sales.trend_ttm_pct
+            )
+            if previous_sales
+            else None
+        )
+
+        sales_insights = [
+            {
+                "label": "Total Net Sales",
+                "value": _format_currency(latest_sales.net_sales),
+                **_delta_payload(net_sales_delta),
+            },
+            {
+                "label": "Gross Margin",
+                "value": _format_pct(latest_sales.gross_margin_pct),
+                **_delta_payload(gross_margin_delta),
+            },
+            {
+                "label": "12 Months Sales Trend",
+                "value": _format_pct(trend_value),
+                **_delta_payload(trend_delta),
+            },
+        ]
+    else:
+        sales_insights = [
+            {"label": "Total Net Sales", "value": "—", "delta": None, "delta_class": ""},
+            {"label": "Gross Margin", "value": "—", "delta": None, "delta_class": ""},
+            {
+                "label": "12 Months Sales Trend",
+                "value": "—",
+                "delta": None,
+                "delta_class": "",
+            },
+        ]
 
     total_base = float(inventory_total or Decimal("0"))
     net_base = float(inventory_net_total or Decimal("1"))
@@ -1531,68 +1878,399 @@ def _finished_goals_context(borrower):
         },
     ]
 
-    def _series(base, variance, length=12, scale=1):
-        base_value = float(base or 0)
-        return [
-            max(0, base_value + math.sin(i / 2.0) * float(variance) * scale)
-            for i in range(length)
-        ]
+    def _to_millions(value):
+        return float(_to_decimal(value) / Decimal("1000000"))
+
+    def _to_pct_value(value):
+        pct = _to_decimal(value)
+        if abs(pct) <= 1:
+            pct *= Decimal("100")
+        return float(pct)
+
+    inline_excess_labels = [
+        "New",
+        "0 - 13",
+        "13 - 26",
+        "26 - 39",
+        "39 - 52",
+        "52+",
+        "No Sales",
+    ]
+
+    inline_bucket_totals = OrderedDict((label, Decimal("0")) for label in inline_excess_labels)
+    inline_rows = FGInlineCategoryAnalysisRow.objects.filter(borrower=borrower)
+    inline_latest = inline_rows.exclude(as_of_date__isnull=True).order_by("-as_of_date").first()
+    if inline_latest and inline_latest.as_of_date:
+        inline_rows = inline_rows.filter(as_of_date=inline_latest.as_of_date)
+    inline_total = Decimal("0")
+    for row in inline_rows:
+        amount = _to_decimal(row.fg_available or row.fg_total)
+        inline_total += amount
+        sales = _to_decimal(row.sales)
+        wos = _dec_or_none(row.weeks_of_supply)
+        if sales <= 0:
+            bucket = "No Sales"
+        elif wos is None:
+            bucket = "New"
+        elif wos <= 0:
+            bucket = "New"
+        elif wos <= 13:
+            bucket = "0 - 13"
+        elif wos <= 26:
+            bucket = "13 - 26"
+        elif wos <= 39:
+            bucket = "26 - 39"
+        elif wos <= 52:
+            bucket = "39 - 52"
+        else:
+            bucket = "52+"
+        inline_bucket_totals[bucket] += amount
+
+    inline_excess_values = []
+    inline_excess_value_labels = []
+    for label in inline_excess_labels:
+        amount = inline_bucket_totals[label]
+        pct = (amount / inline_total * Decimal("100")) if inline_total else Decimal("0")
+        inline_excess_values.append(float(pct))
+        inline_excess_value_labels.append(f"{pct:.0f}%")
+
+    inline_excess_trend_labels = []
+    inline_excess_trend_values = []
+    inline_trend_rows = (
+        FGInlineCategoryAnalysisRow.objects.filter(borrower=borrower)
+        .exclude(as_of_date__isnull=True)
+        .order_by("as_of_date", "id")
+    )
+    inline_trend_map = OrderedDict()
+    for row in inline_trend_rows:
+        dt = row.as_of_date
+        if dt not in inline_trend_map:
+            inline_trend_map[dt] = {"total": Decimal("0"), "inline": Decimal("0")}
+        amount = _to_decimal(row.fg_available or row.fg_total)
+        inline_trend_map[dt]["total"] += amount
+        sales = _to_decimal(row.sales)
+        wos = _dec_or_none(row.weeks_of_supply)
+        if sales > 0 and wos is not None and wos <= 52:
+            inline_trend_map[dt]["inline"] += amount
+
+    for dt, totals in list(inline_trend_map.items())[-10:]:
+        inline_excess_trend_labels.append(dt.strftime("%b\n%Y"))
+        pct = (totals["inline"] / totals["total"] * Decimal("100")) if totals["total"] else Decimal("0")
+        inline_excess_trend_values.append(float(pct))
+
+    inventory_trend_labels = []
+    inventory_trend_values = []
+    inventory_rows_all = CollateralOverviewRow.objects.filter(
+        borrower=borrower,
+        main_type__icontains="inventory",
+    ).exclude(created_at__isnull=True).order_by("created_at", "id")
+    inventory_trend_map = OrderedDict()
+    for row in inventory_rows_all:
+        dt = row.created_at.date()
+        inventory_trend_map.setdefault(dt, Decimal("0"))
+        inventory_trend_map[dt] += _to_decimal(row.eligible_collateral)
+    inventory_trend_items = list(inventory_trend_map.items())[-12:]
+    if inventory_trend_items:
+        years = {dt.year for dt, _ in inventory_trend_items}
+        use_year = len(years) > 1
+        for dt, total in inventory_trend_items:
+            label = dt.strftime("%b\n%Y") if use_year else dt.strftime("%b")
+            inventory_trend_labels.append(label)
+            inventory_trend_values.append(float(total / Decimal("1000000")))
+
+    trend_rows_all = list(
+        SalesGMTrendRow.objects.filter(borrower=borrower, as_of_date__isnull=False)
+        .order_by("as_of_date", "created_at", "id")
+    )
+    sales_rows = [row for row in trend_rows_all if row.net_sales is not None][-9:]
+    gm_rows = [row for row in trend_rows_all if row.gross_margin_pct is not None][-11:]
+
+    sales_labels = [row.as_of_date.strftime("%b\n%Y") for row in sales_rows]
+    sales_values = [_to_millions(row.net_sales) for row in sales_rows]
+    gross_labels = [row.as_of_date.strftime("%b\n%Y") for row in gm_rows]
+    gross_values = [_to_pct_value(row.gross_margin_pct) for row in gm_rows]
+
+    sales_axis_max = None
+    sales_ticks = None
+    if sales_values:
+        sales_max = max(sales_values)
+        sales_axis_max = max(2, math.ceil(sales_max / 2) * 2) if sales_max else 2
+        if sales_axis_max <= 6:
+            sales_ticks = 4
+        elif sales_axis_max <= 10:
+            sales_ticks = 6
+        else:
+            sales_ticks = 5
+
+    gross_axis_min = None
+    gross_axis_max = None
+    gross_ticks = None
+    if gross_values:
+        gross_min = min(gross_values)
+        gross_max = max(gross_values)
+        gross_axis_min = max(0, math.floor(gross_min / 10) * 10)
+        gross_axis_max = math.ceil(gross_max / 10) * 10
+        if gross_axis_min == gross_axis_max:
+            gross_axis_min = max(0, gross_axis_min - 10)
+            gross_axis_max = gross_axis_max + 10
+        gross_ticks = 5
+
+    sales_right_values = [
+        _to_pct_value(row.gross_margin_pct)
+        for row in sales_rows
+        if row.gross_margin_pct is not None
+    ]
+    sales_right = None
+    if sales_right_values:
+        right_min = max(0, math.floor(min(sales_right_values) / 10) * 10)
+        right_max = math.ceil(max(sales_right_values) / 10) * 10
+        if right_min == right_max:
+            right_min = max(0, right_min - 10)
+            right_max = right_max + 10
+        sales_right = {
+            "min": right_min,
+            "max": right_max,
+            "ticks": 4,
+            "suffix": "%",
+            "decimals": 0,
+        }
 
     chart_config = {
         "inventoryTrend": {
             "type": "line",
             "title": "Inventory Trend",
-            "labels": ["Jan","Feb","Mar","Apr","May","Jun","Jul","Aug","Sep","Oct","Nov","Dec"],
-            "values": _series(total_base/1e6 if total_base else 0.5, 0.2),
+            "labels": inventory_trend_labels,
+            "values": inventory_trend_values,
             "yPrefix": "$",
             "ySuffix": "M",
             "yTicks": 5,
+            "yDecimals": 0,
         },
         "agedStock": {
             "type": "bar",
-            "title": "Aged Stock",
-            "labels": ["0-30","31-60","61–90","91–120","121–180","180+"],
-            "values": _series(float(inventory_ineligible)/1e6 if inventory_ineligible else 0.25, 0.15, length=6),
-            "highlightIndex": 3,
+            "title": "Sales Trend",
+            "labels": sales_labels,
+            "values": sales_values,
+            "barClass": "bar-strong",
+            "barWidth": 14,
+            "barGap": 18,
             "yPrefix": "$",
             "ySuffix": "M",
-            "yTicks": 4,
+            "yMin": 0 if sales_values else None,
+            "yMax": sales_axis_max,
+            "yTicks": sales_ticks,
+            "yDecimals": 0,
+            "yRight": sales_right,
         },
         "agedStockTrend": {
             "type": "line",
-            "title": "Aged Stock Trend",
-            "labels": ["Jan","Feb","Mar","Apr","May","Jun","Jul","Aug","Sep","Oct","Nov","Dec"],
-            "values": _series(float(aged_share * Decimal("20")), 1.2),
-            "yPrefix": "$",
-            "ySuffix": "M",
-            "yTicks": 4,
+            "title": "Gross Margin Trend",
+            "labels": gross_labels,
+            "values": gross_values,
+            "showAllPoints": True,
+            "pointRadius": 2.6,
+            "ySuffix": "%",
+            "yMin": gross_axis_min,
+            "yMax": gross_axis_max,
+            "yTicks": gross_ticks,
+            "yDecimals": 0,
         },
-        "inboundOutbound": {
+        "inlineExcess": {
             "type": "bar",
-            "title": "In-Bound vs Outbound",
-            "labels": ["W1","W2","W3","W4","W5","W6"],
-            "values": _series(float(inventory_available_total)/1e6 if inventory_available_total else 0.3, 0.2, length=6),
+            "title": "In-line vs Excess",
+            "labels": inline_excess_labels,
+            "values": inline_excess_values,
+            "valueLabels": inline_excess_value_labels,
+            "showValueLabels": True,
             "highlightIndex": 3,
-            "yPrefix": "$",
-            "ySuffix": "M",
-            "yTicks": 4,
+            "ySuffix": "%",
+            "yMin": 0,
+            "yMax": 100,
+            "yTicks": 6,
+            "yDecimals": 0,
         },
-        "inboundOutboundTrend": {
+        "inlineExcessTrend": {
             "type": "line",
-            "title": "In-Bound vs Outbound Trend",
-            "labels": ["Jan","Feb","Mar","Apr","May","Jun","Jul","Aug","Sep","Oct","Nov","Dec"],
-            "values": _series(
-                float(
-                    (inventory_available_total / inventory_total if inventory_total else Decimal("0.4"))
-                    * Decimal("10")
-                ),
-                0.8,
-            ),
-            "yPrefix": "$",
-            "ySuffix": "M",
-            "yTicks": 4,
+            "title": "In-Line vs Excess Trend",
+            "labels": inline_excess_trend_labels,
+            "values": inline_excess_trend_values,
+            "ySuffix": "%",
+            "yMin": 0,
+            "yMax": 100,
+            "yTicks": 6,
+            "yDecimals": 0,
+            "yLabel": "% Of Inventory",
         },
     }
+
+    inline_excess_rows = list(
+        FGInlineExcessByCategoryRow.objects.filter(borrower=borrower)
+        .order_by("category", "id")
+    )
+    inline_excess_by_category = []
+    inline_excess_totals = {}
+    if inline_excess_rows:
+        total_available = Decimal("0")
+        total_inline = Decimal("0")
+        total_excess = Decimal("0")
+        for row in inline_excess_rows:
+            inline_amount = _format_currency(row.inline_dollars)
+            inline_pct = _format_pct(row.inline_pct)
+            excess_amount = _format_currency(row.excess_dollars)
+            excess_pct = _format_pct(row.excess_pct)
+            inline_excess_by_category.append(
+                {
+                    "category": row.category or "Category",
+                    "new_amount": inline_amount,
+                    "new_pct": inline_pct,
+                    "inline_0_52_amount": inline_amount,
+                    "inline_0_52_pct": inline_pct,
+                    "inline_total_amount": inline_amount,
+                    "inline_total_pct": inline_pct,
+                    "week_52_amount": excess_amount,
+                    "week_52_pct": excess_pct,
+                    "no_sales_amount": excess_amount,
+                    "no_sales_pct": excess_pct,
+                    "excess_total_amount": excess_amount,
+                    "excess_total_pct": excess_pct,
+                }
+            )
+            total_available += _to_decimal(row.fg_available)
+            total_inline += _to_decimal(row.inline_dollars)
+            total_excess += _to_decimal(row.excess_dollars)
+
+        inline_total_pct = (
+            _format_pct(total_inline / total_available) if total_available else "—"
+        )
+        excess_total_pct = (
+            _format_pct(total_excess / total_available) if total_available else "—"
+        )
+        inline_excess_totals = {
+            "new_amount": _format_currency(total_inline),
+            "new_pct": inline_total_pct,
+            "inline_0_52_amount": _format_currency(total_inline),
+            "inline_0_52_pct": inline_total_pct,
+            "inline_total_amount": _format_currency(total_inline),
+            "inline_total_pct": inline_total_pct,
+            "week_52_amount": _format_currency(total_excess),
+            "week_52_pct": excess_total_pct,
+            "no_sales_amount": _format_currency(total_excess),
+            "no_sales_pct": excess_total_pct,
+            "excess_total_amount": _format_currency(total_excess),
+            "excess_total_pct": excess_total_pct,
+        }
+    else:
+        sample_categories = [
+            "Cabinets",
+            "Doors",
+            "Flooring Products",
+            "Moulding & Trim",
+            "Decking",
+            "Roofing",
+            "Windows",
+            "Hardware",
+            "Insulation",
+            "Tools",
+            "Others",
+        ]
+        sample_amount = "$976"
+        sample_pct = "75.0%"
+        for category in sample_categories:
+            inline_excess_by_category.append(
+                {
+                    "category": category,
+                    "new_amount": sample_amount,
+                    "new_pct": sample_pct,
+                    "inline_0_52_amount": sample_amount,
+                    "inline_0_52_pct": sample_pct,
+                    "inline_total_amount": sample_amount,
+                    "inline_total_pct": sample_pct,
+                    "week_52_amount": sample_amount,
+                    "week_52_pct": sample_pct,
+                    "no_sales_amount": sample_amount,
+                    "no_sales_pct": sample_pct,
+                    "excess_total_amount": sample_amount,
+                    "excess_total_pct": sample_pct,
+                }
+            )
+        inline_excess_totals = {
+            "new_amount": sample_amount,
+            "new_pct": sample_pct,
+            "inline_0_52_amount": sample_amount,
+            "inline_0_52_pct": sample_pct,
+            "inline_total_amount": sample_amount,
+            "inline_total_pct": sample_pct,
+            "week_52_amount": sample_amount,
+            "week_52_pct": sample_pct,
+            "no_sales_amount": sample_amount,
+            "no_sales_pct": sample_pct,
+            "excess_total_amount": sample_amount,
+            "excess_total_pct": sample_pct,
+        }
+
+    top_sku_rows = []
+    sku_query = HistoricalTop20SKUsRow.objects.filter(borrower=borrower)
+    latest_sku_row = sku_query.order_by("-as_of_date", "-created_at", "-id").first()
+    if latest_sku_row and latest_sku_row.as_of_date:
+        sku_rows = list(
+            sku_query.filter(as_of_date=latest_sku_row.as_of_date)
+            .order_by("-pct_of_total", "id")[:20]
+        )
+    else:
+        sku_rows = list(sku_query.order_by("-created_at", "-id")[:20])
+
+    if sku_rows:
+        for row in sku_rows:
+            top_sku_rows.append(
+                {
+                    "item_number": _format_item_number(row.item_number),
+                    "category": row.category or "—",
+                    "description": row.description or "—",
+                    "cost": _format_currency(row.cost),
+                    "pct_of_total": _format_pct(row.pct_of_total),
+                    "cogs": _format_currency(row.cogs),
+                    "gm": _format_currency(row.gm),
+                    "gm_pct": _format_pct(row.gm_pct),
+                    "wos": _format_wos(row.wos),
+                }
+            )
+    else:
+        sample_desc = [
+            "Premium Maple W...",
+            "Solid Core Interior Door",
+            "6-Panel Exterior Door",
+            "Engineered Hardwood",
+            "Laminate Flooring Bundle",
+            "Bamboo Flooring",
+            "Single Hung Window",
+            "Double Hung Window",
+            "Ceramic Tile 12x24",
+            "Concrete Mix Bag",
+            "Asphalt Shingles",
+            "Synthetic Underlay...",
+            "Roof Ridge Vent",
+            "Decorative Trim 8ft",
+            "Colonial Baseboard",
+            "Shoe Moulding 4ft",
+            "Composite Deck Board",
+            "Pressure-Treated W...",
+            "Outdoor Trim",
+            "Bamboo Plank Flooring",
+        ]
+        for desc in sample_desc:
+            top_sku_rows.append(
+                {
+                    "item_number": "128986",
+                    "category": "Cabinets",
+                    "description": desc,
+                    "cost": "32",
+                    "pct_of_total": "0.1%",
+                    "cogs": "1,175",
+                    "gm": "525",
+                    "gm_pct": "30.9%",
+                    "wos": "4.2",
+                }
+            )
 
     share_labels = ["Current","1–30","31–60","61–90","91–120","120+"]
     bucket_bases = [0.45, 0.15, 0.1, 0.09, 0.08, 0.13]
@@ -1657,9 +2335,13 @@ def _finished_goals_context(borrower):
 
     return {
         "finished_goals_metrics": metrics,
+        "finished_goals_sales_insights": sales_insights,
         "finished_goals_highlights": highlights,
         "finished_goals_chart_config": chart_config,
         "finished_goals_chart_config_json": json.dumps(chart_config),
+        "finished_goals_inline_excess_by_category": inline_excess_by_category,
+        "finished_goals_inline_excess_totals": inline_excess_totals,
+        "finished_goals_top_skus": top_sku_rows,
         "finished_goals_ar_concentration": ar_concentration,
         "finished_goals_ar_aging": {
             "buckets": share_labels,
@@ -2311,14 +2993,15 @@ DEFAULT_OTHER_COLLATERAL_CHART = {
 def _other_collateral_context(borrower):
     base_context = {
         "other_collateral_value_monitor": [],
-        "other_collateral_value_trend_config": DEFAULT_OTHER_COLLATERAL_CHART.copy(),
+        "other_collateral_value_trend_config": {
+            "title": "Value Trend",
+            "labels": [],
+            "estimated": [],
+            "appraisal": [],
+        },
         "other_collateral_value_analysis_rows": [],
         "other_collateral_asset_rows": [],
     }
-
-    state = _inventory_state(borrower)
-    if not state:
-        return base_context
 
     equipment_rows = list(
         MachineryEquipmentRow.objects.filter(borrower=borrower).order_by("created_at", "id")
@@ -2328,13 +3011,13 @@ def _other_collateral_context(borrower):
 
     snapshots = OrderedDict()
     for row in equipment_rows:
-        ts = row.created_at or row.id
+        ts = row.created_at.date() if row.created_at else row.id
         snapshots.setdefault(ts, []).append(row)
 
     if not snapshots:
         return base_context
 
-    snapshot_keys = list(snapshots.keys())
+    snapshot_keys = sorted(snapshots.keys(), key=lambda key: key)
     latest_key = snapshot_keys[-1]
     latest_rows = snapshots[latest_key]
     prev_rows = snapshots[snapshot_keys[-2]] if len(snapshot_keys) > 1 else []
@@ -2447,21 +3130,19 @@ def _other_collateral_context(borrower):
         values.append(
             {
                 "label": _label_from_timestamp(key),
-                "fmv": float(olv),
+                "olv": float(olv),
             }
         )
     values = values[-max_points:]
     labels = [entry["label"] for entry in values]
-    appraisal_series = [entry["fmv"] for entry in values]
-    estimated_series = [entry["fmv"] * 0.96 for entry in values]
-    chart_config = DEFAULT_OTHER_COLLATERAL_CHART.copy()
-    if labels:
-        chart_config = {
-            "title": "Value Trend",
-            "labels": labels,
-            "estimated": [float(v) for v in estimated_series],
-            "appraisal": [float(v) for v in appraisal_series],
-        }
+    appraisal_series = [entry["olv"] for entry in values]
+    estimated_series = [entry["olv"] * 0.96 for entry in values]
+    chart_config = {
+        "title": "Value Trend",
+        "labels": labels,
+        "estimated": [float(v) for v in estimated_series],
+        "appraisal": [float(v) for v in appraisal_series],
+    } if labels else base_context["other_collateral_value_trend_config"]
 
     return {
         "other_collateral_value_monitor": value_monitor_cards,
