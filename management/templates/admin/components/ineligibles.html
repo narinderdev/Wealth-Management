@@ -15,7 +15,6 @@
         <thead>
           <tr>
             <th>Borrower</th>
-            <th>Report Date</th>
             <th>Division</th>
             <th>Collateral Type</th>
             <th>Collateral Sub-Type</th>
@@ -25,8 +24,7 @@
         <tbody>
           {% for row in component_data.list %}
             <tr>
-              <td>{{ row.report.borrower.company.company|default:"—" }}</td>
-              <td>{{ row.report.report_date|date:"Y-m-d"|default:"—" }}</td>
+              <td>{% include "admin/components/_borrower_cell.html" with row=row only %}</td>
               <td>{{ row.division|default:"—" }}</td>
               <td>{{ row.collateral_type|default:"—" }}</td>
               <td>{{ row.collateral_sub_type|default:"—" }}</td>

@@ -1,5 +1,7 @@
 import json
 import math
+from collections import OrderedDict
+from datetime import date
 
 from decimal import Decimal
 
@@ -32,13 +34,13 @@ from management.views.summary import (
     _format_date,
     _safe_str,
     _to_decimal,
+    get_preferred_borrower,
 )
 
 
 @login_required(login_url="login")
 def collateral_dynamic_view(request):
-    borrower_profile = getattr(request.user, "borrower_profile", None)
-    borrower = borrower_profile.borrower if borrower_profile else None
+    borrower = get_preferred_borrower(request)
 
     section = request.GET.get("section", "inventory")
     allowed_sections = {"overview", "accounts_receivable", "inventory"}
@@ -75,8 +77,7 @@ def collateral_dynamic_view(request):
 
 @login_required(login_url="login")
 def collateral_static_view(request):
-    borrower_profile = getattr(request.user, "borrower_profile", None)
-    borrower = borrower_profile.borrower if borrower_profile else None
+    borrower = get_preferred_borrower(request)
     context = {
         "active_tab": "collateral_static",
         "week_summary": _week_summary_context(borrower),
@@ -168,9 +169,10 @@ def _week_summary_context(borrower):
                         return _to_decimal(val)
                 return Decimal("0")
 
+            label_value = row.period or row.as_of_date or f"Week {row.id}"
             values.append(
                 {
-                    "label": row.period or row.as_of_date or getattr(row.report, "report_date", None),
+                    "label": label_value,
                     "collections": _pick_value(["net_sales", "ar", "available_collateral"]),
                     "disbursements": _pick_value(["loan_balance", "available_collateral"]),
                 }
@@ -186,9 +188,7 @@ def _week_summary_context(borrower):
 
     def _sort_forecast_rows(rows):
         def _row_key(row):
-            date_val = row.period or row.as_of_date
-            if not date_val and getattr(row, "report", None):
-                date_val = getattr(row.report, "report_date", None)
+            date_val = row.period or row.as_of_date or getattr(row, "id", None)
             has_date = 1 if date_val else 0
             key_date = date_val if date_val else getattr(row, "id", 0)
             return (has_date, key_date, getattr(row, "id", 0))
@@ -208,9 +208,7 @@ def _week_summary_context(borrower):
         column_rows = ordered_rows[:13]
         entries = []
         for idx, row in enumerate(column_rows):
-            date_val = row.period or row.as_of_date
-            if not date_val and getattr(row, "report", None):
-                date_val = getattr(row.report, "report_date", None)
+            date_val = row.period or row.as_of_date or getattr(row, "id", None)
             if idx == 0:
                 label = f"Actual<br/>{_format_date(date_val)}" if date_val else "Actual"
             else:
@@ -614,6 +612,11 @@ def _week_summary_context(borrower):
     return context
 
 
+COLUMN_MONTH_LABELS = ["May", "Jun", "Jul", "Aug", "Sep", "Oct", "Nov", "Dec", "Jan", "Feb", "Mar", "Apr"]
+TREND_LABELS = [
+    "May 2019","Jun 2019","Jul 2019","Aug 2019","Sep 2019","Oct 2019",
+    "Nov 2019","Dec 2019","Jan 2020","Feb 2020","Mar 2020"
+]
 MONTH_POSITIONS = [80, 135, 190, 245, 300, 355, 410, 465, 520, 575, 630, 685]
 TREND_X_POSITIONS = [80, 140, 200, 260, 320, 380, 440, 500, 560, 620, 680]
 CIRCUMFERENCE = Decimal(str(2 * math.pi * 45))
@@ -771,10 +774,6 @@ def _inventory_state(borrower):
     if not borrower:
         return None
 
-    latest_report = BorrowerReport.objects.filter(borrower=borrower).order_by("-report_date").first()
-    if not latest_report:
-        return None
-
     collateral_rows = list(
         CollateralOverviewRow.objects.filter(borrower=borrower).order_by("id")
     )
@@ -835,7 +834,6 @@ def _inventory_state(borrower):
         inventory_available_total = Decimal("0")
 
     return {
-        "latest_report": latest_report,
         "inventory_rows": inventory_rows,
         "inventory_total": inventory_total,
         "inventory_ineligible": inventory_ineligible,
@@ -991,12 +989,14 @@ def _inventory_context(borrower):
     base_y = Decimal("18")
     inventory_mix_chart_columns = []
     for idx, base_x in enumerate(MONTH_POSITIONS):
+        month_label = COLUMN_MONTH_LABELS[idx] if idx < len(COLUMN_MONTH_LABELS) else f"Month {idx+1}"
         column_bars = []
         for bucket_index, category in enumerate(CATEGORY_CONFIG):
             pct = category_percentages[category["key"]]
             variation = Decimal(idx % 3 - 1) * Decimal("0.02")
             height_pct = max(Decimal("0"), min(Decimal("1"), pct + variation))
             height_decimal = height_pct * chart_height
+            percentage_display = _format_pct(pct)
             column_bars.append(
                 {
                     "x": base_x + bucket_index * 15,
@@ -1004,9 +1004,14 @@ def _inventory_context(borrower):
                     "height": float(height_decimal),
                     "width": 10,
                     "color": category["color"],
+                    "series_label": category["label"],
+                    "percentage_display": percentage_display,
+                    "month_label": month_label,
                 }
             )
-        inventory_mix_chart_columns.append({"bars": column_bars})
+        inventory_mix_chart_columns.append(
+            {"bars": column_bars, "month_label": month_label}
+        )
 
     inventory_trend_series = []
     for category in CATEGORY_CONFIG:
@@ -1020,8 +1025,14 @@ def _inventory_context(borrower):
             value = max(min(value, Decimal("10")), Decimal("-10"))
             y_value = Decimal("192") - value * Decimal("4")
             y_value = max(min(y_value, Decimal("192")), Decimal("22"))
+            value_label = TREND_LABELS[idx] if idx < len(TREND_LABELS) else f"Point {idx+1}"
             points.append(f"{x},{float(y_value):.1f}")
-            points_list.append({"x": x, "y": float(y_value)})
+            points_list.append({
+                "x": x,
+                "y": float(y_value),
+                "label": value_label,
+                "value": _format_pct(value),
+            })
         inventory_trend_series.append(
             {
                 "color": category["color"],
@@ -1051,47 +1062,10 @@ def _accounts_receivable_context(borrower):
         "ar_concentration_rows": [],
         "ar_ado_rows": [],
         "ar_dso_rows": [],
-        "ar_risk_rows": [],
     }
 
     if not borrower:
         return base_context
-
-def _accounts_receivable_risk_rows(borrower):
-    if not borrower:
-        return []
-    return list(
-        RiskSubfactorsRow.objects.filter(
-            borrower=borrower,
-            main_category__iexact="Accounts Receivable",
-        ).order_by("sub_risk")
-    )
-
-    latest_report = (
-        BorrowerReport.objects.filter(borrower=borrower)
-        .order_by("-report_date", "-created_at")
-        .first()
-    )
-    if not latest_report:
-        return base_context
-
-    ar_rows_latest = list(ARMetricsRow.objects.filter(report=latest_report))
-    if not ar_rows_latest:
-        return base_context
-
-    aging_rows = list(AgingCompositionRow.objects.filter(report=latest_report))
-    ineligible_overview = (
-        IneligibleOverviewRow.objects.filter(report=latest_report)
-        .order_by("-date", "-id")
-        .first()
-    )
-    concentration_rows = list(
-        ConcentrationADODSORow.objects.filter(report=latest_report)
-    )
-    ineligible_trend_rows = list(
-        IneligibleTrendRow.objects.filter(report__borrower=borrower)
-        .order_by("date", "id")
-    )
 
     def _aggregate_ar_rows(rows):
         total_balance = Decimal("0")
@@ -1123,26 +1097,33 @@ def _accounts_receivable_risk_rows(borrower):
             "total_past_due_amt": total_past_due,
         }
 
-    history = []
-    reports = BorrowerReport.objects.filter(borrower=borrower).order_by(
-        "report_date", "created_at"
+    ar_rows = list(
+        ARMetricsRow.objects.filter(borrower=borrower).order_by("as_of_date", "created_at", "id")
     )
-    for report in reports:
-        rows = list(ARMetricsRow.objects.filter(report=report))
-        if not rows:
-            continue
+    if not ar_rows:
+        return base_context
+
+    grouped = OrderedDict()
+    for row in ar_rows:
+        key = row.as_of_date or (row.created_at and row.created_at.date())
+        if key not in grouped:
+            grouped[key] = []
+        grouped[key].append(row)
+
+    history = []
+    for label_date, rows in grouped.items():
         payload = _aggregate_ar_rows(rows)
-        if not (
-            payload["total_balance"]
-            or payload["total_current_amt"]
-            or payload["total_past_due_amt"]
-        ):
-            continue
-        label_date = report.report_date or report.created_at
-        label = label_date.strftime("%b %y") if label_date else f"Report {report.id}"
-        history.append({**payload, "label": label})
+        if isinstance(label_date, date):
+            formatted_label = label_date.strftime("%b %y")
+        elif hasattr(label_date, "strftime"):
+            formatted_label = label_date.strftime("%b %y")
+        else:
+            formatted_label = "Snapshot"
+        history.append({**payload, "label": formatted_label})
+
     if not history:
         return base_context
+
     max_history = 12
     if len(history) > max_history:
         history = history[-max_history:]
@@ -1211,7 +1192,7 @@ def _accounts_receivable_risk_rows(borrower):
         delta = _delta_payload(
             current_snapshot[spec["key"]],
             previous_snapshot[spec["key"]] if previous_snapshot else None,
-            spec["improvement_on_increase"],
+            improvement_on_increase=spec["improvement_on_increase"],
         )
         kpis.append(
             {
@@ -1228,6 +1209,9 @@ def _accounts_receivable_risk_rows(borrower):
             }
         )
 
+    aging_rows = list(
+        AgingCompositionRow.objects.filter(borrower=borrower).order_by("-as_of_date", "-created_at", "-id")
+    )
     AGING_BUCKET_DEFS = [
         {"key": "current", "label": "Current", "color": "#1b2a55"},
         {"key": "0-30", "label": "0-30", "color": "rgba(43,111,247,.35)"},
@@ -1316,6 +1300,46 @@ def _accounts_receivable_risk_rows(borrower):
         )
         trend_labels.append({"x": label_x, "text": entry["label"]})
 
+    # Tables for customer aging composition views
+    bucket_columns = ["Current", "0-30", "31-60", "61-90", "90+"]
+    bucket_total_rows = []
+    bucket_past_due_rows = []
+    latest_pct = current_snapshot.get("past_due_pct") if current_snapshot else None
+    past_due_ratio = (
+        (latest_pct / Decimal("100")) if latest_pct is not None else Decimal("0")
+    )
+    for bucket in AGING_BUCKET_DEFS:
+        amount = bucket_amounts[bucket["key"]]
+        formatted_amount = _format_currency(amount)
+        values = ["" for _ in bucket_columns]
+        past_values = ["" for _ in bucket_columns]
+        if bucket["label"] in bucket_columns:
+            target_index = bucket_columns.index(bucket["label"])
+            values[target_index] = formatted_amount
+            past_values[target_index] = _format_currency(amount * past_due_ratio)
+        bucket_total_rows.append(
+            {"customer": bucket["label"], "values": values, "total": formatted_amount}
+        )
+        bucket_past_due_rows.append(
+            {
+                "customer": bucket["label"],
+                "values": past_values,
+                "total": _format_currency(amount * past_due_ratio),
+            }
+        )
+
+    ineligible_overview = (
+        IneligibleOverviewRow.objects.filter(borrower=borrower)
+        .order_by("-date", "-id")
+        .first()
+    )
+    ineligible_trend_rows = list(
+        IneligibleTrendRow.objects.filter(borrower=borrower).order_by("date", "id")
+    )
+    concentration_rows = list(
+        ConcentrationADODSORow.objects.filter(borrower=borrower)
+    )
+
     ineligible_rows = []
     ineligible_total_row = None
     if ineligible_overview:
@@ -1325,10 +1349,10 @@ def _accounts_receivable_risk_rows(borrower):
             ("Dilution", ineligible_overview.dilution),
             ("Cross Age", ineligible_overview.cross_age),
             ("Concentration Over Cap", ineligible_overview.concentration_over_cap),
-            ("Foreign Receivable", ineligible_overview.foreign),
-            ("Government Receivable", ineligible_overview.government),
-            ("Intercompany Receivable", ineligible_overview.intercompany),
-            ("Contra Receivable", ineligible_overview.contra),
+            ("Foreign", ineligible_overview.foreign),
+            ("Government", ineligible_overview.government),
+            ("Intercompany", ineligible_overview.intercompany),
+            ("Contra", ineligible_overview.contra),
             ("Other", ineligible_overview.other),
         ]
         for label, amount in categories:
@@ -1418,6 +1442,8 @@ def _accounts_receivable_risk_rows(borrower):
         "ar_concentration_rows": concentration_entries,
         "ar_ado_rows": ado_entries,
         "ar_dso_rows": dso_entries,
+        "ar_customer_aging_total_rows": bucket_total_rows,
+        "ar_customer_aging_past_due_rows": bucket_past_due_rows,
     }
 
 
@@ -1447,12 +1473,11 @@ def _finished_goals_context(borrower):
     inventory_net_total = state["inventory_net_total"]
     category_metrics = state["category_metrics"]
     inventory_rows = state["inventory_rows"]
-    latest_report = state["latest_report"]
 
     ar_row = (
-        ARMetricsRow.objects.filter(report=latest_report).order_by("-as_of_date").first()
-        if latest_report
-        else None
+        ARMetricsRow.objects.filter(borrower=borrower)
+        .order_by("-as_of_date", "-created_at", "-id")
+        .first()
     )
 
     metric_defs = [
@@ -2295,31 +2320,34 @@ def _other_collateral_context(borrower):
     if not state:
         return base_context
 
-    latest_report = state["latest_report"]
     equipment_rows = list(
-        MachineryEquipmentRow.objects.filter(report=latest_report).order_by("id")
+        MachineryEquipmentRow.objects.filter(borrower=borrower).order_by("created_at", "id")
     )
     if not equipment_rows:
         return base_context
 
-    total_fmv = sum(_to_decimal(row.fair_market_value) for row in equipment_rows)
-    total_olv = sum(_to_decimal(row.orderly_liquidation_value) for row in equipment_rows)
+    snapshots = OrderedDict()
+    for row in equipment_rows:
+        ts = row.created_at or row.id
+        snapshots.setdefault(ts, []).append(row)
+
+    if not snapshots:
+        return base_context
+
+    snapshot_keys = list(snapshots.keys())
+    latest_key = snapshot_keys[-1]
+    latest_rows = snapshots[latest_key]
+    prev_rows = snapshots[snapshot_keys[-2]] if len(snapshot_keys) > 1 else []
+
+    def _aggregate(rows):
+        total_fmv = sum(_to_decimal(row.fair_market_value) for row in rows)
+        total_olv = sum(_to_decimal(row.orderly_liquidation_value) for row in rows)
+        return total_fmv, total_olv
+
+    total_fmv, total_olv = _aggregate(latest_rows)
+    prev_total_fmv, prev_total_olv = _aggregate(prev_rows) if prev_rows else (None, None)
     estimated_fmv_total = total_fmv * Decimal("0.97")
     estimated_olv_total = total_olv * Decimal("0.95")
-
-    previous_report = (
-        BorrowerReport.objects.filter(borrower=borrower)
-        .exclude(pk=latest_report.pk)
-        .order_by("-report_date")
-        .first()
-    )
-    prev_total_fmv = None
-    prev_total_olv = None
-    if previous_report:
-        prev_rows = MachineryEquipmentRow.objects.filter(report=previous_report)
-        if prev_rows:
-            prev_total_fmv = sum(_to_decimal(row.fair_market_value) for row in prev_rows)
-            prev_total_olv = sum(_to_decimal(row.orderly_liquidation_value) for row in prev_rows)
 
     def _delta_payload(label, current, previous, fallback):
         delta = _format_delta(current, previous)
@@ -2406,34 +2434,26 @@ def _other_collateral_context(borrower):
             }
         )
 
-    chart_reports = BorrowerReport.objects.filter(borrower=borrower).order_by("report_date")
-    labels = []
-    estimated_series = []
-    appraisal_series = []
-    for report in chart_reports:
-        rows = MachineryEquipmentRow.objects.filter(report=report)
-        if not rows:
-            continue
-        report_fmv = sum(_to_decimal(row.fair_market_value) for row in rows)
-        report_olv = sum(_to_decimal(row.orderly_liquidation_value) for row in rows)
-        if report_fmv == 0 and report_olv == 0:
-            continue
-        report_date = report.report_date or report.created_at
-        if report_date:
-            label = report_date.strftime("%b %y")
-        else:
-            label = f"Report {report.id}"
-        labels.append(label)
-        appraisal_series.append(float(report_olv))
-        estimated_series.append(float(report_olv * Decimal("0.96")))
+    def _label_from_timestamp(ts):
+        if hasattr(ts, "strftime"):
+            return ts.strftime("%b %y")
+        return str(ts)
 
     max_points = 12
-    if len(labels) > max_points:
-        start = len(labels) - max_points
-        labels = labels[start:]
-        estimated_series = estimated_series[start:]
-        appraisal_series = appraisal_series[start:]
-
+    values = []
+    for key in snapshot_keys:
+        rows = snapshots[key]
+        fmv, olv = _aggregate(rows)
+        values.append(
+            {
+                "label": _label_from_timestamp(key),
+                "fmv": float(olv),
+            }
+        )
+    values = values[-max_points:]
+    labels = [entry["label"] for entry in values]
+    appraisal_series = [entry["fmv"] for entry in values]
+    estimated_series = [entry["fmv"] * 0.96 for entry in values]
     chart_config = DEFAULT_OTHER_COLLATERAL_CHART.copy()
     if labels:
         chart_config = {
@@ -2625,7 +2645,6 @@ def _liquidation_model_context(borrower):
     if not state:
         return base_context
 
-    latest_report = state["latest_report"]
     metrics_rows = list(
         FGInventoryMetricsRow.objects.filter(borrower=borrower).order_by("-as_of_date")
     )
@@ -2804,7 +2823,7 @@ def _liquidation_model_context(borrower):
         "total_pct": "54.8%",
     }
 
-    nolv_entries = list(NOLVTableRow.objects.filter(report=latest_report).order_by("id"))
+    nolv_entries = list(NOLVTableRow.objects.filter(borrower=borrower).order_by("-date", "-id"))
     liquidation_net_orderly_rows = net_rows
     liquidation_net_orderly_footer = net_footer
     if nolv_entries:

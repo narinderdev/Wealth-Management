@@ -54,10 +54,20 @@ class StyledModelForm(forms.ModelForm):
                 field.widget.attrs["data-password-input"] = "true"
 
 
+class BorrowerModelForm(StyledModelForm):
+    def __init__(self, *args, **kwargs):
+        super().__init__(*args, **kwargs)
+        if "borrower" in self.fields:
+            self.fields["borrower"].queryset = (
+                Borrower.objects.select_related("company")
+                .order_by("company__company", "primary_contact")
+            )
+
+
 class CompanyForm(StyledModelForm):
     class Meta:
         model = Company
-        fields = ["company", "company_id", "industry", "primary_naics", "website", "email", "password"]
+        fields = ["company", "industry", "primary_naics", "website", "email", "password"]
         widgets = {
             "password": forms.PasswordInput(render_value=False),
         }
@@ -137,10 +147,11 @@ class CollateralOverviewForm(StyledModelForm):
         ]
 
 
-class MachineryEquipmentForm(StyledModelForm):
+class MachineryEquipmentForm(BorrowerModelForm):
     class Meta:
         model = MachineryEquipmentRow
         fields = [
+            "borrower",
             "equipment_type",
             "manufacturer",
             "serial_number",
@@ -154,10 +165,11 @@ class MachineryEquipmentForm(StyledModelForm):
         ]
 
 
-class AgingCompositionForm(StyledModelForm):
+class AgingCompositionForm(BorrowerModelForm):
     class Meta:
         model = AgingCompositionRow
         fields = [
+            "borrower",
             "division",
             "as_of_date",
             "bucket",
@@ -169,7 +181,7 @@ class AgingCompositionForm(StyledModelForm):
         }
 
 
-class ARMetricsForm(StyledModelForm):
+class ARMetricsForm(BorrowerModelForm):
     class Meta:
         model = ARMetricsRow
         fields = [
@@ -187,10 +199,11 @@ class ARMetricsForm(StyledModelForm):
         }
 
 
-class IneligibleTrendForm(StyledModelForm):
+class IneligibleTrendForm(BorrowerModelForm):
     class Meta:
         model = IneligibleTrendRow
         fields = [
+            "borrower",
             "date",
             "division",
             "total_ar",
@@ -202,10 +215,11 @@ class IneligibleTrendForm(StyledModelForm):
         }
 
 
-class IneligibleOverviewForm(StyledModelForm):
+class IneligibleOverviewForm(BorrowerModelForm):
     class Meta:
         model = IneligibleOverviewRow
         fields = [
+            "borrower",
             "date",
             "division",
             "past_due_gt_90_days",
@@ -225,10 +239,11 @@ class IneligibleOverviewForm(StyledModelForm):
         }
 
 
-class ConcentrationADODSOForm(StyledModelForm):
+class ConcentrationADODSOForm(BorrowerModelForm):
     class Meta:
         model = ConcentrationADODSORow
         fields = [
+            "borrower",
             "division",
             "as_of_date",
             "customer",
@@ -247,7 +262,7 @@ class ConcentrationADODSOForm(StyledModelForm):
         }
 
 
-class FGInventoryMetricsForm(StyledModelForm):
+class FGInventoryMetricsForm(BorrowerModelForm):
     class Meta:
         model = FGInventoryMetricsRow
         fields = [
@@ -265,7 +280,7 @@ class FGInventoryMetricsForm(StyledModelForm):
         }
 
 
-class FGIneligibleDetailForm(StyledModelForm):
+class FGIneligibleDetailForm(BorrowerModelForm):
     class Meta:
         model = FGIneligibleDetailRow
         fields = [
@@ -287,7 +302,7 @@ class FGIneligibleDetailForm(StyledModelForm):
         }
 
 
-class FGCompositionForm(StyledModelForm):
+class FGCompositionForm(BorrowerModelForm):
     class Meta:
         model = FGCompositionRow
         fields = [
@@ -309,7 +324,7 @@ class FGCompositionForm(StyledModelForm):
         }
 
 
-class FGInlineCategoryAnalysisForm(StyledModelForm):
+class FGInlineCategoryAnalysisForm(BorrowerModelForm):
     class Meta:
         model = FGInlineCategoryAnalysisRow
         fields = [
@@ -332,7 +347,7 @@ class FGInlineCategoryAnalysisForm(StyledModelForm):
         }
 
 
-class SalesGMTrendForm(StyledModelForm):
+class SalesGMTrendForm(BorrowerModelForm):
     class Meta:
         model = SalesGMTrendRow
         fields = [
@@ -354,7 +369,7 @@ class SalesGMTrendForm(StyledModelForm):
         }
 
 
-class FGInlineExcessByCategoryForm(StyledModelForm):
+class FGInlineExcessByCategoryForm(BorrowerModelForm):
     class Meta:
         model = FGInlineExcessByCategoryRow
         fields = [
@@ -373,11 +388,12 @@ class FGInlineExcessByCategoryForm(StyledModelForm):
         }
 
 
-class RMInventoryMetricsForm(StyledModelForm):
+class RMInventoryMetricsForm(BorrowerModelForm):
     class Meta:
         model = RMInventoryMetricsRow
         fields = [
             "inventory_type",
+            "borrower",
             "division",
             "as_of_date",
             "total_inventory",
@@ -390,10 +406,11 @@ class RMInventoryMetricsForm(StyledModelForm):
         }
 
 
-class RMIneligibleOverviewForm(StyledModelForm):
+class RMIneligibleOverviewForm(BorrowerModelForm):
     class Meta:
         model = RMIneligibleOverviewRow
         fields = [
+            "borrower",
             "date",
             "inventory_type",
             "division",
@@ -411,10 +428,11 @@ class RMIneligibleOverviewForm(StyledModelForm):
         }
 
 
-class RMCategoryHistoryForm(StyledModelForm):
+class RMCategoryHistoryForm(BorrowerModelForm):
     class Meta:
         model = RMCategoryHistoryRow
         fields = [
+            "borrower",
             "date",
             "inventory_type",
             "division",
@@ -429,11 +447,12 @@ class RMCategoryHistoryForm(StyledModelForm):
         }
 
 
-class WIPInventoryMetricsForm(StyledModelForm):
+class WIPInventoryMetricsForm(BorrowerModelForm):
     class Meta:
         model = WIPInventoryMetricsRow
         fields = [
             "inventory_type",
+            "borrower",
             "division",
             "as_of_date",
             "total_inventory",
@@ -446,10 +465,11 @@ class WIPInventoryMetricsForm(StyledModelForm):
         }
 
 
-class WIPIneligibleOverviewForm(StyledModelForm):
+class WIPIneligibleOverviewForm(BorrowerModelForm):
     class Meta:
         model = WIPIneligibleOverviewRow
         fields = [
+            "borrower",
             "date",
             "inventory_type",
             "division",
@@ -467,10 +487,11 @@ class WIPIneligibleOverviewForm(StyledModelForm):
         }
 
 
-class WIPCategoryHistoryForm(StyledModelForm):
+class WIPCategoryHistoryForm(BorrowerModelForm):
     class Meta:
         model = WIPCategoryHistoryRow
         fields = [
+            "borrower",
             "date",
             "inventory_type",
             "division",
@@ -485,7 +506,7 @@ class WIPCategoryHistoryForm(StyledModelForm):
         }
 
 
-class FGGrossRecoveryHistoryForm(StyledModelForm):
+class FGGrossRecoveryHistoryForm(BorrowerModelForm):
     class Meta:
         model = FGGrossRecoveryHistoryRow
         fields = [
@@ -507,10 +528,11 @@ class FGGrossRecoveryHistoryForm(StyledModelForm):
         }
 
 
-class WIPRecoveryForm(StyledModelForm):
+class WIPRecoveryForm(BorrowerModelForm):
     class Meta:
         model = WIPRecoveryRow
         fields = [
+            "borrower",
             "date",
             "inventory_type",
             "division",
@@ -527,10 +549,11 @@ class WIPRecoveryForm(StyledModelForm):
         }
 
 
-class RawMaterialRecoveryForm(StyledModelForm):
+class RawMaterialRecoveryForm(BorrowerModelForm):
     class Meta:
         model = RawMaterialRecoveryRow
         fields = [
+            "borrower",
             "date",
             "inventory_type",
             "division",
@@ -547,10 +570,11 @@ class RawMaterialRecoveryForm(StyledModelForm):
         }
 
 
-class NOLVTableForm(StyledModelForm):
+class NOLVTableForm(BorrowerModelForm):
     class Meta:
         model = NOLVTableRow
         fields = [
+            "borrower",
             "date",
             "division",
             "line_item",
@@ -568,7 +592,7 @@ class NOLVTableForm(StyledModelForm):
         }
 
 
-class RiskSubfactorsForm(StyledModelForm):
+class RiskSubfactorsForm(BorrowerModelForm):
     class Meta:
         model = RiskSubfactorsRow
         fields = [
@@ -584,7 +608,7 @@ class RiskSubfactorsForm(StyledModelForm):
         }
 
 
-class CompositeIndexForm(StyledModelForm):
+class CompositeIndexForm(BorrowerModelForm):
     class Meta:
         model = CompositeIndexRow
         fields = [
@@ -603,10 +627,11 @@ class CompositeIndexForm(StyledModelForm):
         widgets = {
             "date": forms.DateInput(attrs={"type": "date"}),
         }
-class ForecastForm(StyledModelForm):
+class ForecastForm(BorrowerModelForm):
     class Meta:
         model = ForecastRow
         fields = [
+            "borrower",
             "as_of_date",
             "period",
             "actual_forecast",
@@ -626,10 +651,11 @@ class ForecastForm(StyledModelForm):
         }
 
 
-class AvailabilityForecastForm(StyledModelForm):
+class AvailabilityForecastForm(BorrowerModelForm):
     class Meta:
         model = AvailabilityForecastRow
         fields = [
+            "borrower",
             "date",
             "category",
             "x",
@@ -652,10 +678,11 @@ class AvailabilityForecastForm(StyledModelForm):
         }
 
 
-class CurrentWeekVarianceForm(StyledModelForm):
+class CurrentWeekVarianceForm(BorrowerModelForm):
     class Meta:
         model = CurrentWeekVarianceRow
         fields = [
+            "borrower",
             "date",
             "category",
             "projected",
@@ -668,10 +695,11 @@ class CurrentWeekVarianceForm(StyledModelForm):
         }
 
 
-class CumulativeVarianceForm(StyledModelForm):
+class CumulativeVarianceForm(BorrowerModelForm):
     class Meta:
         model = CummulativeVarianceRow
         fields = [
+            "borrower",
             "date",
             "category",
             "projected",
@@ -684,7 +712,7 @@ class CumulativeVarianceForm(StyledModelForm):
         }
 
 
-class CollateralLimitsForm(StyledModelForm):
+class CollateralLimitsForm(BorrowerModelForm):
     class Meta:
         model = CollateralLimitsRow
         fields = [
@@ -697,10 +725,11 @@ class CollateralLimitsForm(StyledModelForm):
         ]
 
 
-class IneligiblesForm(StyledModelForm):
+class IneligiblesForm(BorrowerModelForm):
     class Meta:
         model = IneligiblesRow
         fields = [
+            "borrower",
             "division",
             "collateral_type",
             "collateral_sub_type",

@@ -105,7 +105,7 @@
     .risk-page .pill.navy{background:#0f4ea8;color:#fff;border-color:#0f4ea8;}
     .risk-page .pill.lt{background:#cfe4f7;color:#334;}
     .risk-page .pill.wt{background:#fff;color:#334;}
-    .risk-page .chartbox{padding:8px 10px 10px;}
+    .risk-page .chartbox{padding:8px 10px 10px;position:relative;}
     .risk-page .chart{
       width:100%;
       height:92px;
@@ -118,6 +118,18 @@
       margin-top:6px;
       font-size:9px;
       color:#94a3b8;
+    }
+    .risk-page .y-axis-labels{
+      position:absolute;
+      left:8px;
+      top:16px;
+      bottom:16px;
+      display:flex;
+      flex-direction:column;
+      justify-content:space-between;
+      font-size:10px;
+      color:#94a3b8;
+      pointer-events:none;
     }
     .risk-page table{
       width:100%;
@@ -195,6 +207,38 @@
       grid-template-columns:138px 1fr;
       gap:12px;
       align-items:center;
+      position:relative;
+    }
+    .risk-page .bar-tooltip{
+      position:absolute;
+      top:-22px;
+      left:var(--bar-left,50%);
+      transform:translateX(-50%);
+      background:rgba(15,23,39,.9);
+      color:#fff;
+      padding:4px 8px;
+      border-radius:4px;
+      font-size:9px;
+      white-space:nowrap;
+      opacity:0;
+      transition:opacity .2s ease;
+      pointer-events:none;
+    }
+    .risk-page .barrow:hover .bar-tooltip{
+      opacity:1;
+    }
+    .risk-page .risk-tooltip{
+      position:absolute;
+      background:rgba(15,23,39,.95);
+      color:#fff;
+      padding:5px 10px;
+      border-radius:6px;
+      font-size:11px;
+      pointer-events:none;
+      opacity:0;
+      transition:opacity .2s ease;
+      transform:translate(-50%, -110%);
+      white-space:nowrap;
     }
     .risk-page .barrow .lbl{
       font-size:9px;
@@ -277,17 +321,26 @@
               <line x1="10" y1="90" x2="290" y2="90" stroke="#eef4fb" />
               <polyline fill="none" stroke="#0b57d0" stroke-width="3" stroke-linecap="round" stroke-linejoin="round"
                 points="{{ risk.trend_points }}" />
-              <g fill="#0b57d0">
-                {% for point in risk.trend_coords %}
-                  <circle cx="{{ point.x }}" cy="{{ point.y }}" r="3.2"></circle>
-                {% endfor %}
-              </g>
+            <g fill="#0b57d0">
+              {% for point in risk.trend_data %}
+                <circle cx="{{ point.x }}" cy="{{ point.y }}" r="3.2"
+                        data-label="{{ point.label }}" data-score="{{ point.score }}"></circle>
+              {% endfor %}
+            </g>
             </svg>
+            <div class="y-axis-labels">
+              <span>90%</span>
+              <span>70%</span>
+              <span>50%</span>
+              <span>30%</span>
+              <span>10%</span>
+            </div>
             <div class="axislabels">
               {% for label in risk.trend_axis %}
                 <span>{{ label }}</span>
               {% endfor %}
             </div>
+            <div class="risk-tooltip" id="risk-tooltip"></div>
           </div>
         </div>
 
@@ -339,11 +392,12 @@
             </svg>
             <div class="bars">
               {% for bar in metric.bars %}
-                <div class="barrow">
+                <div class="barrow" style="--bar-left: {{ bar.width }};">
                   <div class="lbl">{{ bar.label }}</div>
                   <div class="track">
                     <div class="fill" style="width:{{ bar.width }}; background:{{ metric.fill_color }}"></div>
                   </div>
+                  <span class="bar-tooltip">{{ bar.width }}</span>
                 </div>
               {% endfor %}
             </div>
@@ -353,4 +407,53 @@
       </div>
     </section>
   </div>
+{% endblock %}
+
+{% block extra_scripts %}
+  <script>
+    document.addEventListener("DOMContentLoaded", function(){
+      const chartBox = document.querySelector(".risk-page .chartbox");
+      const tooltip = document.getElementById("risk-tooltip");
+      if(!chartBox || !tooltip) return;
+      const svg = chartBox.querySelector("svg");
+      const circles = svg.querySelectorAll("circle[data-score]");
+      let activeCircle = null;
+      const formatPercent = value => {
+        const pct = Math.min(Math.max(parseFloat(value) / 5, 0), 1) * 100;
+        return `${pct.toFixed(1)}%`;
+      };
+      const updateTooltip = (label, score, event) => {
+        const pct = score ? formatPercent(score) : null;
+        tooltip.innerHTML = `${label}: <strong>${score}${pct ? ` (${pct})` : ""}</strong>`;
+        const rect = chartBox.getBoundingClientRect();
+        tooltip.style.left = `${event.clientX - rect.left}px`;
+        tooltip.style.top = `${event.clientY - rect.top - 10}px`;
+        tooltip.style.opacity = "1";
+      };
+      circles.forEach(circle => {
+        circle.addEventListener("mousemove", function(event){
+          if(activeCircle && activeCircle !== circle) return;
+          const label = circle.dataset.label || "";
+          const score = circle.dataset.score || "";
+          updateTooltip(label, score, event);
+        });
+        circle.addEventListener("click", function(event){
+          activeCircle = circle;
+          const label = circle.dataset.label || "";
+          const score = circle.dataset.score || "";
+          updateTooltip(label, score, event);
+        });
+        circle.addEventListener("mouseleave", function(){
+          if(activeCircle && activeCircle !== circle) return;
+          tooltip.style.opacity = "0";
+        });
+      });
+      document.addEventListener("click", function(event){
+        if(!chartBox.contains(event.target)){
+          tooltip.style.opacity = "0";
+          activeCircle = null;
+        }
+      });
+    });
+  </script>
 {% endblock %}

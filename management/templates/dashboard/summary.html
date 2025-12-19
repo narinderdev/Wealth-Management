@@ -97,22 +97,23 @@
       <div class="risk">
         <div class="risk-title">Risk profile</div>
         <div class="risk-score">
-          <div class="risk-circle">
-            <span>3.1</span>
+          <div class="risk-circle" data-tooltip="{{ risk_profile_detail|default:'Risk detail unavailable' }}">
+            <span>{{ risk_profile_value|default:"3.1" }}</span>
           </div>
         </div>
         <div class="risk-scale">
-          <div class="risk-bar">
-            <span class="risk-marker" style="--pos:60%"></span>
+            <div class="risk-bar">
+              <span class="risk-marker" style="--pos:60%"></span>
+            </div>
+            <div class="risk-labels">
+              <span>Low</span>
+              <span>Mild</span>
+              <span>Average</span>
+              <span>Elevated</span>
+              <span>High</span>
+            </div>
           </div>
-          <div class="risk-labels">
-            <span>Low</span>
-            <span>Mild</span>
-            <span>Average</span>
-            <span>Elevated</span>
-            <span>High</span>
-          </div>
-        </div>
+        <div class="risk-tooltip" aria-hidden="true"></div>
         <div class="risk-metrics">
           {% for metric in risk_metrics %}
           <div class="risk-row">
@@ -187,6 +188,7 @@
         <div class="chart-card chart-card--blue">
           <header>Net Collateral</header>
           <div class="panel-chart">
+            <div class="chart-tooltip" aria-hidden="true"></div>
             <svg viewBox="0 0 220 120" preserveAspectRatio="none">
               <rect class="panel-bg" x="0" y="0" width="220" height="120" rx="10"></rect>
               <g class="panel-grid">
@@ -198,7 +200,9 @@
               <polyline class="panel-line panel-line--blue" points="{{ net_chart.points }}"/>
               <g class="panel-dots">
                 {% for point in net_chart.points_list %}
-                <circle cx="{{ point.x }}" cy="{{ point.y }}" r="3"/>
+                <circle cx="{{ point.x }}" cy="{{ point.y }}" r="3"
+                  data-label="{{ point.label|default:'Net Collateral' }}"
+                  data-value="{{ point.value|default:insights.net.amount }}"/>
                 {% endfor %}
               </g>
             <g class="panel-axis">
@@ -212,6 +216,7 @@
         <div class="chart-card chart-card--purple">
           <header>Outstanding Balance</header>
           <div class="panel-chart">
+            <div class="chart-tooltip" aria-hidden="true"></div>
             <svg viewBox="0 0 220 120" preserveAspectRatio="none">
               <rect class="panel-bg" x="0" y="0" width="220" height="120" rx="10"></rect>
               <g class="panel-grid">
@@ -223,7 +228,9 @@
               <polyline class="panel-line panel-line--purple" points="{{ outstanding_chart.points }}"/>
               <g class="panel-dots">
                 {% for point in outstanding_chart.points_list %}
-                <circle cx="{{ point.x }}" cy="{{ point.y }}" r="3"/>
+                <circle cx="{{ point.x }}" cy="{{ point.y }}" r="3"
+                  data-label="{{ point.label|default:'Outstanding Balance' }}"
+                  data-value="{{ point.value|default:insights.outstanding.amount }}"/>
                 {% endfor %}
               </g>
             <g class="panel-axis">
@@ -237,6 +244,7 @@
         <div class="chart-card chart-card--green">
           <header>Availability</header>
           <div class="panel-chart">
+            <div class="chart-tooltip" aria-hidden="true"></div>
             <svg viewBox="0 0 220 120" preserveAspectRatio="none">
               <rect class="panel-bg" x="0" y="0" width="220" height="120" rx="10"></rect>
               <g class="panel-grid">
@@ -248,7 +256,9 @@
               <polyline class="panel-line panel-line--green" points="{{ availability_chart.points }}"/>
               <g class="panel-dots">
                 {% for point in availability_chart.points_list %}
-                <circle cx="{{ point.x }}" cy="{{ point.y }}" r="3"/>
+                <circle cx="{{ point.x }}" cy="{{ point.y }}" r="3"
+                  data-label="{{ point.label|default:'Availability' }}"
+                  data-value="{{ point.value|default:insights.availability.amount }}"/>
                 {% endfor %}
               </g>
               <g class="panel-axis">

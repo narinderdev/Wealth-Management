@@ -134,7 +134,7 @@ def _user_can_access_borrower(user, borrower, company):
 CHART_X_POSITIONS = [0, 40, 80, 120, 160, 200, 220]
 
 
-def _build_line_series(base_value, global_max, x_positions=CHART_X_POSITIONS):
+def _build_line_series(base_value, global_max, label=None, value_text=None, x_positions=CHART_X_POSITIONS):
     base = float(_to_decimal(base_value))
     reference = _to_decimal(global_max or Decimal("1"))
     if reference <= 0:
@@ -153,7 +153,12 @@ def _build_line_series(base_value, global_max, x_positions=CHART_X_POSITIONS):
         y = 90 - ratio * 50
         y_rounded = round(y, 1)
         points.append(f"{x},{y_rounded}")
-        points_list.append({"x": x, "y": y_rounded})
+        points_list.append({
+            "x": x,
+            "y": y_rounded,
+            "label": label,
+            "value": value_text,
+        })
 
     return {
         "points": " ".join(points),
@@ -379,12 +384,24 @@ def summary_view(request):
         ar_row.balance if ar_row and ar_row.balance is not None else Decimal("0"),
         Decimal("1"),
     )
-    net_chart = _build_line_series(net_total, global_max_value)
+    net_chart = _build_line_series(
+        net_total,
+        global_max_value,
+        label="Net Collateral",
+        value_text=insights["net"]["detail"],
+    )
     outstanding_chart = _build_line_series(
         ar_row.balance if ar_row and ar_row.balance is not None else None,
         global_max_value,
+        label="Outstanding Balance",
+        value_text=insights["outstanding"]["detail"],
     )
-    availability_chart = _build_line_series(available_total, global_max_value)
+    availability_chart = _build_line_series(
+        available_total,
+        global_max_value,
+        label="Availability",
+        value_text=insights["availability"]["detail"],
+    )
 
     inventory_rows = [
         row for row in collateral_rows if row.main_type and "inventory" in row.main_type.lower()
@@ -449,6 +466,14 @@ def summary_view(request):
         "direction": "up",
     })
 
+    inventory_pct_text = _format_pct(inventory_ratio) if inventory_ratio is not None else "—"
+    ar_pct_text = _format_pct(ar_row.pct_past_due) if ar_row and ar_row.pct_past_due is not None else "—"
+    risk_profile_score = Decimal("3.1")
+    if inventory_ratio_pct is not None:
+        suggested = (inventory_ratio_pct / Decimal("20")) + Decimal("3")
+        risk_profile_score = max(Decimal("1"), min(Decimal("5"), suggested))
+    risk_profile_detail = f"AR past due {ar_pct_text} · Inventory ineligible {inventory_pct_text}"
+
     context = {
         "borrower_summary": borrower_summary,
         "collateral_rows": collateral_data,
@@ -460,6 +485,8 @@ def summary_view(request):
         "net_chart": net_chart,
         "outstanding_chart": outstanding_chart,
         "availability_chart": availability_chart,
+        "risk_profile_value": f"{risk_profile_score:.1f}",
+        "risk_profile_detail": risk_profile_detail,
     }
     return render(request, "dashboard/summary.html", context)
 

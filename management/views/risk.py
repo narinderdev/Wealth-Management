@@ -77,6 +77,8 @@ def risk_view(request):
     trend_points = []
     trend_axis = []
     trend_coords = []
+    trend_values = []
+    trend_data = []
     for idx, row in enumerate(composite_rows[-8:]):
         score = _to_decimal(row.overall_score) if row.overall_score else Decimal("0")
         ratio = float(min(max(score / Decimal("5"), Decimal("0")), Decimal("1")))
@@ -84,7 +86,10 @@ def risk_view(request):
         y = 90 - ratio * 40
         trend_points.append(f"{x},{y}")
         trend_coords.append({"x": x, "y": y})
-        trend_axis.append(row.date.strftime("%b") if row.date else str(idx + 1))
+        label = row.date.strftime("%b") if row.date else str(idx + 1)
+        trend_axis.append(label)
+        trend_values.append(f"{score:.1f}")
+        trend_data.append({"x": x, "y": y, "label": label, "score": f"{score:.1f}"})
 
     high_factors = []
     prior_scores = {}
@@ -296,6 +301,11 @@ def risk_view(request):
                 {"x": 166, "y": 52}, {"x": 203, "y": 66}, {"x": 240, "y": 84}, {"x": 277, "y": 70},
             ],
             "trend_axis": trend_axis or ["Jan","Feb","Mar","Apr","May","Jun","Jul","Aug"],
+            "trend_values": trend_values or ["3.5","3.7","3.9","4.0","4.1","4.2","4.3","3.9"],
+            "trend_data": trend_data or [
+                {"x": 18, "y": 72, "label": "Jan", "score": "3.5"},
+                {"x": 55, "y": 60, "label": "Feb", "score": "3.7"},
+            ],
             "high_impact": high_factors,
             "metrics": processed_metrics,
         },

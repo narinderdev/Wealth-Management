@@ -15,7 +15,6 @@
         <thead>
           <tr>
             <th>Borrower</th>
-            <th>Report Date</th>
             <th>Date</th>
             <th>Inventory Type</th>
             <th>Division</th>
@@ -33,8 +32,7 @@
         <tbody>
           {% for row in component_data.list %}
             <tr>
-              <td>{{ row.report.borrower.company.company|default:"—" }}</td>
-              <td>{{ row.report.report_date|date:"Y-m-d"|default:"—" }}</td>
+              <td>{% include "admin/components/_borrower_cell.html" with row=row only %}</td>
               <td>{{ row.date|date:"Y-m-d"|default:"—" }}</td>
               <td>{{ row.inventory_type|default:"—" }}</td>
               <td>{{ row.division|default:"—" }}</td>

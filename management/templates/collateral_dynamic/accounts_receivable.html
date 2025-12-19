@@ -768,52 +768,6 @@
       display:inline-flex;
       align-items:center;
     }
-    .collateral-dynamic .ar-risk-panel{
-      border:1px solid rgba(15,23,42,.08);
-      border-radius:12px;
-      padding:18px;
-      background:#fff;
-      box-shadow:0 12px 30px rgba(15,23,42,.06);
-    }
-    .collateral-dynamic .ar-risk-content{
-      margin-top:12px;
-    }
-    .collateral-dynamic .ar-risk-list{
-      display:flex;
-      flex-direction:column;
-      gap:10px;
-    }
-    .collateral-dynamic .ar-risk-row{
-      display:flex;
-      justify-content:space-between;
-      align-items:flex-start;
-      border-bottom:1px solid rgba(15,23,42,.08);
-      padding-bottom:10px;
-    }
-    .collateral-dynamic .ar-risk-row:last-child{
-      border-bottom:none;
-      padding-bottom:0;
-    }
-    .collateral-dynamic .ar-risk-label{
-      font-size:14px;
-      font-weight:600;
-      color:#0b2a66;
-    }
-    .collateral-dynamic .ar-risk-note{
-      font-size:12px;
-      color:#475569;
-      margin-top:4px;
-    }
-    .collateral-dynamic .ar-risk-score{
-      font-size:18px;
-      font-weight:700;
-      color:#0a6af0;
-    }
-    .collateral-dynamic .ar-risk-empty{
-      font-size:13px;
-      color:#6b7280;
-      text-align:center;
-    }
   </style>
 {% endblock %}
 
@@ -835,333 +789,448 @@
           </div>
         {% elif active_section == 'accounts_receivable' %}
           <div class="ar-section">
-            <section class="card borrowing-base">
-              <div class="h2">
-                <svg class="spark" viewBox="0 0 24 24" fill="none">
-                  <path d="M4 16l6-6 4 4 6-8" stroke="var(--blue-2)" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/>
-                  <path d="M20 8v6h-6" stroke="var(--blue-2)" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/>
-                </svg>
-                Snapshot Summary
-              </div>
-              <p class="p">
-                AR balances expanded while payment timing weakened, pushing a larger share into past-due categories.
-                Rising aging and concentrated exposure increase sensitivity of the borrowing base to slowdowns in collections.
-              </p>
-            </section>
-            <section class="card">
-              <div class="h2">
-                <svg class="spark" viewBox="0 0 24 24" fill="none">
-                  <path d="M4 16l6-6 4 4 6-8" stroke="var(--blue-2)" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/>
-                </svg>
-                Borrowing Base Insight
-              </div>
-              <div class="borrowing-base-grid">
-                {% if ar_borrowing_base_kpis %}
-                  {% for kpi in ar_borrowing_base_kpis %}
-                    <article class="borrowing-base-card">
-                      <div class="title-row">
-                        <span class="kpi-label">{{ kpi.label }}</span>
-                        <div class="info">i</div>
-                      </div>
-                      <div class="kpi-value">{{ kpi.value }}</div>
-                      {% if kpi.delta %}
-                        <div class="kpi-delta {{ kpi.delta_class }}">
-                          <span class="delta-symbol">{{ kpi.symbol }}</span>
-                          <span>{{ kpi.delta }} vs prior</span>
+            <main class="content">
+              <div class="content-inner">
+
+                <!-- Snapshot Summary -->
+                <section class="card">
+                  <div class="h2">
+                    <svg class="spark" viewBox="0 0 24 24" fill="none">
+                      <path d="M4 16l6-6 4 4 6-8" stroke="var(--blue-2)" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/>
+                      <path d="M20 8v6h-6" stroke="var(--blue-2)" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/>
+                    </svg>
+                    Snapshot Summary
+                  </div>
+                  <p class="p">
+                    AR balances expanded while payment timing weakened, pushing a larger share into past‑due categories.
+                    Rising aging, combined with concentrated exposure to key customers, increases the sensitivity of the BBC to shifts in performance and collection trends.
+                  </p>
+                </section>
+
+                <!-- Borrowing Base Insight -->
+                <section class="card">
+                  <div class="h2">
+                    <svg class="spark" viewBox="0 0 24 24" fill="none">
+                      <path d="M4 16l6-6 4 4 6-8" stroke="var(--blue-2)" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/>
+                    </svg>
+                    Borrowing Base Insight
+                  </div>
+
+                  <div class="kpis">
+                    {% for kpi in ar_borrowing_base_kpis %}
+                      <div class="kpi">
+                        <div class="info">ⓘ</div>
+                        <div class="label">{{ kpi.label }}</div>
+                        <div class="value">{{ kpi.value }}</div>
+                        {% if kpi.delta %}
+                          <div class="delta {{ kpi.delta_class }}">
+                            {{ kpi.symbol }} <span>{{ kpi.delta }}</span>
+                          </div>
+                        {% endif %}
+
+                        <div class="mini">
+                          <svg viewBox="0 0 260 64" width="100%" height="64" aria-label="{{ kpi.label }} mini trend">
+                            <g stroke="rgba(15,23,42,.08)" stroke-width="1">
+                              <path d="M0 52H260"/>
+                              <path d="M0 36H260"/>
+                              <path d="M0 20H260"/>
+                            </g>
+                            <polyline fill="none"
+                              stroke="{{ kpi.color|default:'var(--blue-3)' }}"
+                              stroke-width="2.5"
+                              points="{{ kpi.spark_points|default:'0,52 260,52' }}"/>
+                            <g fill="#fff"
+                              stroke="{{ kpi.color|default:'var(--blue-3)' }}"
+                              stroke-width="2">
+                              {% for dot in kpi.spark_dots %}
+                                <circle cx="{{ dot.cx }}" cy="{{ dot.cy }}" r="3.2"/>
+                              {% endfor %}
+                            </g>
+                          </svg>
                         </div>
-                      {% endif %}
-                      <div class="borrowing-base-chart">
-                        <svg viewBox="0 0 260 120" role="presentation">
-                          <g stroke="rgba(15,23,42,.08)" stroke-width="1">
-                            <line x1="0" y1="96" x2="260" y2="96"></line>
-                            <line x1="0" y1="68" x2="260" y2="68"></line>
-                            <line x1="0" y1="40" x2="260" y2="40"></line>
-                            <line x1="0" y1="0" x2="0" y2="120"></line>
-                          </g>
-                          <polyline fill="none" stroke="{{ kpi.color }}" stroke-width="2.5"
-                            points="{{ kpi.chart_points|default:'' }}"/>
-                          <g fill="#fff" stroke="{{ kpi.color }}" stroke-width="2">
-                            {% for dot in kpi.chart_dots %}
-                              <circle cx="{{ dot.cx }}" cy="{{ dot.cy }}" r="3"/>
-                            {% endfor %}
-                          </g>
-                        </svg>
                       </div>
-                    </article>
-                  {% endfor %}
-                {% else %}
-                  <div class="borrowing-base-card">
-                    <div class="kpi-label">Balance</div>
-                    <div class="kpi-value">—</div>
-                    <div class="borrowing-base-chart">
-                      <svg viewBox="0 0 260 120" role="presentation">
+                    {% empty %}
+                      <div class="kpi">
+                        <div class="info">ⓘ</div>
+                        <div class="label">Balance</div>
+                        <div class="value">—</div>
+                        <div class="delta down">▼ <span>0.0%</span></div>
+                        <div class="mini">
+                          <svg viewBox="0 0 260 64" width="100%" height="64">
+                            <g stroke="rgba(15,23,42,.08)" stroke-width="1">
+                              <path d="M0 52H260"/>
+                              <path d="M0 36H260"/>
+                              <path d="M0 20H260"/>
+                            </g>
+                          </svg>
+                        </div>
+                      </div>
+                    {% endfor %}
+                  </div>
+                </section>
+
+                <!-- Aging Analysis -->
+                <section class="card">
+                  <div class="h2">
+                    <svg class="spark" viewBox="0 0 24 24" fill="none">
+                      <path d="M4 16l6-6 4 4 6-8" stroke="var(--blue-2)" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/>
+                    </svg>
+                    Aging Analysis
+                  </div>
+
+                  <div class="two-col">
+                    <!-- Aging Composition -->
+                    <div class="subcard">
+                      <div class="subhead">
+                        <div class="h3">
+                          <svg class="spark" viewBox="0 0 24 24" fill="none" style="width:12px;height:12px">
+                            <path d="M4 16l6-6 4 4 6-8" stroke="var(--blue-2)" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/>
+                          </svg>
+                          Aging Composition
+                        </div>
+                        <div style="font-size:10px;color:rgba(15,23,42,.45)">%</div>
+                      </div>
+
+                      <svg viewBox="0 0 440 170" width="100%" height="170" aria-label="Aging composition bar chart">
                         <g stroke="rgba(15,23,42,.08)" stroke-width="1">
-                          <line x1="0" y1="96" x2="260" y2="96"></line>
-                          <line x1="0" y1="68" x2="260" y2="68"></line>
-                          <line x1="0" y1="40" x2="260" y2="40"></line>
-                          <line x1="0" y1="0" x2="0" y2="120"></line>
+                          <path d="M40 140H420"/>
+                          <path d="M40 110H420"/>
+                          <path d="M40 80H420"/>
+                          <path d="M40 50H420"/>
+                        </g>
+
+                        <g fill="rgba(15,23,42,.45)" font-size="10">
+                          <text x="10" y="143">$20</text>
+                          <text x="10" y="113">$40</text>
+                          <text x="10" y="83">$60</text>
+                          <text x="10" y="53">$80</text>
+                        </g>
+
+                        <g>
+                          {% for bucket in ar_aging_chart_buckets %}
+                            <rect x="{{ bucket.x }}" y="{{ bucket.y }}" width="{{ bucket.width }}" height="{{ bucket.height }}" rx="6" fill="{{ bucket.color }}"/>
+                            <text x="{{ bucket.text_x }}" y="{{ bucket.percent_y }}" text-anchor="middle" font-size="10" fill="rgba(15,23,42,.55)">{{ bucket.percent_display }}</text>
+                            <text x="{{ bucket.text_x }}" y="{{ bucket.label_y }}" text-anchor="middle" font-size="10" fill="rgba(15,23,42,.55)">{{ bucket.label }}</text>
+                          {% empty %}
+                            <text x="220" y="96" text-anchor="middle" font-size="12" fill="rgba(15,23,42,.45)">No aging data</text>
+                          {% endfor %}
+                        </g>
+                      </svg>
+                    </div>
+
+                    <!-- Current vs Past Due Trend -->
+                    <div class="subcard">
+                      <div class="subhead">
+                        <div class="h3">
+                          <svg class="spark" viewBox="0 0 24 24" fill="none" style="width:12px;height:12px">
+                            <path d="M4 16l6-6 4 4 6-8" stroke="var(--blue-2)" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/>
+                          </svg>
+                          Current vs Past Due Trend
+                        </div>
+                        <div class="legend">
+                          <span><i class="swatch past"></i>Past Due</span>
+                          <span><i class="swatch current"></i>Current</span>
+                        </div>
+                      </div>
+
+                      <svg viewBox="0 0 520 170" width="100%" height="170" aria-label="Current vs Past Due grouped bar chart">
+                        <g stroke="rgba(15,23,42,.08)" stroke-width="1">
+                          <path d="M40 140H500"/>
+                          <path d="M40 110H500"/>
+                          <path d="M40 80H500"/>
+                          <path d="M40 50H500"/>
+                        </g>
+                        <g fill="rgba(15,23,42,.45)" font-size="10">
+                          <text x="10" y="143">0%</text>
+                          <text x="10" y="113">20%</text>
+                          <text x="10" y="83">40%</text>
+                          <text x="10" y="53">60%</text>
+                        </g>
+
+                        <g>
+                          {% if ar_current_vs_past_due_trend.bars %}
+                            {% for bar in ar_current_vs_past_due_trend.bars %}
+                              <rect x="{{ bar.past_due_x }}" y="{{ bar.past_due_y }}" width="8" height="{{ bar.past_due_height }}" rx="3" fill="#1b2a55"/>
+                              <rect x="{{ bar.current_x }}" y="{{ bar.current_y }}" width="8" height="{{ bar.current_height }}" rx="3" fill="var(--blue-2)"/>
+                            {% endfor %}
+                          {% else %}
+                            <text x="260" y="110" fill="rgba(15,23,42,.45)" font-size="12" text-anchor="middle">No trend data</text>
+                          {% endif %}
+                        </g>
+
+                        <g fill="rgba(15,23,42,.45)" font-size="9">
+                          {% for label in ar_current_vs_past_due_trend.labels %}
+                            <text x="{{ label.x }}" y="163" text-anchor="middle">{{ label.text }}</text>
+                          {% endfor %}
                         </g>
                       </svg>
                     </div>
                   </div>
-                {% endif %}
-              </div>
-            </section>
 
-            <section class="card">
-              <div class="h2">
-                <svg class="spark" viewBox="0 0 24 24" fill="none">
-                  <path d="M4 16l6-6 4 4 6-8" stroke="var(--blue-2)" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/>
-                </svg>
-                Aging Analysis
-              </div>
-              <div class="two-col">
-                <div class="subcard">
-                  <div class="subhead">
-                    <div class="h3">
-                      <svg class="spark" viewBox="0 0 24 24" fill="none" style="width:12px;height:12px">
-                        <path d="M4 16l6-6 4 4 6-8" stroke="var(--blue-2)" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/>
-                      </svg>
-                      Aging Composition
-                    </div>
-                    <div class="pct-label">%</div>
-                  </div>
-                  <svg viewBox="0 0 440 170" width="100%" height="170" aria-label="Aging composition bar chart">
-                    <g stroke="rgba(15,23,42,.08)" stroke-width="1">
-                      <path d="M40 140H420"/>
-                      <path d="M40 110H420"/>
-                      <path d="M40 80H420"/>
-                      <path d="M40 50H420"/>
-                    </g>
-                    <g fill="rgba(15,23,42,.45)" font-size="10">
-                      <text x="10" y="143">$20</text>
-                      <text x="10" y="113">$40</text>
-                      <text x="10" y="83">$60</text>
-                      <text x="10" y="53">$80</text>
-                    </g>
-                    <g>
-                      {% for bucket in ar_aging_chart_buckets %}
-                        <rect x="{{ bucket.x }}" y="{{ bucket.y }}" width="{{ bucket.width }}" height="{{ bucket.height }}" rx="6" fill="{{ bucket.color }}"/>
-                        <text x="{{ bucket.text_x }}" y="{{ bucket.percent_y }}" text-anchor="middle" font-size="10" fill="rgba(15,23,42,.55)">{{ bucket.percent_display }}</text>
-                        <text x="{{ bucket.text_x }}" y="{{ bucket.label_y }}" text-anchor="middle" font-size="10" fill="rgba(15,23,42,.55)">{{ bucket.label }}</text>
-                      {% endfor %}
-                    </g>
-                  </svg>
-                </div>
-                <div class="subcard">
-                  <div class="subhead">
-                    <div class="h3">
-                      <svg class="spark" viewBox="0 0 24 24" fill="none" style="width:12px;height:12px">
-                        <path d="M4 16l6-6 4 4 6-8" stroke="var(--blue-2)" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/>
-                      </svg>
-                      Current vs Past Due Trend
-                    </div>
-                    <div class="legend">
-                      <span><i class="swatch past"></i>Past Due</span>
-                      <span><i class="swatch current"></i>Current</span>
-                    </div>
-                  </div>
-                  <svg viewBox="0 0 520 170" width="100%" height="170" aria-label="Current vs Past Due grouped bar chart">
-                    <g stroke="rgba(15,23,42,.08)" stroke-width="1">
-                      <path d="M40 140H500"/>
-                      <path d="M40 110H500"/>
-                      <path d="M40 80H500"/>
-                      <path d="M40 50H500"/>
-                    </g>
-                    <g fill="rgba(15,23,42,.45)" font-size="10">
-                      <text x="10" y="143">0%</text>
-                      <text x="10" y="113">20%</text>
-                      <text x="10" y="83">40%</text>
-                      <text x="10" y="53">60%</text>
-                    </g>
-                    <g>
-                      {% for bar in ar_current_vs_past_due_trend.bars %}
-                        <rect x="{{ bar.past_due_x }}" y="{{ bar.past_due_y }}" width="8" height="{{ bar.past_due_height }}" rx="3" fill="#1b2a55"/>
-                        <rect x="{{ bar.current_x }}" y="{{ bar.current_y }}" width="8" height="{{ bar.current_height }}" rx="3" fill="var(--blue-2)"/>
-                      {% endfor %}
-                    </g>
-                    <g fill="rgba(15,23,42,.45)" font-size="9">
-                      {% for label in ar_current_vs_past_due_trend.labels %}
-                        <text x="{{ label.x }}" y="163" text-anchor="middle">{{ label.text }}</text>
-                      {% endfor %}
-                    </g>
-                  </svg>
-                </div>
-              </div>
-            </section>
-
-            <section class="card">
-              <div class="h2">
-                <svg class="spark" viewBox="0 0 24 24" fill="none">
-                  <path d="M4 16l6-6 4 4 6-8" stroke="var(--blue-2)" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/>
-                </svg>
-                Ineligible Detail
-              </div>
-              <div class="two-col">
-                <div class="subcard">
-                  <div class="h3">Ineligible Overview</div>
-                  <table>
-                    <thead>
-                      <tr>
-                        <th>Ineligibles</th>
-                        <th class="align-right">Amount</th>
-                        <th class="align-right">% of Total</th>
-                      </tr>
-                    </thead>
-                    <tbody>
-                      {% if ar_ineligible_overview_rows %}
-                        {% for row in ar_ineligible_overview_rows %}
+                  <div class="tables-row">
+                    <div class="subcard">
+                      <div class="table-title">Customer Aging Composition by Total Balance</div>
+                      <table>
+                        <thead>
                           <tr>
-                            <td>{{ row.label }}</td>
-                            <td class="align-right">{{ row.amount }}</td>
-                            <td class="align-right">{{ row.pct }}</td>
+                            <th style="width:34%">Customer</th>
+                            <th>Current</th>
+                            <th>0-30</th>
+                            <th>31-60</th>
+                            <th>61-90</th>
+                            <th>90+</th>
+                            <th>Total</th>
                           </tr>
-                        {% endfor %}
-                        {% if ar_ineligible_overview_total %}
-                          <tr class="total">
-                            <td>{{ ar_ineligible_overview_total.label }}</td>
-                            <td class="align-right">{{ ar_ineligible_overview_total.amount }}</td>
-                            <td class="align-right">{{ ar_ineligible_overview_total.pct }}</td>
+                        </thead>
+                        <tbody>
+                          {% for row in ar_customer_aging_total_rows %}
+                            <tr>
+                              <td>{{ row.customer }}</td>
+                              {% for value in row.values %}
+                                <td class="align-right">{{ value }}</td>
+                              {% endfor %}
+                              <td class="align-right">{{ row.total }}</td>
+                            </tr>
+                          {% empty %}
+                            <tr>
+                              <td colspan="7" class="align-center">No aging composition data</td>
+                            </tr>
+                          {% endfor %}
+                        </tbody>
+                      </table>
+                    </div>
+
+                    <div class="subcard">
+                      <div class="table-title">Customer Aging Composition by Past Due Balance</div>
+                      <table>
+                        <thead>
+                          <tr>
+                            <th style="width:34%">Customer</th>
+                            <th>Current</th>
+                            <th>0-30</th>
+                            <th>31-60</th>
+                            <th>61-90</th>
+                            <th>90+</th>
+                            <th>Total</th>
                           </tr>
+                        </thead>
+                        <tbody>
+                          {% for row in ar_customer_aging_past_due_rows %}
+                            <tr>
+                              <td>{{ row.customer }}</td>
+                              {% for value in row.values %}
+                                <td class="align-right">{{ value }}</td>
+                              {% endfor %}
+                              <td class="align-right">{{ row.total }}</td>
+                            </tr>
+                          {% empty %}
+                            <tr>
+                              <td colspan="7" class="align-center">No aging composition data</td>
+                            </tr>
+                          {% endfor %}
+                        </tbody>
+                      </table>
+                    </div>
+                  </div>
+                </section>
+
+                <!-- Ineligible Detail -->
+                <section class="card">
+                  <div class="h2">
+                    <svg class="spark" viewBox="0 0 24 24" fill="none">
+                      <path d="M4 16l6-6 4 4 6-8" stroke="var(--blue-2)" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/>
+                    </svg>
+                    Ineligible Detail
+                  </div>
+
+                  <div class="two-col">
+                    <div class="subcard">
+                      <div class="h3" style="margin-bottom:8px">
+                        <svg class="spark" viewBox="0 0 24 24" fill="none" style="width:12px;height:12px">
+                          <path d="M4 16l6-6 4 4 6-8" stroke="var(--blue-2)" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/>
+                        </svg>
+                        Ineligible Overview
+                      </div>
+
+                      <table>
+                        <thead>
+                          <tr>
+                            <th>Ineligibles</th>
+                            <th style="text-align:right">Amount</th>
+                            <th style="text-align:right">% Of Total</th>
+                          </tr>
+                        </thead>
+                        <tbody>
+                          {% for row in ar_ineligible_overview_rows %}
+                            <tr>
+                              <td>{{ row.label }}</td>
+                              <td class="align-right">{{ row.amount }}</td>
+                              <td class="align-right">{{ row.pct }}</td>
+                            </tr>
+                          {% empty %}
+                            <tr>
+                              <td colspan="3" class="align-center">No ineligible overview data</td>
+                            </tr>
+                          {% endfor %}
+                          {% if ar_ineligible_overview_total %}
+                            <tr class="total">
+                              <td>{{ ar_ineligible_overview_total.label }}</td>
+                              <td class="align-right">{{ ar_ineligible_overview_total.amount }}</td>
+                              <td class="align-right">{{ ar_ineligible_overview_total.pct }}</td>
+                            </tr>
+                          {% endif %}
+                        </tbody>
+                      </table>
+                    </div>
+
+                    <div class="subcard">
+                      <div class="subhead">
+                        <div class="h3">
+                          <svg class="spark" viewBox="0 0 24 24" fill="none" style="width:12px;height:12px">
+                            <path d="M4 16l6-6 4 4 6-8" stroke="var(--blue-2)" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/>
+                          </svg>
+                          Ineligible Accounts Receivable Trend
+                        </div>
+                      </div>
+
+                      <svg viewBox="0 0 520 210" width="100%" height="210" aria-label="Ineligible AR trend line chart">
+                        <g stroke="rgba(15,23,42,.08)" stroke-width="1">
+                          <path d="M50 170H500"/>
+                          <path d="M50 140H500"/>
+                          <path d="M50 110H500"/>
+                          <path d="M50 80H500"/>
+                          <path d="M50 50H500"/>
+                        </g>
+
+                        <g fill="rgba(15,23,42,.45)" font-size="10">
+                          <text x="10" y="173">10%</text>
+                          <text x="10" y="143">30%</text>
+                          <text x="10" y="113">50%</text>
+                          <text x="10" y="83">70%</text>
+                          <text x="10" y="53">90%</text>
+                        </g>
+
+                        {% if ar_ineligible_trend.points %}
+                          <polyline fill="none" stroke="var(--blue-3)" stroke-width="2.5"
+                            points="{{ ar_ineligible_trend.points }}"/>
+                          <g fill="#fff" stroke="var(--blue-3)" stroke-width="2">
+                            {% for dot in ar_ineligible_trend.dots %}
+                              <circle cx="{{ dot.cx }}" cy="{{ dot.cy }}" r="3.2"/>
+                            {% endfor %}
+                          </g>
+                          <g fill="rgba(15,23,42,.45)" font-size="9">
+                            {% for label in ar_ineligible_trend.labels %}
+                              <text x="{{ label.x }}" y="194" text-anchor="middle">{{ label.text }}</text>
+                            {% endfor %}
+                          </g>
+                        {% else %}
+                          <text x="260" y="110" text-anchor="middle" fill="rgba(15,23,42,.45)" font-size="12">
+                            No ineligible trend data
+                          </text>
                         {% endif %}
-                      {% else %}
-                        <tr>
-                          <td colspan="3">No data available</td>
-                        </tr>
-                      {% endif %}
-                    </tbody>
-                  </table>
-                </div>
-                <div class="subcard">
-                  <div class="h3">Ineligible AR Trend</div>
-                  <svg viewBox="0 0 520 210" width="100%" height="210" aria-label="Ineligible AR trend line chart">
-                    <g stroke="rgba(15,23,42,.08)" stroke-width="1">
-                      <path d="M50 170H500"/>
-                      <path d="M50 140H500"/>
-                      <path d="M50 110H500"/>
-                      <path d="M50 80H500"/>
-                      <path d="M50 50H500"/>
-                    </g>
-                    <g fill="rgba(15,23,42,.45)" font-size="10">
-                      <text x="10" y="173">10%</text>
-                      <text x="10" y="143">30%</text>
-                      <text x="10" y="113">50%</text>
-                      <text x="10" y="83">70%</text>
-                      <text x="10" y="53">90%</text>
-                    </g>
-                    <polyline fill="none" stroke="var(--blue-3)" stroke-width="2.5"
-                      points="{{ ar_ineligible_trend.points }}"/>
-                    <g fill="#fff" stroke="var(--blue-3)" stroke-width="2">
-                      {% for dot in ar_ineligible_trend.dots %}
-                        <circle cx="{{ dot.cx }}" cy="{{ dot.cy }}" r="3.2"/>
-                      {% endfor %}
-                    </g>
-                    <g fill="rgba(15,23,42,.45)" font-size="9">
-                      {% for label in ar_ineligible_trend.labels %}
-                        <text x="{{ label.x }}" y="194" text-anchor="middle">{{ label.text }}</text>
-                      {% endfor %}
-                    </g>
-                    <text x="18" y="120" fill="rgba(15,23,42,.45)" font-size="10" transform="rotate(-90 18 120)">
-                      % of Accounts Receivable
-                    </text>
-                  </svg>
-                </div>
-              </div>
-            </section>
 
-            <section class="card">
-              <div class="h2">
-                <svg class="spark" viewBox="0 0 24 24" fill="none">
-                  <path d="M4 16l6-6 4 4 6-8" stroke="var(--blue-2)" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/>
-                </svg>
-                Customer Exposure &amp; Collection Trend
+                        <text x="18" y="120" fill="rgba(15,23,42,.45)" font-size="10" transform="rotate(-90 18 120)">
+                          % Of Accounts Receivable
+                        </text>
+                      </svg>
+                    </div>
+                  </div>
+                </section>
+
+                <!-- Customer Exposure & Collection Trend -->
+                <section class="card">
+                  <div class="h2">
+                    <svg class="spark" viewBox="0 0 24 24" fill="none">
+                      <path d="M4 16l6-6 4 4 6-8" stroke="var(--blue-2)" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/>
+                    </svg>
+                    Customer Exposure &amp; Collection Trend
+                  </div>
+
+                  <div class="three-col">
+                    <div class="subcard">
+                      <div class="table-title">Concentration</div>
+                      <table>
+                        <thead>
+                          <tr>
+                            <th>Customer</th>
+                            <th style="text-align:center">Current</th>
+                            <th style="text-align:center">Average TTM</th>
+                            <th style="text-align:center">Variance (PP)</th>
+                          </tr>
+                        </thead>
+                        <tbody>
+                          {% for row in ar_concentration_rows %}
+                            <tr>
+                              <td>{{ row.customer }}</td>
+                              <td class="align-center">{{ row.current }}</td>
+                              <td class="align-center">{{ row.average }}</td>
+                              <td class="align-center">{{ row.variance }}</td>
+                            </tr>
+                          {% empty %}
+                            <tr>
+                              <td colspan="4" class="align-center">No concentration data</td>
+                            </tr>
+                          {% endfor %}
+                        </tbody>
+                      </table>
+                    </div>
+
+                    <div class="subcard">
+                      <div class="table-title">Average Days Outstanding</div>
+                      <table>
+                        <thead>
+                          <tr>
+                            <th style="width:42%">Current</th>
+                            <th style="text-align:center">Average TTM</th>
+                            <th style="text-align:center">Variance (Days)</th>
+                          </tr>
+                        </thead>
+                        <tbody>
+                          {% for row in ar_ado_rows %}
+                            <tr>
+                              <td class="align-center">{{ row.current }}</td>
+                              <td class="align-center">{{ row.average }}</td>
+                              <td class="align-center">{{ row.variance }}</td>
+                            </tr>
+                          {% empty %}
+                            <tr>
+                              <td colspan="3" class="align-center">No ADO data</td>
+                            </tr>
+                          {% endfor %}
+                        </tbody>
+                      </table>
+                    </div>
+
+                    <div class="subcard">
+                      <div class="table-title">Days Sales Outstanding</div>
+                      <table>
+                        <thead>
+                          <tr>
+                            <th style="width:42%">Current</th>
+                            <th style="text-align:center">Average TTM</th>
+                            <th style="text-align:center">Variance (Days)</th>
+                          </tr>
+                        </thead>
+                        <tbody>
+                          {% for row in ar_dso_rows %}
+                            <tr>
+                              <td class="align-center">{{ row.current }}</td>
+                              <td class="align-center">{{ row.average }}</td>
+                              <td class="align-center">{{ row.variance }}</td>
+                            </tr>
+                          {% empty %}
+                            <tr>
+                              <td colspan="3" class="align-center">No DSO data</td>
+                            </tr>
+                          {% endfor %}
+                        </tbody>
+                      </table>
+                    </div>
+                  </div>
+                </section>
+
               </div>
-              <div class="three-col">
-                <div class="subcard">
-                  <div class="table-title">Concentration</div>
-                  <table>
-                    <thead>
-                      <tr>
-                        <th>Customer</th>
-                        <th class="align-center">Current</th>
-                        <th class="align-center">Average TTM</th>
-                        <th class="align-center">Variance (pp)</th>
-                      </tr>
-                    </thead>
-                    <tbody>
-                      {% if ar_concentration_rows %}
-                        {% for row in ar_concentration_rows %}
-                          <tr>
-                            <td>{{ row.customer }}</td>
-                            <td class="align-center">{{ row.current }}</td>
-                            <td class="align-center">{{ row.average }}</td>
-                            <td class="align-center">{{ row.variance }}</td>
-                          </tr>
-                        {% endfor %}
-                      {% else %}
-                        <tr>
-                          <td colspan="4" class="align-center">No data available</td>
-                        </tr>
-                      {% endif %}
-                    </tbody>
-                  </table>
-                </div>
-                <div class="subcard">
-                  <div class="table-title">Average Days Outstanding</div>
-                  <table>
-                    <thead>
-                      <tr>
-                        <th class="align-center">Current</th>
-                        <th class="align-center">Average TTM</th>
-                        <th class="align-center">Variance (days)</th>
-                      </tr>
-                    </thead>
-                    <tbody>
-                      {% if ar_ado_rows %}
-                        {% for row in ar_ado_rows %}
-                          <tr>
-                            <td class="align-center">{{ row.current }}</td>
-                            <td class="align-center">{{ row.average }}</td>
-                            <td class="align-center">{{ row.variance }}</td>
-                          </tr>
-                        {% endfor %}
-                      {% else %}
-                        <tr>
-                          <td colspan="3" class="align-center">No data available</td>
-                        </tr>
-                      {% endif %}
-                    </tbody>
-                  </table>
-                </div>
-                <div class="subcard">
-                  <div class="table-title">Days Sales Outstanding</div>
-                  <table>
-                    <thead>
-                      <tr>
-                        <th class="align-center">Current</th>
-                        <th class="align-center">Average TTM</th>
-                        <th class="align-center">Variance (days)</th>
-                      </tr>
-                    </thead>
-                    <tbody>
-                      {% if ar_dso_rows %}
-                        {% for row in ar_dso_rows %}
-                          <tr>
-                            <td class="align-center">{{ row.current }}</td>
-                            <td class="align-center">{{ row.average }}</td>
-                            <td class="align-center">{{ row.variance }}</td>
-                          </tr>
-                        {% endfor %}
-                      {% else %}
-                        <tr>
-                          <td colspan="3" class="align-center">No data available</td>
-                        </tr>
-                      {% endif %}
-                    </tbody>
-                  </table>
-                </div>
-              </div>
-            </section>
+            </main>
           </div>
         {% else %}
           {% if inventory_tab == 'finished_goods' %}

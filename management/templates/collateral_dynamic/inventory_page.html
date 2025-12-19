@@ -261,6 +261,36 @@
     .collateral-dynamic .sw.bright{background:#0b66ff}
     .collateral-dynamic .chartPad{
       padding:12px 6px 4px 6px;
+      position:relative;
+    }
+    .collateral-dynamic .chart-tooltip{
+      position:absolute;
+      background:#111827;
+      color:#fff;
+      padding:6px 10px;
+      border-radius:8px;
+      font-size:11px;
+      letter-spacing:.02em;
+      box-shadow:0 10px 24px rgba(15,23,42,.3);
+      pointer-events:none;
+      transform:translate(-50%,-110%);
+      opacity:0;
+      transition:opacity .15s ease;
+      white-space:nowrap;
+      z-index:10;
+    }
+    .collateral-dynamic .chart-tooltip strong{
+      display:block;
+      font-size:10px;
+      font-weight:600;
+      margin-bottom:2px;
+    }
+    .collateral-dynamic .chart-tooltip span{
+      font-size:12px;
+      font-weight:500;
+    }
+    .collateral-dynamic .chart-tooltip.is-visible{
+      opacity:1;
     }
     .collateral-dynamic .svgBox{
       width:100%;
@@ -489,16 +519,7 @@
       {% include "collateral_dynamic/inventory/_menu.html" with inventory_tab=inventory_tab|default:"summary" active_section=active_section %}
       <div class="page">
         {% if active_section == 'overview' %}
-          <div class="panel placeholder-panel">
-            <div class="panel-header">
-              <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
-                <path d="M3 3h18v18H3z"/>
-                <path d="M3 9h18"/>
-                <path d="M9 21V9"/>
-              </svg>
-              Overview
-            </div>            
-          </div>
+          {% include "collateral_dynamic/inventory/summary.html" %}
         {% elif active_section == 'accounts_receivable' %}
           <div class="panel placeholder-panel">
             <div class="panel-header">
@@ -531,4 +552,9 @@
       </div>
     </div>
   </div>
+{% endblock %}
+
+{% block extra_scripts %}
+  {{ block.super }}
+  <script src="{% static 'js/inventory_summary.js' %}"></script>
 {% endblock %}

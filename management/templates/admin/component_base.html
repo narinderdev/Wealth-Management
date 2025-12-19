@@ -3,6 +3,44 @@
 {% block page_title %}{{ component_meta.title }}{% endblock %}
 {% block header_title %}{{ component_meta.title }}{% endblock %}
 
+{% block extra_head %}
+  {{ block.super }}
+  <style>
+    .component-filter{
+      display:flex;
+      flex-wrap:wrap;
+      gap:12px;
+      margin-bottom:16px;
+      align-items:flex-end;
+    }
+    .component-filter label{
+      font-size:11px;
+      font-weight:700;
+      color:var(--muted);
+      display:flex;
+      flex-direction:column;
+      gap:4px;
+      min-width:160px;
+    }
+    .component-filter select{
+      padding:8px 10px;
+      border-radius:8px;
+      border:1px solid var(--line2);
+      background:#fff;
+      font-size:12px;
+    }
+    .component-filter button{
+      padding:8px 16px;
+      border:none;
+      border-radius:8px;
+      background:var(--blue);
+      color:#fff;
+      font-weight:700;
+      cursor:pointer;
+    }
+  </style>
+{% endblock %}
+
 {% block admin_screens %}
   {% if component_data.db_error %}
     <div class="component-shell">
@@ -12,6 +50,23 @@
         </div>
       </div>
     </div>
+  {% endif %}
+  {% if component_data.filters %}
+    <form method="get" class="component-filter">
+      {% for filter in component_data.filters %}
+        <label>
+          {{ filter.label }}
+          <select name="{{ filter.param }}">
+            {% for option in filter.options %}
+              <option value="{{ option.value }}" {% if option.value == filter.selected %}selected{% endif %}>
+                {{ option.label }}
+              </option>
+            {% endfor %}
+          </select>
+        </label>
+      {% endfor %}
+      <button type="submit">Apply</button>
+    </form>
   {% endif %}
   {% include component_meta.template with component_meta=component_meta component_data=component_data %}
 {% endblock %}

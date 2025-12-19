@@ -62,6 +62,14 @@ class Company(TimeStampedModel):
     def company_password(self, value):
         self.password = value
 
+    def save(self, *args, **kwargs):
+        if not self.company_id:
+            from django.db.models import Max
+
+            last_id = Company.objects.aggregate(max_id=Max("company_id")).get("max_id")
+            self.company_id = (last_id or 0) + 1
+        super().save(*args, **kwargs)
+
 
 class Borrower(TimeStampedModel):
     company = models.ForeignKey(Company, on_delete=models.CASCADE, related_name='borrowers')

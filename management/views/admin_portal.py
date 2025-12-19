@@ -247,12 +247,48 @@ COMPONENT_REGISTRY = {
     },
 }
 class ModelComponentHandler:
-    def __init__(self, *, slug, model, form_class, ordering=None, select_related=None):
+    def __init__(self, *, slug, model, form_class, ordering=None, select_related=None, filters=None):
         self.slug = slug
         self.model = model
         self.form_class = form_class
         self.ordering = ordering or ["-created_at"]
         self.select_related = select_related or []
+        self.filters = filters or []
+
+    def build_filters(self, request, queryset):
+        filter_defs = []
+        for spec in self.filters:
+            options = [{"value": "", "label": "All"}]
+            values = []
+            if spec.get("queryset"):
+                values = list(spec["queryset"])
+                for item in values:
+                    options.append({"value": str(getattr(item, "pk", "")), "label": str(item)})
+            elif spec.get("choices"):
+                for value, label in spec["choices"]:
+                    options.append({"value": value, "label": label})
+            else:
+                values = (
+                    self.model.objects.order_by()
+                    .values_list(spec["field"], flat=True)
+                    .distinct()
+                )
+                for value in values:
+                    if value is None or value == "":
+                        continue
+                    options.append({"value": str(value), "label": str(value)})
+            selected = request.GET.get(spec["param"], "")
+            if selected:
+                queryset = queryset.filter(**{spec["field"]: selected})
+            filter_defs.append(
+                {
+                    "param": spec["param"],
+                    "label": spec["label"],
+                    "options": options,
+                    "selected": selected,
+                }
+            )
+        return queryset, filter_defs
 
     def get_queryset(self):
         qs = self.model.objects.all()
@@ -272,11 +308,20 @@ class ModelComponentHandler:
         db_error = None
         table_ready = True
 
-        try:
-            data_list = list(self.get_queryset())
-        except ProgrammingError as exc:
-            table_ready = False
-            db_error = str(exc)
+        qs = self.get_queryset()
+        filter_defs = []
+        if table_ready:
+            try:
+                qs, filter_defs = self.build_filters(request, qs)
+            except ProgrammingError as exc:
+                table_ready = False
+                db_error = str(exc)
+        if table_ready:
+            try:
+                data_list = list(qs)
+            except ProgrammingError as exc:
+                table_ready = False
+                db_error = str(exc)
 
         if table_ready and edit_id:
             edit_instance = get_object_or_404(self.model, pk=edit_id)
@@ -313,6 +358,7 @@ class ModelComponentHandler:
             "edit_id": edit_id,
             "slug": self.slug,
             "db_error": db_error,
+            "filters": filter_defs,
         }
 
 
@@ -362,24 +408,60 @@ HANDLERS = {
         form_class=ARMetricsForm,
         ordering=["-as_of_date", "division"],
         select_related=["borrower", "borrower__company"],
+        filters=[
+            {
+                "param": "borrower",
+                "label": "Borrower",
+                "field": "borrower__id",
+                "queryset": Borrower.objects.select_related("company").order_by("company__company", "primary_contact"),
+            },
+            {"param": "division", "label": "Division", "field": "division"},
+        ],
     ),
     "ineligibleTrend": ModelComponentHandler(
         slug="ineligibleTrend",
         model=IneligibleTrendRow,
         form_class=IneligibleTrendForm,
         ordering=["-date", "division"],
+        filters=[
+            {
+                "param": "borrower",
+                "label": "Borrower",
+                "field": "borrower__id",
+                "queryset": Borrower.objects.select_related("company").order_by("company__company", "primary_contact"),
+            },
+            {"param": "division", "label": "Division", "field": "division"},
+        ],
     ),
     "ineligibleOverview": ModelComponentHandler(
         slug="ineligibleOverview",
         model=IneligibleOverviewRow,
         form_class=IneligibleOverviewForm,
         ordering=["-date", "division"],
+        filters=[
+            {
+                "param": "borrower",
+                "label": "Borrower",
+                "field": "borrower__id",
+                "queryset": Borrower.objects.select_related("company").order_by("company__company", "primary_contact"),
+            },
+            {"param": "division", "label": "Division", "field": "division"},
+        ],
     ),
     "concentrationADODSO": ModelComponentHandler(
         slug="concentrationADODSO",
         model=ConcentrationADODSORow,
         form_class=ConcentrationADODSOForm,
         ordering=["-as_of_date", "division", "customer"],
+        filters=[
+            {
+                "param": "borrower",
+                "label": "Borrower",
+                "field": "borrower__id",
+                "queryset": Borrower.objects.select_related("company").order_by("company__company", "primary_contact"),
+            },
+            {"param": "division", "label": "Division", "field": "division"},
+        ],
     ),
     "fgInventoryMetrics": ModelComponentHandler(
         slug="fgInventoryMetrics",
@@ -394,6 +476,15 @@ HANDLERS = {
         form_class=FGIneligibleDetailForm,
         ordering=["-date", "inventory_type", "division"],
         select_related=["borrower", "borrower__company"],
+        filters=[
+            {
+                "param": "borrower",
+                "label": "Borrower",
+                "field": "borrower__id",
+                "queryset": Borrower.objects.select_related("company").order_by("company__company", "primary_contact"),
+            },
+            {"param": "division", "label": "Division", "field": "division"},
+        ],
     ),
     "fgComposition": ModelComponentHandler(
         slug="fgComposition",
@@ -401,6 +492,15 @@ HANDLERS = {
         form_class=FGCompositionForm,
         ordering=["-as_of_date", "division"],
         select_related=["borrower", "borrower__company"],
+        filters=[
+            {
+                "param": "borrower",
+                "label": "Borrower",
+                "field": "borrower__id",
+                "queryset": Borrower.objects.select_related("company").order_by("company__company", "primary_contact"),
+            },
+            {"param": "division", "label": "Division", "field": "division"},
+        ],
     ),
     "fgInlineCategoryAnalysis": ModelComponentHandler(
         slug="fgInlineCategoryAnalysis",
@@ -408,6 +508,15 @@ HANDLERS = {
         form_class=FGInlineCategoryAnalysisForm,
         ordering=["-as_of_date", "division", "category"],
         select_related=["borrower", "borrower__company"],
+        filters=[
+            {
+                "param": "borrower",
+                "label": "Borrower",
+                "field": "borrower__id",
+                "queryset": Borrower.objects.select_related("company").order_by("company__company", "primary_contact"),
+            },
+            {"param": "division", "label": "Division", "field": "division"},
+        ],
     ),
     "salesGMTrend": ModelComponentHandler(
         slug="salesGMTrend",
@@ -415,6 +524,15 @@ HANDLERS = {
         form_class=SalesGMTrendForm,
         ordering=["-as_of_date", "division"],
         select_related=["borrower", "borrower__company"],
+        filters=[
+            {
+                "param": "borrower",
+                "label": "Borrower",
+                "field": "borrower__id",
+                "queryset": Borrower.objects.select_related("company").order_by("company__company", "primary_contact"),
+            },
+            {"param": "division", "label": "Division", "field": "division"},
+        ],
     ),
     "fgInlineExcessByCategory": ModelComponentHandler(
         slug="fgInlineExcessByCategory",
@@ -422,42 +540,105 @@ HANDLERS = {
         form_class=FGInlineExcessByCategoryForm,
         ordering=["-as_of_date", "division", "category"],
         select_related=["borrower", "borrower__company"],
+        filters=[
+            {
+                "param": "borrower",
+                "label": "Borrower",
+                "field": "borrower__id",
+                "queryset": Borrower.objects.select_related("company").order_by("company__company", "primary_contact"),
+            },
+            {"param": "division", "label": "Division", "field": "division"},
+        ],
     ),
     "rmInventoryMetrics": ModelComponentHandler(
         slug="rmInventoryMetrics",
         model=RMInventoryMetricsRow,
         form_class=RMInventoryMetricsForm,
         ordering=["-as_of_date", "inventory_type", "division"],
+        filters=[
+            {
+                "param": "borrower",
+                "label": "Borrower",
+                "field": "borrower__id",
+                "queryset": Borrower.objects.select_related("company").order_by("company__company", "primary_contact"),
+            },
+            {"param": "division", "label": "Division", "field": "division"},
+        ],
     ),
     "rmIneligibleOverview": ModelComponentHandler(
         slug="rmIneligibleOverview",
         model=RMIneligibleOverviewRow,
         form_class=RMIneligibleOverviewForm,
         ordering=["-date", "inventory_type", "division"],
+        filters=[
+            {
+                "param": "borrower",
+                "label": "Borrower",
+                "field": "borrower__id",
+                "queryset": Borrower.objects.select_related("company").order_by("company__company", "primary_contact"),
+            },
+            {"param": "division", "label": "Division", "field": "division"},
+        ],
     ),
     "rmCategoryHistory": ModelComponentHandler(
         slug="rmCategoryHistory",
         model=RMCategoryHistoryRow,
         form_class=RMCategoryHistoryForm,
         ordering=["-date", "inventory_type", "division", "category"],
+        filters=[
+            {
+                "param": "borrower",
+                "label": "Borrower",
+                "field": "borrower__id",
+                "queryset": Borrower.objects.select_related("company").order_by("company__company", "primary_contact"),
+            },
+            {"param": "division", "label": "Division", "field": "division"},
+        ],
     ),
     "wipInventoryMetrics": ModelComponentHandler(
         slug="wipInventoryMetrics",
         model=WIPInventoryMetricsRow,
         form_class=WIPInventoryMetricsForm,
         ordering=["-as_of_date", "inventory_type", "division"],
+        filters=[
+            {
+                "param": "borrower",
+                "label": "Borrower",
+                "field": "borrower__id",
+                "queryset": Borrower.objects.select_related("company").order_by("company__company", "primary_contact"),
+            },
+            {"param": "division", "label": "Division", "field": "division"},
+        ],
     ),
     "wipIneligibleOverview": ModelComponentHandler(
         slug="wipIneligibleOverview",
         model=WIPIneligibleOverviewRow,
         form_class=WIPIneligibleOverviewForm,
         ordering=["-date", "inventory_type", "division"],
+        filters=[
+            {
+                "param": "borrower",
+                "label": "Borrower",
+                "field": "borrower__id",
+                "queryset": Borrower.objects.select_related("company").order_by("company__company", "primary_contact"),
+            },
+            {"param": "division", "label": "Division", "field": "division"},
+        ],
     ),
     "wipCategoryHistory": ModelComponentHandler(
         slug="wipCategoryHistory",
         model=WIPCategoryHistoryRow,
         form_class=WIPCategoryHistoryForm,
         ordering=["-date", "inventory_type", "division", "category"],
+        filters=[
+            {
+                "param": "borrower",
+                "label": "Borrower",
+                "field": "borrower__id",
+                "queryset": Borrower.objects.select_related("company").order_by("company__company", "primary_contact"),
+            },
+            {"param": "division", "label": "Division", "field": "division"},
+        ],
     ),
     "fgGrossRecoveryHistory": ModelComponentHandler(
         slug="fgGrossRecoveryHistory",
@@ -465,24 +646,60 @@ HANDLERS = {
         form_class=FGGrossRecoveryHistoryForm,
         ordering=["-as_of_date", "division", "category"],
         select_related=["borrower", "borrower__company"],
+        filters=[
+            {
+                "param": "borrower",
+                "label": "Borrower",
+                "field": "borrower__id",
+                "queryset": Borrower.objects.select_related("company").order_by("company__company", "primary_contact"),
+            },
+            {"param": "division", "label": "Division", "field": "division"},
+        ],
     ),
     "wipRecovery": ModelComponentHandler(
         slug="wipRecovery",
         model=WIPRecoveryRow,
         form_class=WIPRecoveryForm,
         ordering=["-date", "division", "category"],
+        filters=[
+            {
+                "param": "borrower",
+                "label": "Borrower",
+                "field": "borrower__id",
+                "queryset": Borrower.objects.select_related("company").order_by("company__company", "primary_contact"),
+            },
+            {"param": "division", "label": "Division", "field": "division"},
+        ],
     ),
     "rawMaterialRecovery": ModelComponentHandler(
         slug="rawMaterialRecovery",
         model=RawMaterialRecoveryRow,
         form_class=RawMaterialRecoveryForm,
         ordering=["-date", "division", "category"],
+        filters=[
+            {
+                "param": "borrower",
+                "label": "Borrower",
+                "field": "borrower__id",
+                "queryset": Borrower.objects.select_related("company").order_by("company__company", "primary_contact"),
+            },
+            {"param": "division", "label": "Division", "field": "division"},
+        ],
     ),
     "nolvTable": ModelComponentHandler(
         slug="nolvTable",
         model=NOLVTableRow,
         form_class=NOLVTableForm,
         ordering=["-date", "division", "line_item"],
+        filters=[
+            {
+                "param": "borrower",
+                "label": "Borrower",
+                "field": "borrower__id",
+                "queryset": Borrower.objects.select_related("company").order_by("company__company", "primary_contact"),
+            },
+            {"param": "division", "label": "Division", "field": "division"},
+        ],
     ),
     "riskSubfactors": ModelComponentHandler(
         slug="riskSubfactors",
@@ -490,6 +707,15 @@ HANDLERS = {
         form_class=RiskSubfactorsForm,
         ordering=["-date", "main_category", "sub_risk"],
         select_related=["borrower", "borrower__company"],
+        filters=[
+            {
+                "param": "borrower",
+                "label": "Borrower",
+                "field": "borrower__id",
+                "queryset": Borrower.objects.select_related("company").order_by("company__company", "primary_contact"),
+            },
+            {"param": "main_category", "label": "Category", "field": "main_category"},
+        ],
     ),
     "compositeIndex": ModelComponentHandler(
         slug="compositeIndex",

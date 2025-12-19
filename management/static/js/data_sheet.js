@@ -14,14 +14,12 @@
       title: 'Companies',
       columns: [
         { key: 'company', label: 'Company Name' },
-        { key: 'company_id', label: 'Company ID' },
         { key: 'industry', label: 'Industry' },
         { key: 'primary_naics', label: 'Primary NAICS' },
         { key: 'website', label: 'Website' },
       ],
       fields: [
         { key: 'company', label: 'Company Name', type: 'text', required: true },
-        { key: 'company_id', label: 'Company ID', type: 'number', required: true },
         { key: 'industry', label: 'Industry', type: 'text' },
         { key: 'primary_naics', label: 'Primary NAICS', type: 'number' },
         { key: 'website', label: 'Website', type: 'text' },
@@ -38,7 +36,7 @@
         { key: 'current_update', label: 'Current Update', format: dateFormat },
       ],
       fields: [
-        { key: 'company_id', label: 'Company ID', type: 'text', required: true },
+        { key: 'company', label: 'Company', type: 'text', required: true },
         { key: 'primary_contact', label: 'Primary Contact', type: 'text', required: true },
         { key: 'primary_contact_phone', label: 'Phone', type: 'text' },
         { key: 'primary_contact_email', label: 'Email', type: 'email' },
@@ -71,19 +69,6 @@
         { key: 'borrower_id', label: 'Borrower ID', type: 'text', required: true },
         { key: 'specific_individual', label: 'Name', type: 'text', required: true },
         { key: 'specific_id', label: 'Specific ID', type: 'number' },
-      ],
-    },
-    borrowerReports: {
-      title: 'Borrower Reports',
-      columns: [
-        { key: 'source_file', label: 'Source File' },
-        { key: 'report_date', label: 'Report Date', format: dateFormat },
-        { key: 'borrower_id', label: 'Borrower ID' },
-      ],
-      fields: [
-        { key: 'borrower_id', label: 'Borrower ID', type: 'text', required: true },
-        { key: 'source_file', label: 'Source File', type: 'text' },
-        { key: 'report_date', label: 'Report Date', type: 'date', required: true },
       ],
     },
     collateralOverview: {
