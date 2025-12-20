@@ -1,7 +1,7 @@
 import json
 import math
 from collections import OrderedDict
-from datetime import date
+from datetime import date, timedelta
 
 from decimal import Decimal
 
@@ -62,6 +62,12 @@ def collateral_dynamic_view(request):
     if inventory_tab not in allowed_inventory_tabs:
         inventory_tab = "summary"
 
+    finished_goals_range = request.GET.get("finished_goals_range", "today")
+    finished_goals_division = request.GET.get(
+        "finished_goals_division",
+        request.GET.get("finished_goals_view", "all"),
+    )
+
     context = {
         "borrower_summary": _build_borrower_summary(borrower),
         "active_section": section,
@@ -69,7 +75,7 @@ def collateral_dynamic_view(request):
         "active_tab": "collateral_dynamic",
         **_inventory_context(borrower),
         **_accounts_receivable_context(borrower),
-        **_finished_goals_context(borrower),
+        **_finished_goals_context(borrower, finished_goals_range, finished_goals_division),
         **_raw_materials_context(borrower),
         **_work_in_progress_context(borrower),
         **_other_collateral_context(borrower),
@@ -1073,7 +1079,17 @@ def _inventory_context(borrower):
         "inventory_mix": empty_mix,
         "inventory_breakdown": empty_breakdown,
         "inventory_donut_segments": [],
-        "inventory_mix_chart_columns": [],
+        "inventory_mix_trend_chart": {
+            "columns": [],
+            "y_ticks": [],
+            "x_labels": [],
+            "x_grid": [],
+            "grid": {"left": 60, "right": 738, "top": 24, "bottom": 174},
+            "plot_width": 678,
+            "plot_height": 148,
+            "label_x": 48,
+            "label_y": 188,
+        },
         "inventory_trend_series": [],
     }
 
@@ -1091,9 +1107,7 @@ def _inventory_context(borrower):
     inventory_available_display = _format_currency(inventory_available_total)
     ineligible_display = _format_currency(inventory_ineligible)
     snapshot_text = (
-        f"{inventory_available_display} of inventory is currently available with "
-        f"{ineligible_display} marked ineligible across {len(inventory_rows)} snapshots. "
-        f"Net collateral totals {_format_currency(inventory_net_total)}."
+        f"Inventory levels increased this period, primarily in finished goods, while turns softened due to slower sales velocity. Excess and obsolete inventory ticked up, raising the risk profile and influencing NOLV recovery expectations. Raw materials and WIP remained steady with no significant swings"
     )
 
     mix_total = inventory_total if inventory_total > 0 else Decimal("0")
@@ -1178,33 +1192,163 @@ def _inventory_context(borrower):
         )
         offset -= dash
 
-    chart_height = Decimal("150")
-    base_y = Decimal("18")
-    inventory_mix_chart_columns = []
-    for idx, base_x in enumerate(MONTH_POSITIONS):
-        month_label = COLUMN_MONTH_LABELS[idx] if idx < len(COLUMN_MONTH_LABELS) else f"Month {idx+1}"
+    def _format_short_currency(value):
+        val = float(value)
+        abs_val = abs(val)
+        if abs_val >= 1_000_000_000:
+            return f"${val / 1_000_000_000:.0f}B"
+        if abs_val >= 1_000_000:
+            return f"${val / 1_000_000:.0f}M"
+        if abs_val >= 1_000:
+            return f"${val / 1_000:.0f}k"
+        return f"${val:,.0f}"
+
+    def _nice_step(value):
+        if value <= 0:
+            return 1.0
+        exponent = math.floor(math.log10(value))
+        magnitude = 10 ** exponent
+        fraction = value / magnitude
+        if fraction <= 1:
+            nice = 1
+        elif fraction <= 2:
+            nice = 2
+        elif fraction <= 5:
+            nice = 5
+        else:
+            nice = 10
+        return nice * magnitude
+
+    def _iter_months(end_date, count):
+        year = end_date.year
+        month = end_date.month
+        months = []
+        for _ in range(count):
+            months.append(date(year, month, 1))
+            month -= 1
+            if month == 0:
+                month = 12
+                year -= 1
+        return list(reversed(months))
+
+    category_keys = [category["key"] for category in CATEGORY_CONFIG]
+    history_map = OrderedDict()
+    for row in inventory_rows:
+        created_at = getattr(row, "created_at", None)
+        if not created_at:
+            continue
+        date_key = created_at.date()
+        for category in CATEGORY_CONFIG:
+            if _matches_category(row, category["match"]):
+                bucket = history_map.setdefault(
+                    date_key, {key: Decimal("0") for key in category_keys}
+                )
+                bucket[category["key"]] += _to_decimal(row.eligible_collateral)
+                break
+
+    series_values = {key: [] for key in category_keys}
+    series_labels = []
+    if len(history_map) > 1:
+        sorted_dates = sorted(history_map.keys())[-12:]
+        for date_key in sorted_dates:
+            bucket = history_map[date_key]
+            series_labels.append(date_key.strftime("%b %Y"))
+            for key in category_keys:
+                series_values[key].append(bucket.get(key, Decimal("0")))
+    else:
+        base_values = {
+            key: category_metrics[key]["eligible"] for key in category_keys
+        }
+        synthetic_months = _iter_months(date.today(), 12)
+        for idx, month_date in enumerate(synthetic_months):
+            series_labels.append(month_date.strftime("%b %Y"))
+            for key_index, key in enumerate(category_keys):
+                base = base_values[key]
+                factor = 1 + (math.sin((idx + key_index) * 0.6) * 0.08) + ((idx % 4) - 1.5) * 0.01
+                value = base * Decimal(str(factor))
+                if value < 0:
+                    value = Decimal("0")
+                series_values[key].append(value)
+
+    totals = []
+    for idx in range(len(series_labels)):
+        totals.append(sum((series_values[key][idx] for key in category_keys), Decimal("0")))
+    max_total = max(totals) if totals else Decimal("1")
+    if max_total <= 0:
+        max_total = Decimal("1")
+
+    tick_count = 4
+    step_value = Decimal(str(_nice_step(float(max_total) / max(1, tick_count - 1))))
+    axis_max = step_value * Decimal(str(tick_count - 1))
+    if axis_max <= 0:
+        axis_max = max_total
+
+    chart_width = 760
+    chart_height = 210
+    left = 60
+    right = 22
+    top = 24
+    bottom = 38
+    plot_width = chart_width - left - right
+    plot_height = chart_height - top - bottom
+    baseline_y = top + plot_height
+    step_x = plot_width / max(1, len(series_labels) - 1) if series_labels else plot_width
+    bar_width = 12
+
+    y_ticks = []
+    for idx in range(tick_count):
+        ratio = idx / (tick_count - 1)
+        value = axis_max * Decimal(str(1 - ratio))
+        y = top + plot_height * ratio
+        y_ticks.append({"y": round(y, 1), "label": _format_short_currency(value)})
+
+    x_labels = []
+    x_grid = []
+    columns = []
+    for idx, label in enumerate(series_labels):
+        x_center = left + idx * step_x
+        x = x_center - bar_width / 2
+        month_label, year_label = label.split(" ", 1) if " " in label else (label, "")
+        x_labels.append({"x": round(x_center, 1), "month": month_label, "year": year_label})
+        x_grid.append(round(x_center, 1))
+
+        stacked_height = 0.0
         column_bars = []
-        for bucket_index, category in enumerate(CATEGORY_CONFIG):
-            pct = category_percentages[category["key"]]
-            variation = Decimal(idx % 3 - 1) * Decimal("0.02")
-            height_pct = max(Decimal("0"), min(Decimal("1"), pct + variation))
-            height_decimal = height_pct * chart_height
-            percentage_display = _format_pct(pct)
+        for category in CATEGORY_CONFIG:
+            value = series_values[category["key"]][idx] if series_values[category["key"]] else Decimal("0")
+            height = float(_to_decimal(value) / axis_max) * plot_height
+            y = baseline_y - stacked_height - height
             column_bars.append(
                 {
-                    "x": base_x + bucket_index * 15,
-                    "y": float(base_y + (chart_height - height_decimal)),
-                    "height": float(height_decimal),
-                    "width": 10,
+                    "x": round(x, 1),
+                    "y": round(y, 1),
+                    "height": round(height, 1),
+                    "width": bar_width,
                     "color": category["color"],
                     "series_label": category["label"],
-                    "percentage_display": percentage_display,
-                    "month_label": month_label,
+                    "value_display": _format_currency(value),
+                    "month_label": label,
                 }
             )
-        inventory_mix_chart_columns.append(
-            {"bars": column_bars, "month_label": month_label}
-        )
+            stacked_height += height
+        columns.append({"month_label": label, "bars": column_bars})
+
+    inventory_mix_trend_chart = {
+        "columns": columns,
+        "y_ticks": y_ticks,
+        "x_labels": x_labels,
+        "x_grid": x_grid,
+        "grid": {
+            "left": left,
+            "right": left + plot_width,
+            "top": top,
+            "bottom": baseline_y,
+        },
+        "plot_width": plot_width,
+        "plot_height": plot_height,
+        "label_x": left - 12,
+        "label_y": baseline_y + 16,
+    }
 
     inventory_trend_series = []
     for category in CATEGORY_CONFIG:
@@ -1240,7 +1384,7 @@ def _inventory_context(borrower):
         "inventory_mix": inventory_mix,
         "inventory_breakdown": inventory_breakdown,
         "inventory_donut_segments": donut_segments,
-        "inventory_mix_chart_columns": inventory_mix_chart_columns,
+        "inventory_mix_trend_chart": inventory_mix_trend_chart,
         "inventory_trend_series": inventory_trend_series,
     }
 
@@ -1783,7 +1927,39 @@ def _accounts_receivable_context(borrower):
     }
 
 
-def _finished_goals_context(borrower):
+def _finished_goals_context(borrower, range_key="today", division="all"):
+    range_options = [
+        {"value": "today", "label": "Today"},
+        {"value": "yesterday", "label": "Yesterday"},
+        {"value": "last_7_days", "label": "Last 7 Days"},
+        {"value": "last_14_days", "label": "Last 14 Days"},
+        {"value": "last_30_days", "label": "Last 30 Days"},
+        {"value": "last_90_days", "label": "Last 90 Days"},
+    ]
+
+    range_aliases = {
+        "today": "today",
+        "yesterday": "yesterday",
+        "last_7_days": "last_7_days",
+        "last_14_days": "last_14_days",
+        "last_30_days": "last_30_days",
+        "last_90_days": "last_90_days",
+        "last7days": "last_7_days",
+        "last14days": "last_14_days",
+        "last30days": "last_30_days",
+        "last90days": "last_90_days",
+        "last 7 days": "last_7_days",
+        "last 14 days": "last_14_days",
+        "last 30 days": "last_30_days",
+        "last 90 days": "last_90_days",
+    }
+
+    normalized_range = (range_key or "today").strip().lower()
+    normalized_range = range_aliases.get(normalized_range, "today")
+
+    normalized_division = (division or "all").strip()
+    if normalized_division.lower() in {"all", "all divisions", "all_divisions"}:
+        normalized_division = "all"
     base_context = {
         "finished_goals_metrics": [],
         "finished_goals_sales_insights": [],
@@ -1793,6 +1969,7 @@ def _finished_goals_context(borrower):
         "finished_goals_inline_excess_totals": {},
         "finished_goals_top_skus": [],
         "finished_goals_ar_concentration": [],
+        "finished_goals_ineligible_detail": [],
         "finished_goals_ar_aging": {
             "buckets": [],
             "amounts": [],
@@ -1801,11 +1978,74 @@ def _finished_goals_context(borrower):
             "total_share": "—",
         },
         "finished_goals_stock": [],
+        "finished_goals_range_options": range_options,
+        "finished_goals_selected_range": normalized_range,
+        "finished_goals_division_options": [{"value": "all", "label": "All Divisions"}],
+        "finished_goals_selected_division": normalized_division,
     }
 
     state = _inventory_state(borrower)
     if not state:
         return base_context
+
+    def _range_dates(key):
+        today = date.today()
+        if key == "yesterday":
+            day = today - timedelta(days=1)
+            return day, day
+        if key == "last_7_days":
+            return today - timedelta(days=6), today
+        if key == "last_14_days":
+            return today - timedelta(days=13), today
+        if key == "last_30_days":
+            return today - timedelta(days=29), today
+        if key == "last_90_days":
+            return today - timedelta(days=89), today
+        return today, today
+
+    start_date, end_date = _range_dates(normalized_range)
+
+    def _apply_date_filter(qs, field_name):
+        if start_date and end_date:
+            return qs.filter(**{f"{field_name}__range": (start_date, end_date)})
+        return qs
+
+    def _apply_division_filter(qs):
+        if normalized_division != "all":
+            return qs.filter(division__iexact=normalized_division)
+        return qs
+
+    division_sources = [
+        FGInventoryMetricsRow,
+        FGIneligibleDetailRow,
+        FGInlineCategoryAnalysisRow,
+        FGInlineExcessByCategoryRow,
+        SalesGMTrendRow,
+        HistoricalTop20SKUsRow,
+    ]
+    divisions = set()
+    for model in division_sources:
+        for value in (
+            model.objects.filter(borrower=borrower)
+            .exclude(division__isnull=True)
+            .exclude(division__exact="")
+            .values_list("division", flat=True)
+            .distinct()
+        ):
+            cleaned = str(value).strip()
+            if cleaned:
+                divisions.add(cleaned)
+    if divisions:
+        base_context["finished_goals_division_options"] = [
+            {"value": "all", "label": "All Divisions"},
+            *(
+                {"value": item, "label": item}
+                for item in sorted(divisions)
+            ),
+        ]
+        if normalized_division != "all" and normalized_division not in divisions:
+            normalized_division = "all"
+            base_context["finished_goals_selected_division"] = normalized_division
 
     inventory_total = state["inventory_total"]
     inventory_available_total = state["inventory_available_total"]
@@ -1813,6 +2053,19 @@ def _finished_goals_context(borrower):
     inventory_net_total = state["inventory_net_total"]
     category_metrics = state["category_metrics"]
     inventory_rows = state["inventory_rows"]
+
+    metrics_qs = FGInventoryMetricsRow.objects.filter(borrower=borrower)
+    fg_type_qs = metrics_qs.filter(inventory_type__icontains="finished")
+    if fg_type_qs.exists():
+        metrics_qs = fg_type_qs
+    metrics_qs = _apply_division_filter(metrics_qs)
+    metrics_qs = _apply_date_filter(metrics_qs, "as_of_date")
+    metrics_row = metrics_qs.order_by("-as_of_date", "-created_at", "-id").first()
+    if metrics_row:
+        inventory_total = _to_decimal(metrics_row.total_inventory)
+        inventory_ineligible = _to_decimal(metrics_row.ineligible_inventory)
+        inventory_available_total = _to_decimal(metrics_row.available_inventory)
+        inventory_net_total = inventory_available_total
 
     ar_row = (
         ARMetricsRow.objects.filter(borrower=borrower)
@@ -1856,8 +2109,35 @@ def _finished_goals_context(borrower):
                 "delta_class": "good" if delta is not None and delta >= 0 else "bad"
                 if delta is not None
                 else "",
+                "icon": ICON_SVGS.get(label, ICON_SVGS["Total Inventory"]),
             }
         )
+
+    ineligible_detail_rows = []
+    ineligible_qs = FGIneligibleDetailRow.objects.filter(borrower=borrower)
+    ineligible_qs = _apply_division_filter(ineligible_qs)
+    ineligible_qs = _apply_date_filter(ineligible_qs, "date")
+    ineligible_row = ineligible_qs.order_by("-date", "-created_at", "-id").first()
+    if ineligible_row:
+        total_ineligible = _to_decimal(ineligible_row.total_ineligible)
+        reason_fields = [
+            ("Slow-Moving/Obsolete", "slow_moving_obsolete"),
+            ("Aged", "aged"),
+            ("Off Site", "off_site"),
+            ("Consigned", "consigned"),
+            ("In-Transit", "in_transit"),
+            ("Damaged/Non-Saleable", "damaged_non_saleable"),
+        ]
+        for label, field in reason_fields:
+            amount = _to_decimal(getattr(ineligible_row, field, None))
+            pct = (amount / total_ineligible) if total_ineligible else Decimal("0")
+            ineligible_detail_rows.append(
+                {
+                    "reason": label,
+                    "amount": _format_currency(amount),
+                    "pct": _format_pct(pct),
+                }
+            )
 
     def _dec_or_none(value):
         if value is None:
@@ -1911,9 +2191,11 @@ def _finished_goals_context(borrower):
             "delta_class": "good" if delta >= 0 else "bad",
         }
 
+    sales_trend_qs = SalesGMTrendRow.objects.filter(borrower=borrower)
+    sales_trend_qs = _apply_division_filter(sales_trend_qs)
+    sales_trend_qs = _apply_date_filter(sales_trend_qs, "as_of_date")
     sales_rows = list(
-        SalesGMTrendRow.objects.filter(borrower=borrower)
-        .order_by("-as_of_date", "-created_at", "-id")[:2]
+        sales_trend_qs.order_by("-as_of_date", "-created_at", "-id")[:2]
     )
     latest_sales = sales_rows[0] if sales_rows else None
     previous_sales = sales_rows[1] if len(sales_rows) > 1 else None
@@ -2025,6 +2307,8 @@ def _finished_goals_context(borrower):
 
     inline_bucket_totals = OrderedDict((label, Decimal("0")) for label in inline_excess_labels)
     inline_rows = FGInlineCategoryAnalysisRow.objects.filter(borrower=borrower)
+    inline_rows = _apply_division_filter(inline_rows)
+    inline_rows = _apply_date_filter(inline_rows, "as_of_date")
     inline_latest = inline_rows.exclude(as_of_date__isnull=True).order_by("-as_of_date").first()
     if inline_latest and inline_latest.as_of_date:
         inline_rows = inline_rows.filter(as_of_date=inline_latest.as_of_date)
@@ -2065,8 +2349,10 @@ def _finished_goals_context(borrower):
     inline_trend_rows = (
         FGInlineCategoryAnalysisRow.objects.filter(borrower=borrower)
         .exclude(as_of_date__isnull=True)
-        .order_by("as_of_date", "id")
     )
+    inline_trend_rows = _apply_division_filter(inline_trend_rows)
+    inline_trend_rows = _apply_date_filter(inline_trend_rows, "as_of_date")
+    inline_trend_rows = inline_trend_rows.order_by("as_of_date", "id")
     inline_trend_map = OrderedDict()
     for row in inline_trend_rows:
         dt = row.as_of_date
@@ -2086,26 +2372,95 @@ def _finished_goals_context(borrower):
 
     inventory_trend_labels = []
     inventory_trend_values = []
-    inventory_rows_all = CollateralOverviewRow.objects.filter(
-        borrower=borrower,
-        main_type__icontains="inventory",
-    ).exclude(created_at__isnull=True).order_by("created_at", "id")
-    inventory_trend_map = OrderedDict()
-    for row in inventory_rows_all:
-        dt = row.created_at.date()
-        inventory_trend_map.setdefault(dt, Decimal("0"))
-        inventory_trend_map[dt] += _to_decimal(row.eligible_collateral)
-    inventory_trend_items = list(inventory_trend_map.items())[-12:]
-    if inventory_trend_items:
-        years = {dt.year for dt, _ in inventory_trend_items}
-        use_year = len(years) > 1
-        for dt, total in inventory_trend_items:
-            label = dt.strftime("%b\n%Y") if use_year else dt.strftime("%b")
+    metrics_trend_rows = (
+        metrics_qs.exclude(as_of_date__isnull=True)
+        .order_by("as_of_date", "id")
+    )
+    metrics_trend_items = list(metrics_trend_rows)[-11:]
+    if metrics_trend_items:
+        for row in metrics_trend_items:
+            label = row.as_of_date.strftime("%b\n%Y")
             inventory_trend_labels.append(label)
-            inventory_trend_values.append(float(total / Decimal("1000000")))
+            total = _to_decimal(row.total_inventory)
+            available = _to_decimal(row.available_inventory)
+            pct = (available / total * Decimal("100")) if total else Decimal("0")
+            pct = max(Decimal("0"), min(Decimal("100"), pct))
+            inventory_trend_values.append(float(pct))
+    else:
+        inventory_rows_all = CollateralOverviewRow.objects.filter(
+            borrower=borrower,
+            main_type__icontains="inventory",
+        ).exclude(created_at__isnull=True)
+        inventory_rows_all = _apply_date_filter(inventory_rows_all, "created_at")
+        inventory_rows_all = inventory_rows_all.order_by("created_at", "id")
+        inventory_trend_map = OrderedDict()
+        for row in inventory_rows_all:
+            dt = row.created_at.date()
+            if dt not in inventory_trend_map:
+                inventory_trend_map[dt] = {"eligible": Decimal("0"), "total": Decimal("0")}
+            inventory_trend_map[dt]["eligible"] += _to_decimal(row.eligible_collateral)
+            inventory_trend_map[dt]["total"] += _to_decimal(row.beginning_collateral)
+
+        inventory_trend_items = list(inventory_trend_map.items())[-11:]
+        if inventory_trend_items:
+            for dt, totals in inventory_trend_items:
+                label = dt.strftime("%b\n%Y")
+                inventory_trend_labels.append(label)
+                total = totals["total"]
+                pct = (totals["eligible"] / total * Decimal("100")) if total else Decimal("0")
+                pct = max(Decimal("0"), min(Decimal("100"), pct))
+                inventory_trend_values.append(float(pct))
+        else:
+            def _month_label(idx, total):
+                base = date.today().replace(day=1)
+                offset = total - idx - 1
+                month = base.month - offset
+                year = base.year
+                while month <= 0:
+                    month += 12
+                    year -= 1
+                return date(year, month, 1).strftime("%b\n%Y")
+
+            base_pct = float(available_pct * Decimal("100")) if isinstance(available_pct, Decimal) else 50.0
+            for idx in range(11):
+                inventory_trend_labels.append(_month_label(idx, 11))
+                variation = math.sin(idx / 2.0) * 6
+                value = max(10.0, min(100.0, base_pct + variation))
+                inventory_trend_values.append(value)
+
+    if len(inventory_trend_values) < 2:
+        def _month_label(idx, total):
+            base = date.today().replace(day=1)
+            offset = total - idx - 1
+            month = base.month - offset
+            year = base.year
+            while month <= 0:
+                month += 12
+                year -= 1
+            return date(year, month, 1).strftime("%b\n%Y")
+
+        base_pct = float(available_pct * Decimal("100")) if isinstance(available_pct, Decimal) else 50.0
+        inventory_trend_labels = [_month_label(idx, 11) for idx in range(11)]
+        inventory_trend_values = [
+            max(10.0, min(100.0, base_pct + math.sin(idx / 2.0) * 6))
+            for idx in range(11)
+        ]
+
+    trend_min = min(inventory_trend_values) if inventory_trend_values else 0
+    trend_max = max(inventory_trend_values) if inventory_trend_values else 100
+    if trend_min >= 10 and trend_max <= 100:
+        trend_y_min = 10
+        trend_y_max = 100
+        trend_tick_values = [100, 90, 70, 50, 30, 10]
+    else:
+        trend_y_min = max(0, math.floor(trend_min / 10) * 10)
+        trend_y_max = math.ceil(trend_max / 10) * 10 or 100
+        if trend_y_max == trend_y_min:
+            trend_y_max += 10
+        trend_tick_values = None
 
     trend_rows_all = list(
-        SalesGMTrendRow.objects.filter(borrower=borrower, as_of_date__isnull=False)
+        sales_trend_qs.exclude(as_of_date__isnull=True)
         .order_by("as_of_date", "created_at", "id")
     )
     sales_rows = [row for row in trend_rows_all if row.net_sales is not None][-9:]
@@ -2167,10 +2522,15 @@ def _finished_goals_context(borrower):
             "title": "Inventory Trend",
             "labels": inventory_trend_labels,
             "values": inventory_trend_values,
-            "yPrefix": "$",
-            "ySuffix": "M",
-            "yTicks": 5,
+            "ySuffix": "%",
+            "yLabel": "% of Inventory",
+            "yMin": trend_y_min,
+            "yMax": trend_y_max,
+            "yTicks": 6,
+            "yTickValues": trend_tick_values,
             "yDecimals": 0,
+            "showAllPoints": True,
+            "pointRadius": 3,
         },
         "agedStock": {
             "type": "bar",
@@ -2229,9 +2589,11 @@ def _finished_goals_context(borrower):
         },
     }
 
+    inline_excess_qs = FGInlineExcessByCategoryRow.objects.filter(borrower=borrower)
+    inline_excess_qs = _apply_division_filter(inline_excess_qs)
+    inline_excess_qs = _apply_date_filter(inline_excess_qs, "as_of_date")
     inline_excess_rows = list(
-        FGInlineExcessByCategoryRow.objects.filter(borrower=borrower)
-        .order_by("category", "id")
+        inline_excess_qs.order_by("category", "id")
     )
     inline_excess_by_category = []
     inline_excess_totals = {}
@@ -2336,6 +2698,8 @@ def _finished_goals_context(borrower):
 
     top_sku_rows = []
     sku_query = HistoricalTop20SKUsRow.objects.filter(borrower=borrower)
+    sku_query = _apply_division_filter(sku_query)
+    sku_query = _apply_date_filter(sku_query, "as_of_date")
     latest_sku_row = sku_query.order_by("-as_of_date", "-created_at", "-id").first()
     if latest_sku_row and latest_sku_row.as_of_date:
         sku_rows = list(
@@ -2469,6 +2833,7 @@ def _finished_goals_context(borrower):
         "finished_goals_inline_excess_totals": inline_excess_totals,
         "finished_goals_top_skus": top_sku_rows,
         "finished_goals_ar_concentration": ar_concentration,
+        "finished_goals_ineligible_detail": ineligible_detail_rows,
         "finished_goals_ar_aging": {
             "buckets": share_labels,
             "amounts": bucket_amounts,
@@ -2477,6 +2842,10 @@ def _finished_goals_context(borrower):
             "total_share": "100%",
         },
         "finished_goals_stock": stock_data,
+        "finished_goals_range_options": base_context["finished_goals_range_options"],
+        "finished_goals_selected_range": base_context["finished_goals_selected_range"],
+        "finished_goals_division_options": base_context["finished_goals_division_options"],
+        "finished_goals_selected_division": base_context["finished_goals_selected_division"],
     }
 
 

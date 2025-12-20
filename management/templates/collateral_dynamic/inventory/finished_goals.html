@@ -1,3 +1,4 @@
+{% load static %}
 <style>
   :root{
     --bg:#f4f7fb;
@@ -269,97 +270,83 @@
 
 <div class="wrap finished-goals">
 
-  <div class="filters">
+  <form class="filters" method="get">
+    <input type="hidden" name="section" value="inventory">
+    <input type="hidden" name="inventory_tab" value="finished_goods">
     <label class="select">
-      <select name="finished_goals_range" aria-label="Date range">
-        <option>Today</option>
-        <option>Yesterday</option>
-        <option>Last 7 Days</option>
-        <option>Last 14 Days</option>
-        <option>Last 30 Days</option>
-        <option>Last 90 Days</option>
+      <select name="finished_goals_range" aria-label="Date range" onchange="this.form.submit()">
+        {% for option in finished_goals_range_options %}
+          <option value="{{ option.value }}" {% if option.value == finished_goals_selected_range %}selected{% endif %}>
+            {{ option.label }}
+          </option>
+        {% endfor %}
       </select>
       <span class="caret" aria-hidden="true">
         <svg viewBox="0 0 24 24"><path d="M6 9l6 6 6-6"></path></svg>
       </span>
     </label>
     <label class="select">
-      <select name="finished_goals_view" aria-label="Division filter">
-        <option>All Divisions</option>
-        <option>Overview</option>
-        <option>Dividend view</option>
-        <option>Closed positions</option>
-        <option>My View</option>
-        <option>Edit My View</option>
+      <select name="finished_goals_division" aria-label="Division filter" onchange="this.form.submit()">
+        {% for option in finished_goals_division_options %}
+          <option value="{{ option.value }}" {% if option.value == finished_goals_selected_division %}selected{% endif %}>
+            {{ option.label }}
+          </option>
+        {% endfor %}
       </select>
       <span class="caret" aria-hidden="true">
         <svg viewBox="0 0 24 24"><path d="M6 9l6 6 6-6"></path></svg>
       </span>
     </label>
-  </div>
+  </form>
 
   <div class="grid-2">
-    <div class="card">
-      <div class="card-head">
-        <span class="ico" aria-hidden="true">
-          <svg viewBox="0 0 24 24"><path d="M7 17h2V7H7v10zm4 0h2V11h-2v6zm4 0h2V9h-2v8z"/></svg>
-        </span>
-        Available Inventory Breakdown
-      </div>
-      <div class="stat-grid">
-        {% for metric in finished_goals_metrics %}
-          <div class="stat-card">
-            <div class="stat-top">
-              <div class="stat-main">
-                <div class="label">{{ metric.label }}</div>
-                <div class="value">{{ metric.value }}</div>
-              </div>
-              <div class="stat-icon" aria-hidden="true">
-                <svg viewBox="0 0 24 24">
-                  <rect x="5" y="5" width="14" height="14" rx="2"></rect>
-                  <path d="M9 12h6M9 9h4"></path>
-                </svg>
-              </div>
-            </div>
-            {% if metric.delta %}
-              <div class="delta {{ metric.delta_class }}">
-                <span class="delta-icon" aria-hidden="true">
-                  <svg viewBox="0 0 24 24">
-                    <path d="M12 19V5m0 0l-5 5m5-5l5 5"></path>
-                  </svg>
-                </span>
-                <span>{{ metric.delta }}</span>
-              </div>
-            {% endif %}
+   <div class="card">
+  <div class="card-head">
+    <img
+      src="{% static 'images/borrowing_icon.svg' %}"
+      alt="Available Inventory Icon"
+      class="current-update-icon"
+    />
+    <span>Available Inventory Breakdown</span>
+  </div>
+
+  <div class="stat-grid">
+    {% for metric in finished_goals_metrics %}
+      <div class="stat-card">
+        <div class="stat-top">
+          <div class="stat-main">
+            <div class="label">{{ metric.label }}</div>
+            <div class="value">{{ metric.value }}</div>
           </div>
-        {% empty %}
-          <div class="stat-card">
-            <div class="stat-top">
-              <div class="stat-main">
-                <div class="label">Awaiting data</div>
-                <div class="value">—</div>
-              </div>
-              <div class="stat-icon" aria-hidden="true">
-                <svg viewBox="0 0 24 24">
-                  <rect x="5" y="5" width="14" height="14" rx="2"></rect>
-                  <path d="M9 12h6M9 9h4"></path>
-                </svg>
-              </div>
-            </div>
+          <div class="stat-icon" aria-hidden="true">
+            {{ metric.icon|safe }}
           </div>
-        {% endfor %}
+        </div>
+
+        {% if metric.delta %}
+          <div class="delta {{ metric.delta_class }}">
+            <span>{{ metric.delta }}</span>
+          </div>
+        {% endif %}
       </div>
-    </div>
+    {% empty %}
+      <div class="stat-card">
+        <div class="stat-top">
+          <div class="stat-main">
+            <div class="label">Awaiting data</div>
+            <div class="value">—</div>
+          </div>
+        </div>
+      </div>
+    {% endfor %}
+  </div>
+</div>
+
 
     <div class="card">
-      <div class="card-head">
-        <span class="ico" aria-hidden="true">
           <img src="{% static 'images/borrowing_icon.svg' %}" 
           alt="Current Update Icon"
           class="current-update-icon" />
-        </span>
-        Ineligible Detail
-      </div>
       <div class="table-wrap">
         <table>
           <thead>
@@ -370,7 +357,7 @@
             </tr>
           </thead>
           <tbody>
-            {% for row in raw_materials_ineligible_detail %}
+            {% for row in finished_goals_ineligible_detail %}
               <tr>
                 <td>{{ row.reason }}</td>
                 <td class="num">{{ row.amount }}</td>
@@ -388,18 +375,16 @@
   <div class="card" style="margin-top:12px" data-chart="inventoryTrend"></div>
 
   <div class="card section-card" style="margin-top:12px">
-    <div class="card-head">
-      <span class="ico" aria-hidden="true">
-        <svg viewBox="0 0 24 24"><path d="M4 17l5-6 4 4 7-10 0 3-7 10-4-4-5 6z"/></svg>
-      </span>
+    <img src="{% static 'images/borrowing_icon.svg' %}" 
+          alt="Current Update Icon"
+          class="current-update-icon" />
       Sales and Gross Margin
-    </div>
     <div class="section-body sales-grid">
       <div class="card insights-card">
         <div class="card-head">
-          <span class="ico" aria-hidden="true">
-            <svg viewBox="0 0 24 24"><path d="M4 19h16v2H4v-2zm1-4h3v3H5v-3zm5-6h3v9h-3V9zm5 3h3v6h-3v-6z"/></svg>
-          </span>
+          <img src="{% static 'images/borrowing_icon.svg' %}" 
+          alt="Current Update Icon"
+          class="current-update-icon" />
           Key Insights
         </div>
         <div class="stat-grid">
@@ -455,12 +440,11 @@
   </div>
 
   <div class="card section-card" style="margin-top:12px">
-    <div class="card-head">
-      <span class="ico" aria-hidden="true">
-        <svg viewBox="0 0 24 24"><path d="M4 17l5-6 4 4 7-10 0 3-7 10-4-4-5 6z"/></svg>
-      </span>
+    
+      <img src="{% static 'images/borrowing_icon.svg' %}" 
+          alt="Current Update Icon"
+          class="current-update-icon" />
       In-line vs Excess Analysis
-    </div>
     <div class="section-body">
       <div class="grid-2">
         <div class="card" data-chart="inlineExcess"></div>
@@ -471,9 +455,9 @@
 
   <div class="card table-card" style="margin-top:12px">
     <div class="card-head">
-      <span class="ico" aria-hidden="true">
-        <svg viewBox="0 0 24 24"><path d="M4 17l5-6 4 4 7-10 0 3-7 10-4-4-5 6z"/></svg>
-      </span>
+      <img src="{% static 'images/borrowing_icon.svg' %}" 
+          alt="Current Update Icon"
+          class="current-update-icon" />
       In-Line/Excess by Category
     </div>
     <div class="divider"></div>
@@ -550,9 +534,9 @@
 
   <div class="card table-card" style="margin-top:12px">
     <div class="card-head">
-      <span class="ico" aria-hidden="true">
-        <svg viewBox="0 0 24 24"><path d="M4 17l5-6 4 4 7-10 0 3-7 10-4-4-5 6z"/></svg>
-      </span>
+      <img src="{% static 'images/borrowing_icon.svg' %}" 
+          alt="Current Update Icon"
+          class="current-update-icon" />
       Top Sku Analysis
     </div>
     <div class="divider"></div>
@@ -629,9 +613,6 @@
     if (!c.values || c.values.length < 2 || !c.labels || c.labels.length < 2) {
       el.innerHTML = `
         <div class="card-head">
-          <span class="ico" aria-hidden="true">
-            <svg viewBox="0 0 24 24"><path d="M4 17l5-6 4 4 7-10 0 3-7 10-4-4-5 6z"/></svg>
-          </span>
           ${c.title}
         </div>
         <div class="card-pad">No data available.</div>
@@ -643,9 +624,17 @@
     const pad = {l:c.yLabel ? 58 : 46,r:c.yRight ? 42 : 14,t:16,b:hasMulti ? 44 : 30};
     const plotW = W-pad.l-pad.r, plotH = H-pad.t-pad.b;
 
+    const customTicks = Array.isArray(c.yTickValues) && c.yTickValues.length > 1;
     let min = (c.yMin !== undefined && c.yMin !== null) ? c.yMin : Math.min(...c.values);
     let max = (c.yMax !== undefined && c.yMax !== null) ? c.yMax : Math.max(...c.values);
-    if (c.yMin === undefined || c.yMax === undefined) {
+    if (customTicks) {
+      if (c.yMin === undefined || c.yMin === null) {
+        min = Math.min(...c.yTickValues);
+      }
+      if (c.yMax === undefined || c.yMax === null) {
+        max = Math.max(...c.yTickValues);
+      }
+    } else if (c.yMin === undefined || c.yMax === undefined) {
       const range = (max-min)||1;
       min -= range*0.15; max += range*0.15;
     }
@@ -656,7 +645,10 @@
 
     const pts = c.values.map((v,i)=>[x(i),y(v)]);
     const ticks = c.yTicks||5;
-    const yTicks = Array.from({length:ticks},(_,i)=>{
+    const yTicks = customTicks ? c.yTickValues.map((val)=>({
+      val:Number(val),
+      yy:y(Number(val)),
+    })) : Array.from({length:ticks},(_,i)=>{
       const t=i/(ticks-1);
       const val=max - t*range;
       return {val, yy:y(val)};
@@ -673,9 +665,7 @@
 
     el.innerHTML = `
       <div class="card-head">
-        <span class="ico" aria-hidden="true">
-          <svg viewBox="0 0 24 24"><path d="M4 17l5-6 4 4 7-10 0 3-7 10-4-4-5 6z"/></svg>
-        </span>
+        
         ${c.title}
       </div>
       <div class="chart-wrap">
@@ -718,9 +708,7 @@
     if (!c.values || c.values.length < 1 || !c.labels || c.labels.length < 1) {
       el.innerHTML = `
         <div class="card-head">
-          <span class="ico" aria-hidden="true">
-            <svg viewBox="0 0 24 24"><path d="M4 19h16v2H4v-2zM6 17V7h3v10H6zm5 0V4h3v13h-3zm5 0v-8h3v8h-3z"/></svg>
-          </span>
+         
           ${c.title}
         </div>
         <div class="card-pad">No data available.</div>
@@ -765,9 +753,6 @@
 
     el.innerHTML = `
       <div class="card-head">
-        <span class="ico" aria-hidden="true">
-          <svg viewBox="0 0 24 24"><path d="M4 19h16v2H4v-2zM6 17V7h3v10H6zm5 0V4h3v13h-3zm5 0v-8h3v8h-3z"/></svg>
-        </span>
         ${c.title}
       </div>
       <div class="chart-wrap">
