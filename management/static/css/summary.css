@@ -434,9 +434,6 @@
       gap:12px;
       box-shadow:0 6px 18px rgba(15,23,42,.08);
     }
-    .meta-card--blue{background:#f5f8ff;border-color:#dce4ff}
-    .meta-card--purple{background:#faf5ff;border-color:#eddfff}
-    .meta-card--green{background:#f1fff6;border-color:#d8f2e4}
     .meta-label{
       font-size:12px;
       font-weight:600;
@@ -476,7 +473,6 @@
       border-radius:18px;
       padding:16px;
       border:1px solid #e5e9f3;
-      background:#f8fbff;
       box-shadow:0 6px 20px rgba(15,23,42,.08);
       display:flex;
       flex-direction:column;
@@ -487,8 +483,6 @@
       font-weight:600;
       color:#1f2a55;
     }
-    .chart-card--purple{background:#faf5ff;border-color:#eadfff}
-    .chart-card--green{background:#f1fff6;border-color:#d8f2e4}
     .panel-chart svg{width:100%;height:130px}
     .panel-chart{
       border-radius:16px;

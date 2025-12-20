@@ -45,10 +45,10 @@ from management.views.summary import (
 def collateral_dynamic_view(request):
     borrower = get_preferred_borrower(request)
 
-    section = request.GET.get("section", "inventory")
+    section = request.GET.get("section", "accounts_receivable")
     allowed_sections = {"overview", "accounts_receivable", "inventory"}
     if section not in allowed_sections:
-        section = "inventory"
+        section = "accounts_receivable"
 
     inventory_tab = request.GET.get("inventory_tab", "summary")
     allowed_inventory_tabs = {
@@ -1334,6 +1334,120 @@ def _accounts_receivable_context(borrower):
             pct /= Decimal("100")
         return _format_pct(pct)
 
+    def _trim_axis_value(value):
+        text = f"{value:.1f}"
+        return text.rstrip("0").rstrip(".")
+
+    def _format_axis_currency(value):
+        val = float(value)
+        abs_val = abs(val)
+        if abs_val >= 1_000_000_000:
+            return f"${_trim_axis_value(val / 1_000_000_000)}B"
+        if abs_val >= 1_000_000:
+            return f"${_trim_axis_value(val / 1_000_000)}M"
+        if abs_val >= 1_000:
+            return f"${_trim_axis_value(val / 1_000)}k"
+        return f"${val:,.0f}"
+
+    def _format_axis_days(value):
+        return f"{int(round(value)):,}"
+
+    def _format_axis_pct(value):
+        return f"{_trim_axis_value(value)}%"
+
+    def _nice_step(value):
+        if value <= 0:
+            return 1.0
+        exponent = math.floor(math.log10(value))
+        magnitude = 10 ** exponent
+        fraction = value / magnitude
+        if fraction <= 1:
+            nice = 1
+        elif fraction <= 2:
+            nice = 2
+        elif fraction <= 5:
+            nice = 5
+        else:
+            nice = 10
+        return nice * magnitude
+
+    def _normalize_chart_values(values, labels):
+        values = [float(_to_decimal(val)) for val in values if val is not None]
+        if not values:
+            values = [0.0]
+        if len(values) < 2:
+            values = values + [values[-1]]
+        if not labels:
+            labels = [f"{idx + 1:02d}" for idx in range(len(values))]
+        elif len(labels) < len(values):
+            extra = [f"{idx + len(labels) + 1:02d}" for idx in range(len(values) - len(labels))]
+            labels = labels + extra
+        elif len(labels) > len(values):
+            labels = labels[-len(values):]
+        return values, labels
+
+    def _build_kpi_chart(values, labels, axis_formatter, value_formatter):
+        values, labels = _normalize_chart_values(values, labels)
+        width = 260
+        height = 140
+        left = 30
+        right = 12
+        top = 14
+        bottom = 26
+        plot_width = width - left - right
+        plot_height = height - top - bottom
+        max_val = max(values)
+        if max_val <= 0:
+            max_val = 1.0
+        tick_count = 4
+        step_value = _nice_step(max_val / max(1, tick_count - 1))
+        axis_max = step_value * (tick_count - 1)
+        if axis_max <= 0:
+            axis_max = max_val
+        step_x = plot_width / max(1, len(values) - 1)
+        baseline_y = top + plot_height
+        points = []
+        dots = []
+        x_positions = []
+        x_labels = []
+        for idx, value in enumerate(values):
+            ratio = value / axis_max if axis_max else 0
+            ratio = max(0.0, min(1.0, ratio))
+            x = left + idx * step_x
+            y = baseline_y - ratio * plot_height
+            points.append(f"{x:.1f},{y:.1f}")
+            x_positions.append(round(x, 1))
+            x_labels.append({"x": round(x, 1), "text": labels[idx]})
+            dots.append(
+                {
+                    "cx": round(x, 1),
+                    "cy": round(y, 1),
+                    "label": labels[idx],
+                    "value": value_formatter(value),
+                }
+            )
+        y_ticks = []
+        for idx in range(tick_count):
+            ratio = idx / (tick_count - 1)
+            value = axis_max * (1 - ratio)
+            y = top + plot_height * ratio
+            y_ticks.append({"y": round(y, 1), "label": axis_formatter(value)})
+        return {
+            "points": " ".join(points),
+            "dots": dots,
+            "x_labels": x_labels,
+            "y_ticks": y_ticks,
+            "x_grid": x_positions,
+            "grid": {
+                "left": left,
+                "right": round(left + plot_width, 1),
+                "top": top,
+                "bottom": round(baseline_y, 1),
+            },
+            "label_x": left - 6,
+            "label_y": round(baseline_y + 16, 1),
+        }
+
     def _delta_payload(current, previous, improvement_on_increase=True):
         if previous is None or previous == 0:
             return None
@@ -1361,6 +1475,8 @@ def _accounts_receivable_context(borrower):
             "key": "total_balance",
             "formatter": lambda value: _format_currency(_to_decimal(value)),
             "color": "var(--blue-3)",
+            "icon": "images/balance.svg",
+            "axis_formatter": _format_axis_currency,
             "improvement_on_increase": True,
         },
         {
@@ -1368,6 +1484,8 @@ def _accounts_receivable_context(borrower):
             "key": "avg_dso",
             "formatter": lambda value: _format_days(value),
             "color": "var(--purple)",
+            "icon": "images/sales_outstanding.svg",
+            "axis_formatter": _format_axis_days,
             "improvement_on_increase": False,
         },
         {
@@ -1375,13 +1493,23 @@ def _accounts_receivable_context(borrower):
             "key": "past_due_pct",
             "formatter": lambda value: _format_pct_display(value),
             "color": "var(--teal)",
+            "icon": "images/total_pastdue_icon.svg",
+            "axis_formatter": _format_axis_pct,
             "improvement_on_increase": False,
         },
     ]
     kpis = []
+    chart_points = 7
+    chart_history = history[-chart_points:] if len(history) > chart_points else history[:]
+    chart_labels = [f"{idx + 1:02d}" for idx in range(len(chart_history))]
     for spec in kpi_specs:
-        spark = _build_spark_points([row[spec["key"]] for row in history])
-        chart = _build_trend_chart([row[spec["key"]] for row in history])
+        series_values = [row[spec["key"]] for row in chart_history]
+        chart = _build_kpi_chart(
+            series_values,
+            chart_labels,
+            axis_formatter=spec["axis_formatter"],
+            value_formatter=spec["formatter"],
+        )
         delta = _delta_payload(
             current_snapshot[spec["key"]],
             previous_snapshot[spec["key"]] if previous_snapshot else None,
@@ -1392,13 +1520,11 @@ def _accounts_receivable_context(borrower):
                 "label": spec["label"],
                 "value": spec["formatter"](current_snapshot[spec["key"]]),
                 "color": spec["color"],
-                "spark_points": spark["points"],
-                "spark_dots": spark["dots"],
+                "icon": spec["icon"],
                 "delta": delta["value"] if delta else None,
                 "symbol": delta["symbol"] if delta else "",
                 "delta_class": delta["delta_class"] if delta else "",
-                "chart_points": chart["points"],
-                "chart_dots": chart["dots"],
+                "chart": chart,
             }
         )
 

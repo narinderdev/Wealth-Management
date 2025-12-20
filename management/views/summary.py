@@ -131,38 +131,139 @@ def _user_can_access_borrower(user, borrower, company):
     return user.is_staff or user.is_superuser
 
 
-CHART_X_POSITIONS = [0, 40, 80, 120, 160, 200, 220]
+def _trim_axis_value(value):
+    text = f"{value:.1f}"
+    return text.rstrip("0").rstrip(".")
 
 
-def _build_line_series(base_value, global_max, label=None, value_text=None, x_positions=CHART_X_POSITIONS):
-    base = float(_to_decimal(base_value))
-    reference = _to_decimal(global_max or Decimal("1"))
-    if reference <= 0:
-        reference = Decimal("1")
-    ref_float = float(reference)
-    if ref_float == 0:
-        ref_float = 1.0
-    base_ratio = max(0.0, min(1.0, base / ref_float))
+def _format_axis_value(value):
+    val = float(value)
+    abs_val = abs(val)
+    if abs_val >= 1_000_000_000:
+        return f"${_trim_axis_value(val / 1_000_000_000)}B"
+    if abs_val >= 1_000_000:
+        return f"${_trim_axis_value(val / 1_000_000)}M"
+    if abs_val >= 1_000:
+        return f"${_trim_axis_value(val / 1_000)}k"
+    return f"${val:,.0f}"
 
+
+def _nice_step(value):
+    if value <= 0:
+        return 1.0
+    exponent = math.floor(math.log10(value))
+    magnitude = 10 ** exponent
+    fraction = value / magnitude
+    if fraction <= 1:
+        nice = 1
+    elif fraction <= 2:
+        nice = 2
+    elif fraction <= 5:
+        nice = 5
+    else:
+        nice = 10
+    return nice * magnitude
+
+
+def _format_chart_label(label, index):
+    if label is None:
+        return f"{index + 1:02d}"
+    text = str(label)
+    if text.isdigit() and len(text) == 1:
+        return f"0{text}"
+    return text
+
+
+def _normalize_labels(labels, target_len):
+    labels = [label for label in labels if label is not None]
+    if not labels:
+        return [f"{idx + 1:02d}" for idx in range(target_len)]
+    labels = [_format_chart_label(label, idx) for idx, label in enumerate(labels)]
+    if len(labels) < target_len:
+        prefix = [f"{idx + 1:02d}" for idx in range(target_len - len(labels))]
+        labels = prefix + labels
+    elif len(labels) > target_len:
+        labels = labels[-target_len:]
+    return labels
+
+
+def _normalize_series(values, target_len, fallback_value):
+    values = [_to_decimal(val) for val in values if val is not None]
+    if not values:
+        values = [_to_decimal(fallback_value)]
+    if len(values) < target_len:
+        padding = [values[0]] * (target_len - len(values))
+        values = padding + values
+    elif len(values) > target_len:
+        values = values[-target_len:]
+    return values
+
+
+def _build_line_series(values, labels, max_value, series_label=None, width=220, height=120):
+    values = [float(_to_decimal(val)) for val in values] if values else [0.0]
+    labels = labels or [f"{idx + 1:02d}" for idx in range(len(values))]
+    max_value = float(_to_decimal(max_value)) if max_value is not None else max(values)
+    if max_value <= 0:
+        max_value = 1.0
+
+    left = 24
+    right = 10
+    top = 12
+    bottom = 20
+    tick_count = 4
+    step_value = _nice_step(max_value / max(1, tick_count - 1))
+    axis_max = step_value * (tick_count - 1)
+    if axis_max <= 0:
+        axis_max = max_value
+
+    plot_width = width - left - right
+    plot_height = height - top - bottom
+    baseline_y = top + plot_height
+    step_x = plot_width / max(1, len(values) - 1)
+
+    x_positions = []
+    x_labels = []
     points = []
     points_list = []
-    total_steps = max(1, len(x_positions) - 1)
-    for idx, x in enumerate(x_positions):
-        jitter = math.sin(idx / total_steps * math.pi) * 0.12
-        ratio = max(0.0, min(1.0, base_ratio + jitter))
-        y = 90 - ratio * 50
-        y_rounded = round(y, 1)
-        points.append(f"{x},{y_rounded}")
-        points_list.append({
-            "x": x,
-            "y": y_rounded,
-            "label": label,
-            "value": value_text,
-        })
+    for idx, val in enumerate(values):
+        x = left + idx * step_x
+        ratio = val / axis_max if axis_max else 0
+        ratio = max(0.0, min(1.0, ratio))
+        y = baseline_y - ratio * plot_height
+        x_positions.append(round(x, 1))
+        x_labels.append({"x": round(x, 1), "text": labels[idx]})
+        points.append(f"{x:.1f},{y:.1f}")
+        label = f"{series_label} · {labels[idx]}" if series_label else labels[idx]
+        points_list.append(
+            {
+                "x": round(x, 1),
+                "y": round(y, 1),
+                "label": label,
+                "value": _format_currency(val),
+            }
+        )
+
+    y_ticks = []
+    for idx in range(tick_count):
+        ratio = idx / (tick_count - 1)
+        value = axis_max * (1 - ratio)
+        y = top + plot_height * ratio
+        y_ticks.append({"y": round(y, 1), "label": _format_axis_value(value)})
 
     return {
         "points": " ".join(points),
         "points_list": points_list,
+        "y_ticks": y_ticks,
+        "x_labels": x_labels,
+        "x_grid": x_positions,
+        "grid": {
+            "left": left,
+            "right": round(left + plot_width, 1),
+            "top": top,
+            "bottom": round(baseline_y, 1),
+        },
+        "label_x": left - 6,
+        "label_y": round(baseline_y + 12, 1),
     }
 
 
@@ -378,29 +479,76 @@ def summary_view(request):
         },
     }
 
-    global_max_value = max(
-        net_total,
-        available_total,
+    chart_points = 7
+    collateral_history = list(
+        CollateralOverviewRow.objects.filter(borrower=borrower)
+        .exclude(created_at__isnull=True)
+        .order_by("-created_at")[:200]
+    )
+    collateral_labels = []
+    net_series = []
+    availability_series = []
+    if collateral_history:
+        buckets = {}
+        for row in collateral_history:
+            date_key = row.created_at.date()
+            bucket = buckets.setdefault(
+                date_key,
+                {"net": Decimal("0"), "eligible": Decimal("0"), "ineligible": Decimal("0")},
+            )
+            bucket["net"] += _to_decimal(row.net_collateral)
+            bucket["eligible"] += _to_decimal(row.eligible_collateral)
+            bucket["ineligible"] += _to_decimal(row.ineligibles)
+        for date_key in sorted(buckets.keys())[-chart_points:]:
+            bucket = buckets[date_key]
+            net_series.append(bucket["net"])
+            available = bucket["eligible"] - bucket["ineligible"]
+            if available < Decimal("0"):
+                available = Decimal("0")
+            availability_series.append(available)
+            collateral_labels.append(date_key.strftime("%d"))
+
+    ar_rows = list(
+        ARMetricsRow.objects.filter(borrower=borrower)
+        .order_by("-as_of_date", "-created_at")[:chart_points]
+    )
+    ar_labels = []
+    outstanding_series = []
+    if ar_rows:
+        for idx, row in enumerate(reversed(ar_rows)):
+            date_value = row.as_of_date or (row.created_at.date() if row.created_at else None)
+            ar_labels.append(date_value.strftime("%d") if date_value else f"{idx + 1:02d}")
+            outstanding_series.append(_to_decimal(row.balance))
+
+    base_labels = _normalize_labels(collateral_labels or ar_labels, chart_points)
+    net_series = _normalize_series(net_series, chart_points, net_total)
+    availability_series = _normalize_series(availability_series, chart_points, available_total)
+    outstanding_series = _normalize_series(
+        outstanding_series,
+        chart_points,
         ar_row.balance if ar_row and ar_row.balance is not None else Decimal("0"),
-        Decimal("1"),
+    )
+
+    global_max_value = max(
+        net_series + availability_series + outstanding_series + [Decimal("1")]
     )
     net_chart = _build_line_series(
-        net_total,
+        net_series,
+        base_labels,
         global_max_value,
-        label="Net Collateral",
-        value_text=insights["net"]["detail"],
+        series_label="Net Collateral",
     )
     outstanding_chart = _build_line_series(
-        ar_row.balance if ar_row and ar_row.balance is not None else None,
+        outstanding_series,
+        base_labels,
         global_max_value,
-        label="Outstanding Balance",
-        value_text=insights["outstanding"]["detail"],
+        series_label="Outstanding Balance",
     )
     availability_chart = _build_line_series(
-        available_total,
+        availability_series,
+        base_labels,
         global_max_value,
-        label="Availability",
-        value_text=insights["availability"]["detail"],
+        series_label="Availability",
     )
 
     inventory_rows = [

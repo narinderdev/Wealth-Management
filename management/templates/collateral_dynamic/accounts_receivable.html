@@ -1,5 +1,5 @@
 {% extends "layout/app_base.html" %}
-
+{% load static %}
 {% block title %}Collateral Dynamic{% endblock %}
 
 {% block extra_head %}
@@ -12,6 +12,7 @@
       --cd-line:#e5edf6;
       --cd-ink:#1f2937;
       --cd-shadow:0 4px 12px rgba(15,23,42,.04);
+      --blue:#1d4089;
       --blue-2:#2b6ff7;
       --blue-3:#0b5bd3;
       --teal:#1aa37a;
@@ -74,10 +75,49 @@
       text-decoration:none;
       transition:background .2s ease,color .2s ease;
     }
+    .collateral-dynamic .menu-item img{
+      width:18px;
+      height:18px;
+      flex-shrink:0;
+    }
+    .collateral-dynamic .menu-item.menu-toggle{
+      text-align:left;
+    }
+    .collateral-dynamic .menu-item.menu-toggle .menu-caret{
+      margin-left:auto;
+      width:8px;
+      height:8px;
+      border-right:2px solid #94a3b8;
+      border-bottom:2px solid #94a3b8;
+      transform:rotate(45deg);
+      transition:transform .2s ease, border-color .2s ease;
+    }
+    .collateral-dynamic .menu-item.menu-toggle[aria-expanded="true"] .menu-caret{
+      transform:rotate(-135deg);
+      border-color:#0b2a66;
+    }
     .collateral-dynamic .menu-item.active{
-      background:#eef2ff;
-      color:#0b2a66;
+      background:var(--blue);
+      color:#fff;
       font-weight:600;
+    }
+    .collateral-dynamic .menu-item.active img{
+      filter:brightness(0) invert(1);
+    }
+    .collateral-dynamic .menu-item.menu-toggle.active{
+      background:transparent;
+      color:#0b2a66;
+    }
+    .collateral-dynamic .menu-item.menu-toggle.active img{
+      filter:none;
+    }
+    .collateral-dynamic .menu-item.sub.active{
+      background:var(--blue);
+      color:#fff;
+      font-weight:600;
+    }
+    .collateral-dynamic .menu-item.sub.active img{
+      filter:brightness(0) invert(1);
     }
     .collateral-dynamic .menu-icon{
       width:24px;
@@ -91,13 +131,36 @@
       font-size:12px;
     }
     .collateral-dynamic .menu-group-label{
-      margin-top:18px;
+      margin-top:10px;
       display:flex;
       align-items:center;
       gap:10px;
       font-size:14px;
       font-weight:600;
       color:#0b2a66;
+    }
+    .collateral-dynamic .menu-sublist{
+      display:none;
+      flex-direction:column;
+      gap:0;
+      margin-top:4px;
+      padding-left:6px;
+    }
+    .collateral-dynamic .menu-sublist.is-open{
+      display:flex;
+    }
+    .collateral-dynamic .menu-item.sub{
+      padding-left:26px;
+      font-size:13px;
+      border-radius:0;
+    }
+    .collateral-dynamic .menu-item.sub + .menu-item.sub{
+      border-top:1px solid #eef1f6;
+    }
+    .collateral-dynamic .menu-divider{
+      height:1px;
+      background:#eef1f6;
+      margin:10px 0;
     }
     .collateral-dynamic .inventory-sublist{
       display:flex;
@@ -532,53 +595,117 @@
       color:#4b5563;
       line-height:1.6;
     }
-    .collateral-dynamic .ar-section .kpis{
+    .collateral-dynamic .borrowing-base-insight{
       display:grid;
-      grid-template-columns:repeat(auto-fit,minmax(240px,1fr));
-      gap:14px;
+      grid-template-columns:repeat(auto-fit,minmax(260px,1fr));
+      gap:16px;
     }
-    .collateral-dynamic .ar-section .kpi{
-      border:1px solid #e2e8f8;
+    .collateral-dynamic .borrowing-base-column{
+      display:flex;
+      flex-direction:column;
+      gap:12px;
+    }
+    .collateral-dynamic .borrowing-base-kpi{
+      border:1px solid #dfe4f2;
       border-radius:14px;
-      background:linear-gradient(180deg,#ffffff,#f7fbff);
-      padding:14px;
+      background:#ffffff;
+      padding:14px 16px;
       position:relative;
+      box-shadow:0 14px 26px rgba(15,23,42,.06);
     }
-    .collateral-dynamic .ar-section .kpi .info{
-      position:absolute;
-      top:12px;
-      right:12px;
-      width:22px;
-      height:22px;
-      border-radius:999px;
-      border:1px solid rgba(43,111,247,.25);
-      display:grid;
-      place-items:center;
-      font-size:11px;
-      color:var(--blue-2);
-      background:#f0f6ff;
-      font-weight:700;
+    .collateral-dynamic .borrowing-base-kpi .kpi-top{
+      display:flex;
+      justify-content:space-between;
+      align-items:flex-start;
+      gap:10px;
     }
-    .collateral-dynamic .ar-section .kpi .label{
-      font-size:11px;
-      color:#6b7280;
+    .collateral-dynamic .borrowing-base-kpi .kpi-label{
+      font-size:12px;
+      color:#667085;
       margin-bottom:6px;
     }
-    .collateral-dynamic .ar-section .kpi .value{
-      font-size:18px;
+    .collateral-dynamic .borrowing-base-kpi .kpi-value{
+      font-size:20px;
       font-weight:800;
-      letter-spacing:.2px;
+      color:#0f172a;
     }
-    .collateral-dynamic .ar-section .kpi .delta{
+    .collateral-dynamic .borrowing-base-kpi .kpi-delta{
       font-size:11px;
       font-weight:700;
-      margin:4px 0 10px;
+      margin-top:6px;
       display:flex;
       align-items:center;
       gap:6px;
     }
-    .collateral-dynamic .ar-section .kpi .delta.up{color:var(--teal);}
-    .collateral-dynamic .ar-section .kpi .delta.down{color:#e05555;}
+    .collateral-dynamic .borrowing-base-kpi .kpi-delta.up{color:var(--teal);}
+    .collateral-dynamic .borrowing-base-kpi .kpi-delta.down{color:#e05555;}
+    .collateral-dynamic .borrowing-base-kpi .kpi-icon{
+      width:36px;
+      height:36px;
+      border-radius:999px;
+      background:#dbeafe;
+      display:grid;
+      place-items:center;
+      flex-shrink:0;
+    }
+    .collateral-dynamic .borrowing-base-kpi .kpi-icon img{
+      width:18px;
+      height:18px;
+    }
+    .collateral-dynamic .borrowing-base-kpi .kpi-tooltip{
+      position:absolute;
+      left:16px;
+      bottom:-8px;
+      transform:translateY(100%);
+      background:#111827;
+      color:#fff;
+      padding:8px 10px;
+      border-radius:8px;
+      font-size:12px;
+      box-shadow:0 12px 24px rgba(15,23,42,.2);
+      opacity:0;
+      pointer-events:none;
+      transition:opacity .15s ease;
+      display:flex;
+      flex-direction:column;
+      gap:2px;
+      z-index:6;
+    }
+    .collateral-dynamic .borrowing-base-kpi:hover .kpi-tooltip{
+      opacity:1;
+    }
+    .collateral-dynamic .borrowing-base-chart{
+      border:1px solid #e2e8f8;
+      border-radius:14px;
+      background:#f8fafc;
+      padding:10px;
+    }
+    .collateral-dynamic .borrowing-base-chart svg{
+      width:100%;
+      height:140px;
+      display:block;
+    }
+    .collateral-dynamic .bb-bg{
+      fill:#f8fafc;
+    }
+    .collateral-dynamic .bb-grid line{
+      stroke:#e6ebf4;
+      stroke-width:1;
+    }
+    .collateral-dynamic .bb-line{
+      fill:none;
+      stroke-width:2.5;
+      stroke-linecap:round;
+      stroke-linejoin:round;
+    }
+    .collateral-dynamic .bb-axis text{
+      font-size:10px;
+      fill:#97a0b5;
+    }
+    .collateral-dynamic .bb-dots circle{
+      stroke-linecap:round;
+      stroke-linejoin:round;
+    }
     .collateral-dynamic .borrowing-base-grid{
       display:grid;
       grid-template-columns:repeat(auto-fit,minmax(240px,1fr));
@@ -816,10 +943,9 @@
                 <!-- Snapshot Summary -->
                 <section class="card">
                   <div class="h2">
-                    <svg class="spark" viewBox="0 0 24 24" fill="none">
-                      <path d="M4 16l6-6 4 4 6-8" stroke="var(--blue-2)" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/>
-                      <path d="M20 8v6h-6" stroke="var(--blue-2)" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/>
-                    </svg>
+                    <img src="{% static 'images/borrowing_icon.svg' %}" 
+          alt="Current Update Icon"
+          class="current-update-icon" />
                     Snapshot Summary
                   </div>
                   <p class="p">
@@ -831,58 +957,92 @@
                 <!-- Borrowing Base Insight -->
                 <section class="card">
                   <div class="h2">
-                    <svg class="spark" viewBox="0 0 24 24" fill="none">
-                      <path d="M4 16l6-6 4 4 6-8" stroke="var(--blue-2)" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/>
-                    </svg>
+                    <img src="{% static 'images/borrowing_icon.svg' %}" 
+          alt="Current Update Icon"
+          class="current-update-icon" />
                     Borrowing Base Insight
                   </div>
 
-                  <div class="kpis">
+                  <div class="borrowing-base-insight">
                     {% for kpi in ar_borrowing_base_kpis %}
-                      <div class="kpi">
-                        <div class="info">ⓘ</div>
-                        <div class="label">{{ kpi.label }}</div>
-                        <div class="value">{{ kpi.value }}</div>
-                        {% if kpi.delta %}
-                          <div class="delta {{ kpi.delta_class }}">
-                            {{ kpi.symbol }} <span>{{ kpi.delta }}</span>
+                      <div class="borrowing-base-column">
+                        <div class="borrowing-base-kpi">
+                          <div class="kpi-top">
+                            <div>
+                              <div class="kpi-label">{{ kpi.label }}</div>
+                              <div class="kpi-value">{{ kpi.value }}</div>
+                              {% if kpi.delta %}
+                                <div class="kpi-delta {{ kpi.delta_class }}">
+                                  {{ kpi.symbol }} <span>{{ kpi.delta }}</span>
+                                </div>
+                              {% endif %}
+                            </div>
+                            <div class="kpi-icon">
+                              <img src="{% static kpi.icon|default:'images/balance.svg' %}" alt="{{ kpi.label }} icon" />
+                            </div>
                           </div>
-                        {% endif %}
-
-                        <div class="mini">
-                          <svg viewBox="0 0 260 64" width="100%" height="64" aria-label="{{ kpi.label }} mini trend">
-                            <g stroke="rgba(15,23,42,.08)" stroke-width="1">
-                              <path d="M0 52H260"/>
-                              <path d="M0 36H260"/>
-                              <path d="M0 20H260"/>
+                          <div class="kpi-tooltip" aria-hidden="true">
+                            <strong>{{ kpi.label }}</strong>
+                            <span>{{ kpi.value }}</span>
+                            {% if kpi.delta %}
+                              <span>{{ kpi.symbol }} {{ kpi.delta }}</span>
+                            {% endif %}
+                          </div>
+                        </div>
+                        <div class="borrowing-base-chart chart-wrap ar-chart">
+                          <div class="chart-tooltip" aria-hidden="true"></div>
+                          <svg viewBox="0 0 260 140" preserveAspectRatio="none" aria-label="{{ kpi.label }} trend">
+                            <rect class="bb-bg" x="0" y="0" width="260" height="140" rx="10"></rect>
+                            <g class="bb-grid">
+                              {% for tick in kpi.chart.y_ticks %}
+                                <line x1="{{ kpi.chart.grid.left }}" y1="{{ tick.y }}" x2="{{ kpi.chart.grid.right }}" y2="{{ tick.y }}"></line>
+                              {% endfor %}
+                              {% for x in kpi.chart.x_grid %}
+                                <line x1="{{ x }}" y1="{{ kpi.chart.grid.top }}" x2="{{ x }}" y2="{{ kpi.chart.grid.bottom }}"></line>
+                              {% endfor %}
                             </g>
-                            <polyline fill="none"
-                              stroke="{{ kpi.color|default:'var(--blue-3)' }}"
-                              stroke-width="2.5"
-                              points="{{ kpi.spark_points|default:'0,52 260,52' }}"/>
-                            <g fill="#fff"
-                              stroke="{{ kpi.color|default:'var(--blue-3)' }}"
-                              stroke-width="2">
-                              {% for dot in kpi.spark_dots %}
-                                <circle cx="{{ dot.cx }}" cy="{{ dot.cy }}" r="3.2"/>
+                            <polyline class="bb-line" stroke="{{ kpi.color|default:'var(--blue-3)' }}" points="{{ kpi.chart.points }}"></polyline>
+                            <g class="bb-dots" stroke="{{ kpi.color|default:'var(--blue-3)' }}" fill="#fff">
+                              {% for dot in kpi.chart.dots %}
+                                <circle cx="{{ dot.cx }}" cy="{{ dot.cy }}" r="3.5" stroke-width="2"></circle>
+                                <circle class="ar-tip"
+                                  cx="{{ dot.cx }}"
+                                  cy="{{ dot.cy }}"
+                                  r="9"
+                                  fill="transparent"
+                                  data-label="{{ dot.label }}"
+                                  data-series="{{ kpi.label }}"
+                                  data-value="{{ dot.value }}"></circle>
+                              {% endfor %}
+                            </g>
+                            <g class="bb-axis">
+                              {% for tick in kpi.chart.y_ticks %}
+                                <text x="{{ kpi.chart.label_x }}" y="{{ tick.y|add:3 }}" text-anchor="end">{{ tick.label }}</text>
+                              {% endfor %}
+                              {% for label in kpi.chart.x_labels %}
+                                <text x="{{ label.x }}" y="{{ kpi.chart.label_y }}" text-anchor="middle">{{ label.text }}</text>
                               {% endfor %}
                             </g>
                           </svg>
                         </div>
                       </div>
                     {% empty %}
-                      <div class="kpi">
-                        <div class="info">ⓘ</div>
-                        <div class="label">Balance</div>
-                        <div class="value">—</div>
-                        <div class="delta down">▼ <span>0.0%</span></div>
-                        <div class="mini">
-                          <svg viewBox="0 0 260 64" width="100%" height="64">
-                            <g stroke="rgba(15,23,42,.08)" stroke-width="1">
-                              <path d="M0 52H260"/>
-                              <path d="M0 36H260"/>
-                              <path d="M0 20H260"/>
-                            </g>
+                      <div class="borrowing-base-column">
+                        <div class="borrowing-base-kpi">
+                          <div class="kpi-top">
+                            <div>
+                              <div class="kpi-label">Balance</div>
+                              <div class="kpi-value">—</div>
+                              <div class="kpi-delta down">▼ <span>0.0%</span></div>
+                            </div>
+                            <div class="kpi-icon">
+                              <img src="{% static 'images/balance.svg' %}" alt="Balance icon" />
+                            </div>
+                          </div>
+                        </div>
+                        <div class="borrowing-base-chart chart-wrap">
+                          <svg viewBox="0 0 260 140" preserveAspectRatio="none" aria-label="Balance trend">
+                            <rect class="bb-bg" x="0" y="0" width="260" height="140" rx="10"></rect>
                           </svg>
                         </div>
                       </div>
@@ -893,9 +1053,9 @@
                 <!-- Aging Analysis -->
                 <section class="card">
                   <div class="h2">
-                    <svg class="spark" viewBox="0 0 24 24" fill="none">
-                      <path d="M4 16l6-6 4 4 6-8" stroke="var(--blue-2)" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/>
-                    </svg>
+                    <img src="{% static 'images/borrowing_icon.svg' %}" 
+          alt="Current Update Icon"
+          class="current-update-icon" />
                     Aging Analysis
                   </div>
 
@@ -904,9 +1064,9 @@
                     <div class="subcard">
                       <div class="subhead">
                         <div class="h3">
-                          <svg class="spark" viewBox="0 0 24 24" fill="none" style="width:12px;height:12px">
-                            <path d="M4 16l6-6 4 4 6-8" stroke="var(--blue-2)" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/>
-                          </svg>
+                          <img src="{% static 'images/borrowing_icon.svg' %}" 
+          alt="Current Update Icon"
+          class="current-update-icon" />
                           Aging Composition
                         </div>
                         <div style="font-size:10px;color:rgba(15,23,42,.45)">%</div>
@@ -947,9 +1107,9 @@
                     <div class="subcard">
                       <div class="subhead">
                         <div class="h3">
-                          <svg class="spark" viewBox="0 0 24 24" fill="none" style="width:12px;height:12px">
-                            <path d="M4 16l6-6 4 4 6-8" stroke="var(--blue-2)" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/>
-                          </svg>
+                          <img src="{% static 'images/borrowing_icon.svg' %}" 
+          alt="Current Update Icon"
+          class="current-update-icon" />
                           Current vs Past Due Trend
                         </div>
                         <div class="legend">
@@ -1067,18 +1227,18 @@
                 <!-- Ineligible Detail -->
                 <section class="card">
                   <div class="h2">
-                    <svg class="spark" viewBox="0 0 24 24" fill="none">
-                      <path d="M4 16l6-6 4 4 6-8" stroke="var(--blue-2)" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/>
-                    </svg>
+                    <img src="{% static 'images/borrowing_icon.svg' %}" 
+          alt="Current Update Icon"
+          class="current-update-icon" />
                     Ineligible Detail
                   </div>
 
                   <div class="two-col">
                     <div class="subcard">
                       <div class="h3" style="margin-bottom:8px">
-                        <svg class="spark" viewBox="0 0 24 24" fill="none" style="width:12px;height:12px">
-                          <path d="M4 16l6-6 4 4 6-8" stroke="var(--blue-2)" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/>
-                        </svg>
+                        <img src="{% static 'images/borrowing_icon.svg' %}" 
+          alt="Current Update Icon"
+          class="current-update-icon" />
                         Ineligible Overview
                       </div>
 
@@ -1116,9 +1276,9 @@
                     <div class="subcard">
                       <div class="subhead">
                         <div class="h3">
-                          <svg class="spark" viewBox="0 0 24 24" fill="none" style="width:12px;height:12px">
-                            <path d="M4 16l6-6 4 4 6-8" stroke="var(--blue-2)" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/>
-                          </svg>
+                          <img src="{% static 'images/borrowing_icon.svg' %}" 
+          alt="Current Update Icon"
+          class="current-update-icon" />
                           Ineligible Accounts Receivable Trend
                         </div>
                       </div>
@@ -1171,9 +1331,9 @@
                 <!-- Customer Exposure & Collection Trend -->
                 <section class="card">
                   <div class="h2">
-                    <svg class="spark" viewBox="0 0 24 24" fill="none">
-                      <path d="M4 16l6-6 4 4 6-8" stroke="var(--blue-2)" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/>
-                    </svg>
+                    <img src="{% static 'images/borrowing_icon.svg' %}" 
+          alt="Current Update Icon"
+          class="current-update-icon" />
                     Customer Exposure &amp; Collection Trend
                   </div>
 
@@ -1318,10 +1478,23 @@
           });
         });
       }
+      function attachMenuToggle(){
+        const toggle = document.querySelector(".menu-toggle");
+        const sublist = document.getElementById("inventory-sublist");
+        if(!toggle || !sublist) return;
+        toggle.addEventListener("click", ()=>{
+          const isOpen = sublist.classList.toggle("is-open");
+          toggle.setAttribute("aria-expanded", isOpen ? "true" : "false");
+        });
+      }
       if(document.readyState === "loading"){
-        document.addEventListener("DOMContentLoaded", attachArTooltips);
+        document.addEventListener("DOMContentLoaded", ()=>{
+          attachArTooltips();
+          attachMenuToggle();
+        });
       } else {
         attachArTooltips();
+        attachMenuToggle();
       }
     })();
   </script>

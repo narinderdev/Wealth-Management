@@ -1,42 +1,73 @@
+{% load static %}
 {% with inventory_tab|default:"summary" as active_tab %}
 {% with active_section|default:"inventory" as section %}
 <div class="menu-card">
 
-  <a class="menu-item {% if section == 'overview' %}active{% endif %}">
-    <span class="menu-icon">⌂</span>
+  <a class="menu-item {% if section == 'overview' %}active{% endif %}" href="?section=overview">
+    <img src="{% static '/images/overview_icon.svg' %}" 
+          alt="Icon"
+          class="overview-icon" />
     Overview
   </a>
   <a class="menu-item {% if section == 'accounts_receivable' %}active{% endif %}" href="?section=accounts_receivable">
-    <span class="menu-icon">Ⓜ</span>
+     <img src="{% if section == 'accounts_receivable' %}{% static '/images/account_receivable_icon.svg' %}{% else %}{% static '/images/blck_accounts_receivable.svg' %}{% endif %}"
+          alt="Accounts Receivable Icon"
+          class="accounts-receivable-icon" />
     Accounts Receivable
   </a>
 
-  <div class="menu-group-label">
-    <span class="menu-icon">▥</span>
+  <button class="menu-item menu-toggle {% if section == 'inventory' %}active{% endif %}" type="button" aria-expanded="{% if section == 'inventory' %}true{% else %}false{% endif %}" aria-controls="inventory-sublist">
+    <img src="{% static '/images/inventory_icon.svg' %}" 
+          alt="Icon"
+          class="inventory-icon" />
     Inventory
+    <span class="menu-caret" aria-hidden="true"></span>
+  </button>
+
+  <div class="menu-sublist {% if section == 'inventory' %}is-open{% endif %}" id="inventory-sublist">
+    <a class="menu-item sub {% if section == 'inventory' and active_tab == 'summary' %}active{% endif %}"
+       href="?section=inventory&inventory_tab=summary">
+        <img src="{% static '/images/summary_icon.svg' %}" 
+            alt="Icon"
+            class="summary-icon" />
+      Summary
+    </a>
+    <a class="menu-item sub {% if section == 'inventory' and active_tab == 'finished_goods' %}active{% endif %}"
+       href="?section=inventory&inventory_tab=finished_goods">
+        <img src="{% static '/images/finished_goods_icon.svg' %}" 
+            alt="Icon"
+            class="finished-goods-icon" />
+      Finished Goods
+    </a>
+    <a class="menu-item sub {% if section == 'inventory' and active_tab == 'raw_materials' %}active{% endif %}"
+       href="?section=inventory&inventory_tab=raw_materials">
+        <img src="{% static '/images/raw_materials.svg' %}" 
+            alt="Icon"
+            class="raw-materials-icon" />
+      Raw Materials
+    </a>
+    <a class="menu-item sub {% if section == 'inventory' and active_tab == 'work_in_progress' %}active{% endif %}"
+       href="?section=inventory&inventory_tab=work_in_progress">
+        <img src="{% static '/images/work_in_process.svg' %}" 
+            alt="Icon"
+            class="work-in-progress-icon" />
+      Work In Progress
+    </a>
+    <a class="menu-item sub {% if section == 'inventory' and active_tab == 'liquidation_model' %}active{% endif %}"
+       href="?section=inventory&inventory_tab=liquidation_model">
+        <img src="{% static '/images/liquid_model.svg' %}" 
+            alt="Icon"
+            class="liquidation-model-icon" />
+      Liquidation Model
+    </a>
   </div>
-  <a class="menu-item sub {% if section == 'inventory' and active_tab == 'summary' %}active{% endif %}"
-     href="?section=inventory&inventory_tab=summary">
-    Summary
-  </a>
-  <a class="menu-item sub {% if section == 'inventory' and active_tab == 'finished_goods' %}active{% endif %}"
-     href="?section=inventory&inventory_tab=finished_goods">
-    Finished Goods
-  </a>
-  <a class="menu-item sub {% if section == 'inventory' and active_tab == 'raw_materials' %}active{% endif %}"
-     href="?section=inventory&inventory_tab=raw_materials">
-    Raw Materials
-  </a>
-  <a class="menu-item sub {% if section == 'inventory' and active_tab == 'work_in_progress' %}active{% endif %}"
-     href="?section=inventory&inventory_tab=work_in_progress">
-    Work In Progress
-  </a>
-  <a class="menu-item sub {% if section == 'inventory' and active_tab == 'liquidation_model' %}active{% endif %}"
-     href="?section=inventory&inventory_tab=liquidation_model">
-    Liquidation Model
-  </a>
-  <a class="menu-item sub {% if section == 'inventory' and active_tab == 'other_collateral' %}active{% endif %}"
+
+  <div class="menu-divider" role="presentation"></div>
+  <a class="menu-item {% if section == 'inventory' and active_tab == 'other_collateral' %}active{% endif %}"
      href="?section=inventory&inventory_tab=other_collateral">
+     <img src="{% static '/images/other_collateral_icon.svg' %}" 
+          alt="Icon"
+          class="other-collateral-icon" />
     Other Collateral
   </a>
 </div>
