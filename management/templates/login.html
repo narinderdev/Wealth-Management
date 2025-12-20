@@ -328,7 +328,7 @@ body {
                         </button>
                     </div>
                     <label class="remember">
-                        <input type="checkbox" id="remember-me" name="remember">
+                        <input type="checkbox" id="remember-me" name="remember"{% if remember_me %} checked{% endif %}>
                         <span>Remember Me</span>
                     </label>
                     <button type="submit" class="login-btn">Login</button>

@@ -1,3 +1,4 @@
+from django.conf import settings
 from django.contrib import messages
 from django.contrib.auth import get_user_model, login, logout
 from django.shortcuts import redirect, render
@@ -81,13 +82,19 @@ def login_view(request):
         return redirect("dashboard")
 
     error_message = None
+    remember_me = False
     if request.method == "POST":
         identifier = request.POST.get("email", "").strip()
         password = request.POST.get("password", "")
+        remember_me = request.POST.get("remember") == "on"
         company = _authenticate_by_company(identifier, password)
         if company:
             user = _ensure_user_for_company(company)
             login(request, user)
+            if remember_me:
+                request.session.set_expiry(settings.SESSION_COOKIE_AGE)
+            else:
+                request.session.set_expiry(0)
             request.session["company_id"] = company.id
             request.session.pop("selected_borrower_id", None)
             request.session.modified = True
@@ -95,7 +102,7 @@ def login_view(request):
 
         error_message = "Invalid email or password."
 
-    context = {"error_message": error_message}
+    context = {"error_message": error_message, "remember_me": remember_me}
     return render(request, "login.html", context)
 
 

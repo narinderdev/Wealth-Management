@@ -14,7 +14,7 @@
 
   .portfolio-card {
     width: 100%;
-    max-width: 1200px;
+    max-width: 1308px;
     background: #fff;
     border-radius: 18px;
     border: 1px solid rgba(112, 125, 176, 0.18);
@@ -172,11 +172,11 @@
             <tr>
               <th>Borrower</th>
               <th>Last Updated</th>
-              <th>Updated At</th>
+              <!-- <th>Updated At</th>
               <th>Contact</th>
               <th>Phone</th>
               <th>Email</th>
-              <th>Update Interval</th>
+              <th>Update Interval</th> -->
               <th>Net Collateral</th>
               <th>Outstanding Balance</th>
               <th>Availability</th>
@@ -186,7 +186,8 @@
           <tbody>
             {% if borrowers %}
               {% for borrower in borrowers %}
-                <tr class="borrower-row {% if borrower.id|stringformat:"s" == selected_borrower_id %}selected{% endif %}">
+                <tr class="borrower-row {% if borrower.id|stringformat:"s" == selected_borrower_id %}selected{% endif %}"
+                    data-borrower-name="{{ borrower.contact_name|default:'' }} {{ borrower.company_name|default:'' }}">
                   <td>
                     <a href="{% url 'dashboard' %}?select={{ borrower.id }}" class="borrower-link">
                       <span class="status-dot"></span>
@@ -194,7 +195,7 @@
                     </a>
                   </td>
                   <td>{{ borrower.last_updated }}</td>
-                  <td>{{ borrower.updated_at }}</td>
+                  <!-- <td>{{ borrower.updated_at }}</td>
                   <td>{{ borrower.contact_name }}</td>
                   <td>{{ borrower.contact_phone|default:"—" }}</td>
                   <td>
@@ -204,13 +205,16 @@
                       —
                     {% endif %}
                   </td>
-                  <td>{{ borrower.update_interval }}</td>
+                  <td>{{ borrower.update_interval }}</td> -->
                   <td>{{ borrower.net_collateral }}</td>
                   <td>{{ borrower.outstanding_balance }}</td>
                   <td>{{ borrower.availability }}</td>
                   <td>{{ borrower.availability_pct }}</td>
                 </tr>
               {% endfor %}
+              <tr class="portfolio-empty-row" style="display:none;">
+                <td colspan="11" class="portfolio-empty">No borrowers match that search.</td>
+              </tr>
             {% else %}
               <tr>
                 <td colspan="11" class="portfolio-empty">No borrowers yet. Add data or check back later.</td>
@@ -221,4 +225,40 @@
       </div>
     </div>
   </div>
+{% endblock %}
+
+{% block extra_scripts %}
+  {{ block.super }}
+  <script>
+    (function(){
+      const form = document.querySelector(".portfolio-search");
+      if(!form) return;
+      const input = form.querySelector("input[name='q']");
+      const rows = Array.from(document.querySelectorAll(".borrower-row"));
+      const emptyRow = document.querySelector(".portfolio-empty-row");
+      if(!input || !rows.length) return;
+      const normalize = (value)=> (value || "").toLowerCase().trim();
+      const filterRows = ()=>{
+        const term = normalize(input.value);
+        let visible = 0;
+        rows.forEach((row)=>{
+          const text = normalize(row.dataset.borrowerName || row.textContent);
+          const show = !term || text.includes(term);
+          row.style.display = show ? "" : "none";
+          if(show) visible += 1;
+        });
+        if(emptyRow){
+          emptyRow.style.display = visible === 0 ? "" : "none";
+        }
+      };
+      input.addEventListener("input", filterRows);
+      form.addEventListener("submit", (event)=>{
+        event.preventDefault();
+        filterRows();
+      });
+      if(input.value){
+        filterRows();
+      }
+    })();
+  </script>
 {% endblock %}
