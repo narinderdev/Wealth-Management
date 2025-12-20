@@ -76,27 +76,15 @@ WSGI_APPLICATION = 'config.wsgi.application'
 # Database
 # https://docs.djangoproject.com/en/3.2/ref/settings/#databases
 
-##### POSTGRESQL DATABASE CONFIGURATION
-# DATABASES = {
-#   "default": {
-#     "ENGINE": "django.db.backends.postgresql",
-#     "NAME": "coradb",
-#     "USER": "postgres",
-#     "PASSWORD": "DevApnitor23",
-#     'HOST': 'coradb.c1osuwkqcrl0.us-east-2.rds.amazonaws.com',  # your RDS endpoint
-#     'PORT': '5432',  # default PostgreSQL port
-#   }
-# }
-##### LOCAL POSTGRESQL DATABASE CONFIGURATION
-
+#### POSTGRESQL DATABASE CONFIGURATION
 DATABASES = {
   "default": {
     "ENGINE": "django.db.backends.postgresql",
-    "NAME": "wealth_managment",
-    "USER": "wealth_user",
-    "PASSWORD": "Dev@Apnitor!23",
-    "HOST": "localhost",
-    "PORT": "5432",
+    "NAME": "coradb",
+    "USER": "postgres",
+    "PASSWORD": "DevApnitor23",
+    'HOST': 'coradb.c1osuwkqcrl0.us-east-2.rds.amazonaws.com',  # your RDS endpoint
+    'PORT': '5432',  # default PostgreSQL port
   }
 }
 
@@ -144,8 +132,8 @@ TEMPLATES[0]["DIRS"] = [BASE_DIR / "templates"]
 # Static files
 STATIC_URL = '/static/'  # URL to access static files
 
-# Directory where collected static files will be stored (should not be inside static folder)
-STATIC_ROOT = os.path.join(BASE_DIR, 'staticfiles')   # This should be the directory where collectstatic places files
+# Single static output directory for production/static serving.
+STATIC_ROOT = os.path.join(BASE_DIR, 'static')
 
 # Directory for additional static files (this is your management/static folder)
 STATICFILES_DIRS = [
