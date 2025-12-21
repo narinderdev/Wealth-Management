@@ -28,47 +28,66 @@
       color:#1f2937;
       padding:10px 12px 6px;
     }
+    .risk-page .panel:first-of-type .section-h{
+      font-size:15px;
+    }
     .risk-page .dot{
       width:8px;height:8px;border-radius:2px;
       background:#1d4ed8;
       box-shadow:0 0 0 2px #e7f0ff inset;
     }
-    .risk-page .rating{padding:4px 12px 12px;}
+    .risk-page .rating{
+      padding:18px 16px 40px;
+      position:relative;
+    }
     .risk-page .rating-scale{
       display:flex;
       justify-content:space-between;
-      font-size:10px;
-      color:#4b5563;
-      margin:2px 2px 6px;
+      font-size:14px;
+      color:#1f2937;
       font-weight:600;
+      letter-spacing:.01em;
+      margin-bottom:8px;
+      padding:0 12px;
     }
     .risk-page .rating-bar{
-      height:8px;
+      position:relative;
+      margin-top:0;
+      height:14px;
       border-radius:999px;
       background:#e6eef6;
-      position:relative;
-      overflow:hidden;
+      overflow:visible;
+      box-shadow:inset 0 1px 2px rgba(15,23,42,.1);
     }
-    .risk-page .rating-bar::after{
-      content:'';
+    .risk-page .rating-fill{
       position:absolute;
       inset:0;
-      background:linear-gradient(90deg,#4caf50 0%,#8bc34a 20%,#ffc107 45%,#ff9800 70%,#f44336 100%);
-      width:var(--risk-fill,0%);
-      transition:width .3s ease;
+      border-radius:999px;
+      background:linear-gradient(90deg,#7ec459 0%,#d7c63c 25%,#fbb82e 50%,#fc8f2e 75%,#f74c34 100%);
     }
     .risk-page .rating-pin{
       position:absolute;
       top:50%;
-      width:10px;
-      height:10px;
+      transform:translate(-50%,-50%);
+      width:14px;
+      height:14px;
       border-radius:50%;
       background:#fff;
-      border:2px solid #0b57d0;
-      transform:translate(-50%,-50%);
-      box-shadow:0 0 0 3px rgba(11,87,208,.15);
+      border:2px solid #1366d6;
+      box-shadow:0 4px 8px rgba(15,23,42,.2);
+      left:var(--risk-pos,50%);
     }
-    .risk-page .rating-score{text-align:center;margin-top:8px;font-size:10px;font-weight:600;color:#374151;}
+    .risk-page .rating-value{
+      position:absolute;
+      top:calc(100% + 6px);
+      left:var(--risk-pos,50%);
+      transform:translate(-50%,0);
+      font-size:15px;
+      color:#111827;
+      font-weight:700;
+      z-index:1;
+      white-space:nowrap;
+    }
     .risk-page .snapshot{
       padding:0 12px 12px;
       font-size:10px;
@@ -166,55 +185,72 @@
     .risk-page .grid2{
       display:grid;
       grid-template-columns:1fr 1fr;
-      gap:12px;
-      margin-top:10px;
+      gap:16px;
+      margin-top:12px;
     }
     .risk-page .metric{
-      padding:10px;
-      border-radius:10px;
+      --metric-donut:82px;
+      --metric-gap:14px;
+      --metric-label:156px;
+      --metric-label-gap:14px;
+      padding:18px 20px;
+      border-radius:14px;
       background:#fff;
-      border:1px solid var(--rk-line);
-      box-shadow:0 1px 0 rgba(17,24,39,.02);
+      border:1px solid #e4ecf7;
+      box-shadow:0 12px 24px rgba(15, 23, 42, .08);
     }
     .risk-page .metric .top{
-      display:flex;
-      align-items:flex-start;
-      justify-content:space-between;
-      margin-bottom:4px;
+      padding-bottom:6px;
     }
     .risk-page .metric-title{
-      font-size:11px;
+      font-size:13px;
       font-weight:600;
-      color:#1f2937;
-    }
-    .risk-page .scale{
-      display:flex;
-      gap:22px;
-      font-size:9px;
-      color:#64748b;
-      font-weight:600;
+      color:#111827;
     }
     .risk-page .metric-body{
       display:grid;
-      grid-template-columns:78px 1fr;
-      gap:10px;
-      margin-top:8px;
+      grid-template-columns:var(--metric-donut) 1fr;
+      gap:var(--metric-gap);
+      margin-top:6px;
       align-items:start;
     }
-    .risk-page .bars{display:flex;flex-direction:column;gap:9px;padding-right:6px;}
+    .risk-page .metric-body .donut{
+      display:block;
+      margin-top:4px;
+    }
+    .risk-page .bars{
+      position:relative;
+      display:flex;
+      flex-direction:column;
+      gap:14px;
+      padding:26px 6px 4px 0;
+    }
+    .risk-page .bars > .scale{
+      position:absolute;
+      top:0;
+      left:calc(var(--metric-label) + var(--metric-label-gap));
+      right:0;
+      display:flex;
+      justify-content:space-between;
+      gap:18px;
+      font-size:10px;
+      font-weight:600;
+      color:#6b7280;
+      letter-spacing:.02em;
+    }
     .risk-page .barrow{
       display:grid;
-      grid-template-columns:138px 1fr;
-      gap:12px;
+      grid-template-columns:var(--metric-label) 1fr;
+      gap:var(--metric-label-gap);
       align-items:center;
       position:relative;
     }
     .risk-page .bar-tooltip{
       position:absolute;
-      top:-22px;
+      top:-26px;
       left:var(--bar-left,50%);
       transform:translateX(-50%);
-      background:rgba(15,23,39,.9);
+      background:rgba(17,24,39,.92);
       color:#fff;
       padding:4px 8px;
       border-radius:4px;
@@ -224,9 +260,7 @@
       transition:opacity .2s ease;
       pointer-events:none;
     }
-    .risk-page .barrow:hover .bar-tooltip{
-      opacity:1;
-    }
+    .risk-page .barrow:hover .bar-tooltip{opacity:1;}
     .risk-page .risk-tooltip{
       position:absolute;
       background:rgba(15,23,39,.95);
@@ -241,30 +275,31 @@
       white-space:nowrap;
     }
     .risk-page .barrow .lbl{
-      font-size:9px;
-      color:#6b7280;
+      font-size:10px;
+      color:#475467;
       overflow:hidden;
       text-overflow:ellipsis;
       white-space:nowrap;
     }
     .risk-page .track{
-      height:6px;
-      background:#e9f0fb;
+      height:7px;
+      background:#eaf0fb;
       border-radius:999px;
       overflow:hidden;
-      border:1px solid #dde8f7;
+      border:1px solid #dbe4f4;
     }
     .risk-page .fill{
       height:100%;
-      background:linear-gradient(180deg,#0b57d0,#0a4bb3);
+      background:linear-gradient(90deg,#1d4ed8,#1e40af);
       border-radius:999px;
-      box-shadow:inset 0 1px 0 rgba(255,255,255,.25);
+      box-shadow:inset 0 1px 0 rgba(255,255,255,.3);
     }
     .risk-page .muted{color:var(--rk-muted);}
     @media (max-width:980px){
       .risk-page .grid3{grid-template-columns:1fr;}
       .risk-page .grid2{grid-template-columns:1fr;}
       .risk-page .barrow{grid-template-columns:150px 1fr;}
+      .risk-page .metric{--metric-label:150px;}
     }
   </style>
 {% endblock %}
@@ -277,10 +312,11 @@
         <div class="rating-scale">
           <span>Low</span><span>Mild</span><span>Average</span><span>Elevated</span><span>High</span>
         </div>
-        <div class="rating-bar" aria-hidden="true" style="--risk-fill: {{ risk.rating_position }}%;">
-          <span class="rating-pin" style="left:var(--risk-fill,0%);"></span>
+        <div class="rating-bar" aria-hidden="true" style="--risk-pos: {{ risk.rating_position }}%;">
+          <div class="rating-fill"></div>
+          <span class="rating-pin"></span>
+          <span class="rating-value">{{ risk.rating_score }}</span>
         </div>
-        <div class="rating-score">{{ risk.rating_score }}</div>
       </div>
     </section>
 
@@ -381,7 +417,6 @@
           <div class="metric">
             <div class="top">
               <div class="metric-title">{{ metric.label }}</div>
-              <div class="scale"><span>Low</span><span>Mild</span><span>Moderate</span><span>Elevated</span><span>High</span></div>
             </div>
             <div class="metric-body">
               <svg class="donut" viewBox="0 0 42 42" aria-label="{{ metric.label }} score donut">
@@ -391,6 +426,7 @@
               <text x="21" y="22" text-anchor="middle">{{ metric.score_display }}</text>
             </svg>
             <div class="bars">
+              <div class="scale"><span>Low</span><span>Mild</span><span>Moderate</span><span>Elevated</span><span>High</span></div>
               {% for bar in metric.bars %}
                 <div class="barrow" style="--bar-left: {{ bar.width }};">
                   <div class="lbl">{{ bar.label }}</div>

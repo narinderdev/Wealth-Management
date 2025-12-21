@@ -115,26 +115,47 @@
       </div>
     </div>
     <div class="tableWrap">
-      <table>
+      <table class="recovery-table">
+        <colgroup>
+          <col class="col-label" />
+          <col class="col-num" />
+          <col class="col-num" />
+          <col class="col-num" />
+          <col class="col-num" />
+          <col class="col-num" />
+          <col class="col-num" />
+          <col class="col-num" />
+        </colgroup>
         <thead>
           <tr class="tblGroup">
             <th></th>
             <th>Available Inventory</th>
-            <th>Gross Recovery</th>
-            <th>@ COGS</th>
-            <th>Liquidation Cost</th>
-            <th>Net Recovery Trend</th>
+            <th colspan="2">Gross Recovery</th>
+            <th colspan="2">Liquidation Cost</th>
+            <th colspan="2">Net Recovery Trend</th>
+          </tr>
+          <tr class="tblSub">
+            <th></th>
+            <th>$</th>
+            <th>$</th>
+            <th>% Of Cost</th>
+            <th>$</th>
+            <th>% Of Cost</th>
+            <th>$</th>
+            <th>% Of Cost</th>
           </tr>
         </thead>
         <tbody>
           {% for row in inventory_breakdown %}
           <tr>
             <td>{{ row.label }}</td>
-            <td>{{ row.available_inventory }}</td>
-            <td>{{ row.gross_recovery }}</td>
-            <td>{{ row.cogs }}</td>
-            <td>{{ row.liquidation_cost }}</td>
-            <td>{{ row.net_recovery_trend }}</td>
+            <td>{{ row.available_value }}</td>
+            <td>{{ row.gross_value }}</td>
+            <td>{{ row.gross_pct }}</td>
+            <td>{{ row.liquidation_value }}</td>
+            <td>{{ row.liquidation_pct }}</td>
+            <td>{{ row.net_value }}</td>
+            <td>{{ row.net_pct }}</td>
           </tr>
           {% endfor %}
         </tbody>

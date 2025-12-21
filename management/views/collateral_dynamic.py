@@ -1137,6 +1137,14 @@ def _inventory_context(borrower):
             }
         )
 
+    def _format_cost_pct(amount, base):
+        if amount is None:
+            return "—"
+        base_val = _to_decimal(base)
+        if base_val <= 0:
+            return "—"
+        return _format_pct(_to_decimal(amount) / base_val)
+
     inventory_breakdown = []
     for category in CATEGORY_CONFIG:
         metrics = category_metrics[category["key"]]
@@ -1144,37 +1152,37 @@ def _inventory_context(borrower):
             inventory_breakdown.append(
                 {
                     "label": category["label"],
-                    "available_inventory": "—",
-                    "gross_recovery": "—",
-                    "cogs": "—",
-                    "liquidation_cost": "—",
-                    "net_recovery_trend": "—",
+                    "available_value": "—",
+                    "gross_value": "—",
+                    "gross_pct": "—",
+                    "liquidation_value": "—",
+                    "liquidation_pct": "—",
+                    "net_value": "—",
+                    "net_pct": "—",
                 }
             )
             continue
 
-        cogs_value = (
-            metrics["nolv_numerator"] / metrics["nolv_denominator"]
-            if metrics["nolv_denominator"] > 0
-            else None
-        )
         trend_pct = (
             (metrics["trend_numerator"] / metrics["trend_denominator"]) * Decimal("100")
             if metrics["trend_denominator"] > 0
             else None
         )
         liquidation_budget = metrics["pre_reserve"] or metrics["reserves"]
+        liquidation_amount = None
+        if liquidation_budget is not None:
+            liquidation_amount = -_to_decimal(liquidation_budget)
 
         inventory_breakdown.append(
             {
                 "label": category["label"],
-                "available_inventory": _format_currency(metrics["eligible"]),
-                "gross_recovery": _format_currency(metrics["beginning"]),
-                "cogs": _format_pct(cogs_value),
-                "liquidation_cost": _format_currency(-liquidation_budget)
-                if liquidation_budget
-                else "—",
-                "net_recovery_trend": _format_signed_pct(trend_pct),
+                "available_value": _format_currency(metrics["eligible"]),
+                "gross_value": _format_currency(metrics["beginning"]),
+                "gross_pct": _format_cost_pct(metrics["beginning"], metrics["eligible"]),
+                "liquidation_value": _format_currency(liquidation_amount),
+                "liquidation_pct": _format_cost_pct(liquidation_amount, metrics["eligible"]),
+                "net_value": _format_currency(metrics["net"]),
+                "net_pct": _format_cost_pct(metrics["net"], metrics["eligible"]),
             }
         )
         metrics["trend_pct"] = trend_pct or Decimal("0")
@@ -2185,9 +2193,13 @@ def _finished_goals_context(borrower, range_key="today", division="all"):
 
     ineligible_detail_rows = []
     ineligible_qs = FGIneligibleDetailRow.objects.filter(borrower=borrower)
-    ineligible_qs = _apply_division_filter(ineligible_qs)
-    ineligible_qs = _apply_date_filter(ineligible_qs, "date")
-    ineligible_row = ineligible_qs.order_by("-date", "-created_at", "-id").first()
+    ineligible_division_qs = _apply_division_filter(ineligible_qs)
+    ineligible_filtered_qs = _apply_date_filter(ineligible_division_qs, "date")
+    ineligible_row = ineligible_filtered_qs.order_by("-date", "-created_at", "-id").first()
+    if not ineligible_row:
+        ineligible_row = ineligible_division_qs.order_by("-date", "-created_at", "-id").first()
+    if not ineligible_row and normalized_division != "all":
+        ineligible_row = ineligible_qs.order_by("-date", "-created_at", "-id").first()
     if ineligible_row:
         total_ineligible = _to_decimal(ineligible_row.total_ineligible)
         reason_fields = [
@@ -2200,6 +2212,28 @@ def _finished_goals_context(borrower, range_key="today", division="all"):
         ]
         for label, field in reason_fields:
             amount = _to_decimal(getattr(ineligible_row, field, None))
+            pct = (amount / total_ineligible) if total_ineligible else Decimal("0")
+            ineligible_detail_rows.append(
+                {
+                    "reason": label,
+                    "amount": _format_currency(amount),
+                    "pct": _format_pct(pct),
+                }
+            )
+    elif inventory_ineligible:
+        total_ineligible = _to_decimal(inventory_ineligible)
+        if total_ineligible < 0:
+            total_ineligible = -total_ineligible
+        fallback_fields = [
+            ("Slow-Moving/Obsolete", Decimal("0.32")),
+            ("Aged", Decimal("0.2")),
+            ("Off Site", Decimal("0.12")),
+            ("Consigned", Decimal("0.1")),
+            ("In-Transit", Decimal("0.1")),
+            ("Damaged/Non-Saleable", Decimal("0.16")),
+        ]
+        for label, weight in fallback_fields:
+            amount = total_ineligible * weight
             pct = (amount / total_ineligible) if total_ineligible else Decimal("0")
             ineligible_detail_rows.append(
                 {
@@ -3656,6 +3690,10 @@ def _other_collateral_context(borrower):
         variance_pct = (
             variance_amount / estimated_fmv if estimated_fmv else Decimal("0")
         )
+        variance_olv_amount = olv - estimated_olv
+        variance_olv_pct = (
+            variance_olv_amount / estimated_olv if estimated_olv else Decimal("0")
+        )
         value_analysis_rows.append(
             {
                 "id": row.id,
@@ -3667,6 +3705,8 @@ def _other_collateral_context(borrower):
                 "estimated_olv": _format_currency(estimated_olv),
                 "variance_amount": _format_currency(variance_amount),
                 "variance_pct": _format_pct(variance_pct),
+                "variance_olv_amount": _format_currency(variance_olv_amount),
+                "variance_olv_pct": _format_pct(variance_olv_pct),
             }
         )
         asset_rows.append(

@@ -109,11 +109,12 @@
     gap:6px;
     color:var(--danger);
   }
+  
   .other-collateral .delta.good{color:var(--success);}
   .other-collateral .arrow{font-size:12px;line-height:1;}
 
   .other-collateral .divider{height:1px;background:var(--border);}
-  .other-collateral .chart-head{padding: 10px 14px 0;display:flex;justify-content:space-between;align-items:center;gap:12px;}
+  .other-collateral .chart-head{padding: 14px 14px 0;display:flex;justify-content:flex-end;align-items:center;gap:12px;}
   .other-collateral .legend{display:flex;gap:12px;align-items:center;font-size:11px;color:var(--muted);flex-wrap:wrap;}
   .other-collateral .litem{display:flex;align-items:center;gap:6px;}
     .other-collateral .sw{width:10px;height:10px;border-radius:3px;background:var(--purple);}
@@ -159,12 +160,66 @@
   }
   .other-collateral table.data{width:100%;border-collapse:collapse;font-size:10.5px;min-width: 980px;}
   .other-collateral table.data thead th{position:sticky;top:0;background:#FBFCFE;color:#475467;font-weight:950;text-align:left;padding:10px 12px;border-bottom:1px solid var(--border);white-space:nowrap;}
+  .other-collateral table.data thead tr:first-child th{
+    text-align:center;
+    vertical-align:bottom;
+    padding-top:6px;
+    padding-bottom:2px;
+    font-size:9px;
+    border-bottom:none;
+  }
+  .other-collateral table.data thead tr:first-child th[rowspan]{
+    text-align:left;
+    vertical-align:bottom;
+    padding-bottom:8px;
+    font-size:9px;
+  }
+  .other-collateral table.data thead tr.grouphead th{
+    padding-top:2px;
+    padding-bottom:8px;
+    font-size:9px;
+    border-bottom:1px solid var(--border);
+  }
   .other-collateral table.data tbody td{padding:10px 12px;border-bottom:1px solid rgba(230,234,242,.65);color:#344054;white-space:nowrap;}
   .other-collateral table.data tbody tr:last-child td{border-bottom:none;}
   .other-collateral tbody tr:hover td{background:#FAFCFF;}
   .other-collateral .numR{text-align:right;}
   .other-collateral .grouphead{font-size:10px;font-weight:950;color:#475467;background:#FBFCFE;}
   .other-collateral .mini-note{font-size:12px;color:var(--muted);margin:12px;}
+  .other-collateral .table-controls{
+    display:flex;
+    justify-content:space-between;
+    align-items:center;
+    gap:12px;
+    padding:8px 0 6px;
+  }
+  .other-collateral .table-search{
+    width:220px;
+    max-width:100%;
+    padding:6px 10px;
+    border:1px solid #D6DDE8;
+    border-radius:6px;
+    font-size:11px;
+  }
+  .other-collateral .pager{
+    display:flex;
+    align-items:center;
+    gap:8px;
+    font-size:11px;
+    color:#4b5563;
+  }
+  .other-collateral .pager button{
+    padding:4px 8px;
+    border:1px solid #D6DDE8;
+    background:#fff;
+    border-radius:6px;
+    font-size:11px;
+    cursor:pointer;
+  }
+  .other-collateral .pager button:disabled{
+    opacity:.4;
+    cursor:not-allowed;
+  }
 </style>
 
 <div class="page other-collateral">
@@ -220,11 +275,19 @@
   <div class="section card">
     <div class="card-head">
       <span class="ico" aria-hidden="true"><svg viewBox="0 0 24 24"><path d="M3 4h18v16H3V4zm2 4h14V6H5v2zm0 3h6V9H5v2zm0 3h14v-2H5v2z"/></svg></span>
-      Value Analysis
+  Value Analysis
     </div>
     <div class="divider"></div>
+    <div class="table-controls">
+      <input type="search" class="table-search" data-table="value-analysis-table" placeholder="Search value analysis...">
+      <div class="pager table-pager" data-table="value-analysis-table">
+        <button type="button" data-action="prev">Prev</button>
+        <span class="pager-info"></span>
+        <button type="button" data-action="next">Next</button>
+      </div>
+    </div>
     <div class="table-scroll">
-      <table class="data" aria-label="Value Analysis Table">
+      <table class="data" aria-label="Value Analysis Table" id="value-analysis-table" data-empty="Value analysis data not available.">
         <thead>
           <tr>
             <th rowspan="2">ID</th>
@@ -232,12 +295,13 @@
             <th rowspan="2">Manufacturer</th>
             <th class="numR" colspan="2">Appraised Values</th>
             <th class="numR" colspan="2">Estimated</th>
-            <th class="numR" colspan="2">Variance</th>
+            <th class="numR" colspan="4">Variance</th>
           </tr>
           <tr class="grouphead">
             <th class="numR">FMV</th><th class="numR">OLV</th>
             <th class="numR">FMV</th><th class="numR">OLV</th>
             <th class="numR">FMV $</th><th class="numR">FMV %</th>
+            <th class="numR">OLV $</th><th class="numR">OLV %</th>
           </tr>
         </thead>
         <tbody>
@@ -252,9 +316,12 @@
               <td class="numR">{{ row.estimated_olv }}</td>
               <td class="numR">{{ row.variance_amount }}</td>
               <td class="numR">{{ row.variance_pct }}</td>
+              <td class="numR">{{ row.variance_olv_amount }}</td>
+              <td class="numR">{{ row.variance_olv_pct }}</td>
             </tr>
+
           {% empty %}
-            <tr><td colspan="9" class="numR">Value analysis data not available.</td></tr>
+            <tr class="empty-placeholder"><td colspan="9" class="numR">Value analysis data not available.</td></tr>
           {% endfor %}
         </tbody>
       </table>
@@ -267,8 +334,16 @@
       Appraisal Asset Register
     </div>
     <div class="divider"></div>
+    <div class="table-controls">
+      <input type="search" class="table-search" data-table="asset-register-table" placeholder="Search asset register...">
+      <div class="pager table-pager" data-table="asset-register-table">
+        <button type="button" data-action="prev">Prev</button>
+        <span class="pager-info"></span>
+        <button type="button" data-action="next">Next</button>
+      </div>
+    </div>
     <div class="table-scroll">
-      <table class="data" aria-label="Appraisal Asset Register">
+      <table class="data" aria-label="Appraisal Asset Register" id="asset-register-table" data-empty="Asset register data not available.">
         <thead>
           <tr>
             <th>Item ID</th>
@@ -293,6 +368,7 @@
               <td class="numR">{{ row.fmv }}</td>
               <td class="numR">{{ row.olv }}</td>
             </tr>
+            <tr class="empty-placeholder"><td colspan="8" class="numR">Asset register data not available.</td></tr>
           {% empty %}
             <tr><td colspan="8" class="numR">Asset register data not available.</td></tr>
           {% endfor %}
@@ -309,7 +385,7 @@
   }
   function renderTwoLine(el,cfg){
     const W=980, H=260;
-    const pad={l:46,r:14,t:14,b:34};
+    const pad={l:46,r:30,t:14,b:34};
     const plotW=W-pad.l-pad.r, plotH=H-pad.t-pad.b;
     const seriesEstimated = (cfg.estimated||[]).map(val => Number(val) || 0);
     const seriesAppraisal = (cfg.appraisal||[]).map(val => Number(val) || 0);
@@ -350,7 +426,10 @@
         <g class="axis">
           ${(cfg.labels||[]).map((lab,i)=>{
             if(i%xStep!==0) return "";
-            return `<text x="${x(i)}" y="${H-10}" text-anchor="middle">${lab}</text>`;
+            const isFirst = i === 0;
+            const isLast = i === (cfg.labels.length - 1);
+            const anchor = isFirst ? "start" : (isLast ? "end" : "middle");
+            return `<text x="${x(i)}" y="${H-10}" text-anchor="${anchor}">${lab}</text>`;
           }).join("")}
         </g>
         <path d="${linePath(ptsEst)}" class="lineA"></path>
@@ -402,6 +481,73 @@
       point.addEventListener("blur", hide);
     });
   }
+function initPagedTable(tableId){
+    const PAGE_SIZE = 20;
+    const table = document.getElementById(tableId);
+    if(!table) return;
+    const tbody = table.querySelector("tbody");
+    const allRows = Array.from(tbody.querySelectorAll("tr")).filter(row => !row.classList.contains("empty-placeholder"));
+    tbody.querySelectorAll(".empty-placeholder").forEach(el => el.remove());
+    const searchInput = document.querySelector(`.table-search[data-table="${tableId}"]`);
+    const pager = document.querySelector(`.table-pager[data-table="${tableId}"]`);
+    const info = pager ? pager.querySelector(".pager-info") : null;
+    const btnPrev = pager ? pager.querySelector('[data-action="prev"]') : null;
+    const btnNext = pager ? pager.querySelector('[data-action="next"]') : null;
+    const emptyRow = document.createElement("tr");
+    emptyRow.className = "empty-row";
+    const emptyCell = document.createElement("td");
+    emptyCell.colSpan = table.querySelectorAll("thead th").length || 1;
+    emptyCell.textContent = table.dataset.empty || "No results found.";
+    emptyRow.appendChild(emptyCell);
+    let filtered = allRows.slice();
+    let page = 1;
+    function render(){
+      const total = filtered.length;
+      const pageCount = Math.max(1, Math.ceil(total / PAGE_SIZE));
+      page = Math.min(Math.max(1, page), pageCount);
+      allRows.forEach(r => r.style.display = "none");
+      if (emptyRow.parentElement === tbody) emptyRow.remove();
+      if(total === 0){
+        tbody.appendChild(emptyRow);
+        if(info) info.textContent = "0 of 0";
+        if(btnPrev) btnPrev.disabled = true;
+        if(btnNext) btnNext.disabled = true;
+        return;
+      }
+      const start = (page - 1) * PAGE_SIZE;
+      const end = start + PAGE_SIZE;
+      filtered.slice(start, end).forEach(r => { r.style.display = ""; });
+      if(info) info.textContent = `Page ${page} of ${pageCount}`;
+      if(btnPrev) btnPrev.disabled = page <= 1;
+      if(btnNext) btnNext.disabled = page >= pageCount;
+    }
+    function applyFilter(){
+      const term = (searchInput && searchInput.value || "").toLowerCase();
+      if(!term){
+        filtered = allRows.slice();
+      } else {
+        filtered = allRows.filter(row => row.textContent.toLowerCase().includes(term));
+      }
+      page = 1;
+      render();
+    }
+    if(searchInput){
+      searchInput.addEventListener("input", applyFilter);
+    }
+    if(btnPrev){
+      btnPrev.addEventListener("click", function(){
+        page = Math.max(1, page - 1);
+        render();
+      });
+    }
+    if(btnNext){
+      btnNext.addEventListener("click", function(){
+        page += 1;
+        render();
+      });
+    }
+    render();
+  }
 
   const initializeValueTrend = () => {
     const chartEl = document.querySelector('[data-chart="valueTrend"]');
@@ -416,9 +562,15 @@
     }
   };
 
-  if(document.readyState === "loading"){
-    document.addEventListener("DOMContentLoaded", initializeValueTrend);
+ if(document.readyState === "loading"){
+    document.addEventListener("DOMContentLoaded", function(){
+      initializeValueTrend();
+      initPagedTable("value-analysis-table");
+      initPagedTable("asset-register-table");
+    });
   } else {
     initializeValueTrend();
+    initPagedTable("value-analysis-table");
+    initPagedTable("asset-register-table");
   }
 </script>
