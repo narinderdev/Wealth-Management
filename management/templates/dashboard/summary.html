@@ -200,42 +200,43 @@
         </form>
       </div>
 
-      <div class="insight-meta-grid">
-        <div class="meta-card meta-card--blue">
-          <div>
-            <div class="meta-label">Net Collateral</div>
-            <div class="meta-value">{{ insights.net.amount }}</div>
-            <div class="meta-delta down">-8.09%</div>
+      <div class="insight-grid-wrap">
+        <div class="insight-meta-grid">
+          <div class="meta-card meta-card--blue">
+            <div>
+              <div class="meta-label">Net Collateral</div>
+              <div class="meta-value">{{ insights.net.amount }}</div>
+              <div class="meta-delta down">-8.09%</div>
+            </div>
+            <img src="{% static 'images/net_collateral_icon.svg' %}" 
+            alt="Net Collateral Icon"
+            class="net-collateral-icon" />
+          
           </div>
-          <img src="{% static 'images/net_collateral_icon.svg' %}" 
-          alt="Net Collateral Icon"
-          class="net-collateral-icon" />
-        
-        </div>
-        <div class="meta-card meta-card--purple">
-          <div>
-            <div class="meta-label">Outstanding Balance</div>
-            <div class="meta-value">{{ insights.outstanding.amount }}</div>
-            <div class="meta-delta down">-5.09%</div>
+          <div class="meta-card meta-card--purple">
+            <div>
+              <div class="meta-label">Outstanding Balance</div>
+              <div class="meta-value">{{ insights.outstanding.amount }}</div>
+              <div class="meta-delta down">-5.09%</div>
+            </div>
+            <img src="{% static 'images/outstanding_balance_icon.svg' %}" 
+            alt="Outstanding Balance Icon"
+            class="outstanding-balance-icon" />
           </div>
-          <img src="{% static 'images/outstanding_balance_icon.svg' %}" 
-          alt="Outstanding Balance Icon"
-          class="outstanding-balance-icon" />
-        </div>
-        <div class="meta-card meta-card--green">
-          <div>
-            <div class="meta-label">Availability</div>
-            <div class="meta-value">{{ insights.availability.amount }}</div>
-            <div class="meta-delta up">+8.09%</div>
+          <div class="meta-card meta-card--green">
+            <div>
+              <div class="meta-label">Availability</div>
+              <div class="meta-value">{{ insights.availability.amount }}</div>
+              <div class="meta-delta up">+8.09%</div>
+            </div>
+            <img src="{% static 'images/availability_icon.svg' %}" 
+            alt="Availability Icon"
+            class="availability-icon" />
           </div>
-          <img src="{% static 'images/availability_icon.svg' %}" 
-          alt="Availability Icon"
-          class="availability-icon" />
         </div>
-      </div>
 
-      <div class="insight-chart-grid">
-        <div class="chart-card chart-card--blue">
+        <div class="insight-chart-grid">
+          <div class="chart-card chart-card--blue">
           <header>Net Collateral</header>
           <div class="panel-chart">
             <div class="chart-tooltip" aria-hidden="true"></div>
@@ -267,9 +268,9 @@
               </g>
             </svg>
           </div>
-        </div>
+          </div>
 
-        <div class="chart-card chart-card--purple">
+          <div class="chart-card chart-card--purple">
           <header>Outstanding Balance</header>
           <div class="panel-chart">
             <div class="chart-tooltip" aria-hidden="true"></div>
@@ -301,9 +302,9 @@
               </g>
             </svg>
           </div>
-        </div>
+          </div>
 
-        <div class="chart-card chart-card--green">
+          <div class="chart-card chart-card--green">
           <header>Availability</header>
           <div class="panel-chart">
             <div class="chart-tooltip" aria-hidden="true"></div>
@@ -334,6 +335,7 @@
                 {% endfor %}
               </g>
             </svg>
+          </div>
           </div>
         </div>
       </div>
