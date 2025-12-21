@@ -46,12 +46,20 @@
     .sb-icon{
       width:26px;height:26px;
       display:grid;place-items:center;
-      border-radius:7px;
+      border-radius:0;
       color:#7b8794;
+      background:transparent;
+      border:none;
     }
     .sb-icon svg{width:16px;height:16px;opacity:.9}
+    .sb-icon img{filter: grayscale(1) brightness(0.7);}
     .sb-icon.active{
-      color:#var(--blue);
+      color:#1889E6;
+      background:transparent;
+      border:none;
+    }
+    .sb-icon.active img{
+      filter: brightness(0) saturate(100%) invert(39%) sepia(92%) saturate(1265%) hue-rotate(186deg) brightness(93%) contrast(93%);
     }
 
     /* Topbar */
@@ -153,10 +161,10 @@
 
     /* Tabs */
     .tabs-shell{
-      background:#e6efff;
+      background:#EBF3FB;
       display:flex;
       align-items:center;
-      border-radius:30px;
+      border-radius:5px;
       padding:4px 8px;
       margin:6px 0 10px 0;
       gap:12px;
@@ -165,7 +173,7 @@
       display:flex;
       gap:10px;
       font-size:12px;
-      color:#475569;
+      color:#65758B;
       text-decoration:none;
     }
     .tabs .tab{
@@ -173,17 +181,18 @@
     }
     .tab{
       padding:6px 14px;
-      border-radius:20px;
+      border-radius:5px;
       border:1px solid transparent;
       background:transparent;
       cursor:pointer;
       user-select:none;
       font-weight:600;
+      color:#65758B;
     }
     .tab.active{
-      background:var(--blue);
+      background:#1889E6;
       color:#fff;
-      box-shadow:0 6px 16px rgba(37,106,230,.3);
+      box-shadow:none;
     }
     .tabs-back{
       width:40px;
