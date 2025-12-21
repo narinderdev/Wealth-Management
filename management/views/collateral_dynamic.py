@@ -1680,7 +1680,7 @@ def _accounts_receivable_context(borrower):
         {"key": "0-30", "label": "0-30", "color": "rgba(43,111,247,.35)"},
         {"key": "31-60", "label": "31-60", "color": "rgba(43,111,247,.25)"},
         {"key": "61-90", "label": "61-90", "color": "rgba(43,111,247,.30)"},
-        {"key": "90+", "label": "90+", "color": "rgba(43,111,247,.20)"},
+        {"key": "90+", "label": "91+", "color": "rgba(43,111,247,.20)"},
     ]
 
     def _bucket_key(bucket_label):
@@ -1695,7 +1695,7 @@ def _accounts_receivable_context(borrower):
             return "31-60"
         if normalized.startswith("61") or "61-90" in normalized:
             return "61-90"
-        if "90" in normalized:
+        if "90" in normalized or "91" in normalized:
             return "90+"
         return None
 
@@ -1777,32 +1777,63 @@ def _accounts_receivable_context(borrower):
         trend_labels.append({"x": label_x, "text": entry["label"]})
 
     # Tables for customer aging composition views
-    bucket_columns = ["Current", "0-30", "31-60", "61-90", "90+"]
+    bucket_columns = ["Current", "0-30", "31-60", "61-90", "91+"]
     bucket_total_rows = []
     bucket_past_due_rows = []
     latest_pct = current_snapshot.get("past_due_pct") if current_snapshot else None
     past_due_ratio = (
         (latest_pct / Decimal("100")) if latest_pct is not None else Decimal("0")
     )
-    for bucket in AGING_BUCKET_DEFS:
-        amount = bucket_amounts[bucket["key"]]
-        formatted_amount = _format_currency(amount)
-        values = ["" for _ in bucket_columns]
-        past_values = ["" for _ in bucket_columns]
-        if bucket["label"] in bucket_columns:
-            target_index = bucket_columns.index(bucket["label"])
-            values[target_index] = formatted_amount
-            past_values[target_index] = _format_currency(amount * past_due_ratio)
-        bucket_total_rows.append(
-            {"customer": bucket["label"], "values": values, "total": formatted_amount}
-        )
-        bucket_past_due_rows.append(
-            {
-                "customer": bucket["label"],
-                "values": past_values,
-                "total": _format_currency(amount * past_due_ratio),
-            }
-        )
+
+    concentration_rows = list(
+        ConcentrationADODSORow.objects.filter(borrower=borrower)
+    )
+    top_customers = sorted(
+        concentration_rows,
+        key=lambda r: _to_decimal(r.current_concentration_pct),
+        reverse=True,
+    )[:20]
+    if top_customers:
+        weights = []
+        for row in top_customers:
+            weight = _to_decimal(row.current_concentration_pct)
+            if weight > Decimal("1"):
+                weight /= Decimal("100")
+            weights.append(max(weight, Decimal("0")))
+        total_weight = sum(weights)
+        if total_weight <= 0:
+            weights = [Decimal("1") for _ in top_customers]
+            total_weight = Decimal(len(top_customers))
+        for idx, row in enumerate(top_customers):
+            ratio = weights[idx] / total_weight if total_weight else Decimal("0")
+            values = []
+            past_values = []
+            total_value = Decimal("0")
+            past_total_value = Decimal("0")
+            for column in bucket_columns:
+                key = "90+" if column == "91+" else column
+                amount = bucket_amounts.get(key, Decimal("0"))
+                customer_amount = amount * ratio
+                past_amount = customer_amount * past_due_ratio
+                values.append(_format_currency(customer_amount))
+                past_values.append(_format_currency(past_amount))
+                total_value += customer_amount
+                past_total_value += past_amount
+            customer_name = _safe_str(row.customer) or f"Customer {idx + 1}"
+            bucket_total_rows.append(
+                {
+                    "customer": customer_name,
+                    "values": values,
+                    "total": _format_currency(total_value),
+                }
+            )
+            bucket_past_due_rows.append(
+                {
+                    "customer": customer_name,
+                    "values": past_values,
+                    "total": _format_currency(past_total_value),
+                }
+            )
 
     ineligible_overview = (
         IneligibleOverviewRow.objects.filter(borrower=borrower)
@@ -1812,10 +1843,6 @@ def _accounts_receivable_context(borrower):
     ineligible_trend_rows = list(
         IneligibleTrendRow.objects.filter(borrower=borrower).order_by("date", "id")
     )
-    concentration_rows = list(
-        ConcentrationADODSORow.objects.filter(borrower=borrower)
-    )
-
     ineligible_rows = []
     ineligible_total_row = None
     if ineligible_overview:
