@@ -327,12 +327,12 @@
       display:block;
     }
     .chart-card .card-pad{
-      padding: 10px 12px 8px;
+      padding: 10px 14px 6px;
     }
     .card-top{
       display:flex;
       justify-content: space-between;
-      align-items:flex-start;
+      align-items:center;
       gap: 12px;
       margin-bottom: 4px;
     }
@@ -340,14 +340,33 @@
       font-size: 12px;
       font-weight: 700;
       color:#344054;
+      display:flex;
+      align-items:center;
+      gap:6px;
+    }
+    .card-title .trend-ico{
+      width:14px;
+      height:14px;
+      display:inline-flex;
+      align-items:center;
+      justify-content:center;
+    }
+    .card-title .trend-ico svg{
+      width:14px;
+      height:14px;
+      display:block;
+      stroke:var(--blue);
+      stroke-width:2;
+      fill:none;
     }
     .legend{
       display:flex;
       gap: 10px;
       align-items:center;
-      font-size: 11px;
+      font-size: 10px;
       color: var(--muted);
       white-space:nowrap;
+      margin-left:auto;
     }
     .legend .litem{
       display:flex;
@@ -355,7 +374,7 @@
       gap:6px;
     }
     .legend .swatch{
-      width:10px; height:10px;
+      width:9px; height:9px;
       border-radius: 3px;
       background: var(--blue);
     }
@@ -364,9 +383,9 @@
       display:flex;
       justify-content:center;
       gap:16px;
-      font-size: 11px;
+      font-size: 10px;
       color: var(--muted2);
-      margin: 6px 0 2px;
+      margin: 2px 0 6px;
       user-select:none;
     }
     .seg span:first-child{
@@ -375,7 +394,7 @@
     }
 
     .svg-wrap{
-      padding: 2px 10px 10px;
+      padding: 2px 10px 12px;
     }
 
     .chart-big .card-title{
@@ -385,10 +404,11 @@
     .chart-big .svg-wrap{ padding: 4px 10px 12px; }
 
     /* SVG styling */
-    svg{ width:103%; height:auto; display:block; }
-    .axis text{ fill: #475569; font-size: 10px; }
+    svg{ width:100%; height:auto; display:block; }
+    .axis text{ fill: var(--muted2); font-size: 9px; }
     .baseline{ stroke: #D0D7EB; stroke-width: 1; }
     .gridline{ stroke: var(--grid); stroke-width:1; }
+    .gridline.vert{ stroke: var(--grid); stroke-width:1; }
     .borderline{ stroke: #E6EAF2; stroke-width:1; fill:none; }
     .line-actual{ stroke: var(--blue); stroke-width: 2.3; fill:none; stroke-linecap:round; stroke-linejoin:round; }
     .line-forecast{ stroke: var(--orange); stroke-width: 2.3; fill:none; stroke-linecap:round; stroke-linejoin:round; stroke-dasharray: 5 5; }
@@ -409,6 +429,29 @@
       color: var(--muted);
       font-weight:600;
     }
+    .controls-row{
+      display:flex;
+      align-items:center;
+      gap:12px;
+      justify-content:space-between;
+      margin-bottom:10px;
+    }
+    .period-filter{
+      display:flex;
+      align-items:center;
+      gap:8px;
+      font-size:12px;
+      color:var(--muted);
+      font-weight:600;
+    }
+    .period-filter select{
+      padding:6px 10px;
+      border:1px solid var(--border);
+      border-radius:8px;
+      font-size:12px;
+      color:var(--ink);
+      background:#fff;
+    }
   </style>
 </head>
 <body>
@@ -421,12 +464,24 @@
           <div class="section-icon"></div>
           <div class="section-title">Liquidity Forecast</div>
         </div>
+        <div class="controls-row">
+          <div class="subhead-row">
+            <div class="left"><span class="dot"></span> Snapshot Overview</div>
+          </div>
+          <div class="period-filter">
+            <span>Period:</span>
+            <select id="period-select">
+              <option value="3">3 Months</option>
+              <option value="6">6 Months</option>
+              <option value="12" selected>12 Months</option>
+            </select>
+          </div>
+        </div>
 
         <div class="snapshot">
-          <div class="label"><span class="dot"></span>Snapshot Overview</div>
           <p>
             Based on current information and weekly trends, liquidity is expected to remain stable in the near term.
-            Forecasts use recent history and assumed seasonality to project the next 12 months.
+            Forecasts use recent history and assumed seasonality to project the selected horizon.
           </p>
         </div>
 
@@ -509,20 +564,167 @@
   <script>
     /* ------------ Lightweight inline chart renderer (SVG) ------------ */
 
-    const CHARTS = JSON.parse('{{ forecast_charts_json|default:"{}"|escapejs }}');
+    const parsedCharts = JSON.parse('{{ forecast_charts_json|default:"{}"|escapejs }}');
+    const deepClone = (obj) => obj ? JSON.parse(JSON.stringify(obj)) : obj;
+    let CHARTS = parsedCharts;
+    const SERVER_CHARTS = parsedCharts && Object.keys(parsedCharts).length ? deepClone(parsedCharts) : null;
+
+    const BASE_MONTHS_PAST = ["Jan 2025","Feb 2025","Mar 2025","Apr 2025","May 2025","Jun 2025","Jul 2025","Aug 2025","Sep 2025","Oct 2025","Nov 2025","Dec 2025"];
+    const BASE_MONTHS_FUTURE = ["Jan 2026","Feb 2026","Mar 2026","Apr 2026","May 2026","Jun 2026","Jul 2026","Aug 2026","Sep 2026","Oct 2026","Nov 2026","Dec 2026"];
+
+    function formatMonthLabel(dateObj){
+      const month = dateObj.toLocaleString("en-US", { month: "short" });
+      return `${month} ${dateObj.getFullYear()}`;
+    }
+
+    function getMonthLabels(pastCount, futureCount){
+      const now = new Date();
+      const past = [];
+      for(let i = pastCount - 1; i >= 0; i--){
+        const d = new Date(now.getFullYear(), now.getMonth() - i, 1);
+        past.push(formatMonthLabel(d));
+      }
+      const future = [];
+      for(let i = 1; i <= futureCount; i++){
+        const d = new Date(now.getFullYear(), now.getMonth() + i, 1);
+        future.push(formatMonthLabel(d));
+      }
+      return { past, future };
+    }
+
+    function makeStaticChart(title, actual, forecast, yPrefix="$"){
+      const labels = [...BASE_MONTHS_PAST, ...BASE_MONTHS_FUTURE];
+      const labelsShort = labels;
+      return {
+        title,
+        actual,
+        forecast,
+        labels,
+        labelsShort,
+        pastLabel: "Past 12 Months",
+        forecastLabel: "12 Month Forecast",
+        yPrefix,
+        yTicks: 5,
+        yFormat: "short",
+      };
+    }
+
+    const STATIC_CHARTS = {
+      sales: makeStaticChart("Sales", [9,11,13,10,12,11,13,12,11,12,11,12], [12,13,12,13,14,13,12.5,12.8,13.2,13.5,13.1,13.0]),
+      grossMargin: makeStaticChart("Gross Margin", [4.4,4.9,5.2,4.8,5.1,5.0,5.3,5.2,5.0,5.1,5.0,5.1], [5.1,5.2,5.0,4.9,5.3,5.5,5.6,5.4,5.3,5.2,5.3,5.4]),
+      accountsReceivable: makeStaticChart("Accounts Receivable", [7.0,7.6,8.1,7.8,8.2,8.0,8.4,8.3,8.1,8.0,7.9,7.8], [7.9,8.1,8.0,7.8,8.2,8.5,8.6,8.4,8.3,8.1,8.2,8.3]),
+      finishedGoods: makeStaticChart("Finished Goods", [6.0,6.4,6.1,6.2,6.0,6.3,6.5,6.4,6.2,6.1,6.0,6.1], [6.1,6.2,6.0,5.9,6.3,6.5,6.6,6.5,6.4,6.3,6.4,6.5]),
+      weeksOfSupply: makeStaticChart("Weeks of Supply", [5.0,5.4,5.1,5.2,5.0,5.3,5.5,5.4,5.2,5.1,5.0,5.1], [5.1,5.2,5.0,4.9,5.3,5.5,5.6,5.4,5.3,5.2,5.3,5.4]),
+      rawMaterials: makeStaticChart("Raw Materials", [4.2,4.5,4.3,4.4,4.2,4.5,4.6,4.5,4.4,4.3,4.2,4.3], [4.3,4.4,4.2,4.1,4.4,4.6,4.7,4.5,4.4,4.3,4.4,4.5]),
+      workInProcess: makeStaticChart("Work In Process", [3.1,3.3,3.2,3.3,3.1,3.4,3.5,3.4,3.3,3.2,3.1,3.2], [3.2,3.3,3.1,3.0,3.3,3.5,3.6,3.4,3.3,3.2,3.3,3.4]),
+    };
+
+    function sliceChart(chart, months, labelSeqPast, labelSeqFuture, pastCount, futureCount){
+      const m = Math.max(1, Math.min(months, 12));
+      const actualCount = Array.isArray(chart.actual) ? chart.actual.length : 0;
+      const forecastCount = Array.isArray(chart.forecast) ? chart.forecast.length : 0;
+      const labels = Array.isArray(chart.labels) ? chart.labels : [];
+
+      const past = Math.max(0, Math.min(pastCount ?? m, actualCount));
+      const future = Math.max(0, Math.min(futureCount ?? m, forecastCount));
+      const slicedActual = chart.actual ? chart.actual.slice(-past) : [];
+      const slicedForecast = chart.forecast ? chart.forecast.slice(0, future) : [];
+      const pastLabels = labelSeqPast
+        ? labelSeqPast.slice(-slicedActual.length)
+        : labels.slice(0, actualCount).slice(-slicedActual.length);
+      const futureLabels = labelSeqFuture
+        ? labelSeqFuture.slice(0, slicedForecast.length)
+        : labels.slice(actualCount).slice(0, slicedForecast.length);
+
+      const labelsCombined = [...pastLabels, ...futureLabels];
+
+      const labelsShort =
+        chart.labelsShort && chart.labelsShort.length === labelsCombined.length
+          ? chart.labelsShort
+          : labelsCombined;
+
+      return {
+        ...chart,
+        actual: slicedActual,
+        forecast: slicedForecast,
+        labels: labelsCombined,
+        labelsShort,
+        pastLabel: `Past ${m} Months`,
+        forecastLabel: `${m} Month Forecast`,
+      };
+    }
+
+    const BASE_SERIES = {
+      availableCollateral: {
+        actual: [18.4, 21.0, 16.5, 19.2, 20.6, 18.1, 19.8, 19.4, 18.7, 18.9, 19.1, 19.3],
+        forecast: [19.1, 18.7, 18.2, 17.9, 18.8, 19.5, 20.1, 20.4, 19.9, 19.6, 19.8, 20.2],
+        yPrefix: "$", yTicks: 5, title: "Available Collateral"
+      },
+      revolverBalance: {
+        actual: [10.4, 12.1, 11.0, 11.8, 12.6, 11.9, 12.3, 11.7, 11.1, 11.5, 11.2, 11.0],
+        forecast: [11.1, 11.4, 11.0, 10.8, 11.6, 12.0, 12.5, 12.2, 12.0, 11.8, 12.1, 12.4],
+        yPrefix: "$", yTicks: 5, title: "Revolver Balance"
+      },
+      availableLiquidity: {
+        actual: [15.0, 18.8, 17.5, 14.0, 13.6, 17.1, 17.6, 17.3, 17.1, 16.9, 16.6, 16.4],
+        forecast: [16.5, 16.9, 17.4, 18.0, 18.6, 17.9, 17.2, 17.0, 17.3, 17.6, 17.9, 18.2],
+        yPrefix: "$", yTicks: 5, title: "Available Liquidity", big: true
+      }
+    };
+
+    function buildChartConfig(periodMonths){
+      const totalMonths = Math.max(1, Math.min(12, periodMonths));
+      const pastMonths = Math.ceil(totalMonths / 2);
+      const futureMonths = Math.max(1, totalMonths - pastMonths);
+      const { past: pastLabels, future: futureLabels } = getMonthLabels(pastMonths, futureMonths);
+
+      if(SERVER_CHARTS){
+        const sliced = {};
+        Object.keys(SERVER_CHARTS).forEach(key=>{
+          sliced[key] = sliceChart(SERVER_CHARTS[key], totalMonths, pastLabels, futureLabels, pastMonths, futureMonths);
+        });
+        return sliced;
+      }
+
+      const cfg = {...STATIC_CHARTS};
+      Object.keys(BASE_SERIES).forEach(key=>{
+        const base = BASE_SERIES[key];
+        const actual = base.actual.slice(-pastMonths);
+        const forecast = base.forecast.slice(0, futureMonths);
+        const labels = [...pastLabels, ...futureLabels];
+        const labelsShort = labels;
+        cfg[key] = {
+          title: base.title,
+          actual,
+          forecast,
+          labels,
+          labelsShort,
+          pastLabel: `Past ${totalMonths} Months`,
+          forecastLabel: `${totalMonths} Month Forecast`,
+          yPrefix: base.yPrefix || "",
+          yTicks: base.yTicks || 5,
+          yFormat: "short",
+        };
+      });
+      Object.keys(cfg).forEach(key=>{
+        if(!(key in BASE_SERIES)){
+          cfg[key] = sliceChart(cfg[key], totalMonths, pastLabels, futureLabels, pastMonths, futureMonths);
+        }
+      });
+      return cfg;
+    }
 
     function formatY(v, chart){
       if(chart.yFormat === "pct") return `${Math.round(v)}%`;
       if(chart.yFormat === "num") return `${v.toFixed(1)}`;
-      if(chart.yFormat === "short"){
-        const millions = v / 1000000;
-        return `${chart.yPrefix}${millions.toFixed(1)}M`;
+      const abs = Math.abs(v);
+      if(abs >= 1_000_000){
+        return `${chart.yPrefix}${(v/1_000_000).toFixed(1)}M`;
       }
-      if(chart.yPrefix === "$"){
-        const millions = v / 1000000;
-        return `${chart.yPrefix}${millions.toFixed(1)}M`;
+      if(abs >= 1_000){
+        return `${chart.yPrefix}${(v/1_000).toFixed(0)}K`;
       }
-      return `${chart.yPrefix}${v}`;
+      return `${chart.yPrefix}${v.toFixed(1)}`;
     }
 
     function linePath(points){
@@ -532,9 +734,9 @@
     function renderCard(el, key){
       const cfg = CHARTS[key];
       const isBig = el.classList.contains("chart-big");
-      const H = isBig ? 220 : 160;
+      const H = isBig ? 240 : 168;
       const W = 520; // internal viewBox width (responsive)
-      const pad = {l: 44, r: 14, t: 20, b: isBig ? 34 : 26};
+      const pad = {l: 52, r: 18, t: 20, b: isBig ? 52 : 44};
 
       // compute min/max across all values with gentle padding
       if(!cfg || !cfg.labels?.length){
@@ -542,7 +744,11 @@
         return;
       }
 
-      const all = [...cfg.actual, ...cfg.forecast];
+      const all = [...(cfg.actual || []), ...(cfg.forecast || [])];
+      if(!all.length){
+        el.innerHTML = `<div class="card-pad"><p class="card-title">Awaiting forecast data.</p></div>`;
+        return;
+      }
       let min = Math.min(...all);
       let max = Math.max(...all);
       const range = (max-min) || 1;
@@ -554,12 +760,13 @@
 
       const nTotal = cfg.labels.length;
       const nActual = cfg.actual.length;
-      const x = (i) => pad.l + (i/(nTotal-1))*plotW;
+      const denom = Math.max(1, nTotal - 1);
+      const x = (i) => pad.l + (i/denom)*plotW;
       const y = (v) => pad.t + (1 - (v-min)/(max-min))*plotH;
 
       // points
-      const actualPts = cfg.actual.map((v,i)=> [x(i), y(v)]);
-      const forecastPts = cfg.forecast.map((v,j)=> {
+      const actualPts = (cfg.actual || []).map((v,i)=> [x(i), y(v)]);
+      const forecastPts = (cfg.forecast || []).map((v,j)=> {
         const i = (nActual-1) + j; // forecast begins at last actual point
         return [x(i), y(v)];
       });
@@ -572,17 +779,25 @@
         return { val, y: y(val) };
       });
 
-      // x labels (reduce density for big charts)
-      const xLabelStep = isBig ? 2 : 1;
+      // x labels (reduce density as labels grow)
+      let xLabelStep = 1;
+      if (nTotal > 12) xLabelStep = 2;
+      if (nTotal > 24) xLabelStep = 3;
+      const xTickIndices = cfg.labels.map((_,i)=>i).filter(i => i % xLabelStep === 0);
 
       // card shell (HTML)
       el.innerHTML = `
         <div class="card-pad">
           <div class="card-top">
-            <div class="card-title">${cfg.title}</div>
+            <div class="card-title">
+              <span class="trend-ico" aria-hidden="true">
+                <svg viewBox="0 0 16 16"><path d="M2 11l4-4 3 3 5-6"/></svg>
+              </span>
+              ${cfg.title}
+            </div>
             <div class="legend" aria-label="legend">
               <div class="litem"><span class="swatch"></span>Actual</div>
-              <div class="litem"><span class="swatch orange"></span>Forecast</div>
+              <div class="litem"><span class="swatch orange"></span>forecast</div>
             </div>
           </div>
           <div class="seg"><span>${cfg.pastLabel}</span><span>${cfg.forecastLabel}</span></div>
@@ -598,6 +813,10 @@
                 <text x="${pad.l-8}" y="${t.y+3}" text-anchor="end">${formatY(t.val, cfg)}</text>
               </g>
             `).join("")}
+            <!-- vertical grid -->
+            ${xTickIndices.map(i => `
+              <line x1="${x(i)}" y1="${pad.t}" x2="${x(i)}" y2="${H-pad.b}" class="gridline vert" />
+            `).join("")}
             <!-- y axis label -->
             <text x="${pad.l - 30}" y="${pad.t - 4}" text-anchor="middle" transform="rotate(-90 ${pad.l - 30} ${pad.t - 4})" font-size="10" fill="#98A2B3"></text>
             <!-- x labels -->
@@ -607,12 +826,20 @@
                 if(i % xLabelStep !== 0) return "";
                 const xx = x(i);
                 if(i>0 && lab === cfg.labels[i-1]) return "";
-                return `<text x="${xx}" y="${H-10}" text-anchor="middle">${lab}</text>`;
+                const shortLab = (cfg.labelsShort && cfg.labelsShort[i]) || lab;
+                const parts = shortLab.split(" ");
+                const line1 = parts.slice(0, parts.length-1).join(" ") || shortLab;
+                const line2 = parts[parts.length-1] || "";
+                const baseY = H - (isBig ? 26 : 24);
+                return `<text x="${xx}" y="${baseY}" text-anchor="middle" fill="#9CA3AF" font-size="11">
+                  <tspan x="${xx}" dy="0">${line1}</tspan>
+                  <tspan x="${xx}" dy="10">${line2}</tspan>
+                </text>`;
               }).join("")}
             </g>
             <!-- lines -->
-            <path d="${linePath(actualPts)}" class="line-actual" />
-            <path d="${linePath([actualPts[actualPts.length-1], ...forecastPts])}" class="line-forecast" />
+            ${actualPts.length ? `<path d="${linePath(actualPts)}" class="line-actual" />` : ""}
+            ${forecastPts.length ? `<path d="${linePath(actualPts.length ? [actualPts[actualPts.length-1], ...forecastPts] : forecastPts)}" class="line-forecast" />` : ""}
             <!-- points (subtle like the reference) -->
             ${actualPts.map((p,i)=> i===0 || i===actualPts.length-1 ? "" :
               `<circle cx="${p[0]}" cy="${p[1]}" r="2.2" class="point" />`
@@ -628,7 +855,7 @@
         const svgEl = el.querySelector("svg");
         if(svgEl){
           const totalPoints = cfg.labels.length;
-          const actualCount = cfg.actual.length;
+          const actualCount = (cfg.actual || []).length;
           svgEl.addEventListener("mousemove", (event)=>{
             const rect = svgEl.getBoundingClientRect();
             const cardRect = el.getBoundingClientRect();
@@ -638,7 +865,8 @@
           const index = Math.round(clampedFrac * (totalPoints - 1));
           const label = cfg.labels[index] || "";
           const actualValue = index < actualCount ? cfg.actual[index] : null;
-          const forecastIndex = index - (actualCount - 1);
+          const splitIndex = Math.max(0, actualCount - 1);
+          const forecastIndex = index - splitIndex;
           const forecastValue =
             forecastIndex >= 0 && forecastIndex < cfg.forecast.length
               ? cfg.forecast[forecastIndex]
@@ -668,7 +896,24 @@
         renderCard(el, key);
       });
     }
+
+    function rebuild(period){
+      CHARTS = buildChartConfig(period);
+      init();
+    }
+
+    // initial render
+    CHARTS = buildChartConfig(12);
     init();
+
+    // period selector (fallback only when server data not provided)
+    const periodSelect = document.getElementById("period-select");
+    if(periodSelect){
+      periodSelect.addEventListener("change", function(){
+        const months = parseInt(this.value, 10) || 12;
+        rebuild(months);
+      });
+    }
   </script>
 </body>
 </html>
