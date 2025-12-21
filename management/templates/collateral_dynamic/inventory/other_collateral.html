@@ -114,15 +114,16 @@
   .other-collateral .arrow{font-size:12px;line-height:1;}
 
   .other-collateral .divider{height:1px;background:var(--border);}
-  .other-collateral .chart-head{padding: 14px 14px 0;display:flex;justify-content:flex-end;align-items:center;gap:12px;}
+  .other-collateral .chart-head{padding:14px 14px 0;display:flex;justify-content:flex-end;align-items:center;gap:12px;width:100%;}
   .other-collateral .legend{display:flex;gap:12px;align-items:center;font-size:11px;color:var(--muted);flex-wrap:wrap;}
+  .other-collateral .chart-head .legend{margin-left:auto;}
   .other-collateral .litem{display:flex;align-items:center;gap:6px;}
     .other-collateral .sw{width:10px;height:10px;border-radius:3px;background:var(--purple);}
     .other-collateral .sw.ind{background:var(--blue);}
   .other-collateral .toggle{display:inline-flex;gap:2px;padding:2px;border:1px solid var(--border);border-radius:10px;background:#fff;user-select:none;}
   .other-collateral .toggle span{padding:6px 10px;border-radius:8px;font-size:11px;font-weight:950;color:var(--muted);}
   .other-collateral .toggle span.active{background:#EEF4FF;color:#344054;}
-  .other-collateral .svg-wrap{padding:6px 10px 14px;}
+  .other-collateral .svg-wrap{padding:6px 16px 16px;}
   .other-collateral .chart-wrap{position:relative;}
   .other-collateral .chart-tooltip{
     position:absolute;
@@ -159,8 +160,21 @@
     max-height:420px;
   }
   .other-collateral table.data{width:100%;border-collapse:collapse;font-size:10.5px;min-width: 980px;}
+  .other-collateral table.data.value-analysis-table{table-layout:fixed;}
+  .other-collateral table.data.value-analysis-table col.col-id{width:6%;}
+  .other-collateral table.data.value-analysis-table col.col-equipment{width:22%;}
+  .other-collateral table.data.value-analysis-table col.col-manufacturer{width:14%;}
+  .other-collateral table.data.value-analysis-table col.col-num{width:7.25%;}
+  .other-collateral table.data.asset-register-table{table-layout:fixed;}
+  .other-collateral table.data.asset-register-table col.col-id{width:6%;}
+  .other-collateral table.data.asset-register-table col.col-equipment{width:20%;}
+  .other-collateral table.data.asset-register-table col.col-manufacturer{width:14%;}
+  .other-collateral table.data.asset-register-table col.col-serial{width:17%;}
+  .other-collateral table.data.asset-register-table col.col-year{width:7%;}
+  .other-collateral table.data.asset-register-table col.col-condition{width:12%;}
+  .other-collateral table.data.asset-register-table col.col-num{width:12%;}
   .other-collateral table.data thead th{position:sticky;top:0;background:#FBFCFE;color:#475467;font-weight:950;text-align:left;padding:10px 12px;border-bottom:1px solid var(--border);white-space:nowrap;}
-  .other-collateral table.data thead tr:first-child th{
+  .other-collateral table.data.value-analysis-table thead tr:first-child th{
     text-align:center;
     vertical-align:bottom;
     padding-top:6px;
@@ -168,13 +182,13 @@
     font-size:9px;
     border-bottom:none;
   }
-  .other-collateral table.data thead tr:first-child th[rowspan]{
+  .other-collateral table.data.value-analysis-table thead tr:first-child th[rowspan]{
     text-align:left;
     vertical-align:bottom;
     padding-bottom:8px;
     font-size:9px;
   }
-  .other-collateral table.data thead tr.grouphead th{
+  .other-collateral table.data.value-analysis-table thead tr.grouphead th{
     padding-top:2px;
     padding-bottom:8px;
     font-size:9px;
@@ -184,6 +198,14 @@
   .other-collateral table.data tbody tr:last-child td{border-bottom:none;}
   .other-collateral tbody tr:hover td{background:#FAFCFF;}
   .other-collateral .numR{text-align:right;}
+  .other-collateral table.data.value-analysis-table th.numR,
+  .other-collateral table.data.value-analysis-table td.numR{
+    text-align:center;
+  }
+  .other-collateral table.data.asset-register-table th.numR,
+  .other-collateral table.data.asset-register-table td.numR{
+    text-align:center;
+  }
   .other-collateral .grouphead{font-size:10px;font-weight:950;color:#475467;background:#FBFCFE;}
   .other-collateral .mini-note{font-size:12px;color:var(--muted);margin:12px;}
   .other-collateral .table-controls{
@@ -287,7 +309,20 @@
       </div>
     </div>
     <div class="table-scroll">
-      <table class="data" aria-label="Value Analysis Table" id="value-analysis-table" data-empty="Value analysis data not available.">
+      <table class="data value-analysis-table" aria-label="Value Analysis Table" id="value-analysis-table" data-empty="Value analysis data not available.">
+        <colgroup>
+          <col class="col-id" />
+          <col class="col-equipment" />
+          <col class="col-manufacturer" />
+          <col class="col-num" />
+          <col class="col-num" />
+          <col class="col-num" />
+          <col class="col-num" />
+          <col class="col-num" />
+          <col class="col-num" />
+          <col class="col-num" />
+          <col class="col-num" />
+        </colgroup>
         <thead>
           <tr>
             <th rowspan="2">ID</th>
@@ -343,7 +378,17 @@
       </div>
     </div>
     <div class="table-scroll">
-      <table class="data" aria-label="Appraisal Asset Register" id="asset-register-table" data-empty="Asset register data not available.">
+      <table class="data asset-register-table" aria-label="Appraisal Asset Register" id="asset-register-table" data-empty="Asset register data not available.">
+        <colgroup>
+          <col class="col-id" />
+          <col class="col-equipment" />
+          <col class="col-manufacturer" />
+          <col class="col-serial" />
+          <col class="col-year" />
+          <col class="col-condition" />
+          <col class="col-num" />
+          <col class="col-num" />
+        </colgroup>
         <thead>
           <tr>
             <th>Item ID</th>
@@ -385,7 +430,7 @@
   }
   function renderTwoLine(el,cfg){
     const W=980, H=260;
-    const pad={l:46,r:30,t:14,b:34};
+    const pad={l:96,r:40,t:14,b:44};
     const plotW=W-pad.l-pad.r, plotH=H-pad.t-pad.b;
     const seriesEstimated = (cfg.estimated||[]).map(val => Number(val) || 0);
     const seriesAppraisal = (cfg.appraisal||[]).map(val => Number(val) || 0);
@@ -415,13 +460,15 @@
       return {val, yy:y(val)};
     });
     const xStep = (cfg.labels?.length || 0) > 10 ? 2 : 1;
+    const xLabelY = H - 12;
+    const yLabelX = pad.l - 12;
     el.innerHTML = `
       <div class="chart-wrap">
         <svg viewBox="0 0 ${W} ${H}" role="img" aria-label="${cfg.title||'Value Trend'}">
         <rect x="${pad.l}" y="${pad.t}" width="${plotW}" height="${plotH}" class="borderline"></rect>
         ${yTicks.map(t=>`
           <line x1="${pad.l}" y1="${t.yy}" x2="${W-pad.r}" y2="${t.yy}" class="gridline"></line>
-          <g class="axis"><text x="${pad.l-8}" y="${t.yy+3}" text-anchor="end">${formatCurrencyLabel(t.val)}</text></g>
+          <g class="axis"><text x="${yLabelX}" y="${t.yy+3}" text-anchor="end">${formatCurrencyLabel(t.val)}</text></g>
         `).join("")}
         <g class="axis">
           ${(cfg.labels||[]).map((lab,i)=>{
@@ -429,7 +476,7 @@
             const isFirst = i === 0;
             const isLast = i === (cfg.labels.length - 1);
             const anchor = isFirst ? "start" : (isLast ? "end" : "middle");
-            return `<text x="${x(i)}" y="${H-10}" text-anchor="${anchor}">${lab}</text>`;
+            return `<text x="${x(i)}" y="${xLabelY}" text-anchor="${anchor}">${lab}</text>`;
           }).join("")}
         </g>
         <path d="${linePath(ptsEst)}" class="lineA"></path>
