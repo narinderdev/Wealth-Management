@@ -426,8 +426,61 @@
       font-size:15px;
       font-weight:600;
       color:#102048;
+      justify-content:space-between;
+    }
+    .insight-head-left{
+      display:flex;
+      align-items:center;
+      gap:10px;
     }
     .insight-card__header svg{width:20px;height:20px;color:#2563eb}
+    .insight-filters{
+      display:flex;
+      align-items:center;
+      gap:8px;
+      flex-wrap:wrap;
+    }
+    .filter-select{
+      display:inline-flex;
+      align-items:center;
+      gap:6px;
+      padding:4px 8px;
+      border-radius:6px;
+      border:1px solid #dbe7f6;
+      background:#EBF3FB;
+      color:#65758B;
+      font-size:11px;
+      position:relative;
+    }
+    .filter-select select{
+      border:none;
+      background:transparent;
+      font-size:11px;
+      color:#65758B;
+      appearance:none;
+      padding-right:16px;
+      outline:none;
+    }
+    .filter-caret{
+      position:absolute;
+      right:6px;
+      width:12px;
+      height:12px;
+      display:inline-flex;
+      align-items:center;
+      justify-content:center;
+      color:#65758B;
+      pointer-events:none;
+    }
+    .filter-caret svg{
+      width:12px;
+      height:12px;
+      stroke:currentColor;
+      fill:none;
+      stroke-width:2;
+      stroke-linecap:round;
+      stroke-linejoin:round;
+    }
     .insight-meta-grid{
       display:grid;
       grid-template-columns:repeat(auto-fit,minmax(210px,1fr));

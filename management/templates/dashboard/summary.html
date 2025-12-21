@@ -130,7 +130,7 @@
         </div>
         <div class="risk-scale">
             <div class="risk-bar">
-              <span class="risk-marker" style="--pos:60%"></span>
+              <span class="risk-marker" style="--pos:{{ risk_profile_position }}%"></span>
             </div>
             <div class="risk-labels">
               <span>Low</span>
@@ -166,10 +166,38 @@
     <!-- Right: Borrowing base insight -->
     <div class="insight-card">
       <div class="insight-card__header">
-        <img src="{% static 'images/borrowing_icon.svg' %}" 
-          alt="Current Update Icon"
-          class="current-update-icon" />
-        <h2>Borrowing Base Insight</h2>
+        <div class="insight-head-left">
+          <img src="{% static 'images/borrowing_icon.svg' %}" 
+            alt="Current Update Icon"
+            class="current-update-icon" />
+          <h2>Borrowing Base Insight</h2>
+        </div>
+        <form class="insight-filters" method="get">
+          <label class="filter-select">
+            <select name="summary_range" aria-label="Date range" onchange="this.form.submit()">
+              {% for option in summary_range_options %}
+                <option value="{{ option.value }}" {% if option.value == summary_selected_range %}selected{% endif %}>
+                  {{ option.label }}
+                </option>
+              {% endfor %}
+            </select>
+            <span class="filter-caret" aria-hidden="true">
+              <svg viewBox="0 0 24 24"><path d="M6 9l6 6 6-6"></path></svg>
+            </span>
+          </label>
+          <label class="filter-select">
+            <select name="summary_division" aria-label="Division filter" onchange="this.form.submit()">
+              {% for option in summary_division_options %}
+                <option value="{{ option.value }}" {% if option.value == summary_selected_division %}selected{% endif %}>
+                  {{ option.label }}
+                </option>
+              {% endfor %}
+            </select>
+            <span class="filter-caret" aria-hidden="true">
+              <svg viewBox="0 0 24 24"><path d="M6 9l6 6 6-6"></path></svg>
+            </span>
+          </label>
+        </form>
       </div>
 
       <div class="insight-meta-grid">

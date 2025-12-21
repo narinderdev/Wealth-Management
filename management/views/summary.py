@@ -1,4 +1,5 @@
 import math
+from datetime import timedelta
 
 from decimal import Decimal, InvalidOperation
 
@@ -200,22 +201,33 @@ def _normalize_series(values, target_len, fallback_value):
     return values
 
 
-def _build_line_series(values, labels, max_value, series_label=None, width=220, height=120):
+def _build_line_series(values, labels, series_label=None, width=220, height=120):
     values = [float(_to_decimal(val)) for val in values] if values else [0.0]
     labels = labels or [f"{idx + 1:02d}" for idx in range(len(values))]
-    max_value = float(_to_decimal(max_value)) if max_value is not None else max(values)
-    if max_value <= 0:
-        max_value = 1.0
+
+    max_value = max(values)
+    min_value = min(values)
+    if max_value == min_value:
+        max_value = max_value if max_value != 0 else 1.0
+        min_value = max_value * 0.85 if max_value else 0
 
     left = 24
     right = 10
     top = 12
     bottom = 20
-    tick_count = 4
-    step_value = _nice_step(max_value / max(1, tick_count - 1))
-    axis_max = step_value * (tick_count - 1)
-    if axis_max <= 0:
-        axis_max = max_value
+    tick_count = 5
+    value_range = max_value - min_value
+    step_value = _nice_step(value_range / max(1, tick_count - 1))
+    axis_max = math.ceil(max_value / step_value) * step_value
+    axis_min = axis_max - step_value * (tick_count - 1)
+    if axis_min > min_value:
+        axis_min = math.floor(min_value / step_value) * step_value
+        axis_max = axis_min + step_value * (tick_count - 1)
+    if axis_min < 0:
+        axis_min = 0
+        axis_max = axis_min + step_value * (tick_count - 1)
+
+    axis_range = axis_max - axis_min if axis_max != axis_min else 1.0
 
     plot_width = width - left - right
     plot_height = height - top - bottom
@@ -228,7 +240,7 @@ def _build_line_series(values, labels, max_value, series_label=None, width=220, 
     points_list = []
     for idx, val in enumerate(values):
         x = left + idx * step_x
-        ratio = val / axis_max if axis_max else 0
+        ratio = (val - axis_min) / axis_range if axis_range else 0
         ratio = max(0.0, min(1.0, ratio))
         y = baseline_y - ratio * plot_height
         x_positions.append(round(x, 1))
@@ -247,7 +259,7 @@ def _build_line_series(values, labels, max_value, series_label=None, width=220, 
     y_ticks = []
     for idx in range(tick_count):
         ratio = idx / (tick_count - 1)
-        value = axis_max * (1 - ratio)
+        value = axis_max - step_value * idx
         y = top + plot_height * ratio
         y_ticks.append({"y": round(y, 1), "label": _format_axis_value(value)})
 
@@ -266,6 +278,28 @@ def _build_line_series(values, labels, max_value, series_label=None, width=220, 
         "label_x": left - 6,
         "label_y": round(baseline_y + 12, 1),
     }
+
+
+def _range_dates(range_key):
+    today = timezone.localdate()
+    if range_key == "yesterday":
+        day = today - timedelta(days=1)
+        return day, day
+    if range_key == "last_7_days":
+        return today - timedelta(days=6), today
+    if range_key == "last_14_days":
+        return today - timedelta(days=13), today
+    if range_key == "last_30_days":
+        return today - timedelta(days=29), today
+    if range_key == "last_90_days":
+        return today - timedelta(days=89), today
+    return today, today
+
+
+def _apply_date_filter(qs, field_name, start_date, end_date):
+    if start_date and end_date:
+        return qs.filter(**{f"{field_name}__range": (start_date, end_date)})
+    return qs
 
 
 def _build_borrower_summary(borrower):
@@ -431,17 +465,62 @@ def summary_view(request):
 
     borrower_summary = _build_borrower_summary(borrower)
 
-    latest_collateral_time = (
-        CollateralOverviewRow.objects.filter(borrower=borrower)
-        .aggregate(time=Max("created_at"))["time"]
+    range_options = [
+        {"value": "today", "label": "Today"},
+        {"value": "yesterday", "label": "Yesterday"},
+        {"value": "last_7_days", "label": "Last 7 Days"},
+        {"value": "last_14_days", "label": "Last 14 Days"},
+        {"value": "last_30_days", "label": "Last 30 Days"},
+        {"value": "last_90_days", "label": "Last 90 Days"},
+    ]
+    range_aliases = {
+        "today": "today",
+        "yesterday": "yesterday",
+        "last_7_days": "last_7_days",
+        "last_14_days": "last_14_days",
+        "last_30_days": "last_30_days",
+        "last_90_days": "last_90_days",
+        "last7days": "last_7_days",
+        "last14days": "last_14_days",
+        "last30days": "last_30_days",
+        "last90days": "last_90_days",
+        "last 7 days": "last_7_days",
+        "last 14 days": "last_14_days",
+        "last 30 days": "last_30_days",
+        "last 90 days": "last_90_days",
+    }
+
+    summary_range = request.GET.get("summary_range", "last_30_days")
+    normalized_range = range_aliases.get(str(summary_range).strip().lower(), "last_30_days")
+    summary_division = request.GET.get("summary_division", "all")
+    normalized_division = str(summary_division).strip()
+    if normalized_division.lower() in {"all", "all divisions", "all_divisions"}:
+        normalized_division = "all"
+
+    range_start, range_end = _range_dates(normalized_range)
+
+    division_values = (
+        ARMetricsRow.objects.filter(borrower=borrower)
+        .exclude(division__isnull=True)
+        .exclude(division__exact="")
+        .values_list("division", flat=True)
+        .distinct()
     )
+    division_options = [{"value": "all", "label": "All Divisions"}]
+    division_set = sorted({str(value).strip() for value in division_values if str(value).strip()})
+    division_options.extend(
+        {"value": value, "label": value} for value in division_set
+    )
+    if normalized_division != "all" and normalized_division not in division_set:
+        normalized_division = "all"
+
+    collateral_base_qs = CollateralOverviewRow.objects.filter(borrower=borrower)
+    collateral_range_qs = _apply_date_filter(
+        collateral_base_qs, "created_at__date", range_start, range_end
+    )
+    latest_collateral_time = collateral_range_qs.aggregate(time=Max("created_at"))["time"]
     collateral_rows = (
-        list(
-            CollateralOverviewRow.objects.filter(
-                borrower=borrower,
-                created_at=latest_collateral_time,
-            )
-        )
+        list(collateral_range_qs.filter(created_at=latest_collateral_time))
         if latest_collateral_time
         else []
     )
@@ -451,11 +530,11 @@ def summary_view(request):
     eligible_total = sum((_to_decimal(row.eligible_collateral) for row in collateral_rows), Decimal("0"))
     ineligibles_total = sum((_to_decimal(row.ineligibles) for row in collateral_rows), Decimal("0"))
 
-    ar_row = (
-        ARMetricsRow.objects.filter(borrower=borrower)
-        .order_by("-as_of_date", "-created_at")
-        .first()
-    )
+    ar_qs = ARMetricsRow.objects.filter(borrower=borrower)
+    if normalized_division != "all":
+        ar_qs = ar_qs.filter(division__iexact=normalized_division)
+    ar_qs = _apply_date_filter(ar_qs, "as_of_date", range_start, range_end)
+    ar_row = ar_qs.order_by("-as_of_date", "-created_at").first()
 
     collateral_data = [
         _collateral_row_payload(row, limit_map=limit_map) for row in collateral_rows
@@ -480,10 +559,15 @@ def summary_view(request):
         },
     }
 
-    chart_points = 7
+    chart_points = 5
     collateral_history = list(
-        CollateralOverviewRow.objects.filter(borrower=borrower)
-        .exclude(created_at__isnull=True)
+        _apply_date_filter(
+            CollateralOverviewRow.objects.filter(borrower=borrower)
+            .exclude(created_at__isnull=True),
+            "created_at__date",
+            range_start,
+            range_end,
+        )
         .order_by("-created_at")[:200]
     )
     collateral_labels = []
@@ -507,18 +591,17 @@ def summary_view(request):
             if available < Decimal("0"):
                 available = Decimal("0")
             availability_series.append(available)
-            collateral_labels.append(date_key.strftime("%d"))
+            collateral_labels.append(date_key.strftime("%m/%d"))
 
     ar_rows = list(
-        ARMetricsRow.objects.filter(borrower=borrower)
-        .order_by("-as_of_date", "-created_at")[:chart_points]
+        ar_qs.order_by("-as_of_date", "-created_at")[:chart_points]
     )
     ar_labels = []
     outstanding_series = []
     if ar_rows:
         for idx, row in enumerate(reversed(ar_rows)):
             date_value = row.as_of_date or (row.created_at.date() if row.created_at else None)
-            ar_labels.append(date_value.strftime("%d") if date_value else f"{idx + 1:02d}")
+            ar_labels.append(date_value.strftime("%m/%d") if date_value else f"{idx + 1:02d}")
             outstanding_series.append(_to_decimal(row.balance))
 
     base_labels = _normalize_labels(collateral_labels or ar_labels, chart_points)
@@ -530,25 +613,19 @@ def summary_view(request):
         ar_row.balance if ar_row and ar_row.balance is not None else Decimal("0"),
     )
 
-    global_max_value = max(
-        net_series + availability_series + outstanding_series + [Decimal("1")]
-    )
     net_chart = _build_line_series(
         net_series,
         base_labels,
-        global_max_value,
         series_label="Net Collateral",
     )
     outstanding_chart = _build_line_series(
         outstanding_series,
         base_labels,
-        global_max_value,
         series_label="Outstanding Balance",
     )
     availability_chart = _build_line_series(
         availability_series,
         base_labels,
-        global_max_value,
         series_label="Availability",
     )
 
@@ -629,6 +706,10 @@ def summary_view(request):
             risk_profile_score = max(Decimal("1"), min(Decimal("5"), suggested))
     risk_profile_detail = f"AR past due {ar_pct_text} · Inventory ineligible {inventory_pct_text}"
 
+    risk_profile_position = float(
+        min(max(risk_profile_score / Decimal("5"), Decimal("0")), Decimal("1")) * 100
+    )
+
     context = {
         "borrower_summary": borrower_summary,
         "collateral_rows": collateral_data,
@@ -642,6 +723,11 @@ def summary_view(request):
         "availability_chart": availability_chart,
         "risk_profile_value": f"{risk_profile_score:.1f}",
         "risk_profile_detail": risk_profile_detail,
+        "risk_profile_position": f"{risk_profile_position:.0f}",
+        "summary_range_options": range_options,
+        "summary_selected_range": normalized_range,
+        "summary_division_options": division_options,
+        "summary_selected_division": normalized_division,
     }
     return render(request, "dashboard/summary.html", context)
 
