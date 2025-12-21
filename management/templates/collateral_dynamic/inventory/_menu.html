@@ -3,12 +3,12 @@
 {% with active_section|default:"inventory" as section %}
 <div class="menu-card">
 
-  <a class="menu-item {% if section == 'overview' %}active{% endif %}" href="?section=overview">
+  <div class="menu-item menu-static">
     <img src="{% static '/images/overview_icon.svg' %}" 
           alt="Icon"
           class="overview-icon" />
     Overview
-  </a>
+  </div>
   <a class="menu-item {% if section == 'accounts_receivable' %}active{% endif %}" href="?section=accounts_receivable">
      <img src="{% if section == 'accounts_receivable' %}{% static '/images/account_receivable_icon.svg' %}{% else %}{% static '/images/blck_accounts_receivable.svg' %}{% endif %}"
           alt="Accounts Receivable Icon"
@@ -16,15 +16,14 @@
     Accounts Receivable
   </a>
 
-  <button class="menu-item menu-toggle {% if section == 'inventory' %}active{% endif %}" type="button" aria-expanded="{% if section == 'inventory' %}true{% else %}false{% endif %}" aria-controls="inventory-sublist">
+  <div class="menu-item menu-static inventory-header {% if section == 'inventory' %}is-active{% endif %}">
     <img src="{% static '/images/inventory_icon.svg' %}" 
           alt="Icon"
           class="inventory-icon" />
     Inventory
-    <span class="menu-caret" aria-hidden="true"></span>
-  </button>
+  </div>
 
-  <div class="menu-sublist {% if section == 'inventory' %}is-open{% endif %}" id="inventory-sublist">
+  <div class="menu-sublist is-open" id="inventory-sublist">
     <a class="menu-item sub {% if section == 'inventory' and active_tab == 'summary' %}active{% endif %}"
        href="?section=inventory&inventory_tab=summary">
         <img src="{% static '/images/summary_icon.svg' %}" 

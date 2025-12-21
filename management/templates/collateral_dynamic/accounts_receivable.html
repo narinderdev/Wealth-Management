@@ -80,6 +80,19 @@
       height:18px;
       flex-shrink:0;
     }
+    .collateral-dynamic .menu-item.menu-static{
+      cursor:default;
+      pointer-events:none;
+      color:#64748b;
+    }
+    .collateral-dynamic .menu-item.inventory-header.is-active{
+      background:transparent;
+      color:var(--blue);
+      font-weight:600;
+    }
+    .collateral-dynamic .menu-item.inventory-header.is-active img{
+      filter:none;
+    }
     .collateral-dynamic .menu-item.menu-toggle{
       text-align:left;
     }
@@ -100,6 +113,7 @@
       background:var(--blue);
       color:#fff;
       font-weight:600;
+      border-radius:1px;
     }
     .collateral-dynamic .menu-item.active img{
       filter:brightness(0) invert(1);
@@ -115,6 +129,7 @@
       background:var(--blue);
       color:#fff;
       font-weight:600;
+      border-radius:1px;
     }
     .collateral-dynamic .menu-item.sub.active img{
       filter:brightness(0) invert(1);
@@ -1472,23 +1487,12 @@
           });
         });
       }
-      function attachMenuToggle(){
-        const toggle = document.querySelector(".menu-toggle");
-        const sublist = document.getElementById("inventory-sublist");
-        if(!toggle || !sublist) return;
-        toggle.addEventListener("click", ()=>{
-          const isOpen = sublist.classList.toggle("is-open");
-          toggle.setAttribute("aria-expanded", isOpen ? "true" : "false");
-        });
-      }
       if(document.readyState === "loading"){
         document.addEventListener("DOMContentLoaded", ()=>{
           attachArTooltips();
-          attachMenuToggle();
         });
       } else {
         attachArTooltips();
-        attachMenuToggle();
       }
     })();
   </script>
