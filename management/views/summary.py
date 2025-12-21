@@ -133,20 +133,15 @@ def _user_can_access_borrower(user, borrower, company):
     return user.is_staff or user.is_superuser
 
 
-def _trim_axis_value(value):
-    text = f"{value:.1f}"
-    return text.rstrip("0").rstrip(".")
-
-
 def _format_axis_value(value):
     val = float(value)
     abs_val = abs(val)
     if abs_val >= 1_000_000_000:
-        return f"${_trim_axis_value(val / 1_000_000_000)}B"
+        return f"${val / 1_000_000_000:.0f}B"
     if abs_val >= 1_000_000:
-        return f"${_trim_axis_value(val / 1_000_000)}M"
+        return f"${val / 1_000_000:.0f}M"
     if abs_val >= 1_000:
-        return f"${_trim_axis_value(val / 1_000)}k"
+        return f"${val / 1_000:.0f}k"
     return f"${val:,.0f}"
 
 
@@ -211,10 +206,10 @@ def _build_line_series(values, labels, series_label=None, width=220, height=120)
         max_value = max_value if max_value != 0 else 1.0
         min_value = max_value * 0.85 if max_value else 0
 
-    left = 24
-    right = 10
+    left = 44
+    right = 16
     top = 12
-    bottom = 20
+    bottom = 12
     tick_count = 5
     value_range = max_value - min_value
     step_value = _nice_step(value_range / max(1, tick_count - 1))
@@ -231,18 +226,21 @@ def _build_line_series(values, labels, series_label=None, width=220, height=120)
 
     plot_width = width - left - right
     plot_height = height - top - bottom
-    baseline_y = top + plot_height
-    step_x = plot_width / max(1, len(values) - 1)
+    plot_size = min(plot_width, plot_height)
+    plot_left = left + (plot_width - plot_size) / 2
+    plot_top = top + (plot_height - plot_size) / 2
+    baseline_y = plot_top + plot_size
+    step_x = plot_size / max(1, len(values) - 1)
 
     x_positions = []
     x_labels = []
     points = []
     points_list = []
     for idx, val in enumerate(values):
-        x = left + idx * step_x
+        x = plot_left + idx * step_x
         ratio = (val - axis_min) / axis_range if axis_range else 0
         ratio = max(0.0, min(1.0, ratio))
-        y = baseline_y - ratio * plot_height
+        y = baseline_y - ratio * plot_size
         x_positions.append(round(x, 1))
         x_labels.append({"x": round(x, 1), "text": labels[idx]})
         points.append(f"{x:.1f},{y:.1f}")
@@ -260,7 +258,7 @@ def _build_line_series(values, labels, series_label=None, width=220, height=120)
     for idx in range(tick_count):
         ratio = idx / (tick_count - 1)
         value = axis_max - step_value * idx
-        y = top + plot_height * ratio
+        y = plot_top + plot_size * ratio
         y_ticks.append({"y": round(y, 1), "label": _format_axis_value(value)})
 
     return {
@@ -270,13 +268,13 @@ def _build_line_series(values, labels, series_label=None, width=220, height=120)
         "x_labels": x_labels,
         "x_grid": x_positions,
         "grid": {
-            "left": left,
-            "right": round(left + plot_width, 1),
-            "top": top,
+            "left": round(plot_left, 1),
+            "right": round(plot_left + plot_size, 1),
+            "top": round(plot_top, 1),
             "bottom": round(baseline_y, 1),
         },
-        "label_x": left - 6,
-        "label_y": round(baseline_y + 12, 1),
+        "label_x": round(plot_left - 40, 1),
+        "label_y": round(baseline_y + 8, 1),
     }
 
 

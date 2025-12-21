@@ -240,7 +240,7 @@
           <div class="panel-chart">
             <div class="chart-tooltip" aria-hidden="true"></div>
             <svg viewBox="0 0 220 120" preserveAspectRatio="none">
-              <rect class="panel-bg" x="0" y="0" width="220" height="120" rx="10"></rect>
+              <rect class="panel-bg" x="0" y="0" width="220" height="120" rx="0"></rect>
               <g class="panel-grid">
                 {% for tick in net_chart.y_ticks %}
                   <line x1="{{ net_chart.grid.left }}" y1="{{ tick.y }}" x2="{{ net_chart.grid.right }}" y2="{{ tick.y }}"></line>
@@ -259,7 +259,7 @@
               </g>
             <g class="panel-axis">
               {% for tick in net_chart.y_ticks %}
-                <text x="{{ net_chart.label_x }}" y="{{ tick.y|add:3 }}" text-anchor="end">{{ tick.label }}</text>
+                <text x="{{ net_chart.label_x }}" y="{{ tick.y|add:3 }}" text-anchor="start">{{ tick.label }}</text>
               {% endfor %}
               {% for label in net_chart.x_labels %}
                 <text x="{{ label.x }}" y="{{ net_chart.label_y }}" text-anchor="middle">{{ label.text }}</text>
@@ -274,7 +274,7 @@
           <div class="panel-chart">
             <div class="chart-tooltip" aria-hidden="true"></div>
             <svg viewBox="0 0 220 120" preserveAspectRatio="none">
-              <rect class="panel-bg" x="0" y="0" width="220" height="120" rx="10"></rect>
+              <rect class="panel-bg" x="0" y="0" width="220" height="120" rx="0"></rect>
               <g class="panel-grid">
                 {% for tick in outstanding_chart.y_ticks %}
                   <line x1="{{ outstanding_chart.grid.left }}" y1="{{ tick.y }}" x2="{{ outstanding_chart.grid.right }}" y2="{{ tick.y }}"></line>
@@ -293,7 +293,7 @@
               </g>
             <g class="panel-axis">
               {% for tick in outstanding_chart.y_ticks %}
-                <text x="{{ outstanding_chart.label_x }}" y="{{ tick.y|add:3 }}" text-anchor="end">{{ tick.label }}</text>
+                <text x="{{ outstanding_chart.label_x }}" y="{{ tick.y|add:3 }}" text-anchor="start">{{ tick.label }}</text>
               {% endfor %}
               {% for label in outstanding_chart.x_labels %}
                 <text x="{{ label.x }}" y="{{ outstanding_chart.label_y }}" text-anchor="middle">{{ label.text }}</text>
@@ -308,7 +308,7 @@
           <div class="panel-chart">
             <div class="chart-tooltip" aria-hidden="true"></div>
             <svg viewBox="0 0 220 120" preserveAspectRatio="none">
-              <rect class="panel-bg" x="0" y="0" width="220" height="120" rx="10"></rect>
+              <rect class="panel-bg" x="0" y="0" width="220" height="120" rx="0"></rect>
               <g class="panel-grid">
                 {% for tick in availability_chart.y_ticks %}
                   <line x1="{{ availability_chart.grid.left }}" y1="{{ tick.y }}" x2="{{ availability_chart.grid.right }}" y2="{{ tick.y }}"></line>
@@ -327,7 +327,7 @@
               </g>
               <g class="panel-axis">
                 {% for tick in availability_chart.y_ticks %}
-                  <text x="{{ availability_chart.label_x }}" y="{{ tick.y|add:3 }}" text-anchor="end">{{ tick.label }}</text>
+                  <text x="{{ availability_chart.label_x }}" y="{{ tick.y|add:3 }}" text-anchor="start">{{ tick.label }}</text>
                 {% endfor %}
                 {% for label in availability_chart.x_labels %}
                   <text x="{{ label.x }}" y="{{ availability_chart.label_y }}" text-anchor="middle">{{ label.text }}</text>
