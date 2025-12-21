@@ -1886,7 +1886,31 @@ def _accounts_receivable_context(borrower):
     if len(trend_points) > max_trend:
         trend_points = trend_points[-max_trend:]
         trend_texts = trend_texts[-max_trend:]
-    trend_chart = _build_trend_points(trend_points, trend_texts)
+    trend_chart = _build_trend_points(
+        trend_points,
+        trend_texts,
+        height=230,
+        top=40,
+        bottom=30,
+        left=60,
+    )
+    formatted_labels = []
+    for label in trend_chart["labels"]:
+        text = label.get("text") or ""
+        month = text
+        year = ""
+        if " " in text:
+            month, year = text.split(" ", 1)
+            if year.isdigit() and len(year) == 2:
+                year = f"20{year}"
+        formatted_labels.append(
+            {
+                "x": round(label["x"] + 6, 1),
+                "month": month,
+                "year": year,
+            }
+        )
+    trend_chart["labels"] = formatted_labels
     trend_dots = []
     for idx, dot in enumerate(trend_chart["dots"]):
         value = trend_points[idx] if idx < len(trend_points) else None
