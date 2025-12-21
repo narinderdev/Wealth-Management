@@ -1710,7 +1710,7 @@ def _accounts_receivable_context(borrower):
             bucket_pct_overrides[key] = _to_decimal(row.pct_of_total)
 
     total_amount = sum(bucket_amounts.values())
-    bucket_positions = [70, 140, 210, 280, 350]
+    bucket_positions = [60, 140, 220, 300, 380]
     aging_buckets = []
     for idx, bucket in enumerate(AGING_BUCKET_DEFS):
         amount = bucket_amounts[bucket["key"]]
@@ -1724,19 +1724,28 @@ def _accounts_receivable_context(borrower):
         ratio_float = float(percent_ratio) if percent_ratio else 0.0
         height_value = max(8.0, min(110.0, ratio_float * 110))
         y_position = 140 - height_value
+        label_primary = bucket["label"]
+        label_secondary = ""
+        if bucket["key"] != "current":
+            label_primary = "91+" if bucket["key"] == "90+" else bucket["label"]
+            label_secondary = "Past Due"
+        bar_width = 30
         aging_buckets.append(
             {
                 "x": bucket_positions[idx],
                 "y": y_position,
                 "height": height_value,
-                "width": 40,
+                "width": bar_width,
                 "color": bucket["color"],
                 "percent_display": _format_pct(percent_ratio),
                 "amount_display": _format_currency(amount),
                 "label": bucket["label"],
+                "label_primary": label_primary,
+                "label_secondary": label_secondary,
                 "percent_y": max(24, y_position - 6),
-                "label_y": 160,
-                "text_x": bucket_positions[idx] + 20,
+                "label_y": 156,
+                "label_secondary_y": 168,
+                "text_x": bucket_positions[idx] + (bar_width / 2),
             }
         )
 
