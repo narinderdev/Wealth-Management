@@ -818,7 +818,7 @@ TREND_LABELS = [
 ]
 MONTH_POSITIONS = [80, 135, 190, 245, 300, 355, 410, 465, 520, 575, 630, 685]
 TREND_X_POSITIONS = [80, 140, 200, 260, 320, 380, 440, 500, 560, 620, 680]
-CIRCUMFERENCE = Decimal(str(2 * math.pi * 45))
+CIRCUMFERENCE = Decimal(str(2 * math.pi * 52))
 
 CATEGORY_CONFIG = [
     {
@@ -826,21 +826,21 @@ CATEGORY_CONFIG = [
         "label": "Finished Goods",
         "match": ("finished", "finished goods", "finish goods", "finish-goods", "fg"),
         "bar_class": "navy",
-        "color": "#0b2a66",
+        "color": "#116BFD",
     },
     {
         "key": "raw_materials",
         "label": "Raw Materials",
         "match": ("raw", "raw materials", "raw-materials", "raw_material"),
         "bar_class": "mid",
-        "color": "#4f63ff",
+        "color": "#0753B2",
     },
     {
         "key": "work_in_progress",
         "label": "Work-in-Progress",
         "match": ("work", "work in progress", "work-in-progress", "wip"),
         "bar_class": "bright",
-        "color": "#0b66ff",
+        "color": "#CADFEF",
     },
 ]
 
@@ -1104,7 +1104,15 @@ def _inventory_context(borrower):
     inventory_rows = state["inventory_rows"]
     category_metrics = state["category_metrics"]
 
-    inventory_available_display = _format_currency(inventory_available_total)
+    def _format_millions(value):
+        if value is None:
+            return "—"
+        val = _to_decimal(value)
+        sign = "-" if val < 0 else ""
+        val = abs(val)
+        return f"{sign}{float(val / Decimal('1000000')):.1f}M"
+
+    inventory_available_display = _format_millions(inventory_available_total)
     ineligible_display = _format_currency(inventory_ineligible)
     snapshot_text = (
         f"Inventory levels increased this period, primarily in finished goods, while turns softened due to slower sales velocity. Excess and obsolete inventory ticked up, raising the risk profile and influencing NOLV recovery expectations. Raw materials and WIP remained steady with no significant swings"

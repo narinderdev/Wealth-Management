@@ -19,12 +19,12 @@
       <div class="smallTitle">Available Inventory Mix Trend</div>
       <div class="donutWrap">
         <div class="donutBox">
-          <svg width="130" height="130" viewBox="0 0 130 130" aria-hidden="true">
-            <circle cx="65" cy="65" r="45" fill="none" stroke="#e9eef6" stroke-width="14"/>
+          <svg width="150" height="150" viewBox="0 0 150 150" aria-hidden="true">
+            <circle cx="75" cy="75" r="52" fill="none" stroke="#e9eef6" stroke-width="16"/>
             {% for segment in inventory_donut_segments %}
-            <circle cx="65" cy="65" r="45" fill="none" stroke="{{ segment.color }}" stroke-width="14"
+            <circle cx="75" cy="75" r="52" fill="none" stroke="{{ segment.color }}" stroke-width="16"
                     stroke-linecap="butt" stroke-dasharray="{{ segment.dasharray }}"
-                    stroke-dashoffset="{{ segment.dashoffset }}" transform="rotate(-90 65 65)"/>
+                    stroke-dashoffset="{{ segment.dashoffset }}" transform="rotate(-90 75 75)"/>
             {% endfor %}
           </svg>
           <div class="donutCenter">{{ inventory_available_display }}</div>

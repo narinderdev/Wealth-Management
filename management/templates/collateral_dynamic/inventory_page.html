@@ -166,7 +166,7 @@
     }
     .collateral-dynamic .grid2{
       display:grid;
-      grid-template-columns:240px 1fr;
+      grid-template-columns:260px 1fr;
       gap:12px;
     }
     .collateral-dynamic .mix-trend-card{
@@ -181,19 +181,19 @@
     .collateral-dynamic .donutWrap{
       display:flex;
       flex-direction:column;
-      gap:10px;
+      gap:12px;
       align-items:center;
-      padding:8px 0 0 0;
+      padding:10px 0 0 0;
     }
     .collateral-dynamic .donutCard{
       position:relative;
-      width:130px;
-      height:130px;
+      width:150px;
+      height:150px;
     }
     .collateral-dynamic .donutBox{
       position:relative;
-      width:130px;
-      height:130px;
+      width:150px;
+      height:150px;
       display:grid;
       place-items:center;
     }
@@ -203,7 +203,7 @@
       display:grid;
       place-items:center;
       font-weight:800;
-      font-size:18px;
+      font-size:20px;
     }
     .collateral-dynamic .bars{
       width:100%;
@@ -217,21 +217,23 @@
       gap:4px;
     }
     .collateral-dynamic .barLine{
-      height:18px;
-      border-radius:4px;
+      height:20px;
+      border-radius:6px;
       display:flex;
       align-items:center;
-      justify-content:space-between;
-      padding:0 8px;
+      justify-content:center;
+      gap:8px;
+      padding:0 10px;
       color:#ffffff;
       font-weight:600;
-      font-size:11px;
+      font-size:10px;
       letter-spacing:.2px;
     }
-    .collateral-dynamic .barLine span{display:flex;align-items:center;gap:6px}
-    .collateral-dynamic .barLine.navy{background:#0b2a66;}
-    .collateral-dynamic .barLine.mid{background:#4f63ff;}
-    .collateral-dynamic .barLine.bright{background:#0b66ff;}
+    .collateral-dynamic .barLine span{display:flex;align-items:center;gap:4px}
+    .collateral-dynamic .barLine .dot{display:none}
+    .collateral-dynamic .barLine.navy{background:#116BFD;}
+    .collateral-dynamic .barLine.mid{background:#0753B2;}
+    .collateral-dynamic .barLine.bright{background:#CADFEF;color:#1f2a37;}
 
     .collateral-dynamic .legend{
       display:flex;
@@ -254,9 +256,9 @@
       border-radius:2px;
       display:inline-block;
     }
-    .collateral-dynamic .sw.navy{background:#0b2a66}
-    .collateral-dynamic .sw.mid{background:#4f63ff}
-    .collateral-dynamic .sw.bright{background:#0b66ff}
+    .collateral-dynamic .sw.navy{background:#116BFD}
+    .collateral-dynamic .sw.mid{background:#0753B2}
+    .collateral-dynamic .sw.bright{background:#CADFEF}
     .collateral-dynamic .chartPad{
       padding:12px 6px 4px 6px;
       position:relative;
