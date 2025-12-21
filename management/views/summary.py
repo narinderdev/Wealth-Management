@@ -29,7 +29,7 @@ def _format_currency(value):
             amount = Decimal(str(value))
         except Exception:
             return "—"
-    return f"${amount:,.2f}"
+    return f"${amount:,.0f}"
 
 
 def _format_pct(value):

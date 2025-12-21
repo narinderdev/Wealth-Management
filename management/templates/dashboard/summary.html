@@ -324,6 +324,7 @@
           <table class="cc-table">
             <thead>
               <tr>
+                <th>Type</th>
                 <th>Beginning Collateral</th>
                 <th>Ineligibles</th>
                 <th>Eligible Collateral</th>
@@ -343,7 +344,7 @@
               {% if collateral_tree %}
                 {% include "partials/collateral_rows.html" with nodes=collateral_tree level=0 parent_id="" %}
               {% else %}
-                <tr><td colspan="12" class="cc-empty">Collateral data unavailable</td></tr>
+                <tr><td colspan="13" class="cc-empty">Collateral data unavailable</td></tr>
               {% endif %}
             </tbody>
           </table>
