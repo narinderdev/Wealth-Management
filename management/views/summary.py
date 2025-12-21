@@ -15,6 +15,7 @@ from management.models import (
     CollateralLimitsRow,
     CollateralOverviewRow,
     Company,
+    CompositeIndexRow,
 )
 
 
@@ -560,66 +561,72 @@ def summary_view(request):
     inventory_ratio = (inventory_ineligible / inventory_total_base) if inventory_total_base else None
     inventory_ratio_pct = inventory_ratio * Decimal("100") if inventory_ratio is not None else None
 
+    composite_latest = (
+        CompositeIndexRow.objects.filter(borrower=borrower)
+        .order_by("-date", "-created_at", "-id")
+        .first()
+    )
+
+    def _risk_direction(score):
+        if score is None:
+            return "up"
+        return "down" if score >= Decimal("3.5") else "up"
+
+    def _score_text(score):
+        return f"{score:.1f}" if score is not None else "—"
+
+    risk_defaults = {
+        "ar_risk": Decimal("3.0"),
+        "inventory_risk": Decimal("3.1"),
+        "company_risk": Decimal("3.8"),
+        "industry_risk": Decimal("2.9"),
+    }
+
     risk_metrics = []
-    if ar_row:
-        ar_pct = _normalize_pct(ar_row.pct_past_due)
-        direction = "down" if ar_pct and ar_pct >= Decimal("5") else "up"
-        detail = f"{_format_currency(ar_row.balance)} · {_format_pct(ar_row.pct_past_due)} past due"
-    else:
-        direction = "up"
-        detail = "No AR metrics yet"
+    ar_score = _to_decimal(getattr(composite_latest, "ar_risk", None))
+    if ar_score is None:
+        ar_score = risk_defaults["ar_risk"]
     risk_metrics.append({
         "label": "Accounts Receivable",
-        "detail": detail,
-        "direction": direction,
+        "detail": _score_text(ar_score),
+        "direction": _risk_direction(ar_score),
     })
 
-    if inventory_rows and inventory_ratio is not None:
-        direction = "down" if inventory_ratio_pct and inventory_ratio_pct > Decimal("15") else "up"
-        detail = f"{_format_currency(inventory_eligible)} eligible · {_format_pct(inventory_ratio)} ineligible"
-    else:
-        direction = "up"
-        detail = "Inventory snapshot pending"
+    inventory_score = _to_decimal(getattr(composite_latest, "inventory_risk", None))
+    if inventory_score is None:
+        inventory_score = risk_defaults["inventory_risk"]
     risk_metrics.append({
         "label": "Inventory",
-        "detail": detail,
-        "direction": direction,
+        "detail": _score_text(inventory_score),
+        "direction": _risk_direction(inventory_score),
     })
 
-    if borrower:
-        contact_parts = [
-            part
-            for part in (
-                borrower.primary_contact,
-                borrower.primary_contact_phone,
-                borrower.primary_contact_email,
-            )
-            if part
-        ]
-        company_detail = " · ".join(contact_parts) if contact_parts else "Contact info pending"
-    else:
-        company_detail = "Contact info pending"
+    company_score = _to_decimal(getattr(composite_latest, "company_risk", None))
+    if company_score is None:
+        company_score = risk_defaults["company_risk"]
     risk_metrics.append({
         "label": "Company",
-        "detail": company_detail,
-        "direction": "up",
+        "detail": _score_text(company_score),
+        "direction": _risk_direction(company_score),
     })
 
-    industry_detail = borrower_summary["industry"]
-    if borrower and borrower.company and borrower.company.primary_naics:
-        industry_detail = f"{industry_detail} · NAICS {borrower.company.primary_naics}"
+    industry_score = _to_decimal(getattr(composite_latest, "industry_risk", None))
+    if industry_score is None:
+        industry_score = risk_defaults["industry_risk"]
     risk_metrics.append({
         "label": "Industry",
-        "detail": industry_detail,
-        "direction": "up",
+        "detail": _score_text(industry_score),
+        "direction": _risk_direction(industry_score),
     })
 
     inventory_pct_text = _format_pct(inventory_ratio) if inventory_ratio is not None else "—"
     ar_pct_text = _format_pct(ar_row.pct_past_due) if ar_row and ar_row.pct_past_due is not None else "—"
-    risk_profile_score = Decimal("3.1")
-    if inventory_ratio_pct is not None:
-        suggested = (inventory_ratio_pct / Decimal("20")) + Decimal("3")
-        risk_profile_score = max(Decimal("1"), min(Decimal("5"), suggested))
+    risk_profile_score = _to_decimal(getattr(composite_latest, "overall_score", None))
+    if risk_profile_score is None:
+        risk_profile_score = Decimal("3.1")
+        if inventory_ratio_pct is not None:
+            suggested = (inventory_ratio_pct / Decimal("20")) + Decimal("3")
+            risk_profile_score = max(Decimal("1"), min(Decimal("5"), suggested))
     risk_profile_detail = f"AR past due {ar_pct_text} · Inventory ineligible {inventory_pct_text}"
 
     context = {
