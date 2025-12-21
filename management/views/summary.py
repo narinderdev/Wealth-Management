@@ -206,7 +206,7 @@ def _build_line_series(values, labels, series_label=None, width=220, height=120)
         max_value = max_value if max_value != 0 else 1.0
         min_value = max_value * 0.85 if max_value else 0
 
-    left = 44
+    left = 50
     right = 16
     top = 12
     bottom = 12
@@ -273,7 +273,7 @@ def _build_line_series(values, labels, series_label=None, width=220, height=120)
             "top": round(plot_top, 1),
             "bottom": round(baseline_y, 1),
         },
-        "label_x": round(plot_left - 40, 1),
+        "label_x": round(plot_left - 45, 1),
         "label_y": round(baseline_y + 8, 1),
     }
 
@@ -507,7 +507,9 @@ def summary_view(request):
     division_options = [{"value": "all", "label": "All Divisions"}]
     division_set = sorted({str(value).strip() for value in division_values if str(value).strip()})
     division_options.extend(
-        {"value": value, "label": value} for value in division_set
+        {"value": value, "label": value}
+        for value in division_set
+        if value.lower() != "all divisions"
     )
     if normalized_division != "all" and normalized_division not in division_set:
         normalized_division = "all"
