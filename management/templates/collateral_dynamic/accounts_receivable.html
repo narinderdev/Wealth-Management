@@ -878,6 +878,42 @@
     }
     .collateral-dynamic .ar-section .align-right{text-align:right;}
     .collateral-dynamic .ar-section .align-center{text-align:center;}
+    .collateral-dynamic .ar-section .centered-table th,
+    .collateral-dynamic .ar-section .centered-table td{
+      text-align:center;
+    }
+    .collateral-dynamic .ar-section .centered-table th:first-child,
+    .collateral-dynamic .ar-section .centered-table td:first-child{
+      text-align:left;
+    }
+    .collateral-dynamic .ar-section .comparison-blocks{
+      gap:0;
+    }
+    .collateral-dynamic .ar-section .comparison-blocks .subcard{
+      border:0;
+      border-radius:0;
+      padding:0 18px;
+    }
+    .collateral-dynamic .ar-section .comparison-blocks .subcard + .subcard{
+      border-left:1px solid #e2e8f8;
+    }
+    .collateral-dynamic .ar-section .comparison-blocks .centered-title{
+      text-align:center;
+      font-weight:700;
+      color:#1f2b5b;
+      margin-bottom:8px;
+      position:relative;
+    }
+    .collateral-dynamic .ar-section .comparison-blocks .centered-title::before,
+    .collateral-dynamic .ar-section .comparison-blocks .centered-title::after{
+      content:"";
+      display:inline-block;
+      width:64px;
+      height:1px;
+      background:#e2e8f8;
+      vertical-align:middle;
+      margin:0 10px;
+    }
     .collateral-dynamic .ar-section .total td{
       font-weight:800;
     }
@@ -1369,10 +1405,10 @@
                     Customer Exposure &amp; Collection Trend
                   </div>
 
-                  <div class="three-col">
+                  <div class="three-col comparison-blocks">
                     <div class="subcard">
-                      <div class="table-title">Concentration</div>
-                      <table>
+                      <div class="table-title centered-title">Concentration</div>
+                      <table class="centered-table">
                         <thead>
                           <tr>
                             <th>Customer</th>
@@ -1399,11 +1435,12 @@
                     </div>
 
                     <div class="subcard">
-                      <div class="table-title">Average Days Outstanding</div>
-                      <table>
+                      <div class="table-title centered-title">Average Days Outstanding</div>
+                      <table class="centered-table">
                         <thead>
                           <tr>
-                            <th style="width:42%">Current</th>
+                            <th style="text-align:center">Customer</th>
+                            <th style="text-align:center">Current</th>
                             <th style="text-align:center">Average TTM</th>
                             <th style="text-align:center">Variance (Days)</th>
                           </tr>
@@ -1411,13 +1448,14 @@
                         <tbody>
                           {% for row in ar_ado_rows %}
                             <tr>
+                              <td class="align-center">{{ row.customer }}</td>
                               <td class="align-center">{{ row.current }}</td>
                               <td class="align-center">{{ row.average }}</td>
                               <td class="align-center">{{ row.variance }}</td>
                             </tr>
                           {% empty %}
                             <tr>
-                              <td colspan="3" class="align-center">No ADO data</td>
+                              <td colspan="4" class="align-center">No ADO data</td>
                             </tr>
                           {% endfor %}
                         </tbody>
@@ -1425,11 +1463,12 @@
                     </div>
 
                     <div class="subcard">
-                      <div class="table-title">Days Sales Outstanding</div>
-                      <table>
+                      <div class="table-title centered-title">Days Sales Outstanding</div>
+                      <table class="centered-table">
                         <thead>
                           <tr>
-                            <th style="width:42%">Current</th>
+                            <th style="text-align:center">Customer</th>
+                            <th style="text-align:center">Current</th>
                             <th style="text-align:center">Average TTM</th>
                             <th style="text-align:center">Variance (Days)</th>
                           </tr>
@@ -1437,13 +1476,14 @@
                         <tbody>
                           {% for row in ar_dso_rows %}
                             <tr>
+                              <td class="align-center">{{ row.customer }}</td>
                               <td class="align-center">{{ row.current }}</td>
                               <td class="align-center">{{ row.average }}</td>
                               <td class="align-center">{{ row.variance }}</td>
                             </tr>
                           {% empty %}
                             <tr>
-                              <td colspan="3" class="align-center">No DSO data</td>
+                              <td colspan="4" class="align-center">No DSO data</td>
                             </tr>
                           {% endfor %}
                         </tbody>

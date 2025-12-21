@@ -1948,6 +1948,7 @@ def _accounts_receivable_context(borrower):
     )[:10]:
         ado_entries.append(
             {
+                "customer": _safe_str(row.customer),
                 "current": _format_days(row.current_ado_days),
                 "average": _format_days(row.avg_ttm_ado_days),
                 "variance": _format_variance(row.variance_ado_days, suffix="d"),
@@ -1962,6 +1963,7 @@ def _accounts_receivable_context(borrower):
     )[:10]:
         dso_entries.append(
             {
+                "customer": _safe_str(row.customer),
                 "current": _format_days(row.current_dso_days),
                 "average": _format_days(row.avg_ttm_dso_days),
                 "variance": _format_variance(row.variance_dso_days, suffix="d"),
