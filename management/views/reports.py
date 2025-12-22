@@ -60,13 +60,25 @@ PREFIX_MAP = {
 
 
 def _borrower_report_timestamps(borrower, limit=5):
-    timestamps = (
+    timestamps_qs = (
         CollateralOverviewRow.objects.filter(borrower=borrower)
         .order_by("-created_at")
         .values_list("created_at", flat=True)
-        .distinct()
     )
-    return list(timestamps[:limit])
+    timestamps = []
+    seen = set()
+    for ts in timestamps_qs:
+        if not ts:
+            key = "unknown"
+        else:
+            key = ts.strftime("%Y-%m-%d %H:%M")
+        if key in seen:
+            continue
+        seen.add(key)
+        timestamps.append(ts)
+        if len(timestamps) >= limit:
+            break
+    return timestamps
 
 
 def _build_report_rows(report_type, timestamps, company_label):
