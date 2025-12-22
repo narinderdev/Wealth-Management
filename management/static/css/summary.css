@@ -576,21 +576,23 @@
       font-weight:600;
       color:#1f2a55;
     }
-    .panel-chart svg{width:100%;height:130px}
+    .panel-chart svg{width:100%;height:120px}
     .panel-chart{
-      border-radius:16px;
-      padding:4px;
+      border-radius:12px;
+      padding:6px 8px 8px;
       position:relative;
+      background:#f8fafc;
+      border:1px solid #eef2f6;
     }
     .panel-bg{fill:transparent;stroke:none}
-    .panel-grid line{stroke:#e4e9f8;stroke-width:1}
+    .panel-grid line{stroke:#e9edf4;stroke-width:1}
     .panel-axis text{
-      font-size:10px;
-      fill:#9aa3c3;
+      font-size:9px;
+      fill:#9aa6b2;
     }
     .panel-line{
       fill:none;
-      stroke-width:3;
+      stroke-width:2.2;
       stroke-linecap:round;
       stroke-linejoin:round;
     }
@@ -636,14 +638,14 @@
     }
     .risk-tooltip.is-visible{opacity:1}
     .panel-dots circle{
-      fill:#fff;
-      stroke-width:2;
+      fill:transparent;
+      stroke-width:0;
       stroke-linecap:round;
       stroke-linejoin:round;
     }
-    .panel-line--blue + .panel-dots circle{stroke:#2563eb}
-    .panel-line--purple + .panel-dots circle{stroke:#9333ea}
-    .panel-line--green + .panel-dots circle{stroke:#10b981}
+    .panel-line--blue + .panel-dots circle{fill:#2563eb}
+    .panel-line--purple + .panel-dots circle{fill:#9333ea}
+    .panel-line--green + .panel-dots circle{fill:#10b981}
     .panel-dots circle:hover{cursor:pointer}
     .table-heading{margin-bottom:10px;border:none;padding:0;background:transparent}
     .insight-head{

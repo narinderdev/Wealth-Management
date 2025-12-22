@@ -257,7 +257,7 @@
               <polyline class="panel-line panel-line--blue" points="{{ net_chart.points }}"/>
               <g class="panel-dots">
                 {% for point in net_chart.points_list %}
-                <circle cx="{{ point.x }}" cy="{{ point.y }}" r="3"
+                <circle cx="{{ point.x }}" cy="{{ point.y }}" r="2.2"
                   data-label="{{ point.label }}"
                   data-value="{{ point.value }}"/>
                 {% endfor %}
@@ -291,7 +291,7 @@
               <polyline class="panel-line panel-line--purple" points="{{ outstanding_chart.points }}"/>
               <g class="panel-dots">
                 {% for point in outstanding_chart.points_list %}
-                <circle cx="{{ point.x }}" cy="{{ point.y }}" r="3"
+                <circle cx="{{ point.x }}" cy="{{ point.y }}" r="2.2"
                   data-label="{{ point.label }}"
                   data-value="{{ point.value }}"/>
                 {% endfor %}
@@ -325,7 +325,7 @@
               <polyline class="panel-line panel-line--green" points="{{ availability_chart.points }}"/>
               <g class="panel-dots">
                 {% for point in availability_chart.points_list %}
-                <circle cx="{{ point.x }}" cy="{{ point.y }}" r="3"
+                <circle cx="{{ point.x }}" cy="{{ point.y }}" r="2.2"
                   data-label="{{ point.label }}"
                   data-value="{{ point.value }}"/>
                 {% endfor %}

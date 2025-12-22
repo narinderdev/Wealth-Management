@@ -3,12 +3,6 @@
 {% with active_section|default:"inventory" as section %}
 <div class="menu-card">
 
-  <div class="menu-item menu-static">
-    <img src="{% static '/images/overview_icon.svg' %}" 
-          alt="Icon"
-          class="overview-icon" />
-    Overview
-  </div>
   <a class="menu-item {% if section == 'accounts_receivable' %}active{% endif %}" href="?section=accounts_receivable">
      <img src="{% if section == 'accounts_receivable' %}{% static '/images/account_receivable_icon.svg' %}{% else %}{% static '/images/blck_accounts_receivable.svg' %}{% endif %}"
           alt="Accounts Receivable Icon"
