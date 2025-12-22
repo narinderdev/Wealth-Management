@@ -167,6 +167,51 @@
   }
   .work-in-progress .table-card + .table-card{margin-top:8px;}
   .work-in-progress .numR{text-align:right;}
+  .work-in-progress .filters{
+    display:flex;
+    gap:10px;
+    align-items:center;
+    justify-content:flex-end;
+    flex-wrap:wrap;
+    margin-bottom:12px;
+  }
+  .work-in-progress .filters .select{
+    position:relative;
+    display:inline-flex;
+    align-items:center;
+  }
+  .work-in-progress .filters select{
+    appearance:none;
+    border:1px solid var(--line);
+    background:#fff;
+    border-radius:8px;
+    padding:7px 34px 7px 10px;
+    font-size:12px;
+    color:#475467;
+    min-width:120px;
+    box-shadow:0 1px 2px rgba(16,24,40,.06);
+  }
+  .work-in-progress .filters select:focus{
+    outline:2px solid rgba(46,144,250,.25);
+    outline-offset:1px;
+  }
+  .work-in-progress .filters .caret{
+    position:absolute;
+    right:10px;
+    pointer-events:none;
+    color:#667085;
+    display:grid;
+    place-items:center;
+  }
+  .work-in-progress .filters .caret svg{
+    width:12px;
+    height:12px;
+    stroke:currentColor;
+    fill:none;
+    stroke-width:2;
+    stroke-linecap:round;
+    stroke-linejoin:round;
+  }
   @media (max-width:980px){
     .work-in-progress .top-grid{grid-template-columns:1fr;}
     .work-in-progress .metric-stack{flex-direction:column;}
@@ -174,6 +219,34 @@
 </style>
 
 <div class="page work-in-progress">
+  <form class="filters" method="get">
+    <input type="hidden" name="section" value="inventory">
+    <input type="hidden" name="inventory_tab" value="work_in_progress">
+    <label class="select">
+      <select name="work_in_progress_range" aria-label="Date range" onchange="this.form.submit()">
+        {% for option in work_in_progress_range_options %}
+          <option value="{{ option.value }}" {% if option.value == work_in_progress_selected_range %}selected{% endif %}>
+            {{ option.label }}
+          </option>
+        {% endfor %}
+      </select>
+      <span class="caret" aria-hidden="true">
+        <svg viewBox="0 0 24 24"><path d="M6 9l6 6 6-6"></path></svg>
+      </span>
+    </label>
+    <label class="select">
+      <select name="work_in_progress_division" aria-label="Division filter" onchange="this.form.submit()">
+        {% for option in work_in_progress_division_options %}
+          <option value="{{ option.value }}" {% if option.value == work_in_progress_selected_division %}selected{% endif %}>
+            {{ option.label }}
+          </option>
+        {% endfor %}
+      </select>
+      <span class="caret" aria-hidden="true">
+        <svg viewBox="0 0 24 24"><path d="M6 9l6 6 6-6"></path></svg>
+      </span>
+    </label>
+  </form>
   <div class="card section">
     <div class="title">
       <img src="{% static 'images/borrowing_icon.svg' %}" 

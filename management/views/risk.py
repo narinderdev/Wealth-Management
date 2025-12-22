@@ -67,11 +67,8 @@ def risk_view(request):
         (_to_decimal(row.ineligibles) for row in CollateralOverviewRow.objects.filter(borrower=borrower))
     )
     snapshot_text = (
-        f"Latest composite score {overall_score:.2f}/5 · "
-        f"AR past due {_format_pct(ar_row.pct_past_due) if ar_row and ar_row.pct_past_due is not None else '—'} · "
-        f"Inventory ineligibles {_format_currency(ineligibles_sum)}"
-        if composite_latest or ar_row
-        else "Awaiting borrower data"
+        f"Risk levels remain manageable, though shifts in AR timing and a buildup of slower-moving inventory warrant closer monitoring. Core operations and liquidity are stable, and industry demand remains in line with recent trends. Continued focus on collections and inventory reduction will help maintain a balanced risk profile.· "
+        
     )
 
     trend_points = []

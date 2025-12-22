@@ -1,459 +1,512 @@
 {% extends "layout/app_base.html" %}
-
+{% load static %}
 {% block title %}Liquidity Forecast{% endblock %}
 
 {% block extra_head %}
-  {{ block.super }}
-  <style>
-    .forecast-page{
-      --fc-line:#e5edf6;
-      --fc-panel:#ffffff;
-      --fc-muted:#475569;
-      --fc-shadow:0 4px 12px rgba(15,23,42,.04);
-    }
-    .forecast-page .panel{
-      background:var(--fc-panel);
-      border:1px solid var(--fc-line);
-      border-radius:12px;
-      padding:16px 18px 20px;
-      box-shadow:var(--fc-shadow);
-      margin-bottom:18px;
-    }
-    .forecast-page .block-heading{
-      font-size:15px;
-      font-weight:600;
-      color:#0f172a;
-      margin-bottom:6px;
-    }
-    .forecast-page .block-sub{
-      font-size:13px;
-      color:var(--fc-muted);
-      line-height:1.6;
-      margin-bottom:18px;
-    }
-    .forecast-page .chart-grid{
-      display:grid;
-      gap:16px;
-    }
-    .forecast-page .chart-grid.two{grid-template-columns: repeat(auto-fit,minmax(260px,1fr))}
-    .forecast-page .chart-grid.single{grid-template-columns:1fr}
-    .forecast-page .chart-grid.quad{grid-template-columns: repeat(auto-fit,minmax(220px,1fr))}
-    .forecast-page .chart-card{
-      border:1px solid var(--fc-line);
-      border-radius:10px;
-      padding:12px;
-    }
-    .forecast-page .chart-card header{
-      font-size:13px;
-      font-weight:600;
-      margin-bottom:8px;
-      display:flex;
-      justify-content:space-between;
-      color:#0f172a;
-    }
-    .forecast-page .chart-card .small{font-size:11px;color:var(--fc-muted)}
-    .forecast-page svg{max-width:100%}
-  </style>
+{{ block.super }}
+<style>
+  .forecast-page {
+    --fc-line: #e5edf6;
+    --fc-panel: #ffffff;
+    --fc-muted: #475569;
+    --fc-shadow: 0 4px 12px rgba(15, 23, 42, .04);
+  }
+
+  .forecast-page .panel {
+    background: var(--fc-panel);
+    border: 1px solid var(--fc-line);
+    border-radius: 12px;
+    padding: 16px 18px 20px;
+    box-shadow: var(--fc-shadow);
+    margin-bottom: 18px;
+  }
+
+  .forecast-page .block-heading {
+    font-size: 15px;
+    font-weight: 600;
+    color: #0f172a;
+    margin-bottom: 6px;
+  }
+
+  .forecast-page .block-sub {
+    font-size: 13px;
+    color: var(--fc-muted);
+    line-height: 1.6;
+    margin-bottom: 18px;
+  }
+
+  .forecast-page .chart-grid {
+    display: grid;
+    gap: 16px;
+  }
+
+  .forecast-page .chart-grid.two {
+    grid-template-columns: repeat(auto-fit, minmax(260px, 1fr))
+  }
+
+  .forecast-page .chart-grid.single {
+    grid-template-columns: 1fr
+  }
+
+  .forecast-page .chart-grid.quad {
+    grid-template-columns: repeat(auto-fit, minmax(220px, 1fr))
+  }
+
+  .forecast-page .chart-card {
+    border: 1px solid var(--fc-line);
+    border-radius: 7px;
+    padding: 12px;
+  }
+
+  .forecast-page .chart-card header {
+    font-size: 13px;
+    font-weight: 600;
+    margin-bottom: 8px;
+    display: flex;
+    justify-content: space-between;
+    color: #0f172a;
+  }
+
+  .forecast-page .chart-card .small {
+    font-size: 11px;
+    color: var(--fc-muted)
+  }
+
+  .forecast-page svg {
+    max-width: 100%
+  }
+  svg-wrap {
+    margin: 134px;
+    margin-top: 10px;
+}
+</style>
 {% endblock %}
 
 {% block page_content %}
-  <!-- <div class="forecast-page">
-    <section class="panel forecast-block">
-      <div class="block-heading">Liquidity Forecast</div>
-      <div class="block-sub">
-        Snapshot overview reflects current operating liquidity with rolling 35-day expectations.
-        Forecast assumes no additional revolver draws and collections at the existing cadence.
-      </div>
-      <div class="chart-grid two">
-        <div class="chart-card">
-          <header>
-            <span>Available Collateral</span>
-            <span class="small">Actual vs Forecast</span>
-          </header>
-          <svg viewBox="0 0 520 180">
-            <path d="M40 140L120 120L200 125L280 110L360 95L440 90" fill="none" stroke="#0a6af0" stroke-width="3"/>
-            <path d="M40 150L120 140L200 145L280 130L360 120L440 125" fill="none" stroke="#60a5fa" stroke-width="3" stroke-dasharray="6 4"/>
-            <g fill="#0a6af0">
-              <circle cx="40" cy="140" r="4"/><circle cx="120" cy="120" r="4"/><circle cx="200" cy="125" r="4"/>
-              <circle cx="280" cy="110" r="4"/><circle cx="360" cy="95" r="4"/><circle cx="440" cy="90" r="4"/>
-            </g>
-          </svg>
-        </div>
-        <div class="chart-card">
-          <header>
-            <span>Liquidity Runway</span>
-            <span class="small">Asset-based revolver</span>
-          </header>
-          <svg viewBox="0 0 520 180">
-            <path d="M40 150h420" stroke="#e5edf6" stroke-width="8" stroke-linecap="round"/>
-            <path d="M40 150h260" stroke="#0a6af0" stroke-width="8" stroke-linecap="round"/>
-            <path d="M320 150h120" stroke="#f97316" stroke-width="8" stroke-linecap="round"/>
-            <text x="70" y="130" font-size="12">$48MM availability</text>
-            <text x="330" y="130" font-size="12">+$22MM dry powder</text>
-          </svg>
-        </div>
-      </div>
-    </section>
-
-    <section class="panel">
-      <div class="block-heading">Cash Activity</div>
-      <div class="block-sub">
-        Weekly schedules blend actuals with forecasted collections from the previous cycle.
-        Variance flags when liquidity falls below the 12-week covenant cushion.
-      </div>
-      <div class="chart-grid single">
-        <div class="chart-card">
-          <header>
-            <span>Cash Waterfall</span>
-            <span class="small">Weekly cadence</span>
-          </header>
-          <svg viewBox="0 0 620 240">
-            <polyline fill="none" stroke="#0a6af0" stroke-width="4" points="40,180 120,150 200,160 280,130 360,125 440,110 520,105"/>
-            <polyline fill="none" stroke="#38bdf8" stroke-dasharray="6 4" stroke-width="4" points="40,190 120,170 200,165 280,150 360,140 440,132 520,125"/>
-            <g fill="#0a6af0">
-              <circle cx="40" cy="180" r="4"/><circle cx="120" cy="150" r="4"/><circle cx="200" cy="160" r="4"/>
-              <circle cx="280" cy="130" r="4"/><circle cx="360" cy="125" r="4"/><circle cx="440" cy="110" r="4"/><circle cx="520" cy="105" r="4"/>
-            </g>
-            <text x="60" y="210" font-size="11">Mar 1</text>
-            <text x="140" y="210" font-size="11">Mar 8</text>
-            <text x="220" y="210" font-size="11">Mar 15</text>
-            <text x="300" y="210" font-size="11">Mar 22</text>
-            <text x="380" y="210" font-size="11">Mar 29</text>
-            <text x="460" y="210" font-size="11">Apr 5</text>
-            <text x="540" y="210" font-size="11">Apr 12</text>
-          </svg>
-        </div>
-      </div>
-    </section>
-
-    <section class="panel">
-      <div class="block-heading">Covenant &amp; Trend Watch</div>
-      <div class="chart-grid quad">
-        <div class="chart-card">
-          <header>
-            <span>Borrowing Base</span>
-            <span class="small">net availability</span>
-          </header>
-          <svg viewBox="0 0 220 120">
-            <rect x="20" y="30" width="30" height="70" fill="#e5e7eb"/>
-            <rect x="20" y="50" width="30" height="50" fill="#0a6af0"/>
-            <rect x="80" y="30" width="30" height="70" fill="#e5e7eb"/>
-            <rect x="80" y="35" width="30" height="65" fill="#38bdf8"/>
-            <rect x="140" y="30" width="30" height="70" fill="#e5e7eb"/>
-            <rect x="140" y="40" width="30" height="60" fill="#0a6af0"/>
-            <rect x="200" y="30" width="30" height="70" fill="#e5e7eb"/>
-            <rect x="200" y="45" width="30" height="55" fill="#38bdf8"/>
-          </svg>
-        </div>
-        <div class="chart-card">
-          <header>
-            <span>DSO Tracking</span>
-            <span class="small">rolling 90d</span>
-          </header>
-          <svg viewBox="0 0 220 120">
-            <polyline fill="none" stroke="#0a6af0" stroke-width="3" points="20,90 70,80 120,85 170,70 220,65"/>
-            <polyline fill="none" stroke="#f97316" stroke-dasharray="4 4" stroke-width="3" points="20,100 70,95 120,90 170,85 220,80"/>
-          </svg>
-        </div>
-        <div class="chart-card">
-          <header>
-            <span>Vendor Payments</span>
-            <span class="small">next 8 weeks</span>
-          </header>
-          <svg viewBox="0 0 220 120">
-            <path d="M20 100h180" stroke="#e2e8f0" stroke-width="2"/>
-            <path d="M20 80h150" stroke="#0a6af0" stroke-width="4"/>
-            <path d="M20 60h130" stroke="#f97316" stroke-width="4"/>
-            <path d="M20 40h100" stroke="#38bdf8" stroke-width="4"/>
-          </svg>
-        </div>
-        <div class="chart-card">
-          <header>
-            <span>Run Rate Sensitivity</span>
-            <span class="small">base vs downside</span>
-          </header>
-          <svg viewBox="0 0 220 120">
-            <polyline fill="none" stroke="#0a6af0" stroke-width="3" points="20,90 70,75 120,80 170,65 220,60"/>
-            <polyline fill="none" stroke="#94a3b8" stroke-width="3" stroke-dasharray="5 4" points="20,95 70,90 120,88 170,82 220,78"/>
-          </svg>
-        </div>
-      </div>
-    </section>
-  </div> -->
-  <!doctype html>
+<!doctype html>
 <html lang="en">
+
 <head>
   <meta charset="utf-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1" />
   <title>Forecast Dashboard (Static)</title>
   <style>
-    .forecast-shell{
+    .snapshot-card {
+      background: #fff;
+      padding: 10px 12px;
+      border-radius: 10px;
+    }
+
+    .snapshot-head {
+      display: flex;
+      align-items: center;
+      gap: 8px;
+      margin-bottom: 6px;
+    }
+
+    .snapshot-icon {
+      width: 14px;
+      height: 14px;
+      display: block;
+    }
+
+    .snapshot-title {
+      display: flex;
+      align-items: center;
+      gap: 8px;
+      font-size: 17px;
+      font-weight: 600;
+      color: #102048;
+      /* dark heading */
+    }
+
+    .snapshot-title .dot {
+      width: 6px;
+      height: 6px;
+      border-radius: 999px;
+      background: #2563eb;
+      /* blue dot */
+      display: inline-block;
+    }
+
+    .snapshot-text {
+    margin: 6px;
+    font-size: 15px;
+    line-height: 1.4;
+    color: #6b7280;
+}
+
+    .forecast-shell {
       --bg: #f4f7fb;
       --card: #ffffff;
       --ink: #101828;
       --muted: #667085;
-      --muted2:#98A2B3;
-      --border:#E6EAF2;
-      --grid:#EEF2F7;
-      --blue:#175CD3;
-      --orange:#F79009;
-      --shadow: 0 1px 2px rgba(16,24,40,.06);
+      --muted2: #98A2B3;
+      --border: #E6EAF2;
+      --grid: #EEF2F7;
+      --blue: #175CD3;
+      --orange: #F79009;
+      --shadow: 0 1px 2px rgba(16, 24, 40, .06);
       --radius: 10px;
     }
-    *{ box-sizing:border-box; }
-    .forecast-shell{
-      margin:0;
-      font-family: ui-sans-serif, system-ui, -apple-system, Segoe UI, Roboto, Helvetica, Arial, "Apple Color Emoji","Segoe UI Emoji";
-      color:var(--ink);
-      background:var(--bg);
-      line-height:1.35;
+
+    * {
+      box-sizing: border-box;
     }
-    .wrap{
+
+    .forecast-shell {
+      margin: 0;
+      font-family: ui-sans-serif, system-ui, -apple-system, Segoe UI, Roboto, Helvetica, Arial, "Apple Color Emoji", "Segoe UI Emoji";
+      color: var(--ink);
+      background: var(--bg);
+      line-height: 1.35;
+    }
+
+    .wrap {
       max-width: 1886px;
       margin: 18px auto;
       padding: 0 18px 28px;
     }
-    .dashboard{
+
+    .dashboard {
       background: var(--card);
       border: 1px solid var(--border);
       border-radius: 12px;
       box-shadow: var(--shadow);
-      overflow:hidden;
+      overflow: hidden;
     }
 
-    .section{
-      padding: 18px 18px 14px;
+    .section {
+      padding: 18px 24px 14px;
       border-top: 1px solid var(--border);
       background: #fff;
+      margin: inherit;
+      border-radius: 10px;
     }
-    .section:first-child{ border-top:none; }
 
-    .section-head{
-      display:flex;
-      align-items:center;
-      gap:10px;
+
+    .section:first-child {
+      border-top: none;
+    }
+
+    .section-head {
+      display: flex;
+      align-items: center;
+      gap: 10px;
       margin-bottom: 10px;
     }
-    .section-icon{
-      width:18px; height:18px;
+
+    .section-icon {
+      width: 18px;
+      height: 18px;
       border-radius: 6px;
-      background: rgba(23,92,211,.10);
-      border: 1px solid rgba(23,92,211,.18);
-      position:relative;
-    }
-    .section-icon:before{
-      content:"";
-      position:absolute;
-      inset:4px 4px 4px 4px;
-      border-radius: 4px;
-      background: rgba(23,92,211,.12);
-    }
-    .section-title{
-      font-size: 14px;
-      font-weight: 700;
-      letter-spacing:.1px;
+      background: rgba(23, 92, 211, .10);
+      border: 1px solid rgba(23, 92, 211, .18);
+      position: relative;
     }
 
-    .snapshot{
-      background:#F8FAFD;
-      border: 1px solid var(--border);
-      border-radius: var(--radius);
-      padding: 12px 12px;
-      margin-bottom: 12px;
+    .section-icon:before {
+      content: "";
+      position: absolute;
+      inset: 4px 4px 4px 4px;
+      border-radius: 4px;
+      background: rgba(23, 92, 211, .12);
     }
-    .snapshot .label{
-      display:flex;
-      align-items:center;
-      gap:8px;
-      font-size: 12px;
+
+    .section-title {
+      font-size: 15px;
+      font-weight: 700;
+      letter-spacing: .1px;
+    }
+
+    .snapshot {
+    margin: 3px;
+    font-size: 15px;
+    color: var(--muted);
+    max-width: 980px;
+}
+
+    .snapshot .label {
+      display: flex;
+      align-items: center;
+      gap: 8px;
+      font-size: 15px;
       font-weight: 700;
       color: #344054;
       margin-bottom: 6px;
     }
-    .dot{
-      width:8px; height:8px;
+
+    .dot {
+      width: 8px;
+      height: 8px;
       border-radius: 999px;
       background: var(--blue);
-      box-shadow: 0 0 0 3px rgba(23,92,211,.12);
+      box-shadow: 0 0 0 3px rgba(23, 92, 211, .12);
     }
-    .snapshot p{
-      margin:0;
-      font-size: 11px;
+
+    .snapshot p {
+      margin: 21px;
+      font-size: 15px;
       color: var(--muted);
       max-width: 980px;
     }
-
-    .grid-2{
-      display:grid;
+.grid-2 {
+      display: grid;
       grid-template-columns: 1fr 1fr;
-      gap: 12px;
-    }
-    .grid-2 + .grid-2{ margin-top: 12px; }
-    @media (max-width: 880px){
-      .grid-2{ grid-template-columns: 1fr; }
+      gap: 22px;
     }
 
-    .chart-card{
+    .grid-2+.grid-2 {
+      margin-top: 12px;
+    }
+
+    @media (max-width: 880px) {
+      .grid-2 {
+        grid-template-columns: 1fr;
+      }
+    }
+
+    .chart-card {
       border: 1px solid var(--border);
-      border-radius: var(--radius);
+      border-radius: 7px;
       background: #fff;
       box-shadow: var(--shadow);
-      overflow:hidden;
-      position:relative;
+      overflow: hidden;
+      position: relative;
+          padding: 9px;
     }
-    .chart-tooltip{
-      position:absolute;
-      top:0;
-      left:0;
-      transform:translate(-50%,-100%);
-      pointer-events:none;
-      background:rgba(15,23,42,.95);
-      color:#fff;
-      padding:6px 10px;
-      border-radius:6px;
-      font-size:11px;
-      line-height:1.4;
-      opacity:0;
-      transition:opacity .2s ease;
-      white-space:nowrap;
-      z-index:5;
+
+    .chart-tooltip {
+      position: absolute;
+      top: 0;
+      left: 0;
+      transform: translate(-50%, -100%);
+      pointer-events: none;
+      background: rgba(15, 23, 42, .95);
+      color: #fff;
+      padding: 6px 10px;
+      border-radius: 6px;
+      font-size: 11px;
+      line-height: 1.4;
+      opacity: 0;
+      transition: opacity .2s ease;
+      white-space: nowrap;
+      z-index: 5;
     }
-    .chart-tooltip strong{
-      display:block;
-      font-size:12px;
-      margin-bottom:3px;
+
+    .chart-tooltip strong {
+      display: block;
+      font-size: 12px;
+      margin-bottom: 3px;
     }
-    .chart-tooltip span{
-      display:block;
+
+    .chart-tooltip span {
+      display: block;
     }
-    .chart-card .card-pad{
+
+    .chart-card .card-pad {
       padding: 10px 14px 6px;
     }
-    .card-top{
-      display:flex;
+
+    .card-top {
+      display: flex;
       justify-content: space-between;
-      align-items:center;
+      align-items: center;
       gap: 12px;
       margin-bottom: 4px;
     }
-    .card-title{
-      font-size: 12px;
+
+    .card-title {
+      font-size: 25px;
       font-weight: 700;
-      color:#344054;
-      display:flex;
-      align-items:center;
-      gap:6px;
+      color: #344054;
+      display: flex;
+      align-items: center;
+      gap: 6px;
     }
-    .card-title .trend-ico{
-      width:14px;
-      height:14px;
-      display:inline-flex;
-      align-items:center;
-      justify-content:center;
+
+    .card-title .trend-ico {
+      width: 14px;
+      height: 14px;
+      display: inline-flex;
+      align-items: center;
+      justify-content: center;
     }
-    .card-title .trend-ico svg{
-      width:14px;
-      height:14px;
-      display:block;
-      stroke:var(--blue);
-      stroke-width:2;
-      fill:none;
+
+    .card-title .trend-ico svg {
+      width: 14px;
+      height: 14px;
+      display: block;
+      stroke: var(--blue);
+      stroke-width: 2;
+      fill: none;
     }
-    .legend{
-      display:flex;
-      gap: 10px;
-      align-items:center;
-      font-size: 10px;
+
+    .legend {
+      display: flex;
+      gap: 14px;
+      align-items: center;
+      font-size: 16px;
       color: var(--muted);
-      white-space:nowrap;
-      margin-left:auto;
+      white-space: nowrap;
+      margin-left: auto;
     }
-    .legend .litem{
-      display:flex;
-      align-items:center;
-      gap:6px;
+
+    .legend .litem {
+      display: flex;
+      align-items: center;
+      gap: 6px;
     }
-    .legend .swatch{
-      width:9px; height:9px;
+
+    .legend .swatch {
+      width: 9px;
+      height: 9px;
       border-radius: 3px;
       background: var(--blue);
     }
-    .legend .swatch.orange{ background: var(--orange); }
-    .seg{
-      display:flex;
-      justify-content:center;
-      gap:16px;
-      font-size: 10px;
-      color: var(--muted2);
-      margin: 2px 0 6px;
-      user-select:none;
-    }
-    .seg span:first-child{
-      color: #344054;
-      font-weight: 700;
+
+    .legend .swatch.orange {
+      background: var(--orange);
     }
 
-    .svg-wrap{
+    .seg {
+      display: flex;
+      justify-content: center;
+      gap: 16px;
+      font-size: 15px;
+      color: var(--muted2);
+      margin: 25px 0 6px;
+      user-select: none;
+      margin-bottom: -32px;
+      font-weight: 500;
+    }
+
+    .seg span:first-child {
+      color: #344054;
+      font-weight: 500;
+    }
+
+    .svg-wrap {
       padding: 2px 10px 12px;
     }
 
-    .chart-big .card-title{
-      display:flex; align-items:center; gap:8px;
+    .chart-big .card-title {
+      display: flex;
+      align-items: center;
+      gap: 8px;
     }
-    .chart-big .seg{ margin-top: 2px; }
-    .chart-big .svg-wrap{ padding: 4px 10px 12px; }
+
+    .chart-big .seg {
+      margin-top: 2px;
+    }
+
+    .chart-big .svg-wrap {
+      padding: 4px 10px 12px;
+    }
 
     /* SVG styling */
-    svg{ width:100%; height:auto; display:block; }
-    .axis text{ fill: var(--muted2); font-size: 9px; }
-    .baseline{ stroke: #D0D7EB; stroke-width: 1; }
-    .gridline{ stroke: var(--grid); stroke-width:1; }
-    .gridline.vert{ stroke: var(--grid); stroke-width:1; }
-    .borderline{ stroke: #E6EAF2; stroke-width:1; fill:none; }
-    .line-actual{ stroke: var(--blue); stroke-width: 2.3; fill:none; stroke-linecap:round; stroke-linejoin:round; }
-    .line-forecast{ stroke: var(--orange); stroke-width: 2.3; fill:none; stroke-linecap:round; stroke-linejoin:round; stroke-dasharray: 5 5; }
-    .point{ fill: var(--blue); }
-    .point.fore{ fill: var(--orange); }
-
-    /* spacing for single big cards */
-    .mt-12{ margin-top:12px; }
-
-    .subhead-row{
-      display:flex;
-      justify-content: space-between;
-      align-items:center;
-      gap:12px;
+    svg {
+      width: 88%;
+      height: auto;
+      display: block;
     }
-    .subhead-row .left{
+
+    .axis text {
+      fill:#808080;
+      font-size: 8px;
+    }
+
+
+    .baseline {
+      stroke: #D0D7EB;
+      stroke-width: 1;
+    }
+
+    .gridline {
+      stroke: var(--grid);
+      stroke-width: 1;
+    }
+
+    .gridline.vert {
+      stroke: var(--grid);
+      stroke-width: 1;
+    }
+
+    .borderline {
+      stroke: #E6EAF2;
+      stroke-width: 1;
+      fill: none;
+    }
+
+    .line-actual {
+      stroke: var(--blue);
+      stroke-width: 2.3;
+      fill: none;
+      stroke-linecap: round;
+      stroke-linejoin: round;
+    }
+
+    .line-forecast {
+      stroke: var(--orange);
+      stroke-width: 2.3;
+      fill: none;
+      stroke-linecap: round;
+      stroke-linejoin: round;
+      stroke-dasharray: 5 5;
+    }
+
+    .point {
+      fill: var(--blue);
+    }
+
+    .point.fore {
+      fill: var(--orange);
+    }
+.graph {
+      margin-top: 18px;
+    }
+
+    .subhead-row {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      gap: 12px;
+    }
+
+    .subhead-row .left {
       font-size: 11px;
       color: var(--muted);
-      font-weight:600;
+      font-weight: 600;
     }
-    .controls-row{
-      display:flex;
-      align-items:center;
-      gap:12px;
-      justify-content:space-between;
-      margin-bottom:10px;
+
+    .controls-row {
+      display: flex;
+      align-items: center;
+      gap: 12px;
+      justify-content: space-between;
+      margin-bottom: 10px;
     }
-    .period-filter{
-      display:flex;
-      align-items:center;
-      gap:8px;
-      font-size:12px;
-      color:var(--muted);
-      font-weight:600;
+
+    .period-filter {
+      display: flex;
+      align-items: center;
+      gap: 8px;
+      font-size: 12px;
+      color: var(--muted);
+      font-weight: 600;
     }
-    .period-filter select{
-      padding:6px 10px;
-      border:1px solid var(--border);
-      border-radius:8px;
-      font-size:12px;
-      color:var(--ink);
-      background:#fff;
+
+    .period-filter select {
+      padding: 6px 10px;
+      border: 1px solid var(--border);
+      border-radius: 8px;
+      font-size: 12px;
+      color: var(--ink);
+      background: #fff;
     }
   </style>
 </head>
+
 <body class="forecast-shell">
   <div class="wrap">
     <div class="dashboard">
@@ -461,49 +514,46 @@
       <!-- Liquidity Forecast -->
       <section class="section">
         <div class="section-head">
-          <div class="section-icon"></div>
+          <img src="{% static 'images/borrowing_icon.svg' %}" alt="Current Update Icon" class="current-update-icon" />
           <div class="section-title">Liquidity Forecast</div>
         </div>
-        <div class="controls-row">
-          <div class="subhead-row">
-            <div class="left"><span class="dot"></span> Snapshot Overview</div>
+        <div class="snapshot-card">
+          <div class="snapshot-head">
+            <img src="{% static 'images/borrowing_icon.svg' %}" alt="Snapshot Icon" class="snapshot-icon" />
+            <div class="snapshot-title">
+              <span>Snapshot Overview</span>
+            </div>
           </div>
-          <div class="period-filter">
-            <span>Period:</span>
-            <select id="period-select">
-              <option value="3">3 Months</option>
-              <option value="6">6 Months</option>
-              <option value="12" selected>12 Months</option>
-            </select>
-          </div>
-        </div>
 
-        <div class="snapshot">
-          <p>
-            Based on current information and weekly trends, liquidity is expected to remain stable in the near term.
-            Forecasts use recent history and assumed seasonality to project the selected horizon.
+          <p class="snapshot-text">
+            Based on 42 Wall Street analysts offering 12 month price targets for Meta Platforms in the last 3 months.
+            The average price target is $846.48 with a high forecast of $1,117.00 and a low forecast of $655.15. The
+            average price target represents a 38.89% change from the last price of $609.46
           </p>
         </div>
+    
 
-        <div class="grid-2">
-          <div class="chart-card" data-chart="availableCollateral"></div>
-          <div class="chart-card" data-chart="revolverBalance"></div>
-        </div>
+    <div class="grid-2">
+      <div class="chart-card" data-chart="availableCollateral"></div>
+      <div class="chart-card" data-chart="revolverBalance"></div>
+    </div>
 
-        <div class="chart-card chart-big mt-12" data-chart="availableLiquidity"></div>
+    <div class="chart-card chart-big graph" data-chart="availableLiquidity"></div>
       </section>
+    </div>
 
       <!-- Sales and Gross Margin Forecast -->
       <section class="section">
         <div class="section-head">
-          <div class="section-icon"></div>
+           <img src="{% static 'images/borrowing_icon.svg' %}" alt="Snapshot Icon" class="snapshot-icon" />
           <div class="section-title">Sales and Gross Margin Forecast</div>
         </div>
 
         <div class="snapshot">
-          <div class="label"><span class="dot"></span>Snapshot Overview</div>
+          <div class="label"><span><img src="{% static 'images/borrowing_icon.svg' %}" alt="Snapshot Icon" class="snapshot-icon" /></span>Snapshot Overview</div>
           <p>
-            Sales and gross margin are modeled using recent trailing performance and expected demand patterns. The forecast
+            Sales and gross margin are modeled using recent trailing performance and expected demand patterns. The
+            forecast
             highlights likely near-term fluctuations followed by a gradual normalization.
           </p>
         </div>
@@ -517,12 +567,12 @@
       <!-- Accounts Receivable Forecast -->
       <section class="section">
         <div class="section-head">
-          <div class="section-icon"></div>
+          <img src="{% static 'images/borrowing_icon.svg' %}" alt="Snapshot Icon" class="snapshot-icon" />
           <div class="section-title">Accounts Receivable Forecast</div>
         </div>
 
         <div class="snapshot">
-          <div class="label"><span class="dot"></span>Snapshot Overview</div>
+          <div class="label"><img src="{% static 'images/borrowing_icon.svg' %}" alt="Snapshot Icon" class="snapshot-icon" />Snapshot Overview</div>
           <p>
             Accounts receivable is projected from historical collections behavior and recent invoicing trends.
             Forecast values assume steady DSO with modest seasonality.
@@ -535,12 +585,12 @@
       <!-- Inventory Forecast -->
       <section class="section">
         <div class="section-head">
-          <div class="section-icon"></div>
+          <img src="{% static 'images/borrowing_icon.svg' %}" alt="" class="snapshot-icon" />
           <div class="section-title">Inventory Forecast</div>
         </div>
 
         <div class="snapshot">
-          <div class="label"><span class="dot"></span>Snapshot Overview</div>
+          <div class="label"><img src="{% static 'images/borrowing_icon.svg' %}" alt="" class="snapshot-icon" />Snapshot Overview</div>
           <p>
             Inventory components are forecast using recent turns, production assumptions, and a 12‑month demand outlook.
             The model anticipates a mild buildup before leveling toward target ranges.
@@ -557,8 +607,8 @@
           <div class="chart-card" data-chart="workInProcess"></div>
         </div>
       </section>
-
     </div>
+
   </div>
 
   <script>
@@ -569,30 +619,30 @@
     let CHARTS = parsedCharts;
     const SERVER_CHARTS = parsedCharts && Object.keys(parsedCharts).length ? deepClone(parsedCharts) : null;
 
-    const BASE_MONTHS_PAST = ["Jan 2025","Feb 2025","Mar 2025","Apr 2025","May 2025","Jun 2025","Jul 2025","Aug 2025","Sep 2025","Oct 2025","Nov 2025","Dec 2025"];
-    const BASE_MONTHS_FUTURE = ["Jan 2026","Feb 2026","Mar 2026","Apr 2026","May 2026","Jun 2026","Jul 2026","Aug 2026","Sep 2026","Oct 2026","Nov 2026","Dec 2026"];
+    const BASE_MONTHS_PAST = ["Jan 2025", "Feb 2025", "Mar 2025", "Apr 2025", "May 2025", "Jun 2025", "Jul 2025", "Aug 2025", "Sep 2025", "Oct 2025", "Nov 2025", "Dec 2025"];
+    const BASE_MONTHS_FUTURE = ["Jan 2026", "Feb 2026", "Mar 2026", "Apr 2026", "May 2026", "Jun 2026", "Jul 2026", "Aug 2026", "Sep 2026", "Oct 2026", "Nov 2026", "Dec 2026"];
 
-    function formatMonthLabel(dateObj){
+    function formatMonthLabel(dateObj) {
       const month = dateObj.toLocaleString("en-US", { month: "short" });
       return `${month} ${dateObj.getFullYear()}`;
     }
 
-    function getMonthLabels(pastCount, futureCount){
+    function getMonthLabels(pastCount, futureCount) {
       const now = new Date();
       const past = [];
-      for(let i = pastCount - 1; i >= 0; i--){
+      for (let i = pastCount - 1; i >= 0; i--) {
         const d = new Date(now.getFullYear(), now.getMonth() - i, 1);
         past.push(formatMonthLabel(d));
       }
       const future = [];
-      for(let i = 1; i <= futureCount; i++){
+      for (let i = 1; i <= futureCount; i++) {
         const d = new Date(now.getFullYear(), now.getMonth() + i, 1);
         future.push(formatMonthLabel(d));
       }
       return { past, future };
     }
 
-    function makeStaticChart(title, actual, forecast, yPrefix="$"){
+    function makeStaticChart(title, actual, forecast, yPrefix = "$") {
       const labels = [...BASE_MONTHS_PAST, ...BASE_MONTHS_FUTURE];
       const labelsShort = labels;
       return {
@@ -610,16 +660,16 @@
     }
 
     const STATIC_CHARTS = {
-      sales: makeStaticChart("Sales", [9,11,13,10,12,11,13,12,11,12,11,12], [12,13,12,13,14,13,12.5,12.8,13.2,13.5,13.1,13.0]),
-      grossMargin: makeStaticChart("Gross Margin", [4.4,4.9,5.2,4.8,5.1,5.0,5.3,5.2,5.0,5.1,5.0,5.1], [5.1,5.2,5.0,4.9,5.3,5.5,5.6,5.4,5.3,5.2,5.3,5.4]),
-      accountsReceivable: makeStaticChart("Accounts Receivable", [7.0,7.6,8.1,7.8,8.2,8.0,8.4,8.3,8.1,8.0,7.9,7.8], [7.9,8.1,8.0,7.8,8.2,8.5,8.6,8.4,8.3,8.1,8.2,8.3]),
-      finishedGoods: makeStaticChart("Finished Goods", [6.0,6.4,6.1,6.2,6.0,6.3,6.5,6.4,6.2,6.1,6.0,6.1], [6.1,6.2,6.0,5.9,6.3,6.5,6.6,6.5,6.4,6.3,6.4,6.5]),
-      weeksOfSupply: makeStaticChart("Weeks of Supply", [5.0,5.4,5.1,5.2,5.0,5.3,5.5,5.4,5.2,5.1,5.0,5.1], [5.1,5.2,5.0,4.9,5.3,5.5,5.6,5.4,5.3,5.2,5.3,5.4]),
-      rawMaterials: makeStaticChart("Raw Materials", [4.2,4.5,4.3,4.4,4.2,4.5,4.6,4.5,4.4,4.3,4.2,4.3], [4.3,4.4,4.2,4.1,4.4,4.6,4.7,4.5,4.4,4.3,4.4,4.5]),
-      workInProcess: makeStaticChart("Work In Process", [3.1,3.3,3.2,3.3,3.1,3.4,3.5,3.4,3.3,3.2,3.1,3.2], [3.2,3.3,3.1,3.0,3.3,3.5,3.6,3.4,3.3,3.2,3.3,3.4]),
+      sales: makeStaticChart("Sales", [9, 11, 13, 10, 12, 11, 13, 12, 11, 12, 11, 12], [12, 13, 12, 13, 14, 13, 12.5, 12.8, 13.2, 13.5, 13.1, 13.0]),
+      grossMargin: makeStaticChart("Gross Margin", [4.4, 4.9, 5.2, 4.8, 5.1, 5.0, 5.3, 5.2, 5.0, 5.1, 5.0, 5.1], [5.1, 5.2, 5.0, 4.9, 5.3, 5.5, 5.6, 5.4, 5.3, 5.2, 5.3, 5.4]),
+      accountsReceivable: makeStaticChart("Accounts Receivable", [7.0, 7.6, 8.1, 7.8, 8.2, 8.0, 8.4, 8.3, 8.1, 8.0, 7.9, 7.8], [7.9, 8.1, 8.0, 7.8, 8.2, 8.5, 8.6, 8.4, 8.3, 8.1, 8.2, 8.3]),
+      finishedGoods: makeStaticChart("Finished Goods", [6.0, 6.4, 6.1, 6.2, 6.0, 6.3, 6.5, 6.4, 6.2, 6.1, 6.0, 6.1], [6.1, 6.2, 6.0, 5.9, 6.3, 6.5, 6.6, 6.5, 6.4, 6.3, 6.4, 6.5]),
+      weeksOfSupply: makeStaticChart("Weeks of Supply", [5.0, 5.4, 5.1, 5.2, 5.0, 5.3, 5.5, 5.4, 5.2, 5.1, 5.0, 5.1], [5.1, 5.2, 5.0, 4.9, 5.3, 5.5, 5.6, 5.4, 5.3, 5.2, 5.3, 5.4]),
+      rawMaterials: makeStaticChart("Raw Materials", [4.2, 4.5, 4.3, 4.4, 4.2, 4.5, 4.6, 4.5, 4.4, 4.3, 4.2, 4.3], [4.3, 4.4, 4.2, 4.1, 4.4, 4.6, 4.7, 4.5, 4.4, 4.3, 4.4, 4.5]),
+      workInProcess: makeStaticChart("Work In Process", [3.1, 3.3, 3.2, 3.3, 3.1, 3.4, 3.5, 3.4, 3.3, 3.2, 3.1, 3.2], [3.2, 3.3, 3.1, 3.0, 3.3, 3.5, 3.6, 3.4, 3.3, 3.2, 3.3, 3.4]),
     };
 
-    function sliceChart(chart, months, labelSeqPast, labelSeqFuture, pastCount, futureCount){
+    function sliceChart(chart, months, labelSeqPast, labelSeqFuture, pastCount, futureCount) {
       const m = Math.max(1, Math.min(months, 12));
       const actualCount = Array.isArray(chart.actual) ? chart.actual.length : 0;
       const forecastCount = Array.isArray(chart.forecast) ? chart.forecast.length : 0;
@@ -672,22 +722,22 @@
       }
     };
 
-    function buildChartConfig(periodMonths){
+    function buildChartConfig(periodMonths) {
       const totalMonths = Math.max(1, Math.min(12, periodMonths));
       const pastMonths = Math.ceil(totalMonths / 2);
       const futureMonths = Math.max(1, totalMonths - pastMonths);
       const { past: pastLabels, future: futureLabels } = getMonthLabels(pastMonths, futureMonths);
 
-      if(SERVER_CHARTS){
+      if (SERVER_CHARTS) {
         const sliced = {};
-        Object.keys(SERVER_CHARTS).forEach(key=>{
+        Object.keys(SERVER_CHARTS).forEach(key => {
           sliced[key] = sliceChart(SERVER_CHARTS[key], totalMonths, pastLabels, futureLabels, pastMonths, futureMonths);
         });
         return sliced;
       }
 
-      const cfg = {...STATIC_CHARTS};
-      Object.keys(BASE_SERIES).forEach(key=>{
+      const cfg = { ...STATIC_CHARTS };
+      Object.keys(BASE_SERIES).forEach(key => {
         const base = BASE_SERIES[key];
         const actual = base.actual.slice(-pastMonths);
         const forecast = base.forecast.slice(0, futureMonths);
@@ -706,54 +756,54 @@
           yFormat: "short",
         };
       });
-      Object.keys(cfg).forEach(key=>{
-        if(!(key in BASE_SERIES)){
+      Object.keys(cfg).forEach(key => {
+        if (!(key in BASE_SERIES)) {
           cfg[key] = sliceChart(cfg[key], totalMonths, pastLabels, futureLabels, pastMonths, futureMonths);
         }
       });
       return cfg;
     }
 
-    function formatY(v, chart){
-      if(chart.yFormat === "pct") return `${Math.round(v)}%`;
-      if(chart.yFormat === "num") return `${v.toFixed(1)}`;
+    function formatY(v, chart) {
+      if (chart.yFormat === "pct") return `${Math.round(v)}%`;
+      if (chart.yFormat === "num") return `${v.toFixed(1)}`;
       const abs = Math.abs(v);
-      if(abs >= 1_000_000){
-        return `${chart.yPrefix}${(v/1_000_000).toFixed(1)}M`;
+      if (abs >= 1_000_000) {
+        return `${chart.yPrefix}${(v / 1_000_000).toFixed(1)}M`;
       }
-      if(abs >= 1_000){
-        return `${chart.yPrefix}${(v/1_000).toFixed(0)}K`;
+      if (abs >= 1_000) {
+        return `${chart.yPrefix}${(v / 1_000).toFixed(0)}K`;
       }
       return `${chart.yPrefix}${v.toFixed(1)}`;
     }
 
-    function linePath(points){
-      return points.map((p,i)=> (i===0?`M ${p[0]} ${p[1]}`:`L ${p[0]} ${p[1]}`)).join(" ");
+    function linePath(points) {
+      return points.map((p, i) => (i === 0 ? `M ${p[0]} ${p[1]}` : `L ${p[0]} ${p[1]}`)).join(" ");
     }
 
-    function renderCard(el, key){
+    function renderCard(el, key) {
       const cfg = CHARTS[key];
       const isBig = el.classList.contains("chart-big");
       const H = isBig ? 240 : 168;
       const W = 520; // internal viewBox width (responsive)
-      const pad = {l: 52, r: 18, t: 20, b: isBig ? 52 : 44};
+      const pad = { l: 52, r: 18, t: 20, b: isBig ? 52 : 44 };
 
       // compute min/max across all values with gentle padding
-      if(!cfg || !cfg.labels?.length){
+      if (!cfg || !cfg.labels?.length) {
         el.innerHTML = `<div class="card-pad"><p class="card-title">Awaiting forecast data.</p></div>`;
         return;
       }
 
       const all = [...(cfg.actual || []), ...(cfg.forecast || [])];
-      if(!all.length){
+      if (!all.length) {
         el.innerHTML = `<div class="card-pad"><p class="card-title">Awaiting forecast data.</p></div>`;
         return;
       }
       let min = Math.min(...all);
       let max = Math.max(...all);
-      const range = (max-min) || 1;
-      min = min - range*0.15;
-      max = max + range*0.15;
+      const range = (max - min) || 1;
+      min = min - range * 0.15;
+      max = max + range * 0.15;
 
       const plotW = W - pad.l - pad.r;
       const plotH = H - pad.t - pad.b;
@@ -761,21 +811,21 @@
       const nTotal = cfg.labels.length;
       const nActual = cfg.actual.length;
       const denom = Math.max(1, nTotal - 1);
-      const x = (i) => pad.l + (i/denom)*plotW;
-      const y = (v) => pad.t + (1 - (v-min)/(max-min))*plotH;
+      const x = (i) => pad.l + (i / denom) * plotW;
+      const y = (v) => pad.t + (1 - (v - min) / (max - min)) * plotH;
 
       // points
-      const actualPts = (cfg.actual || []).map((v,i)=> [x(i), y(v)]);
-      const forecastPts = (cfg.forecast || []).map((v,j)=> {
-        const i = (nActual-1) + j; // forecast begins at last actual point
+      const actualPts = (cfg.actual || []).map((v, i) => [x(i), y(v)]);
+      const forecastPts = (cfg.forecast || []).map((v, j) => {
+        const i = (nActual - 1) + j; // forecast begins at last actual point
         return [x(i), y(v)];
       });
 
       // y ticks
       const ticks = cfg.yTicks || 5;
-      const yTicks = Array.from({length:ticks}, (_,i)=>{
-        const t = i/(ticks-1);
-        const val = max - t*(max-min);
+      const yTicks = Array.from({ length: ticks }, (_, i) => {
+        const t = i / (ticks - 1);
+        const val = max - t * (max - min);
         return { val, y: y(val) };
       });
 
@@ -783,16 +833,16 @@
       let xLabelStep = 1;
       if (nTotal > 12) xLabelStep = 2;
       if (nTotal > 24) xLabelStep = 3;
-      const xTickIndices = cfg.labels.map((_,i)=>i).filter(i => i % xLabelStep === 0);
+      const xTickIndices = cfg.labels.map((_, i) => i).filter(i => i % xLabelStep === 0);
 
       // card shell (HTML)
       el.innerHTML = `
         <div class="card-pad">
           <div class="card-top">
             <div class="card-title">
-              <span class="trend-ico" aria-hidden="true">
-                <svg viewBox="0 0 16 16"><path d="M2 11l4-4 3 3 5-6"/></svg>
-              </span>
+             <img src="{% static 'images/borrowing_icon.svg' %}" 
+          alt="Current Update Icon"
+          class="current-update-icon" />
               ${cfg.title}
             </div>
             <div class="legend" aria-label="legend">
@@ -808,42 +858,42 @@
             <rect x="${pad.l}" y="${pad.t}" width="${plotW}" height="${plotH}" class="borderline" />
             <!-- grid + y labels -->
             ${yTicks.map(t => `
-              <line x1="${pad.l}" y1="${t.y}" x2="${W-pad.r}" y2="${t.y}" class="gridline" />
+              <line x1="${pad.l}" y1="${t.y}" x2="${W - pad.r}" y2="${t.y}" class="gridline" />
               <g class="axis">
-                <text x="${pad.l-8}" y="${t.y+3}" text-anchor="end">${formatY(t.val, cfg)}</text>
+                <text x="${pad.l - 8}" y="${t.y + 3}" text-anchor="end">${formatY(t.val, cfg)}</text>
               </g>
             `).join("")}
             <!-- vertical grid -->
             ${xTickIndices.map(i => `
-              <line x1="${x(i)}" y1="${pad.t}" x2="${x(i)}" y2="${H-pad.b}" class="gridline vert" />
+              <line x1="${x(i)}" y1="${pad.t}" x2="${x(i)}" y2="${H - pad.b}" class="gridline vert" />
             `).join("")}
             <!-- y axis label -->
             <text x="${pad.l - 30}" y="${pad.t - 4}" text-anchor="middle" transform="rotate(-90 ${pad.l - 30} ${pad.t - 4})" font-size="10" fill="#98A2B3"></text>
             <!-- x labels -->
-            <line x1="${pad.l}" y1="${H-pad.b}" x2="${W-pad.r}" y2="${H-pad.b}" class="baseline" />
+            <line x1="${pad.l}" y1="${H - pad.b}" x2="${W - pad.r}" y2="${H - pad.b}" class="baseline" />
             <g class="axis">
-              ${cfg.labels.map((lab,i)=>{
-                if(i % xLabelStep !== 0) return "";
-                const xx = x(i);
-                if(i>0 && lab === cfg.labels[i-1]) return "";
-                const shortLab = (cfg.labelsShort && cfg.labelsShort[i]) || lab;
-                const parts = shortLab.split(" ");
-                const line1 = parts.slice(0, parts.length-1).join(" ") || shortLab;
-                const line2 = parts[parts.length-1] || "";
-                const baseY = H - (isBig ? 26 : 24);
-                return `<text x="${xx}" y="${baseY}" text-anchor="middle" fill="#9CA3AF" font-size="11">
+              ${cfg.labels.map((lab, i) => {
+        if (i % xLabelStep !== 0) return "";
+        const xx = x(i);
+        if (i > 0 && lab === cfg.labels[i - 1]) return "";
+        const shortLab = (cfg.labelsShort && cfg.labelsShort[i]) || lab;
+        const parts = shortLab.split(" ");
+        const line1 = parts.slice(0, parts.length - 1).join(" ") || shortLab;
+        const line2 = parts[parts.length - 1] || "";
+        const baseY = H - (isBig ? 26 : 24);
+        return `<text x="${xx}" y="${baseY}" text-anchor="middle" fill="#9CA3AF" font-size="11">
                   <tspan x="${xx}" dy="0">${line1}</tspan>
                   <tspan x="${xx}" dy="10">${line2}</tspan>
                 </text>`;
-              }).join("")}
+      }).join("")}
             </g>
             <!-- lines -->
             ${actualPts.length ? `<path d="${linePath(actualPts)}" class="line-actual" />` : ""}
-            ${forecastPts.length ? `<path d="${linePath(actualPts.length ? [actualPts[actualPts.length-1], ...forecastPts] : forecastPts)}" class="line-forecast" />` : ""}
+            ${forecastPts.length ? `<path d="${linePath(actualPts.length ? [actualPts[actualPts.length - 1], ...forecastPts] : forecastPts)}" class="line-forecast" />` : ""}
             <!-- points (subtle like the reference) -->
-            ${actualPts.map((p,i)=> i===0 || i===actualPts.length-1 ? "" :
-              `<circle cx="${p[0]}" cy="${p[1]}" r="2.2" class="point" />`
-            ).join("")}
+            ${actualPts.map((p, i) => i === 0 || i === actualPts.length - 1 ? "" :
+        `<circle cx="${p[0]}" cy="${p[1]}" r="2.2" class="point" />`
+      ).join("")}
           </svg>
         </div>
       `;
@@ -852,15 +902,15 @@
       tooltip.className = "chart-tooltip";
       el.appendChild(tooltip);
 
-        const svgEl = el.querySelector("svg");
-        if(svgEl){
-          const totalPoints = cfg.labels.length;
-          const actualCount = (cfg.actual || []).length;
-          svgEl.addEventListener("mousemove", (event)=>{
-            const rect = svgEl.getBoundingClientRect();
-            const cardRect = el.getBoundingClientRect();
-            const xPos = Math.max(pad.l, Math.min(rect.width - pad.r, event.clientX - rect.left));
-            const frac = (xPos - pad.l) / plotW;
+      const svgEl = el.querySelector("svg");
+      if (svgEl) {
+        const totalPoints = cfg.labels.length;
+        const actualCount = (cfg.actual || []).length;
+        svgEl.addEventListener("mousemove", (event) => {
+          const rect = svgEl.getBoundingClientRect();
+          const cardRect = el.getBoundingClientRect();
+          const xPos = Math.max(pad.l, Math.min(rect.width - pad.r, event.clientX - rect.left));
+          const frac = (xPos - pad.l) / plotW;
           const clampedFrac = Math.max(0, Math.min(1, frac));
           const index = Math.round(clampedFrac * (totalPoints - 1));
           const label = cfg.labels[index] || "";
@@ -872,10 +922,10 @@
               ? cfg.forecast[forecastIndex]
               : null;
           const parts = [`<strong>${label || "Point"}</strong>`];
-          if(actualValue !== null && actualValue !== undefined){
+          if (actualValue !== null && actualValue !== undefined) {
             parts.push(`<span>Actual: ${formatY(actualValue, cfg)}</span>`);
           }
-          if(forecastValue !== null && forecastValue !== undefined){
+          if (forecastValue !== null && forecastValue !== undefined) {
             parts.push(`<span>Forecast: ${formatY(forecastValue, cfg)}</span>`);
           }
           tooltip.innerHTML = parts.join("");
@@ -883,21 +933,21 @@
           tooltip.style.top = `${event.clientY - cardRect.top - 10}px`;
           tooltip.style.opacity = parts.length > 1 ? "1" : "0";
         });
-        svgEl.addEventListener("mouseleave", ()=> {
+        svgEl.addEventListener("mouseleave", () => {
           tooltip.style.opacity = "0";
         });
       }
     }
 
-    function init(){
-      document.querySelectorAll("[data-chart]").forEach(el=>{
+    function init() {
+      document.querySelectorAll("[data-chart]").forEach(el => {
         const key = el.getAttribute("data-chart");
-        if(!CHARTS[key]) return;
+        if (!CHARTS[key]) return;
         renderCard(el, key);
       });
     }
 
-    function rebuild(period){
+    function rebuild(period) {
       CHARTS = buildChartConfig(period);
       init();
     }
@@ -908,14 +958,15 @@
 
     // period selector (fallback only when server data not provided)
     const periodSelect = document.getElementById("period-select");
-    if(periodSelect){
-      periodSelect.addEventListener("change", function(){
+    if (periodSelect) {
+      periodSelect.addEventListener("change", function () {
         const months = parseInt(this.value, 10) || 12;
         rebuild(months);
       });
     }
   </script>
 </body>
+
 </html>
 
 {% endblock %}

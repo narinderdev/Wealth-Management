@@ -177,9 +177,82 @@
     border-top:1px solid var(--line);
   }
   .raw-materials .numR{text-align:right;}
+  .raw-materials .filters{
+    display:flex;
+    gap:10px;
+    align-items:center;
+    justify-content:flex-end;
+    flex-wrap:wrap;
+    margin-bottom:12px;
+  }
+  .raw-materials .filters .select{
+    position:relative;
+    display:inline-flex;
+    align-items:center;
+  }
+  .raw-materials .filters select{
+    appearance:none;
+    border:1px solid var(--line);
+    background:#fff;
+    border-radius:8px;
+    padding:7px 34px 7px 10px;
+    font-size:12px;
+    color:#475467;
+    min-width:120px;
+    box-shadow:0 1px 2px rgba(16,24,40,.06);
+  }
+  .raw-materials .filters select:focus{
+    outline:2px solid rgba(46,144,250,.25);
+    outline-offset:1px;
+  }
+  .raw-materials .filters .caret{
+    position:absolute;
+    right:10px;
+    pointer-events:none;
+    color:#667085;
+    display:grid;
+    place-items:center;
+  }
+  .raw-materials .filters .caret svg{
+    width:12px;
+    height:12px;
+    stroke:currentColor;
+    fill:none;
+    stroke-width:2;
+    stroke-linecap:round;
+    stroke-linejoin:round;
+  }
 </style>
 
 <div class="page raw-materials">
+  <form class="filters" method="get">
+    <input type="hidden" name="section" value="inventory">
+    <input type="hidden" name="inventory_tab" value="raw_materials">
+    <label class="select">
+      <select name="raw_materials_range" aria-label="Date range" onchange="this.form.submit()">
+        {% for option in raw_materials_range_options %}
+          <option value="{{ option.value }}" {% if option.value == raw_materials_selected_range %}selected{% endif %}>
+            {{ option.label }}
+          </option>
+        {% endfor %}
+      </select>
+      <span class="caret" aria-hidden="true">
+        <svg viewBox="0 0 24 24"><path d="M6 9l6 6 6-6"></path></svg>
+      </span>
+    </label>
+    <label class="select">
+      <select name="raw_materials_division" aria-label="Division filter" onchange="this.form.submit()">
+        {% for option in raw_materials_division_options %}
+          <option value="{{ option.value }}" {% if option.value == raw_materials_selected_division %}selected{% endif %}>
+            {{ option.label }}
+          </option>
+        {% endfor %}
+      </select>
+      <span class="caret" aria-hidden="true">
+        <svg viewBox="0 0 24 24"><path d="M6 9l6 6 6-6"></path></svg>
+      </span>
+    </label>
+  </form>
 
   <div class="card section">
     <div class="title">

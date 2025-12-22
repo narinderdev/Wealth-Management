@@ -67,6 +67,12 @@ def collateral_dynamic_view(request):
         "finished_goals_division",
         request.GET.get("finished_goals_view", "all"),
     )
+    ar_range = request.GET.get("ar_range", "today")
+    ar_division = request.GET.get("ar_division", "all")
+    raw_materials_range = request.GET.get("raw_materials_range", "today")
+    raw_materials_division = request.GET.get("raw_materials_division", "all")
+    work_in_progress_range = request.GET.get("work_in_progress_range", "today")
+    work_in_progress_division = request.GET.get("work_in_progress_division", "all")
 
     context = {
         "borrower_summary": _build_borrower_summary(borrower),
@@ -74,10 +80,10 @@ def collateral_dynamic_view(request):
         "inventory_tab": inventory_tab,
         "active_tab": "collateral_dynamic",
         **_inventory_context(borrower),
-        **_accounts_receivable_context(borrower),
+        **_accounts_receivable_context(borrower, ar_range, ar_division),
         **_finished_goals_context(borrower, finished_goals_range, finished_goals_division),
-        **_raw_materials_context(borrower),
-        **_work_in_progress_context(borrower),
+        **_raw_materials_context(borrower, raw_materials_range, raw_materials_division),
+        **_work_in_progress_context(borrower, work_in_progress_range, work_in_progress_division),
         **_other_collateral_context(borrower),
         **_liquidation_model_context(borrower),
     }
@@ -969,13 +975,14 @@ def _matches_category(row, keywords):
     return any(keyword in text for keyword in keywords)
 
 
-def _inventory_state(borrower):
+def _inventory_state(borrower, start_date=None, end_date=None):
     if not borrower:
         return None
 
-    collateral_rows = list(
-        CollateralOverviewRow.objects.filter(borrower=borrower).order_by("id")
-    )
+    collateral_qs = CollateralOverviewRow.objects.filter(borrower=borrower)
+    if start_date and end_date:
+        collateral_qs = collateral_qs.filter(created_at__date__range=(start_date, end_date))
+    collateral_rows = list(collateral_qs.order_by("id"))
     inventory_rows = [
         row for row in collateral_rows if row.main_type and "inventory" in row.main_type.lower()
     ]
@@ -1404,7 +1411,9 @@ def _inventory_context(borrower):
         "inventory_trend_series": inventory_trend_series,
     }
 
-def _accounts_receivable_context(borrower):
+def _accounts_receivable_context(borrower, range_key="today", division="all"):
+    normalized_range = _normalize_range(range_key)
+    normalized_division = _normalize_division(division)
     base_context = {
         "ar_borrowing_base_kpis": [],
         "ar_aging_chart_buckets": [],
@@ -1415,10 +1424,57 @@ def _accounts_receivable_context(borrower):
         "ar_concentration_rows": [],
         "ar_ado_rows": [],
         "ar_dso_rows": [],
+        "ar_range_options": RANGE_OPTIONS,
+        "ar_selected_range": normalized_range,
+        "ar_division_options": [{"value": "all", "label": "All Divisions"}],
+        "ar_selected_division": normalized_division,
     }
 
     if not borrower:
         return base_context
+
+    division_sources = [
+        ARMetricsRow,
+        AgingCompositionRow,
+        ConcentrationADODSORow,
+        IneligibleOverviewRow,
+        IneligibleTrendRow,
+    ]
+    divisions = set()
+    for model in division_sources:
+        for value in (
+            model.objects.filter(borrower=borrower)
+            .exclude(division__isnull=True)
+            .exclude(division__exact="")
+            .values_list("division", flat=True)
+            .distinct()
+        ):
+            cleaned = str(value).strip()
+            if cleaned:
+                divisions.add(cleaned)
+    if divisions:
+        base_context["ar_division_options"] = [
+            {"value": "all", "label": "All Divisions"},
+            *(
+                {"value": item, "label": item}
+                for item in sorted(divisions)
+            ),
+        ]
+        if normalized_division != "all" and normalized_division not in divisions:
+            normalized_division = "all"
+            base_context["ar_selected_division"] = normalized_division
+
+    start_date, end_date = _range_dates(normalized_range)
+
+    def _apply_date_filter(qs, field_name):
+        if start_date and end_date:
+            return qs.filter(**{f"{field_name}__range": (start_date, end_date)})
+        return qs
+
+    def _apply_division_filter(qs):
+        if normalized_division != "all":
+            return qs.filter(division__iexact=normalized_division)
+        return qs
 
     def _aggregate_ar_rows(rows):
         total_balance = Decimal("0")
@@ -1451,7 +1507,10 @@ def _accounts_receivable_context(borrower):
         }
 
     ar_rows = list(
-        ARMetricsRow.objects.filter(borrower=borrower).order_by("as_of_date", "created_at", "id")
+        _apply_date_filter(
+            _apply_division_filter(ARMetricsRow.objects.filter(borrower=borrower)),
+            "as_of_date",
+        ).order_by("as_of_date", "created_at", "id")
     )
     if not ar_rows:
         return base_context
@@ -1689,7 +1748,10 @@ def _accounts_receivable_context(borrower):
         )
 
     aging_rows = list(
-        AgingCompositionRow.objects.filter(borrower=borrower).order_by("-as_of_date", "-created_at", "-id")
+        _apply_date_filter(
+            _apply_division_filter(AgingCompositionRow.objects.filter(borrower=borrower)),
+            "as_of_date",
+        ).order_by("-as_of_date", "-created_at", "-id")
     )
     AGING_BUCKET_DEFS = [
         {"key": "current", "label": "Current", "color": "#1b2a55"},
@@ -1802,7 +1864,10 @@ def _accounts_receivable_context(borrower):
     )
 
     concentration_rows = list(
-        ConcentrationADODSORow.objects.filter(borrower=borrower)
+        _apply_date_filter(
+            _apply_division_filter(ConcentrationADODSORow.objects.filter(borrower=borrower)),
+            "as_of_date",
+        )
     )
     top_customers = sorted(
         concentration_rows,
@@ -1852,12 +1917,18 @@ def _accounts_receivable_context(borrower):
             )
 
     ineligible_overview = (
-        IneligibleOverviewRow.objects.filter(borrower=borrower)
+        _apply_date_filter(
+            _apply_division_filter(IneligibleOverviewRow.objects.filter(borrower=borrower)),
+            "date",
+        )
         .order_by("-date", "-id")
         .first()
     )
     ineligible_trend_rows = list(
-        IneligibleTrendRow.objects.filter(borrower=borrower).order_by("date", "id")
+        _apply_date_filter(
+            _apply_division_filter(IneligibleTrendRow.objects.filter(borrower=borrower)),
+            "date",
+        ).order_by("date", "id")
     )
     ineligible_rows = []
     ineligible_total_row = None
@@ -2002,42 +2073,68 @@ def _accounts_receivable_context(borrower):
         "ar_dso_rows": dso_entries,
         "ar_customer_aging_total_rows": bucket_total_rows,
         "ar_customer_aging_past_due_rows": bucket_past_due_rows,
+        "ar_range_options": base_context["ar_range_options"],
+        "ar_selected_range": base_context["ar_selected_range"],
+        "ar_division_options": base_context["ar_division_options"],
+        "ar_selected_division": base_context["ar_selected_division"],
     }
+
+
+RANGE_OPTIONS = [
+    {"value": "today", "label": "Today"},
+    {"value": "yesterday", "label": "Yesterday"},
+    {"value": "last_7_days", "label": "Last 7 Days"},
+    {"value": "last_14_days", "label": "Last 14 Days"},
+    {"value": "last_30_days", "label": "Last 30 Days"},
+    {"value": "last_90_days", "label": "Last 90 Days"},
+]
+
+RANGE_ALIASES = {
+    "today": "today",
+    "yesterday": "yesterday",
+    "last_7_days": "last_7_days",
+    "last_14_days": "last_14_days",
+    "last_30_days": "last_30_days",
+    "last_90_days": "last_90_days",
+    "last7days": "last_7_days",
+    "last14days": "last_14_days",
+    "last30days": "last_30_days",
+    "last90days": "last_90_days",
+    "last 7 days": "last_7_days",
+    "last 14 days": "last_14_days",
+    "last 30 days": "last_30_days",
+    "last 90 days": "last_90_days",
+}
+
+def _normalize_range(range_key):
+    normalized_range = (range_key or "today").strip().lower()
+    return RANGE_ALIASES.get(normalized_range, "today")
+
+def _range_dates(range_key):
+    today = date.today()
+    if range_key == "yesterday":
+        day = today - timedelta(days=1)
+        return day, day
+    if range_key == "last_7_days":
+        return today - timedelta(days=6), today
+    if range_key == "last_14_days":
+        return today - timedelta(days=13), today
+    if range_key == "last_30_days":
+        return today - timedelta(days=29), today
+    if range_key == "last_90_days":
+        return today - timedelta(days=89), today
+    return today, today
+
+def _normalize_division(division):
+    normalized_division = (division or "all").strip()
+    if normalized_division.lower() in {"all", "all divisions", "all_divisions"}:
+        return "all"
+    return normalized_division
 
 
 def _finished_goals_context(borrower, range_key="today", division="all"):
-    range_options = [
-        {"value": "today", "label": "Today"},
-        {"value": "yesterday", "label": "Yesterday"},
-        {"value": "last_7_days", "label": "Last 7 Days"},
-        {"value": "last_14_days", "label": "Last 14 Days"},
-        {"value": "last_30_days", "label": "Last 30 Days"},
-        {"value": "last_90_days", "label": "Last 90 Days"},
-    ]
-
-    range_aliases = {
-        "today": "today",
-        "yesterday": "yesterday",
-        "last_7_days": "last_7_days",
-        "last_14_days": "last_14_days",
-        "last_30_days": "last_30_days",
-        "last_90_days": "last_90_days",
-        "last7days": "last_7_days",
-        "last14days": "last_14_days",
-        "last30days": "last_30_days",
-        "last90days": "last_90_days",
-        "last 7 days": "last_7_days",
-        "last 14 days": "last_14_days",
-        "last 30 days": "last_30_days",
-        "last 90 days": "last_90_days",
-    }
-
-    normalized_range = (range_key or "today").strip().lower()
-    normalized_range = range_aliases.get(normalized_range, "today")
-
-    normalized_division = (division or "all").strip()
-    if normalized_division.lower() in {"all", "all divisions", "all_divisions"}:
-        normalized_division = "all"
+    normalized_range = _normalize_range(range_key)
+    normalized_division = _normalize_division(division)
     base_context = {
         "finished_goals_metrics": [],
         "finished_goals_sales_insights": [],
@@ -2057,7 +2154,7 @@ def _finished_goals_context(borrower, range_key="today", division="all"):
             "total_share": "—",
         },
         "finished_goals_stock": [],
-        "finished_goals_range_options": range_options,
+        "finished_goals_range_options": RANGE_OPTIONS,
         "finished_goals_selected_range": normalized_range,
         "finished_goals_division_options": [{"value": "all", "label": "All Divisions"}],
         "finished_goals_selected_division": normalized_division,
@@ -2066,21 +2163,6 @@ def _finished_goals_context(borrower, range_key="today", division="all"):
     state = _inventory_state(borrower)
     if not state:
         return base_context
-
-    def _range_dates(key):
-        today = date.today()
-        if key == "yesterday":
-            day = today - timedelta(days=1)
-            return day, day
-        if key == "last_7_days":
-            return today - timedelta(days=6), today
-        if key == "last_14_days":
-            return today - timedelta(days=13), today
-        if key == "last_30_days":
-            return today - timedelta(days=29), today
-        if key == "last_90_days":
-            return today - timedelta(days=89), today
-        return today, today
 
     start_date, end_date = _range_dates(normalized_range)
 
@@ -3028,7 +3110,9 @@ REASON_ORDER = [
     ("damaged/non-saleable", ["damage", "non-saleable", "non saleable"]),
 ]
 
-def _raw_materials_context(borrower):
+def _raw_materials_context(borrower, range_key="today", division="all"):
+    normalized_range = _normalize_range(range_key)
+    normalized_division = _normalize_division(division)
     base_context = {
         "raw_materials_metrics": [],
         "raw_materials_ineligible_detail": [],
@@ -3036,9 +3120,20 @@ def _raw_materials_context(borrower):
         "raw_materials_category_rows": [],
         "raw_materials_category_footer": {},
         "raw_materials_top_skus": [],
+        "raw_materials_range_options": RANGE_OPTIONS,
+        "raw_materials_selected_range": normalized_range,
+        "raw_materials_division_options": [{"value": "all", "label": "All Divisions"}],
+        "raw_materials_selected_division": normalized_division,
     }
 
-    state = _inventory_state(borrower)
+    if normalized_division != "all":
+        normalized_division = "all"
+        base_context["raw_materials_selected_division"] = normalized_division
+
+    start_date, end_date = _range_dates(normalized_range)
+    state = _inventory_state(borrower, start_date, end_date)
+    if not state:
+        state = _inventory_state(borrower)
     if not state:
         return base_context
 
@@ -3324,10 +3419,16 @@ def _raw_materials_context(borrower):
         "raw_materials_top20_total": top20_total,
         "raw_materials_top_skus_other": sku_other_row,
         "raw_materials_top_skus_total": sku_grand_total,
+        "raw_materials_range_options": base_context["raw_materials_range_options"],
+        "raw_materials_selected_range": base_context["raw_materials_selected_range"],
+        "raw_materials_division_options": base_context["raw_materials_division_options"],
+        "raw_materials_selected_division": base_context["raw_materials_selected_division"],
     }
 
 
-def _work_in_progress_context(borrower):
+def _work_in_progress_context(borrower, range_key="today", division="all"):
+    normalized_range = _normalize_range(range_key)
+    normalized_division = _normalize_division(division)
     base_context = {
         "work_in_progress_metrics": [],
         "work_in_progress_ineligible_detail": [],
@@ -3340,9 +3441,20 @@ def _work_in_progress_context(borrower):
         "work_in_progress_top20_total": _empty_summary_entry("Top 20 Total"),
         "work_in_progress_top_skus_other": _empty_summary_entry("Other items"),
         "work_in_progress_top_skus_total": _empty_summary_entry("Total"),
+        "work_in_progress_range_options": RANGE_OPTIONS,
+        "work_in_progress_selected_range": normalized_range,
+        "work_in_progress_division_options": [{"value": "all", "label": "All Divisions"}],
+        "work_in_progress_selected_division": normalized_division,
     }
 
-    state = _inventory_state(borrower)
+    if normalized_division != "all":
+        normalized_division = "all"
+        base_context["work_in_progress_selected_division"] = normalized_division
+
+    start_date, end_date = _range_dates(normalized_range)
+    state = _inventory_state(borrower, start_date, end_date)
+    if not state:
+        state = _inventory_state(borrower)
     if not state:
         return base_context
 
@@ -3612,6 +3724,10 @@ def _work_in_progress_context(borrower):
         "work_in_progress_top20_total": top20_total,
         "work_in_progress_top_skus_other": sku_other_row,
         "work_in_progress_top_skus_total": sku_grand_total,
+        "work_in_progress_range_options": base_context["work_in_progress_range_options"],
+        "work_in_progress_selected_range": base_context["work_in_progress_selected_range"],
+        "work_in_progress_division_options": base_context["work_in_progress_division_options"],
+        "work_in_progress_selected_division": base_context["work_in_progress_selected_division"],
     }
 
 
