@@ -1,5 +1,5 @@
 from collections import defaultdict
-from decimal import Decimal
+from decimal import Decimal, ROUND_HALF_UP
 
 from django.contrib.auth.decorators import login_required
 from django.shortcuts import redirect, render
@@ -264,6 +264,15 @@ def risk_view(request):
         {"label": "Industry", "fallback": _to_decimal(composite_latest.industry_risk) if composite_latest else Decimal("2"), "color": "#facc15"},
     ]
 
+    def _risk_color(score):
+        palette = ["#7EC459", "#D7C63C", "#FBB82E", "#FC8F2E", "#F74C34"]
+        dec_score = _to_decimal(score)
+        if dec_score <= 0:
+            return palette[2]
+        bucket = int(dec_score.quantize(Decimal("1"), rounding=ROUND_HALF_UP))
+        bucket = max(1, min(5, bucket))
+        return palette[bucket - 1]
+
     risk_metrics = []
     for defn in metric_definitions:
         metric = _build_metric(
@@ -271,7 +280,7 @@ def risk_view(request):
             defn["fallback"],
             ordering=order_definitions.get(defn["label"].lower()),
         )
-        metric["donut_color"] = defn["color"]
+        metric["donut_color"] = _risk_color(metric.get("score") or defn["fallback"])
         metric["donut_bg"] = "#e5e7eb"
         metric["fill_color"] = "#0b57d0"
         risk_metrics.append(metric)
@@ -282,7 +291,10 @@ def risk_view(request):
         metric["score_display"] = f"{score_val:.1f}"
         metric["donut_dash"] = f"{norm:.1f} {max(0.0, 100.0 - norm):.1f}"
         metric["bars"] = metric.get("bars", [])
+        metric["donut_color"] = _risk_color(score_val)
         processed_metrics.append(metric)
+
+    rating_color = _risk_color(overall_score)
 
     context.update({
         "active_tab": "risk",
@@ -290,6 +302,7 @@ def risk_view(request):
             "rating_score": f"{overall_score:.1f}",
             "rating_position": rating_pct,
             "rating_dasharray": f"{rating_pct:.1f} {max(0.0, 100.0 - rating_pct):.1f}",
+            "rating_color": rating_color,
             "snapshot": snapshot_text,
             "pills": pill_list,
             "trend_points": " ".join(trend_points) if trend_points else "0,80 40,70 80,75",
