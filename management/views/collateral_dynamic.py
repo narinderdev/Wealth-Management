@@ -4087,7 +4087,34 @@ def _liquidation_model_context(borrower):
             "total": "—",
             "total_pct": "—",
         },
+        "liquidation_payroll_rows": [],
+        "liquidation_payroll_totals": {
+            "fg": "—",
+            "rm": "—",
+            "wip": "—",
+            "total": "—",
+        },
+        "liquidation_operating_rows": [],
+        "liquidation_operating_totals": {
+            "fg": "—",
+            "rm": "—",
+            "wip": "—",
+            "total": "—",
+        },
+        "liquidation_liquidation_rows": [],
+        "liquidation_liquidation_totals": {
+            "fg": "—",
+            "rm": "—",
+            "wip": "—",
+            "total": "—",
+        },
     }
+
+    def _format_payroll_value(value):
+        return _format_currency(value)
+
+    def _normalize_label(text):
+        return (text or "").strip().lower()
 
     state = _inventory_state(borrower)
     if not state:
@@ -4104,33 +4131,63 @@ def _liquidation_model_context(borrower):
     fg_expenses = (
         FGIneligibleDetailRow.objects.filter(borrower=borrower).order_by("-date").first()
     )
+    expense_groups = [
+        {
+            "title": "Payroll Expenses",
+            "dropdown": False,
+            "items": [
+                ("Distribution Payroll", "distribution_payroll"),
+                ("Administration Payroll", "administration_payroll"),
+                ("Selling Payroll", "selling_payroll"),
+                ("Commissions", "commissions"),
+                ("Employee Incentive and Retention Bonus", "employee_incentive_bonus"),
+                ("Employee Benefits and Taxes", "employee_benefits_taxes"),
+            ],
+        },
+        {
+            "title": "Operating Costs",
+            "dropdown": True,
+            "items": [
+                ("Occupancy and Utilities", "occupancy_utilities"),
+                ("Third Party Warehouse Costs", "third_party_warehouse_costs"),
+                ("Independent Inventory Costs", "independent_inventory_costs"),
+                ("Shipping Costs", "shipping_costs"),
+                ("Royalty Costs", "royalty_costs"),
+                ("Miscellaneous Costs", "miscellaneous_costs"),
+            ],
+        },
+        {
+            "title": "Liquidation Expenses",
+            "dropdown": True,
+            "items": [
+                ("Advertising and Promotional", "advertising_promotional"),
+                ("On-Site Management", "on_site_management"),
+                ("Agent Commissions", "agent_commissions"),
+            ],
+        },
+    ]
     groups = []
-    if fg_expenses:
-        reason_fields = [
-            ("Payroll Expenses", ["slow_moving_obsolete", "aged"]),
-            ("Opportunity Expenses", ["consigned", "in_transit", "off_site"]),
-            ("Liquidation Expenses", ["damaged_non_saleable"]),
-        ]
-        for title, fields in reason_fields:
-            items = []
-            total_amount = Decimal("0")
-            for field in fields:
-                value = getattr(fg_expenses, field, None)
-                amount = _to_decimal(value)
-                total_amount += amount
-                items.append(
-                    {
-                        "label": field.replace("_", " ").title(),
-                        "amount": _format_currency(amount),
-                    }
-                )
-            groups.append(
+    for group in expense_groups:
+        items = []
+        total_amount = Decimal("0")
+        for label, field in group["items"]:
+            value = getattr(fg_expenses, field, None) if fg_expenses else None
+            amount = _to_decimal(value)
+            total_amount += amount
+            items.append(
                 {
-                    "title": title,
-                    "items": items,
-                    "total": _format_currency(total_amount),
+                    "label": label,
+                    "amount": _format_currency(amount),
                 }
             )
+        groups.append(
+            {
+                "title": group["title"],
+                "dropdown": group["dropdown"],
+                "items": items,
+                "total": _format_currency(total_amount),
+            }
+        )
 
     finished_rows = [
         row
@@ -4271,6 +4328,13 @@ def _liquidation_model_context(borrower):
         "total_pct": "54.8%",
     }
 
+    payroll_rows = []
+    payroll_totals = {"fg": "—", "rm": "—", "wip": "—", "total": "—"}
+    operating_rows = []
+    operating_totals = {"fg": "—", "rm": "—", "wip": "—", "total": "—"}
+    liquidation_rows = []
+    liquidation_totals = {"fg": "—", "rm": "—", "wip": "—", "total": "—"}
+
     nolv_entries = list(NOLVTableRow.objects.filter(borrower=borrower).order_by("-date", "-id"))
     liquidation_net_orderly_rows = net_rows
     liquidation_net_orderly_footer = net_footer
@@ -4280,6 +4344,65 @@ def _liquidation_model_context(borrower):
         total_wip = Decimal("0")
         total_total = Decimal("0")
         dynamic_rows = []
+        payroll_targets = [
+            {"label": "Distribution Payroll", "aliases": ["distribution payroll"]},
+            {"label": "Administration Payroll", "aliases": ["administration payroll"]},
+            {"label": "Selling Payroll", "aliases": ["selling payroll"]},
+            {
+                "label": "Commissions",
+                "aliases": ["commissions", "commission"],
+            },
+            {
+                "label": "Employee Incentive and Retention Bonus",
+                "aliases": [
+                    "employee incentive and retention",
+                    "employee incentive & retention",
+                    "employee incentive and retention bonus",
+                    "employee incentive & retention bonus",
+                ],
+            },
+            {
+                "label": "Employee Benefits and Taxes",
+                "aliases": [
+                    "employee benefits and taxes",
+                    "employee benefits & taxes",
+                ],
+            },
+        ]
+        operating_targets = [
+            {"label": "Occupancy and Utilities", "aliases": ["occupancy and utilities", "occupancy & utilities"]},
+            {"label": "Third Party Warehouse Costs", "aliases": ["third party warehouse costs", "3rd party warehouse costs"]},
+            {"label": "Independent Inventory Costs", "aliases": ["independent inventory costs"]},
+            {"label": "Shipping Costs", "aliases": ["shipping costs", "shipping"]},
+            {"label": "Royalty Costs", "aliases": ["royalty costs", "royalties"]},
+            {"label": "Miscellaneous Costs", "aliases": ["miscellaneous costs", "misc costs", "miscellaneous"]},
+        ]
+        liquidation_targets = [
+            {
+                "label": "Advertising & Promotional Costs",
+                "aliases": [
+                    "advertising and promotional",
+                    "advertising & promotional",
+                    "advertising",
+                    "advertising and promotional cost",
+                    "advertising & promotional cost",
+                    "advertising and promotional costs",
+                    "advertising & promotional costs",
+                ],
+            },
+            {"label": "On-Site Management", "aliases": ["on-site management", "on site management"]},
+            {
+                "label": "Agent Commission Costs",
+                "aliases": [
+                    "agent commissions",
+                    "agent commission",
+                    "agent commissions cost",
+                    "agent commission cost",
+                    "agent commission costs",
+                ],
+            },
+        ]
+        nolv_by_label = {}
         for entry in nolv_entries:
             fg_value = _to_decimal(entry.fg_usd)
             rm_value = _to_decimal(entry.rm_usd)
@@ -4289,6 +4412,9 @@ def _liquidation_model_context(borrower):
             total_rm += rm_value
             total_wip += wip_value
             total_total += total_value
+            norm_label = _normalize_label(entry.line_item)
+            if norm_label and norm_label not in nolv_by_label:
+                nolv_by_label[norm_label] = entry
             dynamic_rows.append(
                 {
                     "label": _safe_str(entry.line_item),
@@ -4318,6 +4444,160 @@ def _liquidation_model_context(borrower):
             "total": _format_currency(total_total),
             "total_pct": _format_pct(total_pct_value),
         }
+        payroll_totals_raw = {"fg": Decimal("0"), "rm": Decimal("0"), "wip": Decimal("0"), "total": Decimal("0")}
+        matches = 0
+        for target in payroll_targets:
+            entry = None
+            for alias in target["aliases"]:
+                entry = nolv_by_label.get(_normalize_label(alias))
+                if entry:
+                    break
+            if entry:
+                matches += 1
+                fg_value = _to_decimal(entry.fg_usd)
+                rm_value = _to_decimal(entry.rm_usd)
+                wip_value = _to_decimal(entry.wip_usd)
+                total_value = _to_decimal(entry.total_usd)
+                payroll_totals_raw["fg"] += fg_value
+                payroll_totals_raw["rm"] += rm_value
+                payroll_totals_raw["wip"] += wip_value
+                payroll_totals_raw["total"] += total_value
+                payroll_rows.append(
+                    {
+                        "label": target["label"],
+                        "fg": _format_payroll_value(fg_value),
+                        "rm": _format_payroll_value(rm_value),
+                        "wip": _format_payroll_value(wip_value),
+                        "total": _format_payroll_value(total_value),
+                    }
+                )
+            else:
+                payroll_rows.append(
+                    {
+                        "label": target["label"],
+                        "fg": _format_payroll_value(None),
+                        "rm": _format_payroll_value(None),
+                        "wip": _format_payroll_value(None),
+                        "total": _format_payroll_value(None),
+                    }
+                )
+        if matches:
+            payroll_totals = {
+                "fg": _format_payroll_value(payroll_totals_raw["fg"]),
+                "rm": _format_payroll_value(payroll_totals_raw["rm"]),
+                "wip": _format_payroll_value(payroll_totals_raw["wip"]),
+                "total": _format_payroll_value(payroll_totals_raw["total"]),
+            }
+        operating_totals_raw = {"fg": Decimal("0"), "rm": Decimal("0"), "wip": Decimal("0"), "total": Decimal("0")}
+        operating_matches = 0
+        for target in operating_targets:
+            entry = None
+            for alias in target["aliases"]:
+                entry = nolv_by_label.get(_normalize_label(alias))
+                if entry:
+                    break
+            if entry:
+                operating_matches += 1
+                fg_value = _to_decimal(entry.fg_usd)
+                rm_value = _to_decimal(entry.rm_usd)
+                wip_value = _to_decimal(entry.wip_usd)
+                total_value = _to_decimal(entry.total_usd)
+                operating_totals_raw["fg"] += fg_value
+                operating_totals_raw["rm"] += rm_value
+                operating_totals_raw["wip"] += wip_value
+                operating_totals_raw["total"] += total_value
+                operating_rows.append(
+                    {
+                        "label": target["label"],
+                        "fg": _format_payroll_value(fg_value),
+                        "rm": _format_payroll_value(rm_value),
+                        "wip": _format_payroll_value(wip_value),
+                        "total": _format_payroll_value(total_value),
+                    }
+                )
+            else:
+                operating_rows.append(
+                    {
+                        "label": target["label"],
+                        "fg": _format_payroll_value(None),
+                        "rm": _format_payroll_value(None),
+                        "wip": _format_payroll_value(None),
+                        "total": _format_payroll_value(None),
+                    }
+                )
+        if operating_matches:
+            operating_totals = {
+                "fg": _format_payroll_value(operating_totals_raw["fg"]),
+                "rm": _format_payroll_value(operating_totals_raw["rm"]),
+                "wip": _format_payroll_value(operating_totals_raw["wip"]),
+                "total": _format_payroll_value(operating_totals_raw["total"]),
+            }
+        liquidation_totals_raw = {"fg": Decimal("0"), "rm": Decimal("0"), "wip": Decimal("0"), "total": Decimal("0")}
+        liquidation_matches = 0
+        liquidation_fallback_fields = {
+            "Advertising & Promotional Costs": "advertising_promotional",
+            "On-Site Management": "on_site_management",
+            "Agent Commission Costs": "agent_commissions",
+        }
+        for target in liquidation_targets:
+            entry = None
+            for alias in target["aliases"]:
+                entry = nolv_by_label.get(_normalize_label(alias))
+                if entry:
+                    break
+            fallback_value = Decimal("0")
+            if not entry and fg_expenses:
+                fallback_field = liquidation_fallback_fields.get(target["label"])
+                if fallback_field:
+                    fallback_value = _to_decimal(getattr(fg_expenses, fallback_field, None))
+            if entry:
+                liquidation_matches += 1
+                fg_value = _to_decimal(entry.fg_usd)
+                rm_value = _to_decimal(entry.rm_usd)
+                wip_value = _to_decimal(entry.wip_usd)
+                total_value = _to_decimal(entry.total_usd)
+                liquidation_totals_raw["fg"] += fg_value
+                liquidation_totals_raw["rm"] += rm_value
+                liquidation_totals_raw["wip"] += wip_value
+                liquidation_totals_raw["total"] += total_value
+                liquidation_rows.append(
+                    {
+                        "label": target["label"],
+                        "fg": _format_payroll_value(fg_value),
+                        "rm": _format_payroll_value(rm_value),
+                        "wip": _format_payroll_value(wip_value),
+                        "total": _format_payroll_value(total_value),
+                    }
+                )
+            elif fallback_value:
+                liquidation_matches += 1
+                liquidation_totals_raw["total"] += fallback_value
+                liquidation_rows.append(
+                    {
+                        "label": target["label"],
+                        "fg": _format_payroll_value(None),
+                        "rm": _format_payroll_value(None),
+                        "wip": _format_payroll_value(None),
+                        "total": _format_payroll_value(fallback_value),
+                    }
+                )
+            else:
+                liquidation_rows.append(
+                    {
+                        "label": target["label"],
+                        "fg": _format_payroll_value(None),
+                        "rm": _format_payroll_value(None),
+                        "wip": _format_payroll_value(None),
+                        "total": _format_payroll_value(None),
+                    }
+                )
+        if liquidation_matches:
+            liquidation_totals = {
+                "fg": _format_payroll_value(liquidation_totals_raw["fg"]),
+                "rm": _format_payroll_value(liquidation_totals_raw["rm"]),
+                "wip": _format_payroll_value(liquidation_totals_raw["wip"]),
+                "total": _format_payroll_value(liquidation_totals_raw["total"]),
+            }
     history_rows = []
     total_cost = Decimal("0")
     total_selling = Decimal("0")
@@ -4385,4 +4665,10 @@ def _liquidation_model_context(borrower):
         "liquidation_net_orderly_footer": liquidation_net_orderly_footer,
         "fg_gross_recovery_history_rows": history_rows,
         "fg_gross_recovery_history_totals": history_totals,
+        "liquidation_payroll_rows": payroll_rows,
+        "liquidation_payroll_totals": payroll_totals,
+        "liquidation_operating_rows": operating_rows,
+        "liquidation_operating_totals": operating_totals,
+        "liquidation_liquidation_rows": liquidation_rows,
+        "liquidation_liquidation_totals": liquidation_totals,
     }
