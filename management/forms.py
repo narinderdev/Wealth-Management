@@ -58,9 +58,18 @@ class BorrowerModelForm(StyledModelForm):
     def __init__(self, *args, **kwargs):
         super().__init__(*args, **kwargs)
         if "borrower" in self.fields:
-            self.fields["borrower"].queryset = (
+            borrower_field = self.fields["borrower"]
+            borrower_field.queryset = (
                 Borrower.objects.select_related("company")
                 .order_by("company__company", "primary_contact")
+            )
+            borrower_field.label = "Borrower (from global selection)"
+            borrower_field.help_text = "Borrower is set from the global selector in the header."
+            borrower_field.widget.attrs.update(
+                {
+                    "data-global-borrower": "true",
+                    "data-global-borrower-label": "Borrower (from global selection)",
+                }
             )
 
 
@@ -126,7 +135,7 @@ class SpecificIndividualForm(StyledModelForm):
         self.fields["borrower"].queryset = Borrower.objects.select_related("company").order_by("company__company")
 
 
-class CollateralOverviewForm(StyledModelForm):
+class CollateralOverviewForm(BorrowerModelForm):
     class Meta:
         model = CollateralOverviewRow
         fields = [

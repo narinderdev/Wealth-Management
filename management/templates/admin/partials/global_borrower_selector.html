@@ -1,0 +1,17 @@
+{# Global borrower selector shown in the admin header #}
+<div class="global-borrower" data-global-borrower-shell>
+  <div class="global-borrower__label">Borrower</div>
+  <div class="global-borrower__controls">
+    <select
+      id="global-borrower-select"
+      class="global-borrower__select"
+      data-global-borrower-select
+      aria-label="Select borrower"
+    >
+      <option value="">Select Borrower</option>
+      {% for borrower in borrower_options %}
+        <option value="{{ borrower.id }}">{{ borrower }}</option>
+      {% endfor %}
+    </select>
+  </div>
+</div>

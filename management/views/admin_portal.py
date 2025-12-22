@@ -790,6 +790,7 @@ def admin_component_view(request, component_slug: str):
         "component_meta": component_meta,
         "active_nav": component_meta.get("nav_key", "company"),
         "component_data": component_data,
+        "borrower_options": Borrower.objects.select_related("company").order_by("company__company", "primary_contact"),
     }
     return render(request, "admin/component_base.html", context)
 

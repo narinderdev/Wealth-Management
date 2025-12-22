@@ -261,7 +261,7 @@
     }
 
     .topbar{
-      height:40px;
+      height:44px;
       background:#1d4089;
       color:#fff;
       display:flex;
@@ -274,6 +274,57 @@
       font-weight:800;
       font-size:inherit;
       letter-spacing:.2px;
+    }
+    .topbar-actions{
+      display:flex;
+      align-items:center;
+      gap:12px;
+    }
+    .global-borrower{
+      display:flex;
+      align-items:center;
+      gap:10px;
+      font-size:11px;
+      color:#e6ecff;
+      font-weight:800;
+      letter-spacing:.02em;
+      white-space:nowrap;
+    }
+    .global-borrower__label{
+      text-transform:uppercase;
+      opacity:.8;
+    }
+    .global-borrower__controls{
+      display:flex;
+      align-items:center;
+      justify-content:flex-end;
+      max-width:340px;
+      width:100%;
+    }
+    .global-borrower__select{
+      appearance:none;
+      -webkit-appearance:none;
+      background:rgba(255,255,255,.14);
+      border:1px solid rgba(255,255,255,.35);
+      color:#fff;
+      border-radius:999px;
+      padding:6px 30px 6px 12px;
+      font-weight:800;
+      font-size:11px;
+      min-width:190px;
+      max-width:330px;
+      width:100%;
+      cursor:pointer;
+      background-image:url("data:image/svg+xml,%3Csvg width='12' height='8' viewBox='0 0 12 8' fill='none' xmlns='http://www.w3.org/2000/svg'%3E%3Cpath d='M1 1l5 5 5-5' stroke='%23ffffff' stroke-width='1.5' stroke-linecap='round' stroke-linejoin='round'/%3E%3C/svg%3E");
+      background-repeat:no-repeat;
+      background-position:calc(100% - 10px) 50%;
+    }
+    .global-borrower__select option{
+      color:#0f172a;
+    }
+    .global-borrower__select:focus{
+      outline:2px solid rgba(255,255,255,.6);
+      outline-offset:1px;
     }
 
     .content{
@@ -687,6 +738,10 @@
       justify-content:center;
       text-decoration:none;
       line-height:1;
+    }
+    .btn:disabled{
+      opacity:.6;
+      cursor:not-allowed;
     }
     .btn.cancel{
       background:#e6e6e6;
@@ -1140,6 +1195,9 @@
     <main class="main">
       <header class="topbar">
         <div class="title">{% block header_title %}Company Form{% endblock %}</div>
+        <div class="topbar-actions">
+          {% include "admin/partials/global_borrower_selector.html" %}
+        </div>
       </header>
 
       <div class="content">
@@ -1153,6 +1211,7 @@
 
   <div id="cora-confirm-root" class="cora-confirm-root" aria-hidden="true"></div>
 
+  <script src="{% static 'js/global_borrower.js' %}" defer></script>
   <script>
     document.addEventListener("DOMContentLoaded", function(){
       document.querySelectorAll("[data-collapsible]").forEach(function(section){
