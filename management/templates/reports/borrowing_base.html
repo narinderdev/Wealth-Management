@@ -1,5 +1,5 @@
 {% extends "layout/app_base.html" %}
-
+{% load static %}
 {% block title %}Reports{% endblock %}
 
 {% block extra_head %}
@@ -39,9 +39,10 @@
     }
     .reports-menu__item:not(.active):hover{background:#f4f7ff}
     .reports-menu__item.active{
-      background:#1f4ba914;
-      color:#1d4ed8;
+      background:#1d4089;
+      color:#fff;
       font-weight:600;
+      box-shadow:0 6px 14px rgba(29,64,137,.22);
     }
     .reports-menu__icon{
       width:26px;
@@ -53,8 +54,8 @@
       place-items:center;
     }
     .reports-menu__item.active .reports-menu__icon{
-      background:#1d4ed8;
-      color:#fff;
+      background:rgba(255,255,255,.18);
+      color:#0f172a;
     }
     .reports-card{
       flex:1;
@@ -171,24 +172,11 @@
         <a class="reports-menu__item {% if item.key == active_report %}active{% endif %}" href="{% url 'reports' %}?report={{ item.key }}">
           <span class="reports-menu__icon" aria-hidden="true">
             {% if item.icon == "document" %}
-              <svg viewBox="0 0 24 24" width="16" height="16" fill="none" stroke="currentColor" stroke-width="2">
-                <path d="M6 3h9l5 5v13H6z"></path>
-                <path d="M14 3v6h6"></path>
-              </svg>
+              <img src="{% static 'images/reporticon1.svg' %}" alt="Snapshot Icon" class="snapshot-icon" />
             {% elif item.icon == "chart" %}
-              <svg viewBox="0 0 24 24" width="16" height="16" fill="none" stroke="currentColor" stroke-width="2">
-                <path d="M4 19V5"></path>
-                <path d="M4 19h16"></path>
-                <path d="M8 16V9"></path>
-                <path d="M12 16V7"></path>
-                <path d="M16 16v-4"></path>
-              </svg>
+              <img src="{% static 'images/reporticon2.svg' %}" alt="Snapshot Icon" class="snapshot-icon" />
             {% else %}
-              <svg viewBox="0 0 24 24" width="16" height="16" fill="none" stroke="currentColor" stroke-width="2">
-                <path d="M3 6h18"></path>
-                <path d="M3 12h18"></path>
-                <path d="M3 18h18"></path>
-              </svg>
+             <img src="{% static 'images/reporticon3.svg' %}" alt="Snapshot Icon" class="snapshot-icon" />
             {% endif %}
           </span>
           {{ item.label }}
