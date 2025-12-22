@@ -61,7 +61,7 @@
           alt="Icon"
           class="icon" />
         </div>
-        <a class="sb-icon {% if active_tab == 'summary' %}active{% endif %}" title="Summary" href="{% url 'dashboard' %}">
+        <a class="sb-icon {% if active_tab == 'summary' or active_tab == 'collateral_dynamic' or active_tab == 'forecast' or active_tab == 'risk' or active_tab == 'reports' or active_tab == 'limits' %}active{% endif %}" title="Summary" href="{% url 'dashboard' %}">
           <img src="{% static 'images/sidebar2_icon.svg' %}" 
           alt="Icon"
           class="icon" />
