@@ -1,4 +1,5 @@
 from django.contrib.auth.decorators import login_required
+from django.core.paginator import Paginator
 from django.shortcuts import render
 
 from management.models import (
@@ -47,6 +48,10 @@ def limits_view(request):
             })
     else:
         ineligibles = []
-    context["limit_rows"] = limits
-    context["ineligible_rows"] = ineligibles
+    limits_page_number = request.GET.get("limits_page", 1)
+    ineligibles_page_number = request.GET.get("ineligibles_page", 1)
+    limits_paginator = Paginator(limits, 20)
+    ineligibles_paginator = Paginator(ineligibles, 20)
+    context["limit_page"] = limits_paginator.get_page(limits_page_number)
+    context["ineligible_page"] = ineligibles_paginator.get_page(ineligibles_page_number)
     return render(request, "limits/limits.html", context)

@@ -15,14 +15,6 @@
       box-shadow:0 1px 0 rgba(16,24,40,.04);
     }
     .limits-page .table-scroll {
-      max-height:320px;
-      overflow-y:auto;
-      margin-bottom:-12px;
-    }
-    .limits-page .table-scroll.short {
-      max-height:200px;
-    }
-    .limits-page .table-scroll table {
       margin-bottom:0;
     }
     .limits-page .card-title{
@@ -51,6 +43,27 @@
       color:#1f2937;
     }
     .limits-page .right{text-align:right;}
+    .limits-page .table-footer{
+      display:flex;
+      align-items:center;
+      justify-content:space-between;
+      font-size:12px;
+      color:#6b7280;
+      margin-top:8px;
+    }
+    .limits-page .pager{
+      display:flex;
+      gap:8px;
+    }
+    .limits-page .pager a{
+      text-decoration:none;
+      color:#1d4ed8;
+      font-weight:600;
+    }
+    .limits-page .pager .disabled{
+      color:#9ca3af;
+      pointer-events:none;
+    }
   </style>
 {% endblock %}
 
@@ -72,7 +85,7 @@
           </tr>
         </thead>
         <tbody>
-          {% for row in limit_rows %}
+          {% for row in limit_page %}
           <tr>
             <td>{{ row.division }}</td>
             <td>{{ row.collateral_type }}</td>
@@ -88,13 +101,30 @@
         </tbody>
       </table>
       </div>
+      {% if limit_page.paginator.num_pages > 1 %}
+        <div class="table-footer">
+          <div>Page {{ limit_page.number }} of {{ limit_page.paginator.num_pages }}</div>
+          <div class="pager">
+            {% if limit_page.has_previous %}
+              <a href="?limits_page={{ limit_page.previous_page_number }}&ineligibles_page={{ ineligible_page.number }}">Prev</a>
+            {% else %}
+              <span class="disabled">Prev</span>
+            {% endif %}
+            {% if limit_page.has_next %}
+              <a href="?limits_page={{ limit_page.next_page_number }}&ineligibles_page={{ ineligible_page.number }}">Next</a>
+            {% else %}
+              <span class="disabled">Next</span>
+            {% endif %}
+          </div>
+        </div>
+      {% endif %}
     </div>
 
     <div class="card">
       <div class="card-title"> <img src="{% static 'images/borrowing_icon.svg' %}" 
           alt="Current Update Icon"
           class="current-update-icon" />Ineligibles</div>
-      <div class="table-scroll short">
+      <div class="table-scroll">
       <table>
         <thead>
           <tr>
@@ -104,7 +134,7 @@
           </tr>
         </thead>
         <tbody>
-          {% for row in ineligible_rows %}
+          {% for row in ineligible_page %}
           <tr>
             <td>{{ row.division }}</td>
             <td>{{ row.collateral_type }}</td>
@@ -118,6 +148,23 @@
         </tbody>
       </table>
       </div>
+      {% if ineligible_page.paginator.num_pages > 1 %}
+        <div class="table-footer">
+          <div>Page {{ ineligible_page.number }} of {{ ineligible_page.paginator.num_pages }}</div>
+          <div class="pager">
+            {% if ineligible_page.has_previous %}
+              <a href="?limits_page={{ limit_page.number }}&ineligibles_page={{ ineligible_page.previous_page_number }}">Prev</a>
+            {% else %}
+              <span class="disabled">Prev</span>
+            {% endif %}
+            {% if ineligible_page.has_next %}
+              <a href="?limits_page={{ limit_page.number }}&ineligibles_page={{ ineligible_page.next_page_number }}">Next</a>
+            {% else %}
+              <span class="disabled">Next</span>
+            {% endif %}
+          </div>
+        </div>
+      {% endif %}
     </div>
   </div>
 {% endblock %}
