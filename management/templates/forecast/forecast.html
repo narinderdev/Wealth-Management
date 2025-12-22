@@ -187,7 +187,7 @@
   <meta name="viewport" content="width=device-width, initial-scale=1" />
   <title>Forecast Dashboard (Static)</title>
   <style>
-    :root{
+    .forecast-shell{
       --bg: #f4f7fb;
       --card: #ffffff;
       --ink: #101828;
@@ -201,7 +201,7 @@
       --radius: 10px;
     }
     *{ box-sizing:border-box; }
-    body{
+    .forecast-shell{
       margin:0;
       font-family: ui-sans-serif, system-ui, -apple-system, Segoe UI, Roboto, Helvetica, Arial, "Apple Color Emoji","Segoe UI Emoji";
       color:var(--ink);
@@ -454,7 +454,7 @@
     }
   </style>
 </head>
-<body>
+<body class="forecast-shell">
   <div class="wrap">
     <div class="dashboard">
 

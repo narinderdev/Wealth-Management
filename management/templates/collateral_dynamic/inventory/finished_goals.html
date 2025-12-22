@@ -1,6 +1,6 @@
 {% load static %}
 <style>
-  :root{
+  .finished-goals{
     --bg:#f4f7fb;
     --card:#fff;
     --ink:#101828;
@@ -18,7 +18,7 @@
     --good:#12B76A;
     --bad:#F04438;
   }
-  :root{font-family:ui-sans-serif,system-ui,-apple-system,Segoe UI,Roboto,Helvetica,Arial,"Apple Color Emoji","Segoe UI Emoji";}
+  .finished-goals{font-family:ui-sans-serif,system-ui,-apple-system,Segoe UI,Roboto,Helvetica,Arial,"Apple Color Emoji","Segoe UI Emoji";}
   .finished-goals .wrap{max-width:1120px;margin:0 auto;padding:0 18px 30px;background:none;}
   .finished-goals .grid-2{display:grid;grid-template-columns:1fr 1fr;gap:12px;}
   @media (max-width:920px){.finished-goals .grid-2{grid-template-columns:1fr;}}
@@ -69,6 +69,7 @@
     flex-wrap:wrap;
     justify-content:flex-end;
     width:100%;
+    margin-top: -45px;
   }
   .finished-goals .filters .select{
     position:relative;
