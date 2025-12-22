@@ -3295,7 +3295,7 @@ def _work_in_progress_context(borrower):
         "work_in_progress_category_other": _empty_summary_entry("Other items"),
         "work_in_progress_category_footer": _empty_summary_entry("Total"),
         "work_in_progress_top_skus": [],
-        "work_in_progress_top25_total": _empty_summary_entry("Top 25 Total"),
+        "work_in_progress_top20_total": _empty_summary_entry("Top 20 Total"),
         "work_in_progress_top_skus_other": _empty_summary_entry("Other items"),
         "work_in_progress_top_skus_total": _empty_summary_entry("Total"),
     }
@@ -3456,16 +3456,16 @@ def _work_in_progress_context(borrower):
         key=lambda row: _to_decimal(row.eligible_collateral),
         reverse=True,
     )
-    top25_rows = sku_rows[:25]
+    top20_rows = sku_rows[:20]
     raw_skus = []
-    top25_amount = Decimal("0")
-    top25_available = Decimal("0")
+    top20_amount = Decimal("0")
+    top20_available = Decimal("0")
     sku_total_amount = Decimal("0")
     sku_total_available = Decimal("0")
     for row in sku_rows:
         sku_total_amount += _to_decimal(row.beginning_collateral)
         sku_total_available += _to_decimal(row.eligible_collateral)
-    for row in top25_rows:
+    for row in top20_rows:
         eligible = _to_decimal(row.eligible_collateral)
         beginning = _to_decimal(row.beginning_collateral)
         pct_available = (eligible / beginning) if beginning else Decimal("0")
@@ -3483,29 +3483,29 @@ def _work_in_progress_context(borrower):
                 "status": "Current" if _to_decimal(row.net_collateral) >= 0 else "At Risk",
             }
         )
-        top25_amount += beginning
-        top25_available += eligible
+        top20_amount += beginning
+        top20_available += eligible
 
-    top25_total = {
-        "label": "Top 25 Total",
-        "total": _format_currency(top25_amount),
-        "ineligible": _format_currency(max(top25_amount - top25_available, Decimal("0"))),
-        "available": _format_currency(top25_available),
+    top20_total = {
+        "label": "Top 20 Total",
+        "total": _format_currency(top20_amount),
+        "ineligible": _format_currency(max(top20_amount - top20_available, Decimal("0"))),
+        "available": _format_currency(top20_available),
         "pct_available": _format_pct(
-            (top25_available / top25_amount) if top25_amount else Decimal("0")
+            (top20_available / top20_amount) if top20_amount else Decimal("0")
         ),
     }
 
     sku_other_row = {
         "label": "Other items",
-        "total": _format_currency(max(sku_total_amount - top25_amount, Decimal("0"))),
+        "total": _format_currency(max(sku_total_amount - top20_amount, Decimal("0"))),
         "ineligible": _format_currency(
-            max(max(sku_total_amount - top25_amount, Decimal("0")) - (sku_total_available - top25_available), Decimal("0"))
+            max(max(sku_total_amount - top20_amount, Decimal("0")) - (sku_total_available - top20_available), Decimal("0"))
         ),
-        "available": _format_currency(max(sku_total_available - top25_available, Decimal("0"))),
+        "available": _format_currency(max(sku_total_available - top20_available, Decimal("0"))),
         "pct_available": _format_pct(
-            ((sku_total_available - top25_available) / max(sku_total_amount - top25_amount, Decimal("1")))
-            if (sku_total_amount - top25_amount)
+            ((sku_total_available - top20_available) / max(sku_total_amount - top20_amount, Decimal("1")))
+            if (sku_total_amount - top20_amount)
             else Decimal("0")
         ),
     }
@@ -3523,13 +3523,13 @@ def _work_in_progress_context(borrower):
     def _line_values(base, length=13):
         values = []
         for idx in range(length):
-            variation = math.sin(idx / 2.0) * 4
-            val = max(10.0, min(100.0, base + variation))
+            variation = math.sin(idx / 2.0) * 0.04
+            val = max(0.0, base * (1 + variation))
             values.append(val)
         return values
 
-    base_pct = float(available_pct * Decimal("100")) if isinstance(available_pct, Decimal) else 50.0
-    chart_values = _line_values(base_pct)
+    base_value = float(total_available) if total_available else 0.0
+    chart_values = _line_values(base_value)
     chart_config = {
         "workInventoryTrend": {
             "type": "line",
@@ -3550,9 +3550,11 @@ def _work_in_progress_context(borrower):
                 "May 2020",
             ],
             "values": chart_values,
-            "yPrefix": "%",
-            "ySuffix": "",
+            "yPrefix": "$ ",
+            "ySuffix": "M",
+            "yScale": 1_000_000,
             "yTicks": 6,
+            "yDecimals": 1,
         }
     }
 
@@ -3565,7 +3567,7 @@ def _work_in_progress_context(borrower):
         "work_in_progress_category_other": category_other,
         "work_in_progress_category_footer": footer,
         "work_in_progress_top_skus": raw_skus,
-        "work_in_progress_top25_total": top25_total,
+        "work_in_progress_top20_total": top20_total,
         "work_in_progress_top_skus_other": sku_other_row,
         "work_in_progress_top_skus_total": sku_grand_total,
     }

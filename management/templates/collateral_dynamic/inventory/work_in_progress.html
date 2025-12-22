@@ -358,22 +358,12 @@
           </tbody>
           <tfoot>
             <tr class="footer-row">
-              <td>Top 25 Total</td>
-              <td class="num" colspan="4"></td>
-              <td class="num">{{ work_in_progress_top25_total.total }}</td>
-              <td class="num">{{ work_in_progress_top25_total.pct_available }}</td>
-            </tr>
-            <tr class="footer-row">
-              <td>{{ work_in_progress_top_skus_other.label }}</td>
-              <td class="num" colspan="4"></td>
-              <td class="num">{{ work_in_progress_top_skus_other.total }}</td>
-              <td class="num">{{ work_in_progress_top_skus_other.pct_available }}</td>
-            </tr>
-            <tr class="footer-row">
-              <td>{{ work_in_progress_top_skus_total.label }}</td>
-              <td class="num" colspan="4"></td>
-              <td class="num">{{ work_in_progress_top_skus_total.total }}</td>
-              <td class="num">{{ work_in_progress_top_skus_total.pct_available }}</td>
+              <td>Top 20 Total</td>
+              <td colspan="2"></td>
+              <td class="num">{{ work_in_progress_top20_total.total }}</td>
+              <td class="num"></td>
+              <td class="num"></td>
+              <td class="num">{{ work_in_progress_top20_total.pct_available }}</td>
             </tr>
           </tfoot>
         </table>
@@ -385,8 +375,16 @@
 <script>
   const charts = {{ work_in_progress_chart_config_json|safe }};
   function fmtY(val, cfg){
-    if (cfg.yPrefix || cfg.ySuffix) return `${cfg.yPrefix||""}${val.toFixed(1)}${cfg.ySuffix||""}`;
-    return String(val.toFixed(1));
+    const decimals = Number.isFinite(cfg.yDecimals) ? cfg.yDecimals : 1;
+    const scale = Number.isFinite(cfg.yScale) ? cfg.yScale : 1;
+    const value = Number(val);
+    const scaled = Number.isFinite(value) ? value / scale : 0;
+    const formatted = scaled.toLocaleString("en-US", {
+      minimumFractionDigits: decimals,
+      maximumFractionDigits: decimals,
+    });
+    if (cfg.yPrefix || cfg.ySuffix) return `${cfg.yPrefix||""}${formatted}${cfg.ySuffix||""}`;
+    return formatted;
   }
   function pathFrom(pts){
     return pts.map((p,i)=> (i===0?`M ${p[0]} ${p[1]}`:`L ${p[0]} ${p[1]}`)).join(" ");
