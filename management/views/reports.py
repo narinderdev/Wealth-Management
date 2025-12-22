@@ -25,8 +25,7 @@ REPORT_MENU = [
 
 REPORT_SECTIONS = {
     "borrowing_base": {
-        "title": "Borrowing Base Reports",
-        "description": "Latest BBC-style snapshots generated from the live borrower data.",
+        "title": "Report Title",
         "rows": [],
     },
     "complete_analysis": {
