@@ -144,8 +144,8 @@
       --muted2: #98A2B3;
       --border: #E6EAF2;
       --grid: #EEF2F7;
-      --blue: #175CD3;
-      --orange: #F79009;
+      --blue: #0753B2;
+      --orange: #FC912E;
       --shadow: 0 1px 2px rgba(16, 24, 40, .06);
       --radius: 10px;
     }
@@ -366,7 +366,8 @@
     }
 
     .legend .swatch.orange {
-      background: var(--orange);
+      background:#FC912E;
+
     }
 
     .seg {
@@ -447,8 +448,8 @@
     }
 
     .line-forecast {
-      stroke: var(--orange);
-      stroke-width: 2.3;
+      stroke: #FC912E;;
+      stroke-width: 3.14;
       fill: none;
       stroke-linecap: round;
       stroke-linejoin: round;
@@ -460,7 +461,7 @@
     }
 
     .point.fore {
-      fill: var(--orange);
+      fill:#FC912E;;
     }
 .graph {
       margin-top: 18px;
@@ -526,9 +527,11 @@
           </div>
 
           <p class="snapshot-text">
-            Based on 42 Wall Street analysts offering 12 month price targets for Meta Platforms in the last 3 months.
-            The average price target is $846.48 with a high forecast of $1,117.00 and a low forecast of $655.15. The
-            average price target represents a 38.89% change from the last price of $609.46
+            Based on {{ price_target.analyst_count }} Wall Street analysts offering {{ price_target.months }} month price
+            targets for {{ price_target.company }} in the last {{ price_target.window_months }} months. The average price
+            target is {{ price_target.avg_target_display }} with a high forecast of {{ price_target.high_target_display }}
+            and a low forecast of {{ price_target.low_target_display }}. The average price target represents a
+            {{ price_target.change_pct_display }} change from the last price of {{ price_target.last_price_display }}.
           </p>
         </div>
     

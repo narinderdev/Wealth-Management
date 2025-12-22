@@ -1,5 +1,6 @@
 
 from decimal import Decimal
+from datetime import date
 
 import json
 from django.contrib.auth.decorators import login_required
@@ -22,9 +23,21 @@ def _format_row_label(row):
     return f"Entry {row.id}"
 
 
-def _is_actual(row):
+def _row_date(row):
+    return row.as_of_date or row.period
+
+
+def _classify_row(row, today):
     flag = (row.actual_forecast or "").lower()
-    return "actual" in flag
+    if "forecast" in flag or "project" in flag or "plan" in flag:
+        return "forecast"
+    if "actual" in flag or "historical" in flag:
+        return "actual"
+    row_date = _row_date(row)
+    if hasattr(row_date, "__gt__") and row_date is not None:
+        if row_date > today:
+            return "forecast"
+    return "actual"
 
 
 def _build_series(rows, accessor):
@@ -42,11 +55,18 @@ def _build_chart_data(rows):
             r.id,
         ),
     )
-    actual_rows = [row for row in ordered_rows if _is_actual(row)]
+    today = date.today()
+    classifications = [(row, _classify_row(row, today)) for row in ordered_rows]
+    actual_rows = [row for row, kind in classifications if kind == "actual"]
+    forecast_rows = [row for row, kind in classifications if kind == "forecast"]
     if not actual_rows:
         actual_rows = [ordered_rows[0]]
-    actual_ids = {row.id for row in actual_rows}
-    forecast_rows = [row for row in ordered_rows if row.id not in actual_ids]
+        actual_ids = {row.id for row in actual_rows}
+        forecast_rows = [row for row in ordered_rows if row.id not in actual_ids]
+    else:
+        actual_ids = {row.id for row in actual_rows}
+        if not forecast_rows:
+            forecast_rows = [row for row in ordered_rows if row.id not in actual_ids]
 
     labels = [_format_row_label(row) for row in ordered_rows]
 
@@ -174,6 +194,62 @@ def _build_chart_data(rows):
     return charts
 
 
+def _format_currency_with_cents(value):
+    if value is None:
+        return "—"
+    try:
+        amount = Decimal(value)
+    except (TypeError, ValueError):
+        try:
+            amount = Decimal(str(value))
+        except Exception:
+            return "—"
+    return f"${amount:,.2f}"
+
+
+def _format_pct_change(value):
+    if value is None:
+        return "—"
+    try:
+        pct = Decimal(value)
+    except (TypeError, ValueError):
+        try:
+            pct = Decimal(str(value))
+        except Exception:
+            return "—"
+    return f"{pct:.2f}%"
+
+
+def _price_target_snapshot():
+    snapshot = {
+        "analyst_count": 42,
+        "months": 12,
+        "company": "Meta Platforms",
+        "window_months": 3,
+        "avg_target": Decimal("846.48"),
+        "high_target": Decimal("1117.00"),
+        "low_target": Decimal("655.15"),
+        "last_price": Decimal("609.46"),
+    }
+    change_pct = None
+    if snapshot["last_price"]:
+        change_pct = (
+            (snapshot["avg_target"] - snapshot["last_price"])
+            / snapshot["last_price"]
+            * Decimal("100")
+        )
+    snapshot.update(
+        {
+            "avg_target_display": _format_currency_with_cents(snapshot["avg_target"]),
+            "high_target_display": _format_currency_with_cents(snapshot["high_target"]),
+            "low_target_display": _format_currency_with_cents(snapshot["low_target"]),
+            "last_price_display": _format_currency_with_cents(snapshot["last_price"]),
+            "change_pct_display": _format_pct_change(change_pct),
+        }
+    )
+    return snapshot
+
+
 def _borrower_context(request):
     borrower = get_preferred_borrower(request)
     return {"borrower_summary": _build_borrower_summary(borrower)}
@@ -190,4 +266,5 @@ def forecast_view(request):
     context["forecast_charts"] = _build_chart_data(rows)
     context["active_tab"] = "forecast"
     context["forecast_charts_json"] = json.dumps(context["forecast_charts"])
+    context["price_target"] = _price_target_snapshot()
     return render(request, "forecast/forecast.html", context)
