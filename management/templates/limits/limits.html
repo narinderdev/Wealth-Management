@@ -1,5 +1,5 @@
 {% extends "layout/app_base.html" %}
-
+{% load static %}
 {% block title %}Limits{% endblock %}
 
 {% block extra_head %}
@@ -31,7 +31,7 @@
       gap:6px;
       font-size:13px;
       font-weight:600;
-      color:#1f4fa3;
+      color:black;
       margin-bottom:10px;
     }
     .limits-page table{
@@ -57,7 +57,9 @@
 {% block page_content %}
   <div class="limits-page">
     <div class="card">
-      <div class="card-title">📈 Collateral Limits</div>
+      <div class="card-title"> <img src="{% static 'images/borrowing_icon.svg' %}" 
+          alt="Current Update Icon"
+          class="current-update-icon" /> Collateral Limits</div>
       <div class="table-scroll">
       <table>
         <thead>
@@ -89,7 +91,9 @@
     </div>
 
     <div class="card">
-      <div class="card-title">📈 Ineligibles</div>
+      <div class="card-title"> <img src="{% static 'images/borrowing_icon.svg' %}" 
+          alt="Current Update Icon"
+          class="current-update-icon" />Ineligibles</div>
       <div class="table-scroll short">
       <table>
         <thead>

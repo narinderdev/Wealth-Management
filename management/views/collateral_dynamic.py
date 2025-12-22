@@ -1788,7 +1788,7 @@ def _accounts_receivable_context(borrower, range_key="today", division="all"):
             bucket_pct_overrides[key] = _to_decimal(row.pct_of_total)
 
     total_amount = sum(bucket_amounts.values())
-    bucket_positions = [60, 140, 220, 300, 380]
+    bucket_positions = [70, 170, 270, 370, 470]
     aging_buckets = []
     for idx, bucket in enumerate(AGING_BUCKET_DEFS):
         amount = bucket_amounts[bucket["key"]]
@@ -1821,8 +1821,8 @@ def _accounts_receivable_context(borrower, range_key="today", division="all"):
                 "label_primary": label_primary,
                 "label_secondary": label_secondary,
                 "percent_y": max(24, y_position - 6),
-                "label_y": 156,
-                "label_secondary_y": 168,
+                "label_y": 152,
+                "label_secondary_y": 164,
                 "text_x": bucket_positions[idx] + (bar_width / 2),
             }
         )
