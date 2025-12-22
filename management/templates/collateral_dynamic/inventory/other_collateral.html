@@ -1,3 +1,4 @@
+{% load static %}
 <style>
   .other-collateral{
     --bg:#f4f7fb;
@@ -62,16 +63,20 @@
     border:1px solid var(--border);
     border-radius:12px;
     background:#fff;
-    padding:12px;
+    padding:12px 78px 12px 12px;
     display:flex;
     justify-content:space-between;
     gap:12px;
+    position:relative;
   }
   .other-collateral .kpi .left .t{
     font-size:20px;
     font-weight:600;
     color:#475467;
     margin-bottom:8px;
+  }
+  .other-collateral .kpi .left{
+    flex:1;
   }
   .other-collateral .kpi .big{
     font-size:18px;
@@ -88,19 +93,30 @@
     font-size:18px;
     color:#475467;
     margin-top:6px;
+    width:100%;
+  }
+  .other-collateral .kpi .pair + .pair{
+    border-top:1px solid var(--border);
+    padding-top:12px;
+    margin-top:12px;
   }
   .other-collateral .kpi .pair b{color:#1D2939;font-weight:950;}
   .other-collateral .kpi .right{display:flex;flex-direction:column;align-items:flex-end;gap:8px;min-width:56px;}
+  .other-collateral .kpi .right{
+    position:absolute;
+    right:12px;
+    top:12px;
+  }
   .other-collateral .info{
-    width:18px;
-    height:18px;
-    border-radius:999px;
-    border:1px solid rgba(152,162,179,.45);
-    color:#98A2B3;
+    width:40px;
+    height:40px;
     display:grid;
     place-items:center;
-    font-size:12px;
-    font-weight:900;
+  }
+  .other-collateral .info img{
+    width:40px;
+    height:40px;
+    display:block;
   }
   .other-collateral .delta{
     font-size:11px;
@@ -262,7 +278,9 @@
             {% endfor %}
           </div>
           <div class="right">
-            <div class="info" aria-hidden="true">{{ card.info }}</div>
+            <div class="info" aria-hidden="true">
+              <img src="{% static 'images/Background.svg' %}" alt="" />
+            </div>
             {% for delta in card.deltas %}
               <div class="delta {{ delta.delta_class }}" title="{{ delta.label }}">
                 <span class="arrow">{{ delta.symbol }}</span>
