@@ -2043,6 +2043,7 @@ def _finished_goals_context(borrower, range_key="today", division="all"):
         "finished_goals_sales_insights": [],
         "finished_goals_highlights": [],
         "finished_goals_chart_config": {},
+        "finished_goals_inline_category_rows": [],
         "finished_goals_inline_excess_by_category": [],
         "finished_goals_inline_excess_totals": {},
         "finished_goals_top_skus": [],
@@ -2087,6 +2088,10 @@ def _finished_goals_context(borrower, range_key="today", division="all"):
         if start_date and end_date:
             return qs.filter(**{f"{field_name}__range": (start_date, end_date)})
         return qs
+
+    def _apply_date_filter_or_latest(qs, field_name):
+        filtered = _apply_date_filter(qs, field_name)
+        return filtered if filtered.exists() else qs
 
     def _apply_division_filter(qs):
         if normalized_division != "all":
@@ -2137,7 +2142,7 @@ def _finished_goals_context(borrower, range_key="today", division="all"):
     if fg_type_qs.exists():
         metrics_qs = fg_type_qs
     metrics_qs = _apply_division_filter(metrics_qs)
-    metrics_qs = _apply_date_filter(metrics_qs, "as_of_date")
+    metrics_qs = _apply_date_filter_or_latest(metrics_qs, "as_of_date")
     metrics_row = metrics_qs.order_by("-as_of_date", "-created_at", "-id").first()
     if metrics_row:
         inventory_total = _to_decimal(metrics_row.total_inventory)
@@ -2295,9 +2300,9 @@ def _finished_goals_context(borrower, range_key="today", division="all"):
             "delta_class": "good" if delta >= 0 else "bad",
         }
 
-    sales_trend_qs = SalesGMTrendRow.objects.filter(borrower=borrower)
-    sales_trend_qs = _apply_division_filter(sales_trend_qs)
-    sales_trend_qs = _apply_date_filter(sales_trend_qs, "as_of_date")
+    sales_trend_base = SalesGMTrendRow.objects.filter(borrower=borrower)
+    sales_trend_base = _apply_division_filter(sales_trend_base)
+    sales_trend_qs = _apply_date_filter_or_latest(sales_trend_base, "as_of_date")
     sales_rows = list(
         sales_trend_qs.order_by("-as_of_date", "-created_at", "-id")[:2]
     )
@@ -2329,6 +2334,14 @@ def _finished_goals_context(borrower, range_key="today", division="all"):
             if previous_sales
             else None
         )
+        trend_3m_value = latest_sales.trend_3_m_pct
+        trend_3m_delta = (
+            _pct_point_change(
+                latest_sales.trend_3_m_pct, previous_sales.trend_3_m_pct
+            )
+            if previous_sales
+            else None
+        )
 
         sales_insights = [
             {
@@ -2346,6 +2359,11 @@ def _finished_goals_context(borrower, range_key="today", division="all"):
                 "value": _format_pct(trend_value),
                 **_delta_payload(trend_delta),
             },
+            {
+                "label": "3 Month Sales Trend",
+                "value": _format_pct(trend_3m_value),
+                **_delta_payload(trend_3m_delta),
+            },
         ]
     else:
         sales_insights = [
@@ -2353,6 +2371,12 @@ def _finished_goals_context(borrower, range_key="today", division="all"):
             {"label": "Gross Margin", "value": "—", "delta": None, "delta_class": ""},
             {
                 "label": "12 Months Sales Trend",
+                "value": "—",
+                "delta": None,
+                "delta_class": "",
+            },
+            {
+                "label": "3 Month Sales Trend",
                 "value": "—",
                 "delta": None,
                 "delta_class": "",
@@ -2412,10 +2436,11 @@ def _finished_goals_context(borrower, range_key="today", division="all"):
     inline_bucket_totals = OrderedDict((label, Decimal("0")) for label in inline_excess_labels)
     inline_rows = FGInlineCategoryAnalysisRow.objects.filter(borrower=borrower)
     inline_rows = _apply_division_filter(inline_rows)
-    inline_rows = _apply_date_filter(inline_rows, "as_of_date")
+    inline_rows = _apply_date_filter_or_latest(inline_rows, "as_of_date")
     inline_latest = inline_rows.exclude(as_of_date__isnull=True).order_by("-as_of_date").first()
     if inline_latest and inline_latest.as_of_date:
         inline_rows = inline_rows.filter(as_of_date=inline_latest.as_of_date)
+    inline_rows = inline_rows.order_by("-fg_available", "id")
     inline_total = Decimal("0")
     for row in inline_rows:
         amount = _to_decimal(row.fg_available or row.fg_total)
@@ -2448,14 +2473,30 @@ def _finished_goals_context(borrower, range_key="today", division="all"):
         inline_excess_values.append(float(pct))
         inline_excess_value_labels.append(f"{pct:.0f}%")
 
+    inline_category_rows = []
+    for row in inline_rows:
+        inline_category_rows.append(
+            {
+                "category": row.category or "—",
+                "fg_total": _format_currency(row.fg_total),
+                "fg_ineligible": _format_currency(row.fg_ineligible),
+                "fg_available": _format_currency(row.fg_available),
+                "pct_of_available": _format_pct(row.pct_of_available),
+                "sales": _format_currency(row.sales),
+                "cogs": _format_currency(row.cogs),
+                "gm": _format_currency(row.gm),
+                "gm_pct": _format_pct(row.gm_pct),
+                "weeks_supply": _format_wos(row.weeks_of_supply),
+            }
+        )
+
     inline_excess_trend_labels = []
     inline_excess_trend_values = []
-    inline_trend_rows = (
-        FGInlineCategoryAnalysisRow.objects.filter(borrower=borrower)
-        .exclude(as_of_date__isnull=True)
+    inline_trend_rows = FGInlineCategoryAnalysisRow.objects.filter(borrower=borrower).exclude(
+        as_of_date__isnull=True
     )
     inline_trend_rows = _apply_division_filter(inline_trend_rows)
-    inline_trend_rows = _apply_date_filter(inline_trend_rows, "as_of_date")
+    inline_trend_rows = _apply_date_filter_or_latest(inline_trend_rows, "as_of_date")
     inline_trend_rows = inline_trend_rows.order_by("as_of_date", "id")
     inline_trend_map = OrderedDict()
     for row in inline_trend_rows:
@@ -2552,10 +2593,10 @@ def _finished_goals_context(borrower, range_key="today", division="all"):
 
     trend_min = min(inventory_trend_values) if inventory_trend_values else 0
     trend_max = max(inventory_trend_values) if inventory_trend_values else 100
-    if trend_min >= 10 and trend_max <= 100:
-        trend_y_min = 10
+    if trend_min >= 0 and trend_max <= 100:
+        trend_y_min = 0
         trend_y_max = 100
-        trend_tick_values = [100, 90, 70, 50, 30, 10]
+        trend_tick_values = None
     else:
         trend_y_min = max(0, math.floor(trend_min / 10) * 10)
         trend_y_max = math.ceil(trend_max / 10) * 10 or 100
@@ -2642,8 +2683,8 @@ def _finished_goals_context(borrower, range_key="today", division="all"):
             "labels": sales_labels,
             "values": sales_values,
             "barClass": "bar-strong",
-            "barWidth": 14,
-            "barGap": 18,
+            "barWidth": 6,
+            "barGap": 46,
             "yPrefix": "$",
             "ySuffix": "M",
             "yMin": 0 if sales_values else None,
@@ -2695,7 +2736,7 @@ def _finished_goals_context(borrower, range_key="today", division="all"):
 
     inline_excess_qs = FGInlineExcessByCategoryRow.objects.filter(borrower=borrower)
     inline_excess_qs = _apply_division_filter(inline_excess_qs)
-    inline_excess_qs = _apply_date_filter(inline_excess_qs, "as_of_date")
+    inline_excess_qs = _apply_date_filter_or_latest(inline_excess_qs, "as_of_date")
     inline_excess_rows = list(
         inline_excess_qs.order_by("category", "id")
     )
@@ -2803,7 +2844,7 @@ def _finished_goals_context(borrower, range_key="today", division="all"):
     top_sku_rows = []
     sku_query = HistoricalTop20SKUsRow.objects.filter(borrower=borrower)
     sku_query = _apply_division_filter(sku_query)
-    sku_query = _apply_date_filter(sku_query, "as_of_date")
+    sku_query = _apply_date_filter_or_latest(sku_query, "as_of_date")
     latest_sku_row = sku_query.order_by("-as_of_date", "-created_at", "-id").first()
     if latest_sku_row and latest_sku_row.as_of_date:
         sku_rows = list(
@@ -2933,6 +2974,7 @@ def _finished_goals_context(borrower, range_key="today", division="all"):
         "finished_goals_highlights": highlights,
         "finished_goals_chart_config": chart_config,
         "finished_goals_chart_config_json": json.dumps(chart_config),
+        "finished_goals_inline_category_rows": inline_category_rows,
         "finished_goals_inline_excess_by_category": inline_excess_by_category,
         "finished_goals_inline_excess_totals": inline_excess_totals,
         "finished_goals_top_skus": top_sku_rows,

@@ -540,6 +540,52 @@
       <img src="{% static 'images/borrowing_icon.svg' %}" 
           alt="Current Update Icon"
           class="current-update-icon" />
+      In-Line Category Analysis
+    </div>
+    <div class="divider"></div>
+    <div class="table-scroll">
+      <table class="data" aria-label="In-Line Category Analysis">
+        <thead>
+          <tr>
+            <th>Category</th>
+            <th class="numC">FG Total</th>
+            <th class="numC">FG Ineligible</th>
+            <th class="numC">FG Available</th>
+            <th class="numC">% of Available</th>
+            <th class="numC">Sales</th>
+            <th class="numC">COGS</th>
+            <th class="numC">GM</th>
+            <th class="numC">GM %</th>
+            <th class="numC">Weeks Supply</th>
+          </tr>
+        </thead>
+        <tbody>
+          {% for row in finished_goals_inline_category_rows %}
+            <tr>
+              <td>{{ row.category }}</td>
+              <td class="numC">{{ row.fg_total }}</td>
+              <td class="numC">{{ row.fg_ineligible }}</td>
+              <td class="numC">{{ row.fg_available }}</td>
+              <td class="numC">{{ row.pct_of_available }}</td>
+              <td class="numC">{{ row.sales }}</td>
+              <td class="numC">{{ row.cogs }}</td>
+              <td class="numC">{{ row.gm }}</td>
+              <td class="numC">{{ row.gm_pct }}</td>
+              <td class="numC">{{ row.weeks_supply }}</td>
+            </tr>
+          {% empty %}
+            <tr><td colspan="10" class="numC">No inline category analysis available.</td></tr>
+          {% endfor %}
+        </tbody>
+      </table>
+    </div>
+  </div>
+
+  <div class="card table-card" style="margin-top:12px">
+    <div class="card-head">
+      <img src="{% static 'images/borrowing_icon.svg' %}" 
+          alt="Current Update Icon"
+          class="current-update-icon" />
       Top Sku Analysis
     </div>
     <div class="divider"></div>
@@ -607,8 +653,9 @@
     const text = String(lab);
     if (!text.includes("\n")) return `<text x="${x}" y="${y}" text-anchor="${anchor}">${text}</text>`;
     const lines = text.split("\n");
+    const lineHeight = 10;
     return `<text x="${x}" y="${y}" text-anchor="${anchor}">${
-      lines.map((line,i)=>`<tspan x="${x}" dy="${i===0?0:12}">${line}</tspan>`).join("")
+      lines.map((line,i)=>`<tspan x="${x}" dy="${i===0?0:lineHeight}">${line}</tspan>`).join("")
     }</text>`;
   }
 
@@ -689,7 +736,7 @@
           <g class="axis">
             ${c.labels.map((lab,i)=>{
               if(i%xStep!==0) return "";
-              return axisLabel(lab, x(i), H-10, "middle");
+              return axisLabel(lab, x(i), H-18, "middle");
             }).join("")}
           </g>
           <path d="${pathFrom(pts)}" class="line"></path>
@@ -791,7 +838,7 @@
           <g class="axis">
             ${c.labels.map((lab,i)=>{
               const xx = x(i) + barW/2;
-              return axisLabel(lab, xx, H-10, "middle");
+              return axisLabel(lab, xx, H-18, "middle");
             }).join("")}
           </g>
         </svg>
