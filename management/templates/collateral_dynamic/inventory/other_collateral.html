@@ -41,9 +41,9 @@
     align-items:center;
     gap:8px;
     padding:12px 14px;
-    font-size:12px;
-    font-weight:950;
-    color:#344054;
+    font-size:20px;
+    font-weight:600;
+    color:#585858;
   }
   .other-collateral .ico{
     width:16px;
@@ -68,23 +68,24 @@
     gap:12px;
   }
   .other-collateral .kpi .left .t{
-    font-size:11px;
-    font-weight:950;
+    font-size:20px;
+    font-weight:600;
     color:#475467;
     margin-bottom:8px;
   }
   .other-collateral .kpi .big{
     font-size:18px;
     font-weight:1000;
-    color:#1D2939;
+    color:#65758B;
     letter-spacing:.1px;
     margin-bottom:10px;
   }
   .other-collateral .kpi .pair{
     display:flex;
+    flex-direction: column;
     justify-content:space-between;
     gap:10px;
-    font-size:11px;
+    font-size:18px;
     color:#475467;
     margin-top:6px;
   }
@@ -255,7 +256,7 @@
         <div class="kpi">
           <div class="left">
             <div class="t">{{ card.title }}</div>
-            <div class="big">{{ card.big }}</div>
+            <!-- <div class="big">{{ card.big }}</div> -->
             {% for row in card.rows %}
               <div class="pair"><span>{{ row.label }}</span><b>{{ row.value }}</b></div>
             {% endfor %}
