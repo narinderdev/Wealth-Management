@@ -460,7 +460,7 @@
             <div class="score-donut">
               <svg viewBox="0 0 42 42" aria-label="Composite risk donut">
                 <circle cx="21" cy="21" r="15.915" fill="transparent" stroke="#cfe3f0" stroke-width="4"></circle>
-                <circle cx="21" cy="21" r="15.915" fill="transparent" stroke="#0b57d0" stroke-width="4"
+                <circle cx="21" cy="21" r="15.915" fill="transparent" stroke="{{ risk.rating_color }}" stroke-width="4"
                         stroke-linecap="round" stroke-dasharray="{{ risk.rating_dasharray }}"
                         transform="rotate(-90 21 21)"></circle>
                 <text x="21" y="22" text-anchor="middle">{{ risk.rating_score }}/5</text>

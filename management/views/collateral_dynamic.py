@@ -1111,15 +1111,7 @@ def _inventory_context(borrower):
     inventory_rows = state["inventory_rows"]
     category_metrics = state["category_metrics"]
 
-    def _format_millions(value):
-        if value is None:
-            return "—"
-        val = _to_decimal(value)
-        sign = "-" if val < 0 else ""
-        val = abs(val)
-        return f"{sign}{float(val / Decimal('1000000')):.1f}M"
-
-    inventory_available_display = _format_millions(inventory_available_total)
+    inventory_available_display = _format_currency(inventory_available_total)
     ineligible_display = _format_currency(inventory_ineligible)
     snapshot_text = (
         f"Inventory levels increased this period, primarily in finished goods, while turns softened due to slower sales velocity. Excess and obsolete inventory ticked up, raising the risk profile and influencing NOLV recovery expectations. Raw materials and WIP remained steady with no significant swings"
