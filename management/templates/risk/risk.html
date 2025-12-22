@@ -49,6 +49,60 @@
     }
 
     /* ===============================
+       Current Primary Risk Rating bar
+    =============================== */
+    .risk-page .rating-wrap{
+      padding:12px 14px 24px;
+    }
+    .risk-page .rating-scale{
+      display:flex;
+      justify-content:space-between;
+      font-size:12px;
+      color:#111827;
+      font-weight:700;
+      letter-spacing:.01em;
+      margin-bottom:8px;
+      padding:0 4px;
+    }
+    .risk-page .rating-bar{
+      position:relative;
+      height:16px;
+      border-radius:999px;
+      background:#e6eef6;
+      overflow:visible;
+      box-shadow:inset 0 1px 2px rgba(15,23,42,.1);
+    }
+    .risk-page .rating-fill{
+      position:absolute;
+      inset:0;
+      border-radius:999px;
+      background:linear-gradient(90deg,#7ec459 0%,#d7c63c 25%,#fbb82e 50%,#fc8f2e 75%,#f74c34 100%);
+    }
+    .risk-page .rating-pin{
+      position:absolute;
+      top:50%;
+      transform:translate(-50%,-50%);
+      width:16px;
+      height:16px;
+      border-radius:50%;
+      background:#fff;
+      border:2px solid #1366d6;
+      box-shadow:0 4px 8px rgba(15,23,42,.18);
+      left:var(--risk-pos,50%);
+    }
+    .risk-page .rating-value{
+      position:absolute;
+      top:calc(100% + 8px);
+      left:var(--risk-pos,50%);
+      transform:translate(-50%,0);
+      font-size:15px;
+      color:#0f172a;
+      font-weight:800;
+      z-index:1;
+      white-space:nowrap;
+    }
+
+    /* ===============================
        Snapshot Summary (top card)
     =============================== */
     .risk-page .snapshot-text{
@@ -356,6 +410,24 @@
 
 {% block page_content %}
 <div class="risk-page">
+
+  <!-- Current Primary Risk Rating -->
+  <section class="panel">
+    <div class="panel-title">
+      <img src="{% static 'images/borrowing_icon.svg' %}" alt="Risk Icon" class="snapshot-icon" />
+      Current Primary Risk Rating
+    </div>
+    <div class="panel-body rating-wrap">
+      <div class="rating-scale">
+        <span>Low</span><span>Mild</span><span>Average</span><span>Elevated</span><span>High</span>
+      </div>
+      <div class="rating-bar" aria-label="Current primary risk rating" style="--risk-pos: {{ risk.rating_position }}%;">
+        <div class="rating-fill"></div>
+        <span class="rating-pin"></span>
+        <span class="rating-value">{{ risk.rating_score }}</span>
+      </div>
+    </div>
+  </section>
 
   <!-- Snapshot Summary (FULL WIDTH) -->
   <section class="panel">
