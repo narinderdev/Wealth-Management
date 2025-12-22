@@ -888,6 +888,7 @@
     }
     .collateral-dynamic .ar-section .swatch.past{background:#1b2a55;}
     .collateral-dynamic .ar-section .swatch.current{background:var(--blue-2);}
+    .collateral-dynamic .ar-section .swatch.current{background:#6d82ff;}
     .collateral-dynamic .ar-section table{
       width:100%;
       border-collapse:separate;
@@ -1139,9 +1140,9 @@
                               {% endfor %}
                             </g>
                             <polyline class="bb-line" stroke="{{ kpi.color|default:'var(--blue-3)' }}" points="{{ kpi.chart.points }}"></polyline>
-                            <g class="bb-dots" stroke="{{ kpi.color|default:'var(--blue-3)' }}" fill="#fff">
+                            <g class="bb-dots" stroke="{{ kpi.color|default:'var(--blue-3)' }}" fill="{{ kpi.color|default:'var(--blue-3)' }}">
                               {% for dot in kpi.chart.dots %}
-                                <circle cx="{{ dot.cx }}" cy="{{ dot.cy }}" r="3.5" stroke-width="2"></circle>
+                                <circle class="bb-dot" cx="{{ dot.cx }}" cy="{{ dot.cy }}" r="3" stroke-width="2"></circle>
                                 <circle class="ar-tip"
                                   cx="{{ dot.cx }}"
                                   cy="{{ dot.cy }}"
@@ -1258,36 +1259,34 @@
                       </div>
 
                       <div class="chart-wrap ar-chart">
-                        <svg viewBox="0 0 520 170" width="100%" height="170" aria-label="Current vs Past Due grouped bar chart">
+                        <svg viewBox="0 0 520 190" width="100%" height="190" aria-label="Current vs Past Due stacked bar chart">
                           <g stroke="rgba(15,23,42,.08)" stroke-width="1">
-                            <path d="M40 140H500"/>
-                            <path d="M40 110H500"/>
-                            <path d="M40 80H500"/>
-                            <path d="M40 50H500"/>
+                            {% for tick in ar_current_vs_past_due_trend.ticks %}
+                              <path d="M40 {{ tick.y|floatformat:1 }}H500"/>
+                            {% endfor %}
                           </g>
-                          <g fill="rgba(15,23,42,.45)" font-size="10">
-                            <text x="10" y="143">0%</text>
-                            <text x="10" y="113">20%</text>
-                            <text x="10" y="83">40%</text>
-                            <text x="10" y="53">60%</text>
+                          <g fill="rgba(15,23,42,.55)" font-size="10">
+                            {% for tick in ar_current_vs_past_due_trend.ticks %}
+                              <text x="10" y="{{ tick.y|add:'3'|floatformat:1 }}">{{ tick.label }}</text>
+                            {% endfor %}
                           </g>
 
                           <g>
                             {% if ar_current_vs_past_due_trend.bars %}
                               {% for bar in ar_current_vs_past_due_trend.bars %}
-                                <rect x="{{ bar.past_due_x }}" y="{{ bar.past_due_y }}" width="8" height="{{ bar.past_due_height }}" rx="3" fill="#1b2a55"
-                                  class="ar-tip" data-label="{{ bar.label }}" data-series="Past Due" data-value="{{ bar.past_due_pct }}"/>
-                                <rect x="{{ bar.current_x }}" y="{{ bar.current_y }}" width="8" height="{{ bar.current_height }}" rx="3" fill="var(--blue-2)"
-                                  class="ar-tip" data-label="{{ bar.label }}" data-series="Current" data-value="{{ bar.current_pct }}"/>
+                                <rect x="{{ bar.x }}" y="{{ bar.past_due_y }}" width="{{ bar.width }}" height="{{ bar.past_due_height }}" rx="4" fill="#1b2a55"
+                                  class="ar-tip" data-label="{{ bar.label }}" data-series="Past Due" data-value="{{ bar.past_due_value }}"/>
+                                <rect x="{{ bar.x }}" y="{{ bar.current_y }}" width="{{ bar.width }}" height="{{ bar.current_height }}" rx="4" fill="#6d82ff"
+                                  class="ar-tip" data-label="{{ bar.label }}" data-series="Current" data-value="{{ bar.current_value }}"/>
                               {% endfor %}
                             {% else %}
-                              <text x="260" y="110" fill="rgba(15,23,42,.45)" font-size="12" text-anchor="middle">No trend data</text>
+                              <text x="260" y="120" fill="rgba(15,23,42,.45)" font-size="12" text-anchor="middle">No trend data</text>
                             {% endif %}
                           </g>
 
-                          <g fill="rgba(15,23,42,.45)" font-size="9">
+                          <g fill="rgba(15,23,42,.55)" font-size="9">
                             {% for label in ar_current_vs_past_due_trend.labels %}
-                              <text x="{{ label.x }}" y="163" text-anchor="middle">{{ label.text }}</text>
+                              <text x="{{ label.x }}" y="176" text-anchor="middle">{{ label.text }}</text>
                             {% endfor %}
                           </g>
                         </svg>

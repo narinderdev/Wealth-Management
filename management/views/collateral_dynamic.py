@@ -1549,6 +1549,12 @@ def _accounts_receivable_context(borrower, range_key="today", division="all"):
         text = f"{value:.1f}"
         return text.rstrip("0").rstrip(".")
 
+    def _format_currency_millions(value):
+        if value is None:
+            return "—"
+        val = _to_decimal(value)
+        return f"${val:,.1f}M"
+
     def _format_axis_currency(value):
         val = float(value)
         abs_val = abs(val)
@@ -1559,6 +1565,10 @@ def _accounts_receivable_context(borrower, range_key="today", division="all"):
         if abs_val >= 1_000:
             return f"${_trim_axis_value(val / 1_000)}k"
         return f"${val:,.0f}"
+
+    def _format_axis_currency_millions(value):
+        val = float(value)
+        return f"${_trim_axis_value(val)}M"
 
     def _format_axis_days(value):
         return f"{int(round(value)):,}"
@@ -1601,7 +1611,7 @@ def _accounts_receivable_context(borrower, range_key="today", division="all"):
         values, labels = _normalize_chart_values(values, labels)
         width = 260
         height = 140
-        left = 30
+        left = 48
         right = 12
         top = 14
         bottom = 26
@@ -1655,7 +1665,7 @@ def _accounts_receivable_context(borrower, range_key="today", division="all"):
                 "top": top,
                 "bottom": round(baseline_y, 1),
             },
-            "label_x": left - 6,
+            "label_x": left - 10,
             "label_y": round(baseline_y + 16, 1),
         }
 
@@ -1685,27 +1695,31 @@ def _accounts_receivable_context(borrower, range_key="today", division="all"):
             "label": "Balance",
             "key": "total_balance",
             "formatter": lambda value: _format_currency(_to_decimal(value)),
+            "chart_formatter": lambda value: _format_currency_millions(value),
+            "scale": Decimal("1000000"),
+            "axis_formatter": _format_axis_currency_millions,
             "color": "var(--blue-3)",
             "icon": "images/balance.svg",
-            "axis_formatter": _format_axis_currency,
             "improvement_on_increase": True,
         },
         {
             "label": "Days Sales Outstanding",
             "key": "avg_dso",
             "formatter": lambda value: _format_days(value),
+            "chart_formatter": lambda value: _format_currency_millions(value),
+            "axis_formatter": _format_axis_currency_millions,
             "color": "var(--purple)",
             "icon": "images/sales_outstanding.svg",
-            "axis_formatter": _format_axis_days,
             "improvement_on_increase": False,
         },
         {
             "label": "% of total past due",
             "key": "past_due_pct",
             "formatter": lambda value: _format_pct_display(value),
+            "chart_formatter": lambda value: _format_currency_millions(value),
+            "axis_formatter": _format_axis_currency_millions,
             "color": "var(--teal)",
             "icon": "images/total_pastdue_icon.svg",
-            "axis_formatter": _format_axis_pct,
             "improvement_on_increase": False,
         },
     ]
@@ -1714,12 +1728,14 @@ def _accounts_receivable_context(borrower, range_key="today", division="all"):
     chart_history = history[-chart_points:] if len(history) > chart_points else history[:]
     chart_labels = [f"{idx + 1:02d}" for idx in range(len(chart_history))]
     for spec in kpi_specs:
-        series_values = [row[spec["key"]] for row in chart_history]
+        series_values = [_to_decimal(row[spec["key"]]) for row in chart_history]
+        scale = spec.get("scale") or Decimal("1")
+        scaled_values = [float(val / scale) for val in series_values]
         chart = _build_kpi_chart(
-            series_values,
+            scaled_values,
             chart_labels,
             axis_formatter=spec["axis_formatter"],
-            value_formatter=spec["formatter"],
+            value_formatter=spec.get("chart_formatter") or spec["formatter"],
         )
         delta = _delta_payload(
             current_snapshot[spec["key"]],
@@ -1821,30 +1837,63 @@ def _accounts_receivable_context(borrower, range_key="today", division="all"):
 
     trend_bars = []
     trend_labels = []
+    baseline_y = Decimal("140")
+    plot_height = Decimal("120")
+    bar_width = Decimal("12")
+    spacing = Decimal("32")
+    stack_gap = Decimal("4")
+    max_amount = max(
+        (
+            _to_decimal(item.get("total_current_amt")) + _to_decimal(item.get("total_past_due_amt"))
+            for item in history
+        ),
+        default=Decimal("0"),
+    )
+    scale = (plot_height / max_amount) if max_amount > 0 else Decimal("0")
+
+    def _height_from_amount(amount):
+        amt = _to_decimal(amount)
+        if amt <= 0 or scale == 0:
+            return Decimal("0")
+        height = amt * scale
+        return max(Decimal("6"), height)
+
     for idx, entry in enumerate(history):
-        past_pct = float(entry["past_due_pct"])
-        current_pct = float(entry["current_pct"])
-        past_height = min(120.0, max(8.0, past_pct))
-        current_height = min(120.0, max(8.0, current_pct))
-        past_y = 140 - past_height
-        current_y = 140 - current_height
-        past_x = 58 + idx * 34
-        current_x = past_x + 12
-        label_x = past_x + 6
+        past_amt = _to_decimal(entry.get("total_past_due_amt"))
+        current_amt = _to_decimal(entry.get("total_current_amt"))
+        past_height = _height_from_amount(past_amt)
+        current_height = _height_from_amount(current_amt)
+        past_y = baseline_y - past_height if past_height else baseline_y
+        gap = stack_gap if past_height and current_height else Decimal("0")
+        current_y = past_y - gap - current_height if current_height else past_y
+        bar_x = Decimal("58") + spacing * idx
+        label_x = bar_x + (bar_width / 2)
         trend_bars.append(
             {
-                "past_due_x": past_x,
-                "past_due_y": past_y,
-                "past_due_height": past_height,
-                "current_x": current_x,
-                "current_y": current_y,
-                "current_height": current_height,
-                "past_due_pct": f"{past_pct:.1f}%",
-                "current_pct": f"{current_pct:.1f}%",
+                "x": float(bar_x),
+                "width": float(bar_width),
+                "past_due_y": float(past_y),
+                "past_due_height": float(past_height),
+                "current_y": float(current_y),
+                "current_height": float(current_height),
+                "past_due_value": _format_currency(past_amt),
+                "current_value": _format_currency(current_amt),
                 "label": entry["label"],
             }
         )
-        trend_labels.append({"x": label_x, "text": entry["label"]})
+        trend_labels.append({"x": float(label_x), "text": entry["label"]})
+
+    trend_ticks = []
+    tick_steps = 4
+    for i in range(tick_steps + 1):
+        value = max_amount * Decimal(i) / Decimal(tick_steps)
+        y = baseline_y - (value * scale if scale else Decimal("0"))
+        trend_ticks.append(
+            {
+                "y": float(y),
+                "label": _format_axis_currency(value),
+            }
+        )
 
     # Tables for customer aging composition views
     bucket_columns = ["Current", "0-30", "31-60", "61-90", "91+"]
@@ -2052,7 +2101,11 @@ def _accounts_receivable_context(borrower, range_key="today", division="all"):
     return {
         "ar_borrowing_base_kpis": kpis,
         "ar_aging_chart_buckets": aging_buckets,
-        "ar_current_vs_past_due_trend": {"bars": trend_bars, "labels": trend_labels},
+        "ar_current_vs_past_due_trend": {
+            "bars": trend_bars,
+            "labels": trend_labels,
+            "ticks": trend_ticks,
+        },
         "ar_ineligible_overview_rows": ineligible_rows,
         "ar_ineligible_overview_total": ineligible_total_row,
         "ar_ineligible_trend": {
