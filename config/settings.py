@@ -77,14 +77,25 @@ WSGI_APPLICATION = 'config.wsgi.application'
 # https://docs.djangoproject.com/en/3.2/ref/settings/#databases
 
 #### POSTGRESQL DATABASE CONFIGURATION
+# DATABASES = {
+#   "default": {
+#     "ENGINE": "django.db.backends.postgresql",
+#     "NAME": "coradb",
+#     "USER": "postgres",
+#     "PASSWORD": "DevApnitor23",
+#     'HOST': 'coradb.c1osuwkqcrl0.us-east-2.rds.amazonaws.com',  # your RDS endpoint
+#     'PORT': '5432',  # default PostgreSQL port
+#   }
+# }
+##### LOCAL POSTGRESQL DATABASE CONFIGURATION
 DATABASES = {
   "default": {
     "ENGINE": "django.db.backends.postgresql",
-    "NAME": "coradb",
+    "NAME": "wealth_management",
     "USER": "postgres",
-    "PASSWORD": "DevApnitor23",
-    'HOST': 'coradb.c1osuwkqcrl0.us-east-2.rds.amazonaws.com',  # your RDS endpoint
-    'PORT': '5432',  # default PostgreSQL port
+    "PASSWORD": "Apnitor@1",
+    "HOST": "localhost",
+    "PORT": "5432",
   }
 }
 

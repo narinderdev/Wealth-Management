@@ -3168,16 +3168,16 @@ def _raw_materials_context(borrower):
         key=lambda row: _to_decimal(row.eligible_collateral),
         reverse=True,
     )
-    top25_rows = sku_rows[:25]
+    top20_rows = sku_rows[:20]
     raw_skus = []
-    top25_amount = Decimal("0")
-    top25_available = Decimal("0")
+    top20_amount = Decimal("0")
+    top20_available = Decimal("0")
     total_amount = Decimal("0")
     total_available = Decimal("0")
     for row in sku_rows:
         total_amount += _to_decimal(row.beginning_collateral)
         total_available += _to_decimal(row.eligible_collateral)
-    for row in top25_rows:
+    for row in top20_rows:
         eligible = _to_decimal(row.eligible_collateral)
         beginning = _to_decimal(row.beginning_collateral)
         pct_available = (
@@ -3197,20 +3197,20 @@ def _raw_materials_context(borrower):
                 "status": "Current" if _to_decimal(row.net_collateral) >= 0 else "At Risk",
             }
         )
-        top25_amount += beginning
-        top25_available += eligible
-    top25_total = {
-        "label": "Top 25 Total",
-        "total": _format_currency(top25_amount),
-        "ineligible": _format_currency(max(top25_amount - top25_available, Decimal("0"))),
-        "available": _format_currency(top25_available),
+        top20_amount += beginning
+        top20_available += eligible
+    top20_total = {
+        "label": "Top 20 Total",
+        "total": _format_currency(top20_amount),
+        "ineligible": _format_currency(max(top20_amount - top20_available, Decimal("0"))),
+        "available": _format_currency(top20_available),
         "pct_available": _format_pct(
-            (top25_available / top25_amount) if top25_amount else Decimal("0")
+            (top20_available / top20_amount) if top20_amount else Decimal("0")
         ),
     }
 
-    other_amount = total_amount - top25_amount
-    other_available = total_available - top25_available
+    other_amount = total_amount - top20_amount
+    other_available = total_available - top20_available
     sku_other_row = {
         "label": "Other items",
         "total": _format_currency(other_amount if other_amount > 0 else Decimal("0")),
@@ -3234,13 +3234,13 @@ def _raw_materials_context(borrower):
     def _line_values(base, length=13):
         values = []
         for idx in range(length):
-            variation = math.sin(idx / 2.0) * 4
-            val = max(10.0, min(100.0, base + variation))
+            variation = math.sin(idx / 2.0) * 0.04
+            val = max(0.0, base * (1 + variation))
             values.append(val)
         return values
 
-    base_pct = float(available_pct * Decimal("100")) if isinstance(available_pct, Decimal) else 50.0
-    chart_values = _line_values(base_pct)
+    base_value = float(inventory_available_total) if inventory_available_total else 0.0
+    chart_values = _line_values(base_value)
     chart_config = {
         "rawInventoryTrend": {
             "type": "line",
@@ -3261,9 +3261,11 @@ def _raw_materials_context(borrower):
                 "Feb 2025",
             ],
             "values": chart_values,
-            "yPrefix": "%",
-            "ySuffix": "",
+            "yPrefix": "$ ",
+            "ySuffix": "M",
+            "yScale": 1_000_000,
             "yTicks": 6,
+            "yDecimals": 1,
         }
     }
 
@@ -3277,7 +3279,7 @@ def _raw_materials_context(borrower):
         "raw_materials_category_other": category_other_row,
         "raw_materials_category_footer": footer,
         "raw_materials_top_skus": raw_skus,
-        "raw_materials_top25_total": top25_total,
+        "raw_materials_top20_total": top20_total,
         "raw_materials_top_skus_other": sku_other_row,
         "raw_materials_top_skus_total": sku_grand_total,
     }

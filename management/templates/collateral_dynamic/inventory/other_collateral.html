@@ -219,7 +219,7 @@
     width:220px;
     max-width:100%;
     padding:6px 10px;
-    border:1px solid #D6DDE8;
+    border:1px solid #d6dde8;
     border-radius:6px;
     font-size:11px;
   }
@@ -232,7 +232,7 @@
   }
   .other-collateral .pager button{
     padding:4px 8px;
-    border:1px solid #D6DDE8;
+    border:1px solid #d6dde8;
     background:#fff;
     border-radius:6px;
     font-size:11px;
@@ -309,20 +309,7 @@
       </div>
     </div>
     <div class="table-scroll">
-      <table class="data value-analysis-table" aria-label="Value Analysis Table" id="value-analysis-table" data-empty="Value analysis data not available.">
-        <colgroup>
-          <col class="col-id" />
-          <col class="col-equipment" />
-          <col class="col-manufacturer" />
-          <col class="col-num" />
-          <col class="col-num" />
-          <col class="col-num" />
-          <col class="col-num" />
-          <col class="col-num" />
-          <col class="col-num" />
-          <col class="col-num" />
-          <col class="col-num" />
-        </colgroup>
+      <table class="data" aria-label="Value Analysis Table" id="value-analysis-table" data-empty="Value analysis data not available.">
         <thead>
           <tr>
             <th rowspan="2">ID</th>
@@ -378,17 +365,7 @@
       </div>
     </div>
     <div class="table-scroll">
-      <table class="data asset-register-table" aria-label="Appraisal Asset Register" id="asset-register-table" data-empty="Asset register data not available.">
-        <colgroup>
-          <col class="col-id" />
-          <col class="col-equipment" />
-          <col class="col-manufacturer" />
-          <col class="col-serial" />
-          <col class="col-year" />
-          <col class="col-condition" />
-          <col class="col-num" />
-          <col class="col-num" />
-        </colgroup>
+      <table class="data" aria-label="Appraisal Asset Register" id="asset-register-table" data-empty="Asset register data not available.">
         <thead>
           <tr>
             <th>Item ID</th>
@@ -415,7 +392,7 @@
             </tr>
             <tr class="empty-placeholder"><td colspan="8" class="numR">Asset register data not available.</td></tr>
           {% empty %}
-            <tr><td colspan="8" class="numR">Asset register data not available.</td></tr>
+            <tr class="empty-placeholder"><td colspan="8" class="numR">Asset register data not available.</td></tr>
           {% endfor %}
         </tbody>
       </table>
@@ -596,6 +573,85 @@ function initPagedTable(tableId){
     render();
   }
 
+  function initPagedTable(tableId){
+    const PAGE_SIZE = 20;
+    const table = document.getElementById(tableId);
+    if(!table) return;
+    const tbody = table.querySelector("tbody");
+    const allRows = Array.from(tbody.querySelectorAll("tr")).filter(row => !row.classList.contains("empty-placeholder"));
+    tbody.querySelectorAll(".empty-placeholder").forEach(el => el.remove());
+
+    const searchInput = document.querySelector(`.table-search[data-table="${tableId}"]`);
+    const pager = document.querySelector(`.table-pager[data-table="${tableId}"]`);
+    const info = pager ? pager.querySelector(".pager-info") : null;
+    const btnPrev = pager ? pager.querySelector('[data-action="prev"]') : null;
+    const btnNext = pager ? pager.querySelector('[data-action="next"]') : null;
+
+    const emptyRow = document.createElement("tr");
+    emptyRow.className = "empty-row";
+    const emptyCell = document.createElement("td");
+    emptyCell.colSpan = table.querySelectorAll("thead th").length || 1;
+    emptyCell.textContent = table.dataset.empty || "No results found.";
+    emptyRow.appendChild(emptyCell);
+
+    let filtered = allRows.slice();
+    let page = 1;
+
+    function render(){
+      const total = filtered.length;
+      const pageCount = Math.max(1, Math.ceil(total / PAGE_SIZE));
+      page = Math.min(Math.max(1, page), pageCount);
+
+      allRows.forEach(r => r.style.display = "none");
+      if (emptyRow.parentElement === tbody) emptyRow.remove();
+
+      if(total === 0){
+        tbody.appendChild(emptyRow);
+        if(info) info.textContent = "0 of 0";
+        if(btnPrev) btnPrev.disabled = true;
+        if(btnNext) btnNext.disabled = true;
+        return;
+      }
+
+      const start = (page - 1) * PAGE_SIZE;
+      const end = start + PAGE_SIZE;
+      filtered.slice(start, end).forEach(r => { r.style.display = ""; });
+
+      if(info) info.textContent = `Page ${page} of ${pageCount}`;
+      if(btnPrev) btnPrev.disabled = page <= 1;
+      if(btnNext) btnNext.disabled = page >= pageCount;
+    }
+
+    function applyFilter(){
+      const term = (searchInput && searchInput.value || "").toLowerCase();
+      if(!term){
+        filtered = allRows.slice();
+      } else {
+        filtered = allRows.filter(row => row.textContent.toLowerCase().includes(term));
+      }
+      page = 1;
+      render();
+    }
+
+    if(searchInput){
+      searchInput.addEventListener("input", applyFilter);
+    }
+    if(btnPrev){
+      btnPrev.addEventListener("click", function(){
+        page = Math.max(1, page - 1);
+        render();
+      });
+    }
+    if(btnNext){
+      btnNext.addEventListener("click", function(){
+        page += 1;
+        render();
+      });
+    }
+
+    render();
+  }
+
   const initializeValueTrend = () => {
     const chartEl = document.querySelector('[data-chart="valueTrend"]');
     const dataEl = document.getElementById("otherCollateralValueTrendData");
@@ -609,7 +665,7 @@ function initPagedTable(tableId){
     }
   };
 
- if(document.readyState === "loading"){
+  if(document.readyState === "loading"){
     document.addEventListener("DOMContentLoaded", function(){
       initializeValueTrend();
       initPagedTable("value-analysis-table");

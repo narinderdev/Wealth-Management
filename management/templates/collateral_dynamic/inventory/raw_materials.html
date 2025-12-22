@@ -371,22 +371,10 @@
           </tbody>
           <tfoot>
             <tr class="footer-row">
-              <td>Top 25 Total</td>
+              <td>Top 20 Total</td>
               <td class="num" colspan="4"></td>
-              <td class="num">{{ raw_materials_top25_total.total }}</td>
-              <td class="num">{{ raw_materials_top25_total.pct_available }}</td>
-            </tr>
-            <tr class="footer-row">
-              <td>Other items</td>
-              <td class="num" colspan="4"></td>
-              <td class="num">{{ raw_materials_top_skus_other.total }}</td>
-              <td class="num">{{ raw_materials_top_skus_other.pct_available }}</td>
-            </tr>
-            <tr class="footer-row">
-              <td>Total</td>
-              <td class="num" colspan="4"></td>
-              <td class="num">{{ raw_materials_top_skus_total.total }}</td>
-              <td class="num">{{ raw_materials_top_skus_total.pct_available }}</td>
+              <td class="num">{{ raw_materials_top20_total.total }}</td>
+              <td class="num">{{ raw_materials_top20_total.pct_available }}</td>
             </tr>
           </tfoot>
         </table>
@@ -399,8 +387,16 @@
 <script>
   const charts = {{ raw_materials_chart_config_json|safe }};
   function fmtY(v,c){
-    if (c.yPrefix || c.ySuffix) return `${c.yPrefix||""}${v.toFixed(1)}${c.ySuffix||""}`;
-    return String(v.toFixed(1));
+    const decimals = Number.isFinite(c.yDecimals) ? c.yDecimals : 1;
+    const scale = Number.isFinite(c.yScale) ? c.yScale : 1;
+    const value = Number(v);
+    const scaled = Number.isFinite(value) ? value / scale : 0;
+    const formatted = scaled.toLocaleString("en-US", {
+      minimumFractionDigits: decimals,
+      maximumFractionDigits: decimals,
+    });
+    if (c.yPrefix || c.ySuffix) return `${c.yPrefix||""}${formatted}${c.ySuffix||""}`;
+    return formatted;
   }
   function pathFrom(pts){
     return pts.map((p,i)=> (i===0?`M ${p[0]} ${p[1]}`:`L ${p[0]} ${p[1]}`)).join(" ");
