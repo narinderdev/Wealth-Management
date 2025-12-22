@@ -33,7 +33,7 @@ REPORT_SECTIONS = {
         "rows": [],
     },
     "cashflow": {
-        "title": "Report title",
+        "title": "Report Title",
         "forecast": [
             {"period": "Nov 2025", "inflow": "$4.8M", "outflow": "$3.7M", "net": "$1.1M"},
             {"period": "Dec 2025", "inflow": "$4.4M", "outflow": "$3.5M", "net": "$0.9M"},
