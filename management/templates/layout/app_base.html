@@ -168,9 +168,12 @@
               </div>
             </a> -->
           <div class="bar">
-            <img src="{% static 'images/backarrow.svg' %}" 
-            alt="Icon"
-            class="icon" href="{% url 'borrower_portfolio' %}" />   
+            <a href="{% url 'borrower_portfolio' %}" class="back-link" aria-label="Back to borrower portfolio">
+              <img src="{% static 'images/backarrow.svg' %}" 
+              alt="Back"
+              class="icon" />
+            </a>
+            
           <div class="tabs-shell" >                 
             <nav class="tabs">
               <a class="tab {% if active_tab == 'summary' %}active{% endif %}" href="{% url 'dashboard' %}">Summary</a>

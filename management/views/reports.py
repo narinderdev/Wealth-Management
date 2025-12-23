@@ -15,6 +15,7 @@ from management.models import (
     BorrowerOverviewRow,
     CollateralOverviewRow,
 )
+from management.views.collateral_dynamic import _week_summary_context
 from management.views.summary import _build_borrower_summary, get_preferred_borrower
 
 REPORT_MENU = [
@@ -186,4 +187,8 @@ def reports_view(request):
         "active_report": requested_report,
         "report_section": report_section,
     })
-    return render(request, "reports/borrowing_base.html", context)
+    template_name = "reports/borrowing_base.html"
+    if requested_report == "cashflow":
+        context["week_summary"] = _week_summary_context(borrower)
+        template_name = "reports/cashflow.html"
+    return render(request, template_name, context)

@@ -403,6 +403,19 @@
 
     .chart-big .svg-wrap {
       padding: 4px 10px 12px;
+      display: flex;
+      justify-content: center;
+    }
+
+    .chart-card.chart-big {
+      width: calc((100% - 22px) / 2);
+      margin: 14px auto;
+    }
+
+    @media (max-width: 880px) {
+      .chart-card.chart-big {
+        width: 100%;
+      }
     }
 
     /* SVG styling */
@@ -787,9 +800,9 @@
     function renderCard(el, key) {
       const cfg = CHARTS[key];
       const isBig = el.classList.contains("chart-big");
-      const H = isBig ? 240 : 168;
+      const H = 168;
       const W = 520; // internal viewBox width (responsive)
-      const pad = { l: 52, r: 18, t: 20, b: isBig ? 52 : 44 };
+      const pad = { l: 52, r: 18, t: 20, b: 44 };
 
       // compute min/max across all values with gentle padding
       if (!cfg || !cfg.labels?.length) {

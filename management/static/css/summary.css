@@ -255,6 +255,7 @@ margin-top: 5px;
     .divider{height:1px;background:var(--border);margin:2px 0 0}
 
     .risk{
+      height: 370px;
       margin-top: -457px;
       padding:18px;
       border-radius:22px;

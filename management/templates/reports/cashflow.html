@@ -6,6 +6,179 @@
 {% block extra_head %}
   {{ block.super }}
   <link rel="stylesheet" href="{% static 'css/reports.css' %}">
+  <style>
+    .report-shell{
+      display:flex;
+      gap:18px;
+      align-items:flex-start;
+    }
+    .report-menu{
+      width:300px;
+      background:#fff;
+      border:1px solid #e4e9f2;
+      border-radius:12px;
+      padding:16px;
+      box-shadow:0 8px 18px rgba(15,23,42,.06);
+      height:max-content;
+    }
+    .menu-title{
+      font-size:12px;
+      font-weight:600;
+      letter-spacing:.02em;
+      color:#64748b;
+      margin:4px 0 10px;
+      text-transform:uppercase;
+    }
+    .menu-item{
+      display:flex;
+      align-items:center;
+      gap:10px;
+      padding:10px 12px;
+      border-radius:12px;
+      color:#70717b;
+      text-decoration:none;
+      font-size:13px;
+      font-weight:500;
+    }
+    .menu-item:not(.active):hover{background:#f4f7ff}
+    .menu-item.active{
+      background:#1d4089;
+      color:#fff;
+      font-weight:600;
+      box-shadow:0 6px 14px rgba(29,64,137,.22);
+    }
+    .menu-icon{
+      width:26px;
+      height:26px;
+      border-radius:8px;
+      display:grid;
+      place-items:center;
+      color:#1d4ed8;
+    }
+    .menu-item.active .menu-icon{
+      color:#fff;
+    }
+    .report-card{
+      flex:1;
+      background:#fff;
+      border:1px solid #e4e9f2;
+      border-radius:12px;
+      padding:20px;
+      box-shadow:0 14px 34px rgba(15,23,42,.08);
+    }
+    .report-card__header{
+      display:flex;
+      align-items:center;
+      justify-content:space-between;
+      gap:12px;
+      margin-bottom:16px;
+    }
+    .report-card__title{
+      font-size:16px;
+      font-weight:700;
+      color:#0f172a;
+      margin:0;
+    }
+    .report-card__subtitle{
+      margin:4px 0 0;
+      font-size:12px;
+      color:#64748b;
+    }
+    .report-card__meta{
+      font-size:11px;
+      color:#64748b;
+    }
+    .cashflow-kpis{
+      display:grid;
+      grid-template-columns:repeat(auto-fit,minmax(220px,1fr));
+      gap:12px;
+      margin-bottom:16px;
+    }
+    .stat-card{
+      border:1px solid #dfe6f6;
+      border-radius:14px;
+      padding:16px;
+      background:#f8fbff;
+      display:flex;
+      flex-direction:column;
+      gap:8px;
+      min-height:110px;
+    }
+    .stat-card-header{
+      display:flex;
+      justify-content:space-between;
+      align-items:center;
+      gap:12px;
+    }
+    .stat-card small{
+      font-size:11px;
+      color:#64748b;
+      text-transform:uppercase;
+      letter-spacing:.04em;
+    }
+    .stat-value{
+      font-size:22px;
+      font-weight:700;
+      color:#0f172a;
+    }
+    .stat-icon{
+      width:40px;
+      height:40px;
+      border-radius:999px;
+      background:#e7f2ff;
+      display:flex;
+      align-items:center;
+      justify-content:center;
+      flex-shrink:0;
+    }
+    .stat-icon img{
+      width:20px;
+      height:20px;
+      display:block;
+    }
+    .stat-delta{
+      font-size:12px;
+      font-weight:700;
+    }
+    .stat-delta.down{color:#e11d48}
+    .stat-delta.up{color:#16a34a}
+    .chart-panel{
+      border:1px solid #dfe6f6;
+      border-radius:18px;
+      padding:18px;
+      background:#fff;
+    }
+    .chart-wrap{position:relative;}
+    .chart-tooltip{
+      position:absolute;
+      padding:6px 10px;
+      background:#0f172a;
+      color:#fff;
+      font-size:12px;
+      border-radius:8px;
+      box-shadow:0 12px 20px rgba(15,23,42,.2);
+      pointer-events:none;
+      opacity:0;
+      transform:translate(-50%,-120%);
+      transition:opacity .15s ease;
+      display:flex;
+      flex-direction:column;
+      gap:2px;
+      z-index:5;
+    }
+    .chart-tooltip strong{font-size:11px;font-weight:700;}
+    .chart-tooltip span{font-size:12px;}
+    .chart-tooltip.is-visible{opacity:1;}
+    .chart-panel svg{
+      width:100%;
+      height:auto;
+      display:block;
+    }
+    @media (max-width:900px){
+      .report-shell{flex-direction:column;}
+      .report-menu{width:100%;}
+    }
+  </style>
 {% endblock %}
 
 {% block page_content %}
@@ -43,36 +216,81 @@
 
     <section class="report-card">
       <header class="report-card__header">
-        <h1>{{ report_section.title }}</h1>
-        <p>{{ report_section.description }}</p>
+        <div>
+          <h1 class="report-card__title">13 Week Cash Flow Summary</h1>
+          <p class="report-card__subtitle">Collections and disbursements over the latest 13 weeks.</p>
+        </div>
+        <div class="report-card__meta">As of week ending {{ week_summary.period_label|default:"-" }}</div>
       </header>
 
-      {% if report_section.rows %}
-        <div class="report-list">
-          {% for row in report_section.rows %}
-          <article class="report-row">
-            <div class="report-description">
-              {% if row.highlight %}
-              <span class="dot" aria-hidden="true"></span>
-              {% endif %}
-              <div>
-                {{ row.name }}
-                {% if row.report_date %}
-                <span class="report-date">{{ row.report_date|date:"M d, Y" }}</span>
-                {% endif %}
+      {% if week_summary %}
+        <div class="cashflow-kpis">
+          {% for stat in week_summary.summary_cards %}
+            <div class="stat-card">
+              <div class="stat-card-header">
+                <div>
+                  <small>{{ stat.label }}</small>
+                  <div class="stat-value">{{ stat.value }}</div>
+                </div>
+                <span class="stat-icon">
+                  {% if stat.label == "Ending Cash" %}
+                    <img src="{% static 'images/endingcash.svg' %}" alt="Ending Cash" />
+                  {% elif stat.label == "Total Receipts" %}
+                    <img src="{% static 'images/totalreciept.svg' %}" alt="Total Receipts" />
+                  {% else %}
+                    <img src="{% static 'images/totaldisbursement.svg' %}" alt="Total Disbursement" />
+                  {% endif %}
+                </span>
               </div>
+              {% if stat.delta %}
+                <div class="stat-delta {{ stat.delta_class }}">{{ stat.delta }}</div>
+              {% endif %}
             </div>
-            {% if row.download_url %}
-              <a class="download-btn" href="{{ row.download_url }}">Download</a>
-            {% else %}
-              <button class="download-btn" disabled>Download</button>
-            {% endif %}
-          </article>
           {% endfor %}
         </div>
-      {% endif %}
 
-      {% if report_section.forecast %}
+        <div class="chart-panel">
+          <div class="chart-wrap">
+            <svg viewBox="0 0 1080 300" preserveAspectRatio="none" aria-label="13 week cash flow chart">
+              <rect x="0" y="0" width="1080" height="300" fill="#ffffff" stroke="#e5e7eb"/>
+              <g stroke="#eef2f7">
+                {% for tick in week_summary.chart.ticks %}
+                  <line x1="80" y1="{{ tick.y }}" x2="1030" y2="{{ tick.y }}"/>
+                {% endfor %}
+              </g>
+              <g fill="#94a3b8" font-size="11">
+                {% for tick in week_summary.chart.ticks %}
+                  <text x="68" y="{{ tick.y|add:4 }}" text-anchor="end">{{ tick.label }}</text>
+                {% endfor %}
+              </g>
+              <g fill="#1889E6">
+                {% for bar in week_summary.chart.collections_bars %}
+                  <rect x="{{ bar.x }}" y="{{ bar.y }}" width="{{ bar.width }}" height="{{ bar.height }}"
+                    class="ws-tip" data-label="{{ bar.label }}" data-series="Collections" data-value="{{ bar.value }}"/>
+                {% endfor %}
+              </g>
+              <g fill="#FC912E">
+                {% for bar in week_summary.chart.disbursement_bars %}
+                  <rect x="{{ bar.x }}" y="{{ bar.y }}" width="{{ bar.width }}" height="{{ bar.height }}"
+                    class="ws-tip" data-label="{{ bar.label }}" data-series="Disbursements" data-value="{{ bar.value }}"/>
+                {% endfor %}
+              </g>
+              <g fill="#94a3b8" font-size="11">
+                {% for label in week_summary.chart.labels %}
+                  <text x="{{ label.x }}" y="280">{{ label.text }}</text>
+                {% endfor %}
+              </g>
+              <g font-size="12" font-weight="600" fill="#0f1f44">
+                <rect x="760" y="8" width="18" height="18" fill="#1889E6" rx="4"/>
+                <text x="786" y="22">Collections</text>
+                <rect x="900" y="8" width="18" height="18" fill="#FC912E" rx="4"/>
+                <text x="926" y="22">Disbursements</text>
+              </g>
+            </svg>
+            <div class="chart-tooltip" aria-hidden="true"></div>
+          </div>
+        </div>
+      {% elif report_section.forecast %}
         <div class="forecast-card">
           <header class="forecast-header">
             <h2>13-Week Cash Flow Forecast</h2>
@@ -102,4 +320,40 @@
       {% endif %}
     </section>
   </div>
+{% endblock %}
+
+{% block extra_scripts %}
+  {{ block.super }}
+  <script>
+    (function(){
+      document.querySelectorAll(".chart-wrap").forEach((wrap)=>{
+        const tooltip = wrap.querySelector(".chart-tooltip");
+        const points = wrap.querySelectorAll(".ws-tip");
+        if(!tooltip || !points.length) return;
+        const position = (event)=>{
+          const rect = wrap.getBoundingClientRect();
+          return {x: event.clientX - rect.left, y: event.clientY - rect.top};
+        };
+        const show = (event)=>{
+          const target = event.currentTarget;
+          const label = (target.dataset.label||"").replace(/\n/g," ");
+          const series = target.dataset.series||"";
+          const value = target.dataset.value||"";
+          tooltip.innerHTML = `<strong>${value}</strong><span>${label} • ${series}</span>`;
+          const {x,y} = position(event);
+          tooltip.style.left = `${Math.max(14, Math.min(wrap.clientWidth-14, x))}px`;
+          tooltip.style.top = `${Math.max(18, Math.min(wrap.clientHeight-14, y-12))}px`;
+          tooltip.classList.add("is-visible");
+        };
+        const hide = ()=>tooltip.classList.remove("is-visible");
+        points.forEach(point=>{
+          point.style.cursor = "pointer";
+          point.addEventListener("mousemove", show);
+          point.addEventListener("mouseenter", show);
+          point.addEventListener("mouseleave", hide);
+          point.addEventListener("blur", hide);
+        });
+      });
+    })();
+  </script>
 {% endblock %}
