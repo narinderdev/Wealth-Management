@@ -32,7 +32,7 @@
       gap:10px;
       padding:10px 12px;
       border-radius:12px;
-      color:#1f2937;
+      color:#70717b;
       text-decoration:none;
       font-size:13px;
       font-weight:500;
@@ -53,9 +53,18 @@
       display:grid;
       place-items:center;
     }
+    .reports-menu__icon img{
+      display:block;
+      /* tint inactive icons to #70717b (matches secondary text) */
+      filter:brightness(0) saturate(100%) invert(43%) sepia(6%) saturate(520%) hue-rotate(201deg) brightness(90%) contrast(88%);
+      transition:filter .2s ease;
+    }
     .reports-menu__item.active .reports-menu__icon{
       /* background:rgba(255,255,255,.18); */
       color:#fff;
+    }
+    .reports-menu__item.active .reports-menu__icon img{
+      filter:brightness(0) invert(1);
     }
     .reports-card{
       flex:1;
