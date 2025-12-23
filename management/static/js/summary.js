@@ -45,6 +45,9 @@ document.addEventListener('DOMContentLoaded', () => {
     };
 
     toggles.forEach(btn => {
+      if (btn.getAttribute('aria-disabled') === 'true') {
+        return;
+      }
       btn.addEventListener('click', () => {
         const id = btn.dataset.row;
         const expanded = btn.getAttribute('aria-expanded') === 'true';

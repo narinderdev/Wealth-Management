@@ -44,7 +44,7 @@ body {
 }
 
 .hero-text {
-    max-width: 420px;
+    max-width: 500px;
 }
 
 .hero-text h1 {
@@ -58,7 +58,7 @@ body {
     height: 4px;
     background: white;
     border-radius: 2px;
-    margin-bottom: 20px;
+    margin-bottom: 5px;
 }
 
 .hero-text p {
@@ -102,8 +102,7 @@ body {
     width: min(420px, 100%);
     padding: 40px;
     border-radius: 22px;
-    box-shadow: 0 25px 80px rgba(20, 42, 93, 0.15);
-    background: #ffffff;
+   
 }
 
 .logo {
@@ -126,9 +125,9 @@ body {
     position: relative;
     display: flex;
     align-items: center;
-    background: #f6f7fb;
+    /* background: #f6f7fb; */
     border: 1px solid #d8dbe7;
-    border-radius: 12px;
+    border-radius: 8px;
     padding: 10px 16px;
     margin-bottom: 16px;
 }
@@ -136,6 +135,11 @@ body {
 .input-field .icon {
     display: inline-flex;
     margin-right: 12px;
+}
+.input-field .icon img{
+    height:22px;
+    width:22px;
+    display:block;
 }
 
 .input-field input {
@@ -145,10 +149,19 @@ body {
     font-size: 1rem;
     outline: none;
     color: #1b2f5b;
+    min-height: 24px;
 }
 
 .input-field input::placeholder {
     color: #7a85a3;
+}
+.input-field input:-webkit-autofill,
+.input-field input:-webkit-autofill:hover,
+.input-field input:-webkit-autofill:focus{
+    -webkit-box-shadow: 0 0 0px 1000px #fff inset;
+    -webkit-text-fill-color: #1b2f5b;
+    caret-color:#1b2f5b;
+    transition: background-color 5000s ease-in-out 0s;
 }
 
 .visibility-toggle {
@@ -159,10 +172,16 @@ body {
     cursor: pointer;
     display: inline-flex;
     position: relative;
+    width:24px;
+    height:24px;
+    align-items:center;
+    justify-content:center;
 }
 
-.visibility-toggle svg {
+.visibility-toggle img {
     display: none;
+    width:auto;
+    height:18px;
 }
 .visibility-toggle .eye-open{display:block}
 .visibility-toggle[aria-pressed="true"] .eye-open{display:none}
@@ -188,12 +207,12 @@ body {
     width: 100%;
     margin-top: 4px;
     padding: 14px;
-    border-radius: 12px;
+    border-radius: 6px;
     border: none;
     background: linear-gradient(135deg, #1f55c7, #132983);
     color: white;
-    font-size: 1.05rem;
-    font-weight: 600;
+    font-size: 16px;
+    font-weight: 400;
     cursor: pointer;
     transition: transform 120ms ease, box-shadow 120ms ease;
 }
@@ -210,7 +229,7 @@ body {
     width:100%;
     margin-top:12px;
     padding:12px;
-    border-radius:12px;
+    border-radius:6px;
     border:1px solid #d8dbe7;
     background:#f5f8ff;
     color:#1f55c7;
@@ -269,7 +288,7 @@ body {
             <div class="hero-text">
                 <h1>Welcome to CORA</h1>
                 <div class="divider"></div>
-                <p>From Point-In-Time to Real-Time</p>
+                <p style="font-size: 30px; font-weight: 500; margin-top: 0px;">From Point-In-Time to Real-Time</p>
                 <div class="circle-group" aria-hidden="true">
                     <span class="circle circle-one"></span>
                     <span class="circle circle-two"></span>
@@ -277,7 +296,7 @@ body {
             </div>
         </div>
         <div class="split right">
-            <div class="form-card">
+            <div class="" style=" padding: 40px; min-width: 55%;">
                 <div class="logo">
                     <img src="{% static 'images/logo.png' %}" alt="CORA Logo">
                 </div>
@@ -295,41 +314,23 @@ body {
                     {% csrf_token %}
                     <div class="input-field">
                         <span class="icon" aria-hidden="true">
-                            <svg width="20" height="20" viewBox="0 0 24 24" fill="none">
-                                <path d="M4 6h16v12H4z" stroke="#415C9C" stroke-width="1.5" stroke-linecap="round"
-                                    stroke-linejoin="round" />
-                                <path d="M4 6l8 7 8-7" stroke="#415C9C" stroke-width="1.5" stroke-linecap="round"
-                                    stroke-linejoin="round" />
-                            </svg>
+                            <img src="{% static 'images/mailn.svg' %}" alt="">
                         </span>
                         <input type="email" id="email" name="email" placeholder="Enter Email" required>
                     </div>
                     <div class="input-field">
                         <span class="icon" aria-hidden="true">
-                            <svg width="20" height="20" viewBox="0 0 24 24" fill="none">
-                                <rect x="7" y="11" width="10" height="7" rx="2" stroke="#415C9C" stroke-width="1.5"/>
-                                <path d="M8 11V9c0-2 1.5-3.5 3.5-3.5S15 7 15 9v2" stroke="#415C9C" stroke-width="1.5"
-                                    stroke-linecap="round" stroke-linejoin="round" />
-                            </svg>
+                            <img src="{% static 'images/lock.svg' %}" alt="">
                         </span>
                         <input type="password" id="password" name="password" placeholder="Password" required>
                         <button type="button" class="visibility-toggle" aria-label="Toggle password visibility" aria-pressed="false">
-                            <svg class="eye-open" width="20" height="20" viewBox="0 0 24 24" fill="none">
-                                <path d="M1 12s4-7 11-7 11 7 11 7-4 7-11 7-11-7-11-7z" stroke="#415C9C" stroke-width="1.5"
-                                    stroke-linecap="round" stroke-linejoin="round" />
-                                <circle cx="12" cy="12" r="3" stroke="#415C9C" stroke-width="1.5" />
-                            </svg>
-                            <svg class="eye-closed" width="20" height="20" viewBox="0 0 24 24" fill="none">
-                                <path d="M1 12s4-7 11-7 11 7 11 7-4 7-11 7-11-7-11-7z" stroke="#415C9C" stroke-width="1.5"
-                                    stroke-linecap="round" stroke-linejoin="round" />
-                                <circle cx="12" cy="12" r="3" stroke="#415C9C" stroke-width="1.5" />
-                                <path d="M3 3l18 18" stroke="#415C9C" stroke-width="1.5" stroke-linecap="round"/>
-                            </svg>
+                            <img class="eye-open" src="{% static 'images/password.svg' %}" alt="">
+                            <img class="eye-closed" src="{% static 'images/password.svg' %}" alt="">
                         </button>
                     </div>
                     <label class="remember">
                         <input type="checkbox" id="remember-me" name="remember"{% if remember_me %} checked{% endif %}>
-                        <span>Remember Me</span>
+                        <span style="font-size: 15px; color: #757575;">Remember Me</span>
                     </label>
                     <button type="submit" class="login-btn">Login</button>
                     <a class="admin-preview-btn" href="{% url 'admin_dashboard' %}">Go to Admin</a>

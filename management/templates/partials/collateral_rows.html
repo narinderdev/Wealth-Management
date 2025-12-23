@@ -6,7 +6,11 @@
   {% if parent_id %}data-parent="{{ parent_id }}"{% endif %}
 >
   <td class="cc-label" style="--lvl:{{ level }};">
-    {{ node.row.label }}
+    {% if level > 0 %}
+      {{ node.row.detail|default:node.row.label }}
+    {% else %}
+      {{ node.row.label }}
+    {% endif %}
   </td>
 
   <td>{{ node.row.beginning_collateral }}</td>
@@ -22,11 +26,15 @@
   <td>{{ node.row.net_collateral }}</td>
 
   <td class="cc-ctl">
-    {% if node.children %}
-      <button class="cc-toggle" type="button" data-row="{{ node.id }}" aria-expanded="false">
-        <span class="cc-chevron" aria-hidden="true"></span>
-      </button>
-    {% endif %}
+    <button
+      class="cc-toggle{% if not node.children %} cc-toggle--empty{% endif %}"
+      type="button"
+      data-row="{{ node.id }}"
+      aria-expanded="false"
+      {% if not node.children %}aria-disabled="true"{% endif %}
+    >
+      <span class="cc-chevron" aria-hidden="true"></span>
+    </button>
   </td>
 </tr>
 

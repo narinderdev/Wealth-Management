@@ -1,4 +1,5 @@
 {% extends "layout/app_base.html" %}
+{% load static %}
 
 {% block title %}Collateral Dynamic{% endblock %}
 
@@ -25,7 +26,7 @@
       padding:16px;
       display:flex;
       flex-direction:column;
-      gap:16px;
+      gap:14px;
       align-self:stretch;
       height:100%;
     }
@@ -41,25 +42,23 @@
       justify-content:space-between;
       font-size:12px;
       color:#475569;
-      padding:6px 0;
-      border-bottom:1px solid #eef1f6;
+      padding:8px 0 6px;
     }
-    .kv-pair:last-child{border-bottom:none}
     .kv-pair span:last-child{
       font-weight:600;
       color:#0f172a;
     }
     .section-block{
       border-top:1px solid #eef1f6;
-      padding-top:10px;
+      padding-top:12px;
     }
     .section-block .summary-title{
-      margin-bottom:6px;
+      margin-bottom:8px;
     }
     .stacked-list{
       display:flex;
       flex-direction:column;
-      gap:4px;
+      gap:8px;
       font-size:12px;
       color:#475569;
     }
@@ -90,11 +89,12 @@
     .stat-card{
       border:1px solid #dfe6f6;
       border-radius:14px;
-      padding:14px;
+      padding:16px;
       background:#f8fbff;
       display:flex;
       flex-direction:column;
-      gap:6px;
+      gap:10px;
+      min-height:110px;
     }
     .stat-card small{
       font-size:11px;
@@ -107,9 +107,32 @@
       font-weight:700;
       color:#0f172a;
     }
+    .stat-card-header{
+      display:flex;
+      justify-content:space-between;
+      align-items:center;
+      gap:10px;
+    }
+    .stat-icon{
+      width:44px;
+      height:44px;
+      border-radius:14px;
+      background:#e7f2ff;
+      display:flex;
+      align-items:center;
+      justify-content:center;
+      flex-shrink:0;
+    }
+    .stat-icon img{
+      width:22px;
+      height:22px;
+      object-fit:contain;
+      display:block;
+    }
     .stat-delta{
-      font-size:11px;
-      font-weight:600;
+      font-size:13px;
+      font-weight:700;
+      margin-top:8px;
     }
     .stat-delta.down{color:#e11d48}
     .stat-delta.up{color:#16a34a}
@@ -149,16 +172,18 @@
       padding:18px;
     }
     .snapshot-card h3{
-      margin:0 0 8px;
-      font-size:14px;
+      margin:0 0 10px;
+      font-size:16px;
       color:#0f1f44;
-      font-weight:600;
+      font-weight:700;
     }
     .snapshot-card p{
       margin:0;
-      color:#475569;
-      font-size:13px;
-      line-height:1.6;
+      color:#737791;
+      font-family:"Poppins", sans-serif;
+      font-weight:400;
+      font-size:18px;
+      line-height:27px;
     }
     body.collateral-static .tabs-shell{
       display:none;
@@ -177,6 +202,16 @@
       font-size:13px;
       font-weight:600;
       color:#0f1f44;
+    }
+    .heading-with-icon{
+      display:inline-flex;
+      align-items:center;
+      gap:8px;
+    }
+    .heading-with-icon img{
+      width:16px;
+      height:16px;
+      display:block;
     }
     .liquidity-legend{
       display:flex;
@@ -409,7 +444,7 @@
         <p class="summary-title">Top Customer Receipts</p>
         <div class="stacked-list">
           {% for item in week_summary.top_receipts %}
-            <span><strong>{{ item.name }}</strong><span>{{ item.value }}</span></span>
+            <span>{{ item.name }}<span>{{ item.value }}</span></span>
           {% endfor %}
         </div>
       </div>
@@ -417,7 +452,7 @@
         <p class="summary-title">Top Spend Categories</p>
         <div class="stacked-list">
           {% for item in week_summary.top_spend %}
-            <span><strong>{{ item.name }}</strong><span>{{ item.value }}</span></span>
+            <span>{{ item.name }}<span>{{ item.value }}</span></span>
           {% endfor %}
         </div>
       </div>
@@ -425,7 +460,10 @@
 
     <div class="cd-card cashflow-card">
       <div class="cashflow-header">
-        <span>13 Week Cash Flow Summary</span>
+        <span class="heading-with-icon">
+          <img src="{% static 'images/tick.svg' %}" alt="tick icon"/>
+          13 Week Cash Flow Summary
+        </span>
         <span style="font-size:11px;color:#64748b;">
           As of week ending {{ week_summary.period_label|default:"—" }}
         </span>
@@ -434,8 +472,21 @@
       <div class="stat-row">
         {% for stat in week_summary.summary_cards %}
           <div class="stat-card">
-            <small>{{ stat.label }}</small>
-            <div class="stat-value">{{ stat.value }}</div>
+            <div class="stat-card-header">
+              <div>
+                <small>{{ stat.label }}</small>
+                <div class="stat-value">{{ stat.value }}</div>
+              </div>
+              
+                {% if stat.label == "Ending Cash" %}
+                  <img src="{% static 'images/endingcash.svg' %}" alt="Ending Cash"/>
+                {% elif stat.label == "Total Receipts" %}
+                  <img src="{% static 'images/totalreciept.svg' %}" alt="Total Receipts"/>
+                {% else %}
+                  <img src="{% static 'images/totaldisbursement.svg' %}" alt="Total Disbursement"/>
+                {% endif %}
+              
+            </div>
             {% if stat.delta %}
               <div class="stat-delta {{ stat.delta_class }}">{{ stat.delta }}</div>
             {% endif %}
@@ -450,25 +501,25 @@
 
       <div class="chart-panel">
         <div class="chart-wrap">
-          <svg viewBox="0 0 620 280" preserveAspectRatio="none">
-            <rect x="0" y="0" width="620" height="280" fill="#f8fbff" stroke="#dfe6f6"/>
+          <svg viewBox="0 0 1080 300" preserveAspectRatio="none">
+            <rect x="0" y="0" width="1080" height="300" fill="#f8fbff" stroke="#dfe6f6"/>
             <g stroke="#dce3f5">
               {% for tick in week_summary.chart.ticks %}
-                <line x1="60" y1="{{ tick.y }}" x2="580" y2="{{ tick.y }}"/>
+                <line x1="80" y1="{{ tick.y }}" x2="1030" y2="{{ tick.y }}"/>
               {% endfor %}
             </g>
             <g fill="#94a3b8" font-size="11">
               {% for tick in week_summary.chart.ticks %}
-                <text x="52" y="{{ tick.y|add:4 }}" text-anchor="end">{{ tick.label }}</text>
+                <text x="68" y="{{ tick.y|add:4 }}" text-anchor="end">{{ tick.label }}</text>
               {% endfor %}
             </g>
-            <g fill="#1d4ed8">
+            <g fill="#1889E6">
               {% for bar in week_summary.chart.collections_bars %}
                 <rect x="{{ bar.x }}" y="{{ bar.y }}" width="{{ bar.width }}" height="{{ bar.height }}"
                   class="ws-tip" data-label="{{ bar.label }}" data-series="Collections" data-value="{{ bar.value }}"/>
               {% endfor %}
             </g>
-            <g fill="#f97316">
+            <g fill="#FC912E">
               {% for bar in week_summary.chart.disbursement_bars %}
                 <rect x="{{ bar.x }}" y="{{ bar.y }}" width="{{ bar.width }}" height="{{ bar.height }}"
                   class="ws-tip" data-label="{{ bar.label }}" data-series="Disbursements" data-value="{{ bar.value }}"/>
@@ -476,15 +527,16 @@
             </g>
             <g fill="#94a3b8" font-size="11">
               {% for label in week_summary.chart.labels %}
-                <text x="{{ label.x }}" y="235">{{ label.text }}</text>
+                <text x="{{ label.x }}" y="280">{{ label.text }}</text>
               {% endfor %}
             </g>
+            {% comment %} Inline legend aligned near the top-right with padding from edge {% endcomment %}
             <g font-size="12" font-weight="600" fill="#0f1f44">
-              <text x="500" y="70">Collections</text>
-              <text x="500" y="95">Disbursements</text>
+              <rect x="760" y="6" width="21" height="21" fill="#1889E6" rx="4"/>
+              <text x="790" y="22">Collections</text>
+              <rect x="900" y="6" width="21" height="21" fill="#FC912E" rx="4"/>
+              <text x="930" y="22">Disbursements</text>
             </g>
-            <rect x="470" y="58" width="20" height="10" fill="#1d4ed8" rx="2"/>
-            <rect x="470" y="83" width="20" height="10" fill="#f97316" rx="2"/>
           </svg>
           <div class="chart-tooltip" aria-hidden="true"></div>
         </div>
@@ -492,13 +544,19 @@
     </div>
 
     <div class="cd-card snapshot-card wide">
-      <h3>Snapshot Summary</h3>
+      <h3 class="heading-with-icon">
+        <img src="{% static 'images/tick.svg' %}" alt="tick icon"/>
+        Snapshot Summary
+      </h3>
       <p>{{ week_summary.snapshot_summary }}</p>
     </div>
 
     <div class="cd-card forecast-card wide">
       <div class="forecast-header">
-        <span>13-Week Cash Flow Forecast</span>
+        <span class="heading-with-icon">
+          <img src="{% static 'images/tick.svg' %}" alt="tick icon"/>
+          13-Week Cash Flow Forecast
+        </span>
         <span style="font-size:11px;color:#64748b;">Updated {{ week_summary.forecast_updated_label }}</span>
       </div>
       <div class="table-wrapper">
@@ -532,7 +590,10 @@
 
     <div class="cd-card forecast-card wide">
       <div class="forecast-header">
-        <span>Cash Forecast</span>
+        <span class="heading-with-icon">
+          <img src="{% static 'images/tick.svg' %}" alt="tick icon"/>
+          Cash Forecast
+        </span>
         <span style="font-size:11px;color:#64748b;">Updated {{ week_summary.forecast_updated_label|default:"—" }}</span>
       </div>
       <div class="table-wrapper">
@@ -566,7 +627,10 @@
   <div class="cd-stack">
   <div class="cd-card forecast-card">
     <div class="forecast-header">
-      <span>Availability Forecast</span>
+      <span class="heading-with-icon">
+        <img src="{% static 'images/tick.svg' %}" alt="tick icon"/>
+        Availability Forecast
+      </span>
       <span style="font-size:11px;color:#64748b;">Collateral view + cash cushion</span>
     </div>
     <div class="table-wrapper">
@@ -605,7 +669,10 @@
 
   <div class="cd-card forecast-card">
     <div class="forecast-header">
-      <span>13-Week Liquidity Forecast</span>
+      <span class="heading-with-icon">
+        <img src="{% static 'images/tick.svg' %}" alt="tick icon"/>
+        13-Week Liquidity Forecast
+      </span>
       <div class="liquidity-legend">
         {% for item in week_summary.liquidity_legend %}
           <span><span class="legend-swatch" style="background:{{ item.color }};"></span>{{ item.label }}</span>
@@ -661,7 +728,10 @@
 
   <div class="cd-card forecast-card">
     <div class="forecast-header">
-      <span>Variance Reporting</span>
+      <span class="heading-with-icon">
+        <img src="{% static 'images/tick.svg' %}" alt="tick icon"/>
+        Variance Reporting
+      </span>
       <span style="font-size:11px;color:#64748b;">Current vs. cumulative</span>
     </div>
     <div class="variance-grid">

@@ -1,7 +1,8 @@
 import math
+from collections import defaultdict
 from datetime import timedelta
 
-from decimal import Decimal, InvalidOperation
+from decimal import Decimal, InvalidOperation, ROUND_HALF_UP
 
 from django.contrib.auth.decorators import login_required
 from django.shortcuts import redirect, render
@@ -18,6 +19,7 @@ from management.models import (
     CollateralOverviewRow,
     Company,
     CompositeIndexRow,
+    RiskSubfactorsRow,
 )
 
 
@@ -303,18 +305,15 @@ def _build_line_series(values, labels, series_label=None, width=220, height=140)
 
 def _range_dates(range_key):
     today = timezone.localdate()
-    if range_key == "yesterday":
-        day = today - timedelta(days=1)
-        return day, day
-    if range_key == "last_7_days":
-        return today - timedelta(days=6), today
-    if range_key == "last_14_days":
-        return today - timedelta(days=13), today
-    if range_key == "last_30_days":
-        return today - timedelta(days=29), today
-    if range_key == "last_90_days":
+    if range_key == "last_12_months":
+        return today - timedelta(days=364), today
+    if range_key == "last_6_months":
+        return today - timedelta(days=182), today
+    if range_key == "last_3_months":
         return today - timedelta(days=89), today
-    return today, today
+    if range_key == "last_1_month":
+        return today - timedelta(days=29), today
+    return today - timedelta(days=364), today
 
 
 def _apply_date_filter(qs, field_name, start_date, end_date):
@@ -431,43 +430,208 @@ def _resolve_rate_limit(row, limit_map):
     return None
 
 
-def _build_collateral_tree(collateral_rows):
+def _sum_collateral_field(rows, field_name):
+    values = [getattr(row, field_name) for row in rows if getattr(row, field_name) is not None]
+    if not values:
+        return None
+    return sum((_to_decimal(value) for value in values), Decimal("0"))
+
+
+def _weighted_collateral_pct(rows, value_fn, weight_field="eligible_collateral"):
+    weighted_sum = Decimal("0")
+    total_weight = Decimal("0")
+    values = []
+    for row in rows:
+        raw_value = value_fn(row)
+        if raw_value is None:
+            continue
+        value = _to_decimal(raw_value)
+        values.append(value)
+        raw_weight = getattr(row, weight_field, None)
+        weight = _to_decimal(raw_weight) if raw_weight is not None else Decimal("0")
+        weighted_sum += value * weight
+        total_weight += weight
+    if total_weight > 0:
+        return weighted_sum / total_weight
+    if values:
+        return sum(values) / Decimal(len(values))
+    return None
+
+
+def _build_collateral_parent_payload(label, rows, limit_map=None):
+    def resolved_rate(row):
+        return _resolve_rate_limit(row, limit_map) or row.rate_limit
+
+    beginning = _sum_collateral_field(rows, "beginning_collateral")
+    ineligibles = _sum_collateral_field(rows, "ineligibles")
+    eligible = _sum_collateral_field(rows, "eligible_collateral")
+    pre_reserve = _sum_collateral_field(rows, "pre_reserve_collateral")
+    reserves = _sum_collateral_field(rows, "reserves")
+    net = _sum_collateral_field(rows, "net_collateral")
+
+    return {
+        "label": _safe_str(label, default="Collateral"),
+        "detail": "",
+        "beginning_collateral": _format_currency(beginning),
+        "ineligibles": _format_currency(ineligibles),
+        "eligible_collateral": _format_currency(eligible),
+        "nolv_pct": _format_pct(
+            _weighted_collateral_pct(rows, lambda row: row.nolv_pct)
+        ),
+        "dilution_rate": _format_pct(
+            _weighted_collateral_pct(rows, lambda row: row.dilution_rate)
+        ),
+        "advanced_rate": _format_pct(
+            _weighted_collateral_pct(rows, lambda row: row.advanced_rate)
+        ),
+        "rate_limit": _format_pct(
+            _weighted_collateral_pct(rows, resolved_rate)
+        ),
+        "utilized_rate": _format_pct(
+            _weighted_collateral_pct(rows, lambda row: row.utilized_rate)
+        ),
+        "pre_reserve_collateral": _format_currency(pre_reserve),
+        "reserves": _format_currency(reserves),
+        "net_collateral": _format_currency(net),
+    }
+
+
+def _build_collateral_child_payload(row, limit_map=None, detail_override=None):
+    payload = _collateral_row_payload(row, limit_map=limit_map)
+    if detail_override:
+        payload["detail"] = detail_override
+    return payload
+
+
+def _build_collateral_tree(collateral_rows, limit_map=None):
+    grouped = {}
+    for row in collateral_rows:
+        label = _safe_str(row.main_type, default="Collateral")
+        grouped.setdefault(label, []).append(row)
+
     tree = []
-    parents = {}
-
-    for row in collateral_rows:
-        label = row.get("label") or "collateral"
-        detail = (row.get("detail") or "").strip()
-        node_id = slugify(label)
-        if not detail:
-            node = {
-                "id": node_id,
-                "row": row,
-                "children": [],
-            }
-            parents[label] = node
-            tree.append(node)
-
-    for row in collateral_rows:
-        label = row.get("label") or "collateral"
-        detail = (row.get("detail") or "").strip()
-        node_id = slugify(f"{label}-{detail}") if detail else slugify(label)
-        if detail:
-            parent = parents.get(label)
-            if not parent:
-                parent = {
-                    "id": node_id,
-                    "row": row,
-                    "children": [],
-                }
-                parents[label] = parent
-                tree.append(parent)
-            parent["children"].append({
-                "id": node_id,
-                "row": row,
-            })
+    for label, rows in grouped.items():
+        node = {
+            "id": slugify(label),
+            "row": _build_collateral_parent_payload(label, rows, limit_map=limit_map),
+            "children": [],
+        }
+        has_details = any((row.sub_type or "").strip() for row in rows)
+        if len(rows) > 1 or has_details:
+            children = []
+            for idx, row in enumerate(rows, start=1):
+                payload = _build_collateral_child_payload(
+                    row,
+                    limit_map=limit_map,
+                    detail_override=(row.sub_type or f"Line {idx}"),
+                )
+                children.append({
+                    "id": slugify(f"{label}-{payload['detail']}-{idx}"),
+                    "row": payload,
+                })
+            node["children"] = children
+        tree.append(node)
 
     return tree
+
+
+def _risk_direction(score):
+    if score is None:
+        return "up"
+    return "down" if score >= Decimal("3.5") else "up"
+
+
+def _risk_color(score):
+    palette = ["#7EC459", "#D7C63C", "#FBB82E", "#FC8F2E", "#F74C34"]
+    dec_score = _to_decimal(score)
+    if dec_score <= 0:
+        return palette[2]
+    bucket = int(dec_score.quantize(Decimal("1"), rounding=ROUND_HALF_UP))
+    bucket = max(1, min(5, bucket))
+    return palette[bucket - 1]
+
+
+def _build_summary_risk_metrics(borrower, ar_row, composite_latest):
+    ar_past_due_pct = (
+        _normalize_pct(ar_row.pct_past_due)
+        if ar_row and ar_row.pct_past_due is not None
+        else Decimal("0")
+    )
+    ar_score = max(
+        Decimal("0"),
+        min(Decimal("5"), Decimal("5") - (ar_past_due_pct / Decimal("20"))),
+    )
+
+    risk_rows = list(
+        RiskSubfactorsRow.objects.filter(borrower=borrower).order_by(
+            "main_category", "sub_risk"
+        )
+    )
+    rows_by_category = defaultdict(list)
+    for row in risk_rows:
+        key = (row.main_category or "").strip().lower()
+        if not key:
+            continue
+        rows_by_category[key].append(row)
+
+    def _metric_rows(label):
+        key = label.lower()
+        if key in rows_by_category:
+            return rows_by_category[key]
+        for stored_key in rows_by_category:
+            if stored_key.startswith(key) or key.startswith(stored_key):
+                return rows_by_category[stored_key]
+        return []
+
+    def _row_label(row):
+        return row.sub_risk or row.high_impact_factor or row.main_category or "Metric"
+
+    def _metric_score(label, fallback_score):
+        rows = _metric_rows(label)
+        score_vals = []
+        seen = set()
+        for row in rows:
+            metric_label = _row_label(row)
+            if metric_label in seen:
+                continue
+            seen.add(metric_label)
+            score_vals.append(_to_decimal(row.risk_score))
+        if score_vals:
+            return sum(score_vals) / Decimal(len(score_vals))
+        return fallback_score
+
+    metric_definitions = [
+        ("Accounts Receivable", max(ar_score, Decimal("3"))),
+        (
+            "Inventory",
+            _to_decimal(getattr(composite_latest, "inventory_risk", None))
+            if composite_latest
+            else Decimal("3"),
+        ),
+        (
+            "Company",
+            _to_decimal(getattr(composite_latest, "company_risk", None))
+            if composite_latest
+            else Decimal("2.5"),
+        ),
+        (
+            "Industry",
+            _to_decimal(getattr(composite_latest, "industry_risk", None))
+            if composite_latest
+            else Decimal("2"),
+        ),
+    ]
+
+    risk_metrics = []
+    for label, fallback in metric_definitions:
+        score = _metric_score(label, fallback)
+        risk_metrics.append({
+            "label": label,
+            "detail": f"{score:.1f}",
+            "direction": _risk_direction(score),
+            "color": _risk_color(score),
+        })
+    return risk_metrics
 
 
 @login_required(login_url="login")
@@ -488,32 +652,32 @@ def summary_view(request):
     borrower_summary = _build_borrower_summary(borrower)
 
     range_options = [
-        {"value": "today", "label": "Today"},
-        {"value": "yesterday", "label": "Yesterday"},
-        {"value": "last_7_days", "label": "Last 7 Days"},
-        {"value": "last_14_days", "label": "Last 14 Days"},
-        {"value": "last_30_days", "label": "Last 30 Days"},
-        {"value": "last_90_days", "label": "Last 90 Days"},
+        {"value": "last_12_months", "label": "12 Months"},
+        {"value": "last_6_months", "label": "6 Months"},
+        {"value": "last_3_months", "label": "3 Months"},
+        {"value": "last_1_month", "label": "1 Month"},
     ]
     range_aliases = {
-        "today": "today",
-        "yesterday": "yesterday",
-        "last_7_days": "last_7_days",
-        "last_14_days": "last_14_days",
-        "last_30_days": "last_30_days",
-        "last_90_days": "last_90_days",
-        "last7days": "last_7_days",
-        "last14days": "last_14_days",
-        "last30days": "last_30_days",
-        "last90days": "last_90_days",
-        "last 7 days": "last_7_days",
-        "last 14 days": "last_14_days",
-        "last 30 days": "last_30_days",
-        "last 90 days": "last_90_days",
+        "last_12_months": "last_12_months",
+        "last12months": "last_12_months",
+        "last 12 months": "last_12_months",
+        "12 months": "last_12_months",
+        "last_6_months": "last_6_months",
+        "last6months": "last_6_months",
+        "last 6 months": "last_6_months",
+        "6 months": "last_6_months",
+        "last_3_months": "last_3_months",
+        "last3months": "last_3_months",
+        "last 3 months": "last_3_months",
+        "3 months": "last_3_months",
+        "last_1_month": "last_1_month",
+        "last1month": "last_1_month",
+        "last 1 month": "last_1_month",
+        "1 month": "last_1_month",
     }
 
-    summary_range = request.GET.get("summary_range", "last_30_days")
-    normalized_range = range_aliases.get(str(summary_range).strip().lower(), "last_30_days")
+    summary_range = request.GET.get("summary_range", "last_12_months")
+    normalized_range = range_aliases.get(str(summary_range).strip().lower(), "last_12_months")
     summary_division = request.GET.get("summary_division", "all")
     normalized_division = str(summary_division).strip()
     if normalized_division.lower() in {"all", "all divisions", "all_divisions"}:
@@ -543,9 +707,10 @@ def summary_view(request):
         collateral_base_qs, "created_at__date", range_start, range_end
     )
     latest_collateral_time = collateral_range_qs.aggregate(time=Max("created_at"))["time"]
+    latest_collateral_date = latest_collateral_time.date() if latest_collateral_time else None
     collateral_rows = (
-        list(collateral_range_qs.filter(created_at=latest_collateral_time))
-        if latest_collateral_time
+        list(collateral_range_qs.filter(created_at__date=latest_collateral_date))
+        if latest_collateral_date
         else []
     )
     limit_rows = list(CollateralLimitsRow.objects.filter(borrower=borrower))
@@ -558,7 +723,14 @@ def summary_view(request):
     if normalized_division != "all":
         ar_qs = ar_qs.filter(division__iexact=normalized_division)
     ar_qs = _apply_date_filter(ar_qs, "as_of_date", range_start, range_end)
-    ar_row = ar_qs.order_by("-as_of_date", "-created_at").first()
+    ar_recent = list(ar_qs.order_by("-as_of_date", "-created_at", "-id")[:2])
+    ar_row = ar_recent[0] if ar_recent else None
+    ar_prev_row = ar_recent[1] if len(ar_recent) > 1 else None
+    risk_ar_row = (
+        ARMetricsRow.objects.filter(borrower=borrower)
+        .order_by("-as_of_date", "-created_at")
+        .first()
+    )
 
     collateral_data = [
         _collateral_row_payload(row, limit_map=limit_map) for row in collateral_rows
@@ -582,6 +754,35 @@ def summary_view(request):
             "detail": f"{len(collateral_rows)} collateral entries",
         },
     }
+
+    previous_collateral_rows = []
+    if latest_collateral_time:
+        previous_collateral_time = (
+            collateral_range_qs.filter(created_at__lt=latest_collateral_time)
+            .order_by("-created_at")
+            .values_list("created_at", flat=True)
+            .first()
+        )
+        if previous_collateral_time:
+            previous_collateral_rows = list(
+                collateral_range_qs.filter(created_at=previous_collateral_time)
+            )
+
+    previous_net_total = sum(
+        (_to_decimal(row.net_collateral) for row in previous_collateral_rows),
+        Decimal("0"),
+    )
+    previous_eligible_total = sum(
+        (_to_decimal(row.eligible_collateral) for row in previous_collateral_rows),
+        Decimal("0"),
+    )
+    previous_ineligibles_total = sum(
+        (_to_decimal(row.ineligibles) for row in previous_collateral_rows),
+        Decimal("0"),
+    )
+    previous_available_total = previous_eligible_total - previous_ineligibles_total
+    if previous_available_total < Decimal("0"):
+        previous_available_total = Decimal("0")
 
     chart_points = 5
     collateral_history = list(
@@ -637,6 +838,31 @@ def summary_view(request):
         ar_row.balance if ar_row and ar_row.balance is not None else Decimal("0"),
     )
 
+    def _delta_payload(current, previous):
+        if current is None or previous is None:
+            return None
+        curr = _to_decimal(current)
+        prev = _to_decimal(previous)
+        if prev == 0:
+            return None
+        diff = (curr - prev) / prev * Decimal("100")
+        is_positive = diff >= 0
+        return {
+            "symbol": "▲" if is_positive else "▼",
+            "value": f"{abs(diff):.2f}%",
+            "class": "up" if is_positive else "down",
+        }
+
+    insights["net"]["delta"] = _delta_payload(net_total, previous_net_total if previous_collateral_rows else None)
+    insights["outstanding"]["delta"] = _delta_payload(
+        ar_row.balance if ar_row else None,
+        ar_prev_row.balance if ar_prev_row else None,
+    )
+    insights["availability"]["delta"] = _delta_payload(
+        available_total if collateral_rows else None,
+        previous_available_total if previous_collateral_rows else None,
+    )
+
     net_chart = _build_line_series(
         net_series,
         base_labels,
@@ -660,74 +886,21 @@ def summary_view(request):
     inventory_ineligible = sum((_to_decimal(row.ineligibles) for row in inventory_rows), Decimal("0"))
     inventory_total_base = inventory_eligible + inventory_ineligible
     inventory_ratio = (inventory_ineligible / inventory_total_base) if inventory_total_base else None
-    inventory_ratio_pct = inventory_ratio * Decimal("100") if inventory_ratio is not None else None
 
     composite_latest = (
         CompositeIndexRow.objects.filter(borrower=borrower)
         .order_by("-date", "-created_at", "-id")
         .first()
     )
-
-    def _risk_direction(score):
-        if score is None:
-            return "up"
-        return "down" if score >= Decimal("3.5") else "up"
-
-    def _score_text(score):
-        return f"{score:.1f}" if score is not None else "—"
-
-    risk_defaults = {
-        "ar_risk": Decimal("3.0"),
-        "inventory_risk": Decimal("3.1"),
-        "company_risk": Decimal("3.8"),
-        "industry_risk": Decimal("2.9"),
-    }
-
-    risk_metrics = []
-    ar_score = _to_decimal(getattr(composite_latest, "ar_risk", None))
-    if ar_score is None:
-        ar_score = risk_defaults["ar_risk"]
-    risk_metrics.append({
-        "label": "Accounts Receivable",
-        "detail": _score_text(ar_score),
-        "direction": _risk_direction(ar_score),
-    })
-
-    inventory_score = _to_decimal(getattr(composite_latest, "inventory_risk", None))
-    if inventory_score is None:
-        inventory_score = risk_defaults["inventory_risk"]
-    risk_metrics.append({
-        "label": "Inventory",
-        "detail": _score_text(inventory_score),
-        "direction": _risk_direction(inventory_score),
-    })
-
-    company_score = _to_decimal(getattr(composite_latest, "company_risk", None))
-    if company_score is None:
-        company_score = risk_defaults["company_risk"]
-    risk_metrics.append({
-        "label": "Company",
-        "detail": _score_text(company_score),
-        "direction": _risk_direction(company_score),
-    })
-
-    industry_score = _to_decimal(getattr(composite_latest, "industry_risk", None))
-    if industry_score is None:
-        industry_score = risk_defaults["industry_risk"]
-    risk_metrics.append({
-        "label": "Industry",
-        "detail": _score_text(industry_score),
-        "direction": _risk_direction(industry_score),
-    })
+    risk_metrics = _build_summary_risk_metrics(borrower, risk_ar_row, composite_latest)
 
     inventory_pct_text = _format_pct(inventory_ratio) if inventory_ratio is not None else "—"
-    ar_pct_text = _format_pct(ar_row.pct_past_due) if ar_row and ar_row.pct_past_due is not None else "—"
+    ar_pct_text = (
+        _format_pct(risk_ar_row.pct_past_due)
+        if risk_ar_row and risk_ar_row.pct_past_due is not None
+        else "—"
+    )
     risk_profile_score = _to_decimal(getattr(composite_latest, "overall_score", None))
-    if risk_profile_score is None:
-        risk_profile_score = Decimal("3.1")
-        if inventory_ratio_pct is not None:
-            suggested = (inventory_ratio_pct / Decimal("20")) + Decimal("3")
-            risk_profile_score = max(Decimal("1"), min(Decimal("5"), suggested))
     risk_profile_detail = f"AR past due {ar_pct_text} · Inventory ineligible {inventory_pct_text}"
 
     risk_profile_position = float(
@@ -737,7 +910,7 @@ def summary_view(request):
     context = {
         "borrower_summary": borrower_summary,
         "collateral_rows": collateral_data,
-        "collateral_tree": _build_collateral_tree(collateral_data),
+        "collateral_tree": _build_collateral_tree(collateral_rows, limit_map=limit_map),
         "insights": insights,
         "risk_metrics": risk_metrics,
         "user": request.user,
@@ -787,14 +960,15 @@ def borrower_portfolio_view(request):
             CollateralOverviewRow.objects.filter(borrower=borrower)
             .aggregate(time=Max("created_at"))["time"]
         )
+        latest_collateral_date = latest_collateral_time.date() if latest_collateral_time else None
         collateral_rows = (
             list(
                 CollateralOverviewRow.objects.filter(
                     borrower=borrower,
-                    created_at=latest_collateral_time,
+                    created_at__date=latest_collateral_date,
                 )
             )
-            if latest_collateral_time
+            if latest_collateral_date
             else []
         )
         net_total = sum((_to_decimal(row.net_collateral) for row in collateral_rows), Decimal("0"))

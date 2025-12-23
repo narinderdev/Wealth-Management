@@ -48,6 +48,9 @@
       gap:20px;
     }
     .collateral-dynamic .menu-card{
+
+    width: 255px;
+    height: 382px;
       background:#fff;
       border-radius:18px;
       padding:16px;
@@ -381,6 +384,33 @@
     .collateral-dynamic tbody tr:last-child td{
       border-bottom:none;
     }
+    .collateral-dynamic .recovery-table{
+      table-layout:fixed;
+    }
+    .collateral-dynamic .recovery-table th,
+    .collateral-dynamic .recovery-table td{
+      text-align:center;
+    }
+    .collateral-dynamic .recovery-table th:first-child,
+    .collateral-dynamic .recovery-table td:first-child{
+      text-align:left;
+    }
+    .collateral-dynamic .recovery-table thead tr.tblGroup th{
+      text-align:center;
+      font-weight:700;
+      border-bottom:none;
+      padding-bottom:2px;
+    }
+    .collateral-dynamic .recovery-table thead tr.tblGroup th:first-child{
+      text-align:left;
+    }
+    .collateral-dynamic .recovery-table thead tr.tblSub th{
+      font-size:10px;
+      color:#94a3b8;
+      font-weight:600;
+      letter-spacing:.2px;
+      padding-top:2px;
+    }
     .collateral-dynamic .mt12{
       margin-top:12px;
     }
@@ -596,7 +626,7 @@
       margin-top: 12px;
     }
     .collateral-dynamic .ar-section .h2{
-      font-size:14px;
+      font-size:1.5em;
       font-weight:700;
       margin:0 0 8px;
       display:flex;
@@ -671,7 +701,7 @@
       border:1px solid #dfe4f2;
       border-radius:14px;
       background:#ffffff;
-      padding:14px 16px;
+      padding:40px 16px;
       position:relative;
       box-shadow:0 14px 26px rgba(15,23,42,.06);
     }
@@ -682,14 +712,15 @@
       gap:10px;
     }
     .collateral-dynamic .borrowing-base-kpi .kpi-label{
-      font-size:12px;
-      color:#667085;
-      margin-bottom:6px;
+        font-size: 12px;
+    font-weight: 600;
+    color: #65758B;
     }
     .collateral-dynamic .borrowing-base-kpi .kpi-value{
-      font-size:20px;
-      font-weight:800;
-      color:#0f172a;
+      margin-top: 16px;
+      font-size: 24px;
+      font-weight: 700;
+      color: #101a3c;
     }
     .collateral-dynamic .borrowing-base-kpi .kpi-delta{
       font-size:11px;
@@ -699,8 +730,8 @@
       align-items:center;
       gap:6px;
     }
-    .collateral-dynamic .borrowing-base-kpi .kpi-delta.up{color:var(--teal);}
-    .collateral-dynamic .borrowing-base-kpi .kpi-delta.down{color:#e05555;}
+    .collateral-dynamic .borrowing-base-kpi .kpi-delta.up{margin-top: 20px;color:var(--teal);}
+    .collateral-dynamic .borrowing-base-kpi .kpi-delta.down{margin-top: 20px;color:#e05555;}
     .collateral-dynamic .borrowing-base-kpi .kpi-icon{
       width:36px;
       height:36px;
@@ -737,10 +768,11 @@
       opacity:1;
     }
     .collateral-dynamic .borrowing-base-chart{
-      border:1px solid #e2e8f8;
-      border-radius:14px;
-      background:#f8fafc;
-      padding:10px;
+      height: 234px;
+    width: 488px;
+    padding: 43px 8px 8px;
+     position: relative;
+    background: #f8fafc;
     }
     .collateral-dynamic .borrowing-base-chart svg{
       width:100%;
@@ -751,22 +783,23 @@
       fill:#f8fafc;
     }
     .collateral-dynamic .bb-grid line{
-      stroke:#e6ebf4;
+      stroke:#e9edf4;
       stroke-width:1;
     }
     .collateral-dynamic .bb-line{
       fill:none;
-      stroke-width:2.5;
+      stroke-width:2.2;
       stroke-linecap:round;
       stroke-linejoin:round;
     }
     .collateral-dynamic .bb-axis text{
-      font-size:10px;
-      fill:#97a0b5;
+      font-size:9px;
+      fill:#9aa6b2;
     }
     .collateral-dynamic .bb-dots circle{
       stroke-linecap:round;
       stroke-linejoin:round;
+      stroke-width:0;
     }
     .collateral-dynamic .borrowing-base-grid{
       display:grid;
@@ -1142,7 +1175,7 @@
                             <polyline class="bb-line" stroke="{{ kpi.color|default:'var(--blue-3)' }}" points="{{ kpi.chart.points }}"></polyline>
                             <g class="bb-dots" stroke="{{ kpi.color|default:'var(--blue-3)' }}" fill="{{ kpi.color|default:'var(--blue-3)' }}">
                               {% for dot in kpi.chart.dots %}
-                                <circle class="bb-dot" cx="{{ dot.cx }}" cy="{{ dot.cy }}" r="3" stroke-width="2"></circle>
+                                <circle class="bb-dot" cx="{{ dot.cx }}" cy="{{ dot.cy }}" r="2.2"></circle>
                                 <circle class="ar-tip"
                                   cx="{{ dot.cx }}"
                                   cy="{{ dot.cy }}"
@@ -1171,7 +1204,7 @@
                             <div>
                               <div class="kpi-label">Balance</div>
                               <div class="kpi-value">—</div>
-                              <div class="kpi-delta down">▼ <span>0.0%</span></div>
+                              <div class="kpi-delta">—</div>
                             </div>
                               <img src="{% static 'images/balance.svg' %}" alt="Balance icon" />
                             
@@ -1422,23 +1455,23 @@
                       </div>
 
                       <div class="chart-wrap ar-chart">
-                        <svg viewBox="0 0 520 230" width="100%" height="230" aria-label="Ineligible AR trend line chart">
-                          <text x="-10" y="190" transform="rotate(-90 0 190)" fill="rgba(15,23,42,.55)" font-size="12">
+                        <svg viewBox="0 0 520 260" width="100%" height="290" aria-label="Ineligible AR trend line chart">
+                          <text x="-10" y="100" transform="rotate(-90 0 200)" fill="rgba(15,23,42,.55)" font-size="12">
                             % of Accounts Receivable
                           </text>
                           <g stroke="rgba(15,23,42,.08)" stroke-width="1">
-                            <path d="M60 200H500"/>
-                            <path d="M60 160H500"/>
-                            <path d="M60 120H500"/>
-                            <path d="M60 80H500"/>
+                            <path d="M60 220H500"/>
+                            <path d="M60 175H500"/>
+                            <path d="M60 130H500"/>
+                            <path d="M60 85H500"/>
                             <path d="M60 40H500"/>
                           </g>
 
                           <g fill="rgba(15,23,42,.45)" font-size="10">
-                            <text x="28" y="204">10%</text>
-                            <text x="28" y="164">30%</text>
-                            <text x="28" y="124">50%</text>
-                            <text x="28" y="84">70%</text>
+                            <text x="28" y="224">10%</text>
+                            <text x="28" y="179">30%</text>
+                            <text x="28" y="134">50%</text>
+                            <text x="28" y="89">70%</text>
                             <text x="28" y="44">90%</text>
                           </g>
 
@@ -1453,7 +1486,7 @@
                             </g>
                             <g fill="rgba(15,23,42,.45)" font-size="9">
                               {% for label in ar_ineligible_trend.labels %}
-                                <text x="{{ label.x }}" y="214" text-anchor="start">
+                                <text x="{{ label.x }}" y="234" text-anchor="start">
                                   <tspan x="{{ label.x }}" dy="0">{{ label.month }}</tspan>
                                   {% if label.year %}
                                     <tspan x="{{ label.x }}" dy="12">{{ label.year }}</tspan>
