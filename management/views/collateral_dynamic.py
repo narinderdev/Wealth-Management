@@ -2442,6 +2442,20 @@ def _accounts_receivable_context(borrower, range_key="today", division="all"):
             if any(getattr(row, field, None) is not None for field in fields)
         ]
 
+    def _latest_rows_with_values(rows, fields):
+        if not rows:
+            return []
+        grouped = OrderedDict()
+        for row in rows:
+            key = row.as_of_date or (row.created_at and row.created_at.date())
+            if key not in grouped:
+                grouped[key] = []
+            grouped[key].append(row)
+        for group_rows in grouped.values():
+            if _rows_with_values(group_rows, fields):
+                return group_rows
+        return next(iter(grouped.values()))
+
     latest_concentration_rows = _latest_snapshot_rows(concentration_rows)
 
     concentration_source = [
@@ -2621,19 +2635,13 @@ def _accounts_receivable_context(borrower, range_key="today", division="all"):
             }
         )
 
-    ado_source = _rows_with_values(
-        latest_concentration_rows,
-        ["current_ado_days", "avg_ttm_ado_days", "variance_ado_days"],
-    )
-    if not ado_source:
+    ado_fields = ["current_ado_days", "avg_ttm_ado_days", "variance_ado_days"]
+    ado_source = _latest_rows_with_values(concentration_rows, ado_fields)
+    if not _rows_with_values(ado_source, ado_fields):
         concentration_rows_all = list(
             concentration_qs.order_by("-as_of_date", "-created_at", "-id")
         )
-        latest_all = _latest_snapshot_rows(concentration_rows_all)
-        ado_source = _rows_with_values(
-            latest_all,
-            ["current_ado_days", "avg_ttm_ado_days", "variance_ado_days"],
-        ) or latest_all
+        ado_source = _latest_rows_with_values(concentration_rows_all, ado_fields)
     ado_entries = []
     for row in sorted(
         ado_source,
@@ -2658,19 +2666,13 @@ def _accounts_receivable_context(borrower, range_key="today", division="all"):
             }
         )
 
-    dso_source = _rows_with_values(
-        latest_concentration_rows,
-        ["current_dso_days", "avg_ttm_dso_days", "variance_dso_days"],
-    )
-    if not dso_source:
+    dso_fields = ["current_dso_days", "avg_ttm_dso_days", "variance_dso_days"]
+    dso_source = _latest_rows_with_values(concentration_rows, dso_fields)
+    if not _rows_with_values(dso_source, dso_fields):
         concentration_rows_all = list(
             concentration_qs.order_by("-as_of_date", "-created_at", "-id")
         )
-        latest_all = _latest_snapshot_rows(concentration_rows_all)
-        dso_source = _rows_with_values(
-            latest_all,
-            ["current_dso_days", "avg_ttm_dso_days", "variance_dso_days"],
-        ) or latest_all
+        dso_source = _latest_rows_with_values(concentration_rows_all, dso_fields)
     dso_entries = []
     for row in sorted(
         dso_source,
