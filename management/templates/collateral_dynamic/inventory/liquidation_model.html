@@ -1,0 +1,606 @@
+<style>
+  .liquidation-model{
+    --bg:#f6f9fd;
+    --card:#ffffff;
+    --text:#0f172a;
+    --muted:#6b7280;
+    --line:#e7eef7;
+    --line2:#f1f5fb;
+    --shadow:0 6px 18px rgba(15,23,42,.06);
+    --radius:14px;
+
+    --blue:#1677d6;
+    --blue-2:#0f69c3;
+
+    --success:#16a34a;
+    --danger:#ef4444;
+  }
+  *{box-sizing:border-box;}
+  .liquidation-model .page{
+    max-width:1120px;
+    margin:0 auto;
+    padding:0 14px 34px;
+  }
+  .liquidation-model .card{
+    background:var(--card);
+    border:1px solid var(--line);
+    border-radius:var(--radius);
+    box-shadow:var(--shadow);
+  }
+  .liquidation-model .section{ padding:16px 18px; }
+  .liquidation-model .mb{ margin-bottom:14px; }
+  .liquidation-model .title{
+    display:flex;
+    align-items:center;
+    gap:10px;
+    font-weight:800;
+    color:#0b1220;
+    margin:2px 0 12px;
+    letter-spacing:.1px;
+  }
+  .liquidation-model .title .icon{
+    width:18px;
+    height:18px;
+    color:var(--blue);
+    display:grid;
+    place-items:center;
+  }
+  .liquidation-model .grid-top{
+    display:grid;
+    grid-template-columns: 330px 1fr;
+    gap:14px;
+    align-items:stretch;
+  }
+  .liquidation-model .grid-2{
+    display:grid;
+    grid-template-columns:1fr 1fr;
+    gap:14px;
+    align-items:stretch;
+  }
+  .liquidation-model .metric-stack{ display:flex; flex-direction:column; gap:10px; }
+  .liquidation-model .metric{
+    border:1px solid var(--line);
+    border-radius:12px;
+    padding:12px;
+    background:#fff;
+    display:flex;
+    align-items:center;
+    justify-content:space-between;
+    min-height:74px;
+  }
+  .liquidation-model .metric .label{
+    font-size:12px;
+    color:var(--muted);
+    font-weight:700;
+    margin-bottom:4px;
+  }
+  .liquidation-model .metric .value{
+    font-size:20px;
+    font-weight:900;
+    letter-spacing:.2px;
+    margin-bottom:6px;
+  }
+  .liquidation-model .delta{
+    display:flex;
+    align-items:center;
+    gap:6px;
+    font-size:12px;
+    font-weight:800;
+  }
+  .liquidation-model .delta.danger{ color:var(--danger); }
+  .liquidation-model .delta.success{ color:var(--success); }
+  .liquidation-model .metric .badge{
+    width:38px;
+    height:38px;
+    border-radius:999px;
+    background:#eaf3ff;
+    border:1px solid #d6e8ff;
+    display:grid;
+    place-items:center;
+    color:var(--blue);
+    flex:0 0 auto;
+  }
+  .liquidation-model .table-wrap{
+    border:1px solid var(--line);
+    border-radius:12px;
+    overflow:hidden;
+    background:#fff;
+  }
+  .liquidation-model table{
+    width:100%;
+    border-collapse:collapse;
+    font-size:13px;
+  }
+  .liquidation-model thead th{
+    background:#f4f7fc;
+    color:#475569;
+    font-weight:900;
+    font-size:12px;
+    text-align:left;
+    padding:10px 12px;
+    border-bottom:1px solid var(--line);
+    white-space:nowrap;
+  }
+  .liquidation-model thead tr.group th{
+    background:#f7f9fe;
+    text-align:center;
+    font-weight:900;
+    border-bottom:1px solid var(--line);
+  }
+  .liquidation-model tbody td{
+    padding:10px 12px;
+    border-bottom:1px solid var(--line2);
+    color:#0f172a;
+    vertical-align:middle;
+  }
+  .liquidation-model tbody tr:last-child td{ border-bottom:none; }
+  .liquidation-model td.num, .liquidation-model th.num{ text-align:right; font-variant-numeric:tabular-nums; }
+  .liquidation-model .row-label{ color:#334155; font-weight:800; }
+  .liquidation-model .subtle{ color:#64748b; font-weight:700; }
+  .liquidation-model .tfoot td{ background:#fbfdff; font-weight:900; border-top:1px solid var(--line); }
+  .liquidation-model .acc{ border:1px solid var(--line); border-radius:12px; overflow:hidden; background:#fff; }
+  .liquidation-model summary,
+  .liquidation-model .acc-header {
+    list-style: none;
+    cursor: pointer;
+    padding: 10px 12px;
+    background: linear-gradient(0deg, var(--blue), var(--blue));
+    color: #fff;
+    font-weight: 900;
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: 12px;
+    user-select: none;
+    margin-bottom: 10px; /* Adds space between each summary section */
+}
+  .liquidation-model .acc-header{
+    cursor: default;
+  }
+  .liquidation-model .caret{ width:18px; height:18px; display:grid; place-items:center; opacity:.9; transform:rotate(0deg); transition:transform .15s ease; }
+  .liquidation-model .mini{ width:18px; height:18px; display:grid; place-items:center; opacity:.95; }
+  .liquidation-model details[open] .caret{ transform:rotate(180deg); }
+  .liquidation-model .acc-body{ padding:10px 12px 12px; background:#fff; }
+  .liquidation-model .mini-note{ font-size:12px; color:var(--muted); font-weight:700; margin:8px 0 0; }
+  .liquidation-model .section-row td{ background:#ffffff; color:#475569; font-weight:900; padding-top:14px; border-bottom:none; }
+  .liquidation-model .compact tbody td{ padding:9px 12px; }
+  .liquidation-model .table-card + .table-card{ margin-top:8px; }
+  .liquidation-model .table-wrap + .table-wrap{
+    margin-top:12px;
+  }
+  .liquidation-model .fg-scroll{
+    overflow-x:auto;
+    overflow-y:auto;
+    max-height:420px;
+  }
+  .liquidation-model .fg-scroll table{
+    min-width:1000px;
+  }
+  .liquidation-model .nol-scroll{
+    overflow:visible;
+    max-height:none;
+  }
+  .liquidation-model .nol-scroll table{
+    min-width:960px;
+  }
+  @media (max-width:980px){
+    .liquidation-model .grid-top{ grid-template-columns:1fr; }
+    .liquidation-model .grid-2{ grid-template-columns:1fr; }
+  }
+  /* Adding space between the sections */
+.liquidation-model .card.section {
+    margin-bottom: 20px; /* Adds space between the sections */
+}
+
+/* Optional: If you want more space inside each section */
+.liquidation-model .acc-body {
+    padding-top: 10px; /* Adds space inside the collapsible section */
+}
+</style>
+
+<div class="page liquidation-model">
+
+  <div class="grid-top mb">
+    <div class="card section">
+      <div class="title">
+        <span class="icon" aria-hidden="true">
+          <svg viewBox="0 0 24 24"><path d="M4 16.5l6-6 4 4 6-7" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"/><path d="M20 7h-5" stroke="currentColor" stroke-width="2.2" stroke-linecap="round"/></svg>
+        </span>
+        <span>Recovery Summary</span>
+      </div>
+      <div class="metric-stack">
+        {% for metric in liquidation_summary_metrics %}
+          <div class="metric">
+            <div>
+              <div class="label">{{ metric.label }}</div>
+              <div class="value">{{ metric.value }}</div>
+              {% if metric.delta %}
+                <div class="delta {{ metric.delta_class }}">
+                  <span aria-hidden="true">{{ metric.symbol }}</span>
+                  <span>{{ metric.delta }}</span>
+                </div>
+              {% endif %}
+            </div>
+            <div class="badge" aria-hidden="true">
+              {{ metric.icon|safe }}
+            </div>
+          </div>
+        {% empty %}
+          <div class="metric">
+            <div>
+              <div class="label">Awaiting data</div>
+              <div class="value">—</div>
+            </div>
+            <div class="badge"></div>
+          </div>
+        {% endfor %}
+      </div>
+    </div>
+
+    <div class="card section">
+      <div class="title">
+        <span class="icon" aria-hidden="true">
+          <svg viewBox="0 0 24 24"><path d="M4 16.5l6-6 4 4 6-7" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"/><path d="M20 7h-5" stroke="currentColor" stroke-width="2.2" stroke-linecap="round"/></svg>
+        </span>
+        <span>Liquidation Expenses</span>
+      </div>
+      <div class="acc">
+        {% for group in liquidation_expense_groups %}
+          {% if group.title == "Payroll Expenses" and liquidation_payroll_rows %}
+            <details open>
+              <summary>
+                <span class="sum-left">
+                  <span>{{ group.title }}</span>
+                </span>
+                <span class="caret" aria-hidden="true">
+                  <svg viewBox="0 0 24 24" width="18" height="18" fill="none">
+                    <path d="M6 9l6 6 6-6" stroke="#fff" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"/>
+                  </svg>
+                </span>
+              </summary>
+              <div class="acc-body">
+                <div class="table-wrap">
+                  <table>
+                    <thead>
+                      <tr>
+                        <th>Category</th>
+                        <th class="num">Cost Amount</th>
+                      </tr>
+                    </thead>
+                    <tbody>
+                      {% for item in liquidation_payroll_rows %}
+                        <tr>
+                          <td class="row-label">{{ item.label }}</td>
+                          <td class="num">{{ item.total }}</td>
+                        </tr>
+                      {% endfor %}
+                    </tbody>
+                    <tfoot>
+                      <tr class="tfoot">
+                        <td>Total Payroll Costs</td>
+                        <td class="num">{{ liquidation_payroll_totals.total }}</td>
+                      </tr>
+                    </tfoot>
+                  </table>
+                </div>
+              </div>
+            </details>
+          {% elif group.title == "Operating Costs" and liquidation_operating_rows %}
+            <details open>
+              <summary>
+                <span class="sum-left">
+                  <span>{{ group.title }}</span>
+                </span>
+                <span class="caret" aria-hidden="true">
+                  <svg viewBox="0 0 24 24" width="18" height="18" fill="none">
+                    <path d="M6 9l6 6 6-6" stroke="#fff" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"/>
+                  </svg>
+                </span>
+              </summary>
+              <div class="acc-body">
+                <div class="table-wrap">
+                  <table>
+                    <thead>
+                      <tr>
+                        <th>Category</th>
+                        <th class="num">Gross Amount</th>
+                      </tr>
+                    </thead>
+                    <tbody>
+                      {% for item in liquidation_operating_rows %}
+                        <tr>
+                          <td class="row-label">{{ item.label }}</td>
+                          <td class="num">{{ item.total }}</td>
+                        </tr>
+                      {% endfor %}
+                    </tbody>
+                    <tfoot>
+                      <tr class="tfoot">
+                        <td>Total Operating Costs</td>
+                        <td class="num">{{ liquidation_operating_totals.total }}</td>
+                      </tr>
+                    </tfoot>
+                  </table>
+                </div>
+              </div>
+            </details>
+          {% elif group.title == "Liquidation Expenses" and liquidation_liquidation_rows %}
+            <details open>
+              <summary>
+                <span class="sum-left">
+                  <span>{{ group.title }}</span>
+                </span>
+                <span class="caret" aria-hidden="true">
+                  <svg viewBox="0 0 24 24" width="18" height="18" fill="none">
+                    <path d="M6 9l6 6 6-6" stroke="#fff" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"/>
+                  </svg>
+                </span>
+              </summary>
+              <div class="acc-body">
+                <div class="table-wrap">
+                  <table>
+                    <thead>
+                      <tr>
+                        <th>Category</th>
+                        <th class="num">Gross Amount</th>
+                      </tr>
+                    </thead>
+                    <tbody>
+                      {% for item in liquidation_liquidation_rows %}
+                        <tr>
+                          <td class="row-label">{{ item.label }}</td>
+                          <td class="num">{{ item.total }}</td>
+                        </tr>
+                      {% endfor %}
+                    </tbody>
+                    <tfoot>
+                      <tr class="tfoot">
+                        <td>Total Liquidation Expenses</td>
+                        <td class="num">{{ liquidation_liquidation_totals.total }}</td>
+                      </tr>
+                    </tfoot>
+                  </table>
+                </div>
+              </div>
+            </details>
+          {% elif group.dropdown %}
+            <details>
+              <summary>
+                <span class="sum-left">
+                  <span>{{ group.title }}</span>
+                </span>
+                <span class="caret" aria-hidden="true">
+                  <svg viewBox="0 0 24 24" width="18" height="18" fill="none">
+                    <path d="M6 9l6 6 6-6" stroke="#fff" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"/>
+                  </svg>
+                </span>
+              </summary>
+              <div class="acc-body">
+                <div class="table-wrap">
+                  <table>
+                    <thead>
+                      <tr>
+                        <th>Category</th>
+                        <th class="num">Gross Amount</th>
+                      </tr>
+                    </thead>
+                    <tbody>
+                      {% for item in group.items %}
+                        <tr>
+                          <td>{{ item.label }}</td>
+                          <td class="num">{{ item.amount }}</td>
+                        </tr>
+                      {% endfor %}
+                      <tr class="tfoot">
+                        <td>Total {{ group.title }}</td>
+                        <td class="num">{{ group.total }}</td>
+                      </tr>
+                    </tbody>
+                  </table>
+                </div>
+              </div>
+            </details>
+          {% else %}
+            <div class="acc-fixed">
+              <div class="acc-header">
+                <span class="sum-left">
+                  <span>{{ group.title }}</span>
+                </span>
+              </div>
+              <div class="acc-body">
+                <div class="table-wrap">
+                  <table>
+                    <thead>
+                      <tr>
+                        <th>Category</th>
+                        <th class="num">Gross Amount</th>
+                      </tr>
+                    </thead>
+                    <tbody>
+                      {% for item in group.items %}
+                        <tr>
+                          <td>{{ item.label }}</td>
+                          <td class="num">{{ item.amount }}</td>
+                        </tr>
+                      {% endfor %}
+                      <tr class="tfoot">
+                        <td>Total {{ group.title }}</td>
+                        <td class="num">{{ group.total }}</td>
+                      </tr>
+                    </tbody>
+                  </table>
+                </div>
+              </div>
+            </div>
+          {% endif %}
+        {% empty %}
+          <div class="acc-body">
+            <div class="mini-note">Liquidation expense detail unavailable.</div>
+          </div>
+        {% endfor %}
+      </div>
+    </div>
+  </div>
+
+  <div class="card section mb">
+    <div class="title">
+      <span class="icon" aria-hidden="true">
+        <svg viewBox="0 0 24 24"><path d="M4 16.5l6-6 4 4 6-7" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"/><path d="M20 7h-5" stroke="currentColor" stroke-width="2.2" stroke-linecap="round"/></svg>
+      </span>
+      <span>Finished Goods Gross Recovery</span>
+    </div>
+    <div class="table-wrap">
+      <div class="fg-scroll">
+        <table>
+          <thead>
+            <tr class="group">
+              <th rowspan="2">As Of</th>
+              <th rowspan="2">Division</th>
+              <th rowspan="2">Category</th>
+              <th rowspan="2">Type</th>
+              <th colspan="3">Inventory</th>
+              <th colspan="2">Recovery</th>
+              <th colspan="2">Recovery Factors</th>
+            </tr>
+            <tr>
+              <th class="num">Cost</th>
+              <th class="num">Selling Price</th>
+              <th class="num">Gross</th>
+              <th class="num">% of Cost</th>
+              <th class="num">% of SP</th>
+              <th class="num">WOS</th>
+              <th class="num">GM%</th>
+            </tr>
+          </thead>
+          <tbody>
+            {% for row in fg_gross_recovery_history_rows %}
+              <tr>
+                <td>{{ row.date }}</td>
+                <td>{{ row.division }}</td>
+                <td>{{ row.category }}</td>
+                <td>{{ row.type }}</td>
+                <td class="num">{{ row.cost }}</td>
+                <td class="num">{{ row.selling }}</td>
+                <td class="num">{{ row.gross }}</td>
+                <td class="num">{{ row.pct_cost }}</td>
+                <td class="num">{{ row.pct_sp }}</td>
+                <td class="num">{{ row.wos }}</td>
+                <td class="num">{{ row.gr_pct }}</td>
+              </tr>
+            {% empty %}
+              <tr><td colspan="11" class="num">Finished goods gross recovery history not available.</td></tr>
+            {% endfor %}
+          </tbody>
+          {% if fg_gross_recovery_history_rows %}
+            <tfoot>
+              <tr class="tfoot">
+                <td colspan="4">Total</td>
+                <td class="num">{{ fg_gross_recovery_history_totals.cost }}</td>
+                <td class="num">{{ fg_gross_recovery_history_totals.selling }}</td>
+                <td class="num">{{ fg_gross_recovery_history_totals.gross }}</td>
+                <td class="num">{{ fg_gross_recovery_history_totals.pct_cost }}</td>
+                <td class="num">{{ fg_gross_recovery_history_totals.pct_sp }}</td>
+                <td class="num">{{ fg_gross_recovery_history_totals.wos }}</td>
+                <td class="num">{{ fg_gross_recovery_history_totals.gr_pct }}</td>
+              </tr>
+            </tfoot>
+          {% endif %}
+        </table>
+      </div>
+    </div>
+  </div>
+
+  <div class="grid-2 mb">
+    {% for tab in liquidation_category_tabs %}
+      <div class="card section">
+        <div class="title">
+          <span class="icon" aria-hidden="true">
+            <svg viewBox="0 0 24 24"><path d="M4 16.5l6-6 4 4 6-7" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"/><path d="M20 7h-5" stroke="currentColor" stroke-width="2.2" stroke-linecap="round"/></svg>
+          </span>
+          <span>{{ tab.label }}</span>
+        </div>
+        <div class="table-wrap">
+          <table class="compact">
+            <thead>
+              <tr class="group">
+                <th rowspan="2">Rank</th>
+                <th colspan="2">Inventory Cost</th>
+                <th colspan="1">Gross Recovery</th>
+              </tr>
+              <tr>
+                <th class="num">$</th>
+                <th class="num">%</th>
+                <th class="num">% of Cost</th>
+              </tr>
+            </thead>
+            <tbody>
+              {% for row in tab.rows %}
+                <tr>
+                  <td>{{ row.rank }}</td>
+                  <td class="num">{{ row.cost }}</td>
+                  <td class="num">{{ row.percent }}</td>
+                  <td class="num">{{ row.gr_pct }}</td>
+                </tr>
+              {% empty %}
+                <tr><td colspan="4" class="num">Data not available.</td></tr>
+              {% endfor %}
+            </tbody>
+          </table>
+        </div>
+      </div>
+    {% endfor %}
+  </div>
+
+  <div class="card section">
+    <div class="title">
+      <span class="icon" aria-hidden="true">
+        <svg viewBox="0 0 24 24"><path d="M4 16.5l6-6 4 4 6-7" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"/><path d="M20 7h-5" stroke="currentColor" stroke-width="2.2" stroke-linecap="round"/></svg>
+      </span>
+      <span>Net Orderly Liquidated Value Analysis</span>
+    </div>
+    <div class="table-wrap">
+      <div class="nol-scroll">
+        <table>
+        <thead>
+          <tr class="group">
+            <th rowspan="2">Line Item</th>
+            <th colspan="2">Finished Goods</th>
+            <th colspan="2">Raw Materials</th>
+            <th colspan="2">Work-In-Process</th>
+            <th colspan="2">Total</th>
+          </tr>
+          <tr>
+            <th class="num">$</th><th class="num">% of Cost</th>
+            <th class="num">$</th><th class="num">% of Cost</th>
+            <th class="num">$</th><th class="num">% of Cost</th>
+            <th class="num">$</th><th class="num">% of Cost</th>
+          </tr>
+        </thead>
+        <tbody>
+          {% for row in liquidation_net_orderly_rows %}
+            <tr>
+              <td class="row-label">{{ row.label }}</td>
+              <td class="num">{{ row.fg }}</td><td class="num">{{ row.fg_pct }}</td>
+              <td class="num">{{ row.rm }}</td><td class="num">{{ row.rm_pct }}</td>
+              <td class="num">{{ row.wip }}</td><td class="num">{{ row.wip_pct }}</td>
+              <td class="num">{{ row.total }}</td><td class="num">{{ row.total_pct }}</td>
+            </tr>
+          {% empty %}
+            <tr><td colspan="9" class="num">Net orderly liquidation data not available.</td></tr>
+          {% endfor %}
+        </tbody>
+        <tfoot>
+          <tr class="tfoot">
+            <td>{{ liquidation_net_orderly_footer.label }}</td>
+            <td class="num">{{ liquidation_net_orderly_footer.fg }}</td><td class="num">{{ liquidation_net_orderly_footer.fg_pct }}</td>
+            <td class="num">{{ liquidation_net_orderly_footer.rm }}</td><td class="num">{{ liquidation_net_orderly_footer.rm_pct }}</td>
+            <td class="num">{{ liquidation_net_orderly_footer.wip }}</td><td class="num">{{ liquidation_net_orderly_footer.wip_pct }}</td>
+            <td class="num">{{ liquidation_net_orderly_footer.total }}</td><td class="num">{{ liquidation_net_orderly_footer.total_pct }}</td>
+          </tr>
+        </tfoot>
+        </table>
+      </div>
+    </div>
+  </div>
+
+</div>

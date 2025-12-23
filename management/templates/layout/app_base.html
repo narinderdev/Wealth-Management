@@ -1,0 +1,226 @@
+{% load static %}
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>{% block title %}CORA{% endblock %}</title>
+  <link rel="stylesheet" href="{% static 'css/summary.css' %}">
+  {% block extra_head %}{% endblock %}
+</head>
+<style>
+/* Back Button Style */
+.tabs-back {
+  width: 40px;
+  height: 40px;
+  border-radius: 50%;
+  background: #fff;
+  display: inline-block;
+  place-items: center;
+  box-shadow: 0 10px 15px rgba(15, 23, 42, .15);
+  border: 1px solid rgba(15, 23, 42, .08);
+  color: #0c4de7;
+  text-decoration: none;
+  margin-right: 20px;
+  position: relative;
+}
+
+/* Back Icon Styling */
+.back-icon {
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  width: 100%;
+  height: 100%;
+  padding: 8px; /* Center the icon within the circle */
+}
+
+/* The SVG icon */
+.back-icon-svg {
+  width: 12px;  /* Adjust the icon size to fit inside the circle */
+  height: 12px;
+  opacity: 1;
+}
+
+/* Hover effect for the back button */
+.tabs-back:hover .back-icon {
+  background-color: #e6efff;
+}
+.tabs-shell{
+  width: 652px;   /* apne hisaab se */
+}
+.bar{
+  display: flex;
+  gap: 11px;
+}
+.back-link{
+  margin-top: 16px;
+}.borrower-empty-state{
+  margin: 12px 0 18px;
+  padding: 12px 16px;
+  border-radius: 12px;
+  background: rgba(15, 76, 231, 0.08);
+  border: 1px solid rgba(15, 76, 231, 0.18);
+  color: #17336b;
+  display: flex;
+  gap: 12px;
+  align-items: center;
+  justify-content: space-between;
+  font-size: 13px;
+}
+.borrower-empty-state__link{
+  color: #0c4de7;
+  font-weight: 700;
+  text-decoration: underline;
+}
+
+
+</style>
+<body class="{% block body_class %}{% endblock %}">
+  <div class="frame">
+    <div class="app">
+      <aside class="sidebar">
+        <div class="sb-icon" title="Navigation">
+          <img src="{% static 'images/sidebar1_icon.svg' %}" 
+          alt="Icon"
+          class="icon" />
+        </div>
+        <a class="sb-icon {% if active_tab == 'summary' or active_tab == 'collateral_dynamic' or active_tab == 'forecast' or active_tab == 'risk' or active_tab == 'reports' or active_tab == 'limits' %}active{% endif %}" title="Summary" href="{% url 'dashboard' %}">
+          <img src="{% static 'images/sidebar2_icon.svg' %}" 
+          alt="Icon"
+          class="icon" />
+        </a>
+        <a class="sb-icon {% if active_tab == 'collateral_static' %}active{% endif %}" title="Collateral Static" href="{% url 'collateral_static' %}">
+          <img src="{% static 'images/sidebar3_icon.svg' %}" 
+          alt="Icon"
+          class="icon" />
+        </a>
+        <!-- <a class="sb-icon {% if active_tab == 'reports' %}active{% endif %}" title="Reports" href="{% url 'reports' %}?report=complete_analysis">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+            <path d="M3 6h18"></path>
+            <path d="M3 12h18"></path>
+            <path d="M3 18h18"></path>
+          </svg>
+        </a> -->
+        <div class="sb-icon" title="Settings">
+          <img src="{% static 'images/sidebar4_icon.svg' %}" 
+          alt="Icon"
+          class="icon" />
+        </div>
+      </aside>
+
+      <div class="main">
+        <header class="topbar">
+          <div class="top-left">
+            <!-- <div class="burger" aria-hidden="true">
+              <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round">
+                <path d="M4 6h16"/><path d="M4 12h16"/><path d="M4 18h16"/>
+              </svg>
+            </div> -->
+            <div class="top-title">Collateral Oversight &amp; Risk Analytics</div>
+          </div>
+          <div class="brand">CORA</div>
+        </header>
+
+        <div class="content">
+          <div class="user-row">
+            {% if company_name %}
+              <div class="avatar">{{ company_name|slice:":2"|upper }}</div>
+              <div class="user-meta">
+                <div class="user-name">{{ company_name }}</div>
+                <div class="user-sub">
+                  {{ company_contact|default:"Contact" }} &bull; Unified Client Profile
+                  <span class="caret">
+                    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round">
+                      <path d="M7 10l5 5 5-5"/>
+                    </svg>
+                  </span>
+                </div>
+              </div>
+            {% else %}
+              {% with request.user as current_user %}
+              {% with user_display=current_user.get_full_name|default:current_user.username %}
+              {% with avatar_text=user_display|slice:":2"|upper %}
+              <div class="avatar">{{ avatar_text }}</div>
+              <div class="user-meta">
+                {% with borrower=current_user.borrower_profile.borrower %}
+                {% if borrower %}
+                <div class="user-name">{{ borrower.company.company|default:user_display }}</div>
+                <div class="user-sub">
+                  {{ borrower.primary_contact|default:"Contact" }}
+                  {% if borrower.primary_contact_phone %}
+                    • {{ borrower.primary_contact_phone }}
+                  {% else %}
+                    • Unified Client Profile
+                  {% endif %}
+                  <span class="caret">
+                    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round">
+                      <path d="M7 10l5 5 5-5"/>
+                    </svg>
+                  </span>
+                </div>
+                {% else %}
+                <div class="user-name">{{ user_display }}</div>
+                <div class="user-sub">
+                  Contact • Unified Client Profile
+                  <span class="caret">
+                    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round">
+                      <path d="M7 10l5 5 5-5"/>
+                    </svg>
+                  </span>
+                </div>
+                {% endif %}
+                {% endwith %}
+              </div>
+              {% endwith %}
+              {% endwith %}
+              {% endwith %}
+            {% endif %}
+          </div>
+
+          {% if borrower_message %}
+          <div class="borrower-empty-state">
+            <div class="borrower-empty-state__text">{{ borrower_message }}</div>
+            {% if borrower_action_url %}
+              <a class="borrower-empty-state__link" href="{{ borrower_action_url }}">{{ borrower_action_label }}</a>
+            {% endif %}
+          </div>
+          {% endif %}
+
+          {% block tabs_shell %}
+          
+          <!-- <a class="tabs-back"  aria-label="Change borrower">
+              <div class="back-icon" href="{% url 'borrower_portfolio' %}" >
+                <svg viewBox="0 0 28 28" class="back-icon-svg">
+                  <path d="M15 5l-9 9 9 9" fill="none" stroke="currentColor" stroke-width="6" stroke-linecap="round" stroke-linejoin="round"/>
+                </svg>
+              </div>
+            </a> -->
+          <div class="bar">
+            <a href="{% url 'borrower_portfolio' %}" class="back-link" aria-label="Back to borrower portfolio">
+              <img src="{% static 'images/backarrow.svg' %}" 
+              alt="Back"
+              class="icon" />
+            </a>
+            
+          <div class="tabs-shell" >                 
+            <nav class="tabs">
+              <a class="tab {% if active_tab == 'summary' %}active{% endif %}" href="{% url 'dashboard' %}">Summary</a>
+              <a class="tab {% if active_tab == 'collateral_dynamic' %}active{% endif %}" href="{% url 'collateral_dynamic' %}">Collateral Dynamic</a>
+              <a class="tab {% if active_tab == 'forecast' %}active{% endif %}" href="{% url 'forecast' %}">Forecast</a>
+              <a class="tab {% if active_tab == 'risk' %}active{% endif %}" href="{% url 'risk' %}">Risk</a>
+              <a class="tab {% if active_tab == 'reports' %}active{% endif %}" href="{% url 'reports' %}">Reports</a>
+              <a class="tab {% if active_tab == 'limits' %}active{% endif %}" href="{% url 'limits' %}">Limits</a>
+            </nav>
+          </div>
+          </div>
+          {% endblock %}
+
+          {% block page_content %}{% endblock %}
+        </div>
+      </div>
+    </div>
+  </div>
+  {% block extra_scripts %}{% endblock %}
+</body>
+</html>

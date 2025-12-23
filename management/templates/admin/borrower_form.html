@@ -1,0 +1,110 @@
+{% extends "admin/admin_base.html" %}
+
+{% block page_title %}Borrower{% endblock %}
+{% block header_title %}Borrower Form{% endblock %}
+
+{% block admin_screens %}
+<div class="admin-screen active" id="screen-borrower">
+  <div class="panel-head">
+    <div class="head-ico" aria-hidden="true">
+      <svg viewBox="0 0 24 24" width="14" height="14" fill="none">
+        <path d="M12 12a4 4 0 1 0-4-4 4 4 0 0 0 4 4Z" stroke="currentColor" stroke-width="2"/>
+        <path d="M6 22a6 6 0 0 1 12 0" stroke="currentColor" stroke-width="2" stroke-linecap="round"/>
+      </svg>
+    </div>
+    <span>Borrower Information</span>
+  </div>
+
+  <div class="form-grid">
+    <div class="field">
+      <label>Company Name</label>
+      <div class="select-wrap">
+        <select class="control">
+          <option value="">Select Company</option>
+        </select>
+        <span class="end-ico" aria-hidden="true">
+          <svg viewBox="0 0 24 24" width="14" height="14" fill="none">
+            <path d="M6 9l6 6 6-6" stroke="currentColor" stroke-width="2" stroke-linecap="round"/>
+          </svg>
+        </span>
+      </div>
+    </div>
+
+    <div class="field">
+      <label>Primary Contact Name</label>
+      <input class="control" type="text" placeholder="Enter Primary Contact Name" />
+    </div>
+
+    <div class="field">
+      <label>Primary Contact Phone</label>
+      <input class="control" type="text" placeholder="Enter Primary Contact Phone" />
+    </div>
+
+    <div class="field">
+      <label>Primary Contact Email</label>
+      <input class="control" type="email" placeholder="Enter Primary Contact Email" />
+    </div>
+
+    <div class="field">
+      <label>Update Interval</label>
+      <input class="control" type="text" placeholder="Update Interval" />
+    </div>
+
+    <div class="field icon-input">
+      <label>Current Update</label>
+      <input class="control" type="date" id="current-update" name="current_update" />
+      <button class="end-ico calendar-trigger" type="button" aria-label="Choose current update date" data-date-target="current-update">
+      </button>
+    </div>
+
+    <div class="field icon-input">
+      <label>Previous Update</label>
+      <input class="control" type="date" id="previous-update" name="previous_update" />
+      <button class="end-ico calendar-trigger" type="button" aria-label="Choose previous update date" data-date-target="previous-update">
+      </button>
+    </div>
+
+    <div class="field icon-input">
+      <label>Next Update</label>
+      <input class="control" type="date" id="next-update" name="next_update" />
+      <button class="end-ico calendar-trigger" type="button" aria-label="Choose next update date" data-date-target="next-update">
+      </button>
+    </div>
+
+    <div class="field">
+      <label>Lender Name</label>
+      <input class="control" type="text" placeholder="Enter Lender" />
+    </div>
+
+    <div class="field">
+      <label>Lender ID</label>
+      <input class="control" type="text" placeholder="Enter Lender ID" />
+    </div>
+  </div>
+
+  <div class="actions">
+    <button class="btn cancel" type="button" disabled>Cancel</button>
+    <button class="btn save" type="button">Save</button>
+  </div>
+</div>
+{% endblock %}
+
+{% block extra_scripts %}
+<script>
+  document.addEventListener('DOMContentLoaded', function () {
+    document.querySelectorAll('[data-date-target]').forEach(function (btn) {
+      var input = document.getElementById(btn.getAttribute('data-date-target'));
+      if (!input) {
+        return;
+      }
+      btn.addEventListener('click', function () {
+        if (typeof input.showPicker === 'function') {
+          input.showPicker();
+        } else {
+          input.focus();
+        }
+      });
+    });
+  });
+</script>
+{% endblock %}

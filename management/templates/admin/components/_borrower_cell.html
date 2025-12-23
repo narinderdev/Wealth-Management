@@ -1,0 +1,18 @@
+{% load static %}
+{% with borrower=row.borrower %}
+  {% if borrower %}
+    {% with company=borrower.company %}
+      {% if company %}
+        {{ company.company|default:"" }}
+      {% endif %}
+    {% endwith %}
+    {% if borrower.primary_contact %}
+      {% if borrower.company %} · {% endif %}{{ borrower.primary_contact }}
+    {% endif %}
+    {% if not borrower.company and not borrower.primary_contact %}
+      —
+    {% endif %}
+  {% else %}
+    —
+  {% endif %}
+{% endwith %}

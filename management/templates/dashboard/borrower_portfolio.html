@@ -1,0 +1,264 @@
+{% extends "layout/app_base.html" %}
+
+{% block title %}Portfolio Overview{% endblock %}
+
+{% block extra_head %}
+<style>
+  .portfolio-shell {
+    width: 100%;
+    display: flex;
+    justify-content: center;
+    padding: 40px 0;
+    background: #f6f7fb;
+  }
+
+  .portfolio-card {
+    width: 100%;
+    max-width: 1853px;
+    background: #fff;
+    border-radius: 18px;
+    border: 1px solid rgba(112, 125, 176, 0.18);
+    padding: 32px;
+    box-shadow: 0 12px 20px rgba(6, 21, 51, 0.08);
+  }
+
+  .portfolio-card__profile {
+    display: flex;
+    align-items: center;
+    gap: 14px;
+    margin-bottom: 16px;
+  }
+
+  .profile-indicator {
+    width: 48px;
+    height: 48px;
+    border-radius: 50%;
+    background: radial-gradient(circle at top, #3475f7, #0c3bd7);
+    color: #fff;
+    font-weight: 600;
+    font-size: 18px;
+    display: grid;
+    place-items: center;
+  }
+
+  .profile-name {
+    font-size: 18px;
+    font-weight: 600;
+    color: #1e2742;
+  }
+
+  .profile-meta {
+    font-size: 12px;
+    color: #5f6689;
+  }
+
+  .portfolio-card__header {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    margin-bottom: 28px;
+  }
+
+  .portfolio-card__title {
+    font-size: 24px;
+    font-weight: 600;
+    color: #1e2742;
+  }
+
+  .portfolio-search {
+    width: 240px;
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    padding: 8px 12px;
+    border: 1px solid rgba(0, 0, 0, 0.07);
+    border-radius: 12px;
+    background: #f5f7fb;
+  }
+
+  .portfolio-search input {
+    border: none;
+    background: transparent;
+    width: 100%;
+    font-size: 14px;
+    color: #273251;
+    outline: none;
+  }
+
+  .portfolio-search svg {
+    color: #9ba3c6;
+  }
+
+  .portfolio-table {
+    width: 100%;
+    border-radius: 18px;
+    overflow: hidden;
+    border: 1px solid rgba(0, 0, 0, 0.06);
+  }
+
+  table.portfolio-table__grid {
+    width: 100%;
+    border-collapse: collapse;
+    font-size: 14px;
+    min-width: 720px;
+  }
+
+  table.portfolio-table__grid thead {
+    background: #f1f3fb;
+  }
+
+  table.portfolio-table__grid th {
+    text-align: left;
+    padding: 16px 20px;
+    font-weight: 600;
+    color: #5a6275;
+    font-size: 13px;
+    letter-spacing: 0.2px;
+  }
+
+  table.portfolio-table__grid td {
+    padding: 18px 20px;
+    border-bottom: 1px solid #e5e8f4;
+    color: #1f2435;
+  }
+
+  .borrower-row:last-child td {
+    border-bottom: none;
+  }
+
+  .borrower-link {
+    color: inherit;
+    text-decoration: none;
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    font-weight: 600;
+  }
+
+  .status-dot {
+    width: 10px;
+    height: 10px;
+    border-radius: 50%;
+    background: #0c4de7;
+  }
+
+  .portfolio-empty {
+    padding: 28px;
+    text-align: center;
+    color: #6c7495;
+  }
+</style>
+{% endblock %}
+
+{% block tabs_shell %}{% endblock %}
+
+{% block page_content %}
+  <div class="portfolio-shell">
+  <div class="portfolio-card">
+  
+    <div class="portfolio-card__header">
+        <div class="portfolio-card__title">Portfolio Overview</div>
+        <form class="portfolio-search" method="get">
+          <svg viewBox="0 0 24 24" width="18" height="18" fill="none" stroke="currentColor" stroke-width="2">
+            <circle cx="11" cy="11" r="7"></circle>
+            <path d="M16 16l4 4"></path>
+          </svg>
+          <input type="search" name="q" placeholder="Search Borrower Name" value="{{ search_term|default:'' }}" aria-label="Search borrowers">
+        </form>
+      </div>
+      <div class="portfolio-table">
+        <table class="portfolio-table__grid">
+          <thead>
+            <tr>
+              <th>Borrower</th>
+              <th>Last Updated</th>
+              <!-- <th>Updated At</th>
+              <th>Contact</th>
+              <th>Phone</th>
+              <th>Email</th>
+              <th>Update Interval</th> -->
+              <th>Net Collateral</th>
+              <th>Outstanding Balance</th>
+              <th>Availability</th>
+              <th>Availability %</th>
+            </tr>
+          </thead>
+          <tbody>
+            {% if borrowers %}
+              {% for borrower in borrowers %}
+                <tr class="borrower-row {% if borrower.id|stringformat:"s" == selected_borrower_id %}selected{% endif %}"
+                    data-borrower-name="{{ borrower.contact_name|default:'' }} {{ borrower.company_name|default:'' }}">
+                  <td>
+                    <a href="{% url 'dashboard' %}?select={{ borrower.id }}" class="borrower-link">
+                      <span class="status-dot"></span>
+                    {{ borrower.contact_name }}
+                    </a>
+                  </td>
+                  <td>{{ borrower.last_updated }}</td>
+                  <!-- <td>{{ borrower.updated_at }}</td>
+                  <td>{{ borrower.contact_name }}</td>
+                  <td>{{ borrower.contact_phone|default:"—" }}</td>
+                  <td>
+                    {% if borrower.contact_email %}
+                      <a href="mailto:{{ borrower.contact_email }}">{{ borrower.contact_email }}</a>
+                    {% else %}
+                      —
+                    {% endif %}
+                  </td>
+                  <td>{{ borrower.update_interval }}</td> -->
+                  <td>{{ borrower.net_collateral }}</td>
+                  <td>{{ borrower.outstanding_balance }}</td>
+                  <td>{{ borrower.availability }}</td>
+                  <td>{{ borrower.availability_pct }}</td>
+                </tr>
+              {% endfor %}
+              <tr class="portfolio-empty-row" style="display:none;">
+                <td colspan="11" class="portfolio-empty">No borrowers match that search.</td>
+              </tr>
+            {% else %}
+              <tr>
+                <td colspan="11" class="portfolio-empty">No borrowers yet. Add data or check back later.</td>
+              </tr>
+            {% endif %}
+          </tbody>
+        </table>
+      </div>
+    </div>
+  </div>
+{% endblock %}
+
+{% block extra_scripts %}
+  {{ block.super }}
+  <script>
+    (function(){
+      const form = document.querySelector(".portfolio-search");
+      if(!form) return;
+      const input = form.querySelector("input[name='q']");
+      const rows = Array.from(document.querySelectorAll(".borrower-row"));
+      const emptyRow = document.querySelector(".portfolio-empty-row");
+      if(!input || !rows.length) return;
+      const normalize = (value)=> (value || "").toLowerCase().trim();
+      const filterRows = ()=>{
+        const term = normalize(input.value);
+        let visible = 0;
+        rows.forEach((row)=>{
+          const text = normalize(row.dataset.borrowerName || row.textContent);
+          const show = !term || text.includes(term);
+          row.style.display = show ? "" : "none";
+          if(show) visible += 1;
+        });
+        if(emptyRow){
+          emptyRow.style.display = visible === 0 ? "" : "none";
+        }
+      };
+      input.addEventListener("input", filterRows);
+      form.addEventListener("submit", (event)=>{
+        event.preventDefault();
+        filterRows();
+      });
+      if(input.value){
+        filterRows();
+      }
+    })();
+  </script>
+{% endblock %}

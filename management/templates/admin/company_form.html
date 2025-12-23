@@ -1,0 +1,57 @@
+{% extends "admin/admin_base.html" %}
+
+{% block page_title %}Company{% endblock %}
+{% block header_title %}Company Form{% endblock %}
+
+{% block top_section %}{% endblock %}
+
+{% block admin_screens %}
+<div class="admin-screen active" id="screen-company">
+  <div class="panel-head">
+    <div class="head-ico" aria-hidden="true">
+      <svg viewBox="0 0 24 24" width="14" height="14" fill="none">
+        <path d="M7 7h10M7 12h10M7 17h6" stroke="currentColor" stroke-width="2" stroke-linecap="round"/>
+        <path d="M6 4h12v16H6z" stroke="currentColor" stroke-width="2"/>
+      </svg>
+    </div>
+    <span>Company Information</span>
+  </div>
+
+  <div class="form-grid">
+    <div class="field">
+      <label>Company Name</label>
+      <input type="text" placeholder="Enter Company" />
+    </div>
+
+    <div class="field">
+      <label>Company ID<span class="req">*</span></label>
+      <input type="text" placeholder="Enter Company ID" />
+    </div>
+
+    <div class="field">
+      <label>Industry</label>
+      <input type="text" placeholder="Enter Industry" />
+    </div>
+
+    <div class="field">
+      <label>Primary Naics</label>
+      <input type="text" placeholder="Enter Primary Naics" />
+    </div>
+
+    <div class="field">
+      <label>website</label>
+      <input type="text" placeholder="Enter Url" />
+    </div>
+
+    <div class="field empty" aria-hidden="true">
+      <label>&nbsp;</label>
+      <input type="text" />
+    </div>
+  </div>
+
+  <div class="actions">
+    <button class="btn cancel" type="button" disabled>Cancel</button>
+    <button class="btn save" type="button">Save</button>
+  </div>
+</div>
+{% endblock %}

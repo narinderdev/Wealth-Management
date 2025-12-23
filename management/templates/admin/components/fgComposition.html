@@ -1,0 +1,115 @@
+<div class="component-shell">
+  <div class="component-shell-head">
+    <p class="component-shell-label">FG Inventory</p>
+    <h2>{{ component_meta.title }}</h2>
+    {% if component_meta.description %}
+      <p class="component-shell-subtext">{{ component_meta.description }}</p>
+    {% endif %}
+  </div>
+  <div class="component-shell-body">
+    <div class="component-actions">
+      <button class="btn save" data-modal-open="modal-fg-composition-create">Add Composition Row</button>
+    </div>
+    <div class="component-table">
+      <table class="admin-table">
+        <thead>
+          <tr>
+            <th>Borrower</th>
+            <th>Borrower ID</th>
+            <th>Division</th>
+            <th>As Of Date</th>
+            <th>Available</th>
+            <th>0-13</th>
+            <th>13-26</th>
+            <th>26-39</th>
+            <th>39-52</th>
+            <th>52+</th>
+            <th>No Sales</th>
+            <th>Inline %</th>
+            <th>Excess %</th>
+            <th></th>
+          </tr>
+        </thead>
+        <tbody>
+          {% for row in component_data.list %}
+            <tr>
+              <td>{{ row.borrower.company.company|default:row.borrower|default:"—" }}</td>
+              <td>{{ row.borrower_id|default:"—" }}</td>
+              <td>{{ row.division|default:"—" }}</td>
+              <td>{{ row.as_of_date|date:"Y-m-d"|default:"—" }}</td>
+              <td>{{ row.fg_available|default:"—" }}</td>
+              <td>{{ row.fg_0_13|default:"—" }}</td>
+              <td>{{ row.fg_13_26|default:"—" }}</td>
+              <td>{{ row.fg_26_39|default:"—" }}</td>
+              <td>{{ row.fg_39_52|default:"—" }}</td>
+              <td>{{ row.fg_52_plus|default:"—" }}</td>
+              <td>{{ row.fg_no_sales|default:"—" }}</td>
+              <td>{{ row.inline_pct|default:"—" }}</td>
+              <td>{{ row.excess_pct|default:"—" }}</td>
+              <td class="table-actions">
+                <a class="link" href="{% url 'admin_component' component_meta.slug %}?edit={{ row.pk }}">Edit</a>
+                <form method="post" class="inline-form" onsubmit="return confirm('Delete this row?');">
+                  {% csrf_token %}
+                  <input type="hidden" name="_action" value="delete">
+                  <input type="hidden" name="object_id" value="{{ row.pk }}">
+                  <button type="submit" class="link link-danger">Delete</button>
+                </form>
+              </td>
+            </tr>
+          {% empty %}
+            <tr><td colspan="14">No FG composition data captured.</td></tr>
+          {% endfor %}
+        </tbody>
+      </table>
+    </div>
+  </div>
+</div>
+
+<div class="component-modal" id="modal-fg-composition-create" aria-hidden="true">
+  <div class="component-modal-dialog">
+    <div class="component-modal-head">
+      <h3>Add FG Composition</h3>
+      <button type="button" class="modal-close" data-modal-close>&times;</button>
+    </div>
+    <form method="post" class="component-form">
+      {% csrf_token %}
+      <input type="hidden" name="_action" value="create">
+      <div class="component-modal-body">
+        {% if component_data.form.non_field_errors %}
+          <div class="component-error">{{ component_data.form.non_field_errors|join:", " }}</div>
+        {% endif %}
+        {% include "admin/components/form_fields.html" with form=component_data.form %}
+      </div>
+      <div class="component-modal-footer">
+        <button type="button" class="btn ghost" data-modal-close>Cancel</button>
+        <button type="submit" class="btn save">Save Row</button>
+      </div>
+    </form>
+  </div>
+</div>
+
+{% if component_data.edit_form %}
+<div class="component-modal" id="modal-fg-composition-edit" aria-hidden="true" data-modal-auto-open="true">
+  <div class="component-modal-dialog">
+    <div class="component-modal-head">
+      <h3>Edit FG Composition</h3>
+      <button type="button" class="modal-close" data-modal-close>&times;</button>
+    </div>
+    <form method="post" class="component-form">
+      {% csrf_token %}
+      <input type="hidden" name="_action" value="update">
+      <input type="hidden" name="object_id" value="{{ component_data.edit_instance.pk }}">
+      <div class="component-modal-body">
+        {% if component_data.edit_form.non_field_errors %}
+          <div class="component-error">{{ component_data.edit_form.non_field_errors|join:", " }}</div>
+        {% endif %}
+        {% include "admin/components/form_fields.html" with form=component_data.edit_form %}
+      </div>
+      <div class="component-modal-footer">
+        <a class="btn ghost" href="{% url 'admin_component' component_meta.slug %}">Cancel</a>
+        <button type="submit" class="btn save">Update Row</button>
+      </div>
+    </form>
+  </div>
+</div>
+{% endif %}

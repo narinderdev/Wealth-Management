@@ -1,0 +1,170 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Borrower Report Information</title>
+    <style>
+        * {
+            box-sizing: border-box;
+        }
+        body {
+            font-family: Arial, sans-serif;
+            background-color: #f5f5f5;
+            margin: 0;
+            padding: 0;
+        }
+        .container {
+            width: 80%;
+            margin: 50px auto;
+            padding: 20px;
+            background-color: #fff;
+            border-radius: 8px;
+            box-shadow: 0 4px 8px rgba(0, 0, 0, 0.1);
+        }
+        .form-header {
+            font-size: 20px;
+            font-weight: bold;
+            margin-bottom: 20px;
+            display: flex;
+            align-items: center;
+        }
+        .form-header img {
+            margin-right: 10px;
+            width: 20px;
+        }
+        .form-group {
+            margin-bottom: 15px;
+        }
+        .form-group label {
+            display: block;
+            margin-bottom: 5px;
+            font-size: 14px;
+            color: #555;
+        }
+        .form-group input,
+        .form-group select {
+            width: 100%;
+            padding: 10px;
+            border: 1px solid #ccc;
+            border-radius: 4px;
+            font-size: 14px;
+        }
+        .form-row {
+            display: flex;
+            flex-wrap: wrap;
+            justify-content: space-between;
+            gap: 20px;
+        }
+        .form-row .form-group {
+            flex: 1 1 calc(33.333% - 20px);
+            min-width: 220px;
+        }
+        .input-with-icon {
+            position: relative;
+        }
+        .input-with-icon input {
+            padding-right: 36px;
+        }
+        .input-with-icon.date-field input {
+            position: relative;
+            padding-right: 28px;
+        }
+        .input-with-icon.date-field input::-webkit-calendar-picker-indicator {
+            position: absolute;
+            right: 6px;
+            top: 50%;
+            transform: translateY(-50%);
+            margin: 0;
+        }
+        .input-with-icon .icon {
+            position: absolute;
+            top: 50%;
+            right: 10px;
+            transform: translateY(-50%);
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            width: 18px;
+            height: 18px;
+        }
+        .input-with-icon .icon img {
+            width: 100%;
+            height: 100%;
+        }
+        .input-with-icon .icon-button {
+            cursor: pointer;
+        }
+        .input-with-icon .upload-icon {
+            top: 70%;
+        }
+        .form-actions {
+            display: flex;
+            justify-content: flex-end;
+            align-items: center;
+            gap: 10px;
+            margin-top: 20px;
+        }
+        .form-actions button {
+            padding: 10px 20px;
+            border: none;
+            border-radius: 4px;
+            font-size: 14px;
+            cursor: pointer;
+        }
+        .form-actions button.cancel {
+            background-color: #f1f1f1;
+            color: #555;
+        }
+        .form-actions button.save {
+            background-color: #007bff;
+            color: white;
+        }
+        @media (max-width: 900px) {
+            .container {
+                width: 95%;
+                margin: 20px auto;
+            }
+            .form-row .form-group {
+                flex: 1 1 100%;
+            }
+        }
+    </style>
+</head>
+<body>
+
+<div class="container">
+    <div class="form-header">
+        <img src="https://img.icons8.com/ios-filled/50/000000/report-card.png" alt="icon">
+        Borrower Report Information
+    </div>
+    <form action="#" method="POST">
+        <div class="form-row">
+            <div class="form-group">
+                <label for="borrower">Borrower</label>
+                <select id="borrower" name="borrower">
+                    <option value="">Select Borrower</option>
+                </select>
+            </div>
+            <div class="form-group input-with-icon date-field">
+                <label for="report-date">Report Date</label>
+                <input type="date" id="report-date" name="report-date">
+            </div>
+            <div class="form-group input-with-icon">
+                <label for="source-file">Source File</label>
+                <input type="text" id="source-file" name="source-file" placeholder="File">
+                <span class="icon upload-icon">
+                    <img src="https://img.icons8.com/ios-glyphs/30/888888/upload-2.png" alt="Upload icon">
+                </span>
+            </div>
+        </div>
+
+        <div class="form-actions">
+            <button type="button" class="cancel">Cancel</button>
+            <button type="submit" class="save">Save</button>
+        </div>
+    </form>
+</div>
+
+</body>
+</html>

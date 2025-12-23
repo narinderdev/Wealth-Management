@@ -1,0 +1,589 @@
+{% extends "admin/admin_base.html" %}
+
+{% block page_title %}Dashboard{% endblock %}
+{% block header_title %}Portfolio Overview{% endblock %}
+
+{% block extra_head %}
+<style>
+  /* =========================
+     Risk Dashboard (Screenshot)
+     ========================= */
+
+  :root{
+    --alert-red:#FF383C;
+    --vibrant-green:#34C759;
+    --sun-yellow:#FFCC00;
+    --rich-amber:#F59E0B;
+  }
+
+  .risk-wrap{
+    display:flex;
+    flex-direction:column;
+    gap:16px;
+  }
+
+  .risk-header{
+    display:flex;
+    align-items:flex-start;
+    justify-content:space-between;
+    gap:12px;
+    padding:0 4px 24px;
+  }
+  .risk-header__left{
+    display:flex;
+    align-items:flex-start;
+    gap:10px;
+  }
+  .risk-header__meta{
+    display:flex;
+    flex-direction:column;
+    gap:2px;
+  }
+  .risk-header__title{
+    font-weight:900;
+    font-size:13px;
+    color:#0f1d3d;
+  }
+  .risk-header__sub{
+    font-size:10px;
+    color:var(--muted);
+    font-weight:700;
+  }
+  .risk-header__right{
+    display:flex;
+    align-items:center;
+    gap:10px;
+  }
+  .risk-header__label{
+    font-size:10px;
+    color:var(--muted);
+    font-weight:800;
+  }
+  .risk-pill{
+    padding:5px 10px;
+    border-radius:999px;
+    font-size:10px;
+    font-weight:900;
+    letter-spacing:.04em;
+    text-transform:uppercase;
+    border:1px solid transparent;
+    white-space:nowrap;
+  }
+  .risk-pill--medium{
+    background:var(--rich-amber);
+    color:#fff;
+    border-color:var(--rich-amber);
+  }
+  .risk-pill--high{
+    background:var(--alert-red);
+    color:#fff;
+    border-color:var(--alert-red);
+  }
+  .risk-pill--low{
+    background:var(--vibrant-green);
+    color:#fff;
+    border-color:var(--vibrant-green);
+  }
+
+  .risk-row{
+    display:grid;
+    grid-template-columns: repeat(3, minmax(220px, 1fr));
+    gap:14px;
+  }
+
+  .risk-kpi{
+    padding:14px 16px;
+  }
+  .risk-kpi__label{
+    font-size:10px;
+    color:var(--muted);
+    font-weight:900;
+    letter-spacing:.02em;
+    margin-bottom:8px;
+  }
+  .risk-kpi__value{
+    display:flex;
+    align-items:flex-end;
+    gap:8px;
+    margin-bottom:6px;
+  }
+  .risk-kpi__value strong{
+    font-size:18px;
+    font-weight:950;
+    color:#0f1d3d;
+  }
+  .risk-kpi__value span{
+    font-size:11px;
+    font-weight:900;
+    color:#0f1d3d;
+  }
+  .risk-kpi__sub{
+    font-size:10px;
+    font-weight:800;
+    color:var(--vibrant-green);
+    display:flex;
+    align-items:center;
+    gap:6px;
+  }
+  .risk-kpi__sub.muted{ color:var(--muted); }
+  .risk-kpi__sub .up{
+    width:14px;height:14px;
+    display:inline-grid;place-items:center;
+  }
+
+  .risk-grid{
+    display:grid;
+    grid-template-columns: 1fr 1fr;
+    gap:14px;
+  }
+
+  .risk-card-head{
+    display:flex;
+    align-items:center;
+    justify-content:space-between;
+    padding-bottom:8px;
+    border-bottom:1px solid var(--line2);
+    margin-bottom:10px;
+  }
+  .risk-card-title{
+    font-weight:950;
+    font-size:11px;
+    color:#0f1d3d;
+  }
+
+  .risk-table{
+    width:100%;
+    border-collapse:collapse;
+    font-size:10px;
+  }
+  .risk-table th{
+    text-align:left;
+    font-size:9px;
+    letter-spacing:.05em;
+    text-transform:uppercase;
+    color:var(--muted);
+    padding:8px 0 8px;
+    border-bottom:1px solid var(--line2);
+    font-weight:900;
+  }
+  .risk-table td{
+    padding:9px 0;
+    border-bottom:1px solid var(--line);
+    font-weight:700;
+    color:#0f1d3d;
+  }
+  .risk-table tr:last-child td{ border-bottom:none; }
+
+  .risk-table .num{
+    text-align:right;
+    font-variant-numeric: tabular-nums;
+  }
+
+  .chg{
+    font-weight:950;
+    font-size:10px;
+  }
+  .chg.up{ color:var(--vibrant-green); }
+  .chg.down{ color:var(--alert-red); }
+
+  .tag{
+    padding:4px 10px;
+    border-radius:999px;
+    font-size:9px;
+    font-weight:950;
+    letter-spacing:.03em;
+    text-transform:capitalize;
+    display:inline-block;
+    border:1px solid transparent;
+  }
+  .tag.high{
+    background:var(--vibrant-green);
+    color:#fff;
+    border-color:var(--vibrant-green);
+  }
+  .tag.med{
+    background:var(--rich-amber);
+    color:#fff;
+    border-color:var(--rich-amber);
+  }
+  .tag.low{
+    background:var(--alert-red);
+    color:#fff;
+    border-color:var(--alert-red);
+  }
+
+  .status-good,
+  .status-fair,
+  .status-risk{
+    display:inline-block;
+    padding:3px 12px;
+    border-radius:999px;
+    font-size:10px;
+    font-weight:900;
+    color:#fff;
+  }
+  .status-good{ background:var(--vibrant-green); }
+  .status-fair{ background:var(--rich-amber); }
+  .status-risk{ background:var(--alert-red); }
+
+  .trend-stable{ color:var(--sun-yellow); font-weight:900; }
+  .trend-improving{ color:var(--vibrant-green); font-weight:900; }
+  .trend-worsening{ color:var(--alert-red); font-weight:900; }
+
+  .chart-wrap{
+    margin-top:8px;
+  }
+  .chart-title{
+    font-weight:950;
+    font-size:11px;
+    color:#0f1d3d;
+    padding-bottom:8px;
+    border-bottom:1px solid var(--line2);
+  }
+  .chart-box{
+    margin-top:10px;
+    border:none;
+    border-radius:0;
+    background:transparent;
+    padding:0;
+  }
+
+  /* Responsive */
+  @media (max-width: 980px){
+    .risk-row{ grid-template-columns:1fr; }
+    .risk-grid{ grid-template-columns:1fr; }
+  }
+</style>
+{% endblock %}
+
+{# Replace the old "Key Metrics" top section with screenshot header + composite cards #}
+{% block top_section %}
+<div class="risk-header">
+  <div class="risk-header__left">
+    <div class="head-ico" aria-hidden="true" style="margin-top:2px;">
+      <svg viewBox="0 0 24 24" width="14" height="14" fill="none">
+        <path d="M6 4h12v16H6z" stroke="currentColor" stroke-width="2"/>
+        <path d="M9 8h6M9 12h6" stroke="currentColor" stroke-width="2" stroke-linecap="round"/>
+      </svg>
+    </div>
+    <div class="risk-header__meta">
+      <div class="risk-header__title">Global Manufacturing Inc</div>
+      <div class="risk-header__sub">Report Date: December 15, 2023</div>
+    </div>
+  </div>
+
+  <div class="risk-header__right">
+    <div class="risk-header__label">Overall Risk Status:</div>
+    <span class="risk-pill risk-pill--medium">Medium Risk</span>
+  </div>
+</div>
+
+<div class="risk-row">
+  <div class="dash-card risk-kpi">
+    <div class="risk-kpi__label">Composite Index</div>
+    <div class="risk-kpi__value"><strong>72.5</strong></div>
+    <div class="risk-kpi__sub">
+      <span class="up" aria-hidden="true">
+        <svg viewBox="0 0 24 24" width="14" height="14" fill="none">
+          <path d="M7 14l5-5 5 5" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/>
+        </svg>
+      </span>
+      Out of 100 possible points, Upper Medium Grade
+    </div>
+  </div>
+
+  <div class="dash-card risk-kpi">
+    <div class="risk-kpi__label">Risk Grade</div>
+    <div class="risk-kpi__value"><strong>B+</strong></div>
+    <div class="risk-kpi__sub muted">Credit Rating Equivalent, Stable Outlook</div>
+  </div>
+
+  <div class="dash-card risk-kpi">
+    <div class="risk-kpi__label">Trend Direction</div>
+    <div class="risk-kpi__value"><strong>+5.2</strong><span>points</span></div>
+    <div class="risk-kpi__sub">
+      <span class="up" aria-hidden="true">
+        <svg viewBox="0 0 24 24" width="14" height="14" fill="none">
+          <path d="M7 14l5-5 5 5" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/>
+        </svg>
+      </span>
+      Improving over last quarter, +5.2 points since Q3
+    </div>
+  </div>
+</div>
+{% endblock %}
+
+{% block admin_screens %}
+<div class="admin-screen active" id="screen-dashboard">
+
+  <div class="risk-wrap">
+
+    <!-- Borrower Overview + Collateral Overview -->
+    <div class="risk-grid">
+      <div class="dash-card">
+        <div class="risk-card-head">
+          <div class="risk-card-title">Borrower Overview</div>
+        </div>
+
+        <table class="risk-table">
+          <thead>
+            <tr>
+              <th>Metric</th>
+              <th class="num">Value</th>
+              <th class="num">Industry Benchmark</th>
+              <th class="num">Change (YoY)</th>
+            </tr>
+          </thead>
+          <tbody>
+            <tr>
+              <td>Total Assets</td>
+              <td class="num">$45.2M</td>
+              <td class="num">$38.7M</td>
+              <td class="num"><span class="chg up">+12.5%</span></td>
+            </tr>
+            <tr>
+              <td>Revenue (TTM)</td>
+              <td class="num">$28.7M</td>
+              <td class="num">$25.3M</td>
+              <td class="num"><span class="chg up">+8.4%</span></td>
+            </tr>
+            <tr>
+              <td>Net Income</td>
+              <td class="num">$3.2M</td>
+              <td class="num">$2.9M</td>
+              <td class="num"><span class="chg up">+10.3%</span></td>
+            </tr>
+            <tr>
+              <td>Debt-to-Equity</td>
+              <td class="num">1.8</td>
+              <td class="num">2.1</td>
+              <td class="num"><span class="chg down">-0.3</span></td>
+            </tr>
+          </tbody>
+        </table>
+      </div>
+
+      <div class="dash-card">
+        <div class="risk-card-head">
+          <div class="risk-card-title">Collateral Overview</div>
+        </div>
+
+        <table class="risk-table">
+          <thead>
+            <tr>
+              <th>Collateral Type</th>
+              <th class="num">Current Value</th>
+              <th class="num">Coverage Ratio</th>
+              <th class="num">Liquidity Rating</th>
+            </tr>
+          </thead>
+          <tbody>
+            <tr>
+              <td>Commercial Real Estate</td>
+              <td class="num">$18.5M</td>
+              <td class="num">1.4x</td>
+              <td class="num"><span class="tag high">High</span></td>
+            </tr>
+            <tr>
+              <td>Accounts Receivable</td>
+              <td class="num">$28.7M</td>
+              <td class="num">1.8x</td>
+              <td class="num"><span class="tag med">Medium</span></td>
+            </tr>
+            <tr>
+              <td>Inventory</td>
+              <td class="num">$8.7M</td>
+              <td class="num">2.1x</td>
+              <td class="num"><span class="tag med">Medium</span></td>
+            </tr>
+            <tr>
+              <td>Equipment &amp; Machinery</td>
+              <td class="num">$5.4M</td>
+              <td class="num">2.1x</td>
+              <td class="num"><span class="tag low">Medium</span></td>
+            </tr>
+          </tbody>
+        </table>
+      </div>
+    </div>
+
+    <!-- AR Metrics + Risk Subfactors -->
+    <div class="risk-grid">
+      <div class="dash-card">
+        <div class="risk-card-head">
+          <div class="risk-card-title">AR Metrics</div>
+        </div>
+
+        <table class="risk-table">
+          <thead>
+            <tr>
+              <th>Metric</th>
+              <th class="num">Current</th>
+              <th class="num">Previous Qtr</th>
+              <th class="num">Trend</th>
+              <th class="num">Status</th>
+            </tr>
+          </thead>
+          <tbody>
+            <tr>
+              <td>Days Sales Outstanding</td>
+              <td class="num">42.3</td>
+              <td class="num">45.7</td>
+              <td class="num"><span class="trend-improving">Improving</span></td>
+              <td class="num"><span class="status-good">Good</span></td>
+            </tr>
+            <tr>
+              <td>Collection Effectiveness</td>
+              <td class="num">42.3</td>
+              <td class="num">45.7</td>
+              <td class="num"><span class="trend-improving">Improving</span></td>
+              <td class="num"><span class="status-good">Good</span></td>
+            </tr>
+            <tr>
+              <td>Bad Debt %</td>
+              <td class="num">4.1</td>
+              <td class="num">4.7</td>
+              <td class="num"><span class="trend-improving">Improving</span></td>
+              <td class="num"><span class="status-fair">Fair</span></td>
+            </tr>
+            <tr>
+              <td>Over 90 Days %</td>
+              <td class="num">42.3</td>
+              <td class="num">45.7</td>
+              <td class="num"><span class="trend-improving">Improving</span></td>
+              <td class="num"><span class="status-fair">Fair</span></td>
+            </tr>
+          </tbody>
+        </table>
+      </div>
+
+      <div class="dash-card">
+        <div class="risk-card-head">
+          <div class="risk-card-title">Risk Subfactors</div>
+        </div>
+
+        <table class="risk-table">
+          <thead>
+            <tr>
+              <th>Risk Factor</th>
+              <th class="num">Current Rating</th>
+              <th class="num">Weight</th>
+              <th class="num">Contribution</th>
+              <th class="num">Trend</th>
+            </tr>
+          </thead>
+          <tbody>
+            <tr>
+              <td>Financial Stability</td>
+              <td class="num"><span class="tag high">Low Risk</span></td>
+              <td class="num">30%</td>
+              <td class="num">0.15</td>
+              <td class="num"><span class="trend-stable">Stable</span></td>
+            </tr>
+            <tr>
+              <td>Industry Outlook</td>
+              <td class="num"><span class="tag med">Moderate Risk</span></td>
+              <td class="num">30%</td>
+              <td class="num">0.15</td>
+              <td class="num"><span class="trend-improving">Improving</span></td>
+            </tr>
+            <tr>
+              <td>Collateral Coverage</td>
+              <td class="num"><span class="tag low">High Risk</span></td>
+              <td class="num">30%</td>
+              <td class="num">0.15</td>
+              <td class="num"><span class="trend-worsening">Worsening</span></td>
+            </tr>
+            <tr>
+              <td>Macroeconomic Sensitivity</td>
+              <td class="num"><span class="tag high">Low Risk</span></td>
+              <td class="num">30%</td>
+              <td class="num">0.15</td>
+              <td class="num"><span class="trend-stable">Stable</span></td>
+            </tr>
+          </tbody>
+        </table>
+      </div>
+    </div>
+
+    <!-- Revenue Forecast (left aligned like screenshot) -->
+    <div class="dash-card">
+      <div class="chart-title">Revenue Forecast (Next 12 Months)</div>
+
+      <div class="chart-wrap">
+        <div class="chart-box">
+          <!-- Static SVG curve mirroring the provided screenshot -->
+          <svg viewBox="0 0 900 260" width="100%" height="230" role="img" aria-label="Revenue forecast line chart">
+            <defs>
+              <linearGradient id="forecastGradient" x1="0%" y1="0%" x2="100%" y2="0%">
+                <stop offset="0%" stop-color="#9574FF"/>
+                <stop offset="100%" stop-color="#5B5FFF"/>
+              </linearGradient>
+              <filter id="forecastShadow" x="-10%" y="-40%" width="140%" height="220%">
+                <feDropShadow dx="0" dy="12" stdDeviation="12" flood-color="#775BFF" flood-opacity=".25"/>
+              </filter>
+            </defs>
+
+            <!-- grid -->
+            <g stroke="#e7edf7" stroke-width="1">
+              <line x1="50" y1="60" x2="850" y2="60"/>
+              <line x1="50" y1="95" x2="850" y2="95"/>
+              <line x1="50" y1="130" x2="850" y2="130"/>
+              <line x1="50" y1="165" x2="850" y2="165"/>
+              <line x1="50" y1="200" x2="850" y2="200"/>
+            </g>
+
+            <!-- y-axis labels -->
+            <g fill="#97a6bd" font-size="10" font-weight="800">
+              <text x="10" y="65">100%</text>
+              <text x="15" y="100">90%</text>
+              <text x="15" y="135">70%</text>
+              <text x="15" y="170">50%</text>
+              <text x="15" y="205">10%</text>
+            </g>
+
+            <!-- curve -->
+            <path
+              d="M70 185
+                 C100 185 130 185 160 185
+                 S230 205 250 205
+                 S310 140 330 130
+                 S370 95 400 95
+                 S450 95 470 95
+                 S530 165 550 165
+                 S590 205 610 205
+                 S670 165 700 165
+                 S760 165 810 165"
+              fill="none"
+              stroke="url(#forecastGradient)"
+              stroke-width="5.5"
+              stroke-linecap="round"
+              stroke-linejoin="round"
+              filter="url(#forecastShadow)"
+            />
+
+            <!-- axes -->
+            <line x1="50" y1="205" x2="850" y2="205" stroke="#dfe7f2" stroke-width="1"/>
+            <line x1="50" y1="205" x2="50" y2="45" stroke="#dfe7f2" stroke-width="1"/>
+
+            <!-- x-axis labels -->
+            <g fill="#97a6bd" font-size="10" font-weight="800">
+              <text x="65"  y="245">May 2019</text>
+              <text x="145" y="245">Jun 2019</text>
+              <text x="225" y="245">Jul 2019</text>
+              <text x="305" y="245">Aug 2019</text>
+              <text x="385" y="245">Sep 2019</text>
+              <text x="465" y="245">Oct 2019</text>
+              <text x="545" y="245">Nov 2019</text>
+              <text x="625" y="245">Dec 2019</text>
+              <text x="705" y="245">Jan 2020</text>
+              <text x="785" y="245">Feb 2020</text>
+            </g>
+          </svg>
+        </div>
+      </div>
+    </div>
+
+  </div>
+</div>
+{% endblock %}

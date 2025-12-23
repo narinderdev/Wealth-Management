@@ -1,0 +1,228 @@
+{% load static %}
+<div class="page-content">
+      <div class="card">
+        <div class="cardHeader">
+      <div class="hleft">
+       <img src="{% static 'images/borrowing_icon.svg' %}" 
+          alt="Current Update Icon"
+          class="current-update-icon" />
+        Snapshot Summary
+      </div>
+    </div>
+    <div class="snapshotText">
+      {{ snapshot_text }}
+    </div>
+  </div>
+
+  <div class="grid2">
+    <div class="card">
+      <div class="smallTitle" style="font-size: 12px; display: flex; justify-content: center;">Available Inventory Mix Trend</div>
+      <div class="donutWrap">
+        <div class="donutBox">
+          <svg width="190" height="190" viewBox="0 0 190 190" aria-hidden="true">
+            <circle cx="95" cy="95" r="70" fill="none" stroke="#e9eef6" stroke-width="20"/>
+            {% for segment in inventory_donut_segments %}
+            <circle cx="95" cy="95" r="70" fill="none" stroke="{{ segment.color }}" stroke-width="20"
+                    stroke-linecap="butt" stroke-dasharray="{{ segment.dasharray }}"
+                    stroke-dashoffset="{{ segment.dashoffset }}" transform="rotate(-90 95 95)"/>
+            {% endfor %}
+          </svg>
+          <div class="donutCenter">{{ inventory_available_display }}</div>
+        </div>
+        <div class="bars">
+          {% for bucket in inventory_mix %}
+          <div class="barRow">
+            <div class="barLine {{ bucket.bar_class }}">
+              <span><i class="dot"></i>{{ bucket.percentage_display }}</span>
+              <span>{{ bucket.label }}</span>
+            </div>
+          </div>
+          {% endfor %}
+        </div>
+      </div>
+    </div>
+    <div class="card mix-trend-card">
+      <div class="cardHeader">
+        <div class="hleft">
+          <img src="{% static 'images/borrowing_icon.svg' %}" 
+          alt="Current Update Icon"
+          class="current-update-icon" />
+          Available Inventory Mix Trend
+        </div>
+        <div class="legend">
+          <div class="legItem"><span class="sw navy"></span>Finished Goods</div>
+          <div class="legItem"><span class="sw mid"></span>Raw Materials</div>
+          <div class="legItem"><span class="sw bright"></span>Work-in-Process</div>
+        </div>
+      </div>
+      <div class="chartPad">
+        <div class="chart-tooltip" aria-hidden="true"></div>
+        <svg class="svgBox" viewBox="0 0 760 210" width="100%" height="210" role="presentation">
+          <rect x="{{ inventory_mix_trend_chart.grid.left }}" y="{{ inventory_mix_trend_chart.grid.top }}"
+                width="{{ inventory_mix_trend_chart.plot_width }}" height="{{ inventory_mix_trend_chart.plot_height }}" fill="#fff"/>
+          <g>
+            {% for tick in inventory_mix_trend_chart.y_ticks %}
+              <line class="gridLine" x1="{{ inventory_mix_trend_chart.grid.left }}" y1="{{ tick.y }}"
+                    x2="{{ inventory_mix_trend_chart.grid.right }}" y2="{{ tick.y }}"/>
+            {% endfor %}
+            {% for x in inventory_mix_trend_chart.x_grid %}
+              <line class="gridLine" x1="{{ x }}" y1="{{ inventory_mix_trend_chart.grid.top }}"
+                    x2="{{ x }}" y2="{{ inventory_mix_trend_chart.grid.bottom }}"/>
+            {% endfor %}
+          </g>
+          <g class="axisText">
+            {% for tick in inventory_mix_trend_chart.y_ticks %}
+              <text x="{{ inventory_mix_trend_chart.label_x }}" y="{{ tick.y|add:3 }}" text-anchor="end">{{ tick.label }}</text>
+            {% endfor %}
+          </g>
+          <g class="inventory-bars">
+            {% for column in inventory_mix_trend_chart.columns %}
+              {% for bar in column.bars %}
+                <rect x="{{ bar.x }}" y="{{ bar.y }}" width="{{ bar.width }}" height="{{ bar.height }}"
+                      rx="4" ry="4"
+                      fill="{{ bar.color }}"
+                      data-label="{{ column.month_label }} · {{ bar.series_label }}"
+                      data-value="{{ bar.value_display }}">
+                  <title>{{ column.month_label }} · {{ bar.series_label }} · {{ bar.value_display }}</title>
+                </rect>
+              {% endfor %}
+            {% endfor %}
+          </g>
+          <g class="axisText">
+            {% for label in inventory_mix_trend_chart.x_labels %}
+              <text x="{{ label.x }}" y="{{ inventory_mix_trend_chart.label_y }}" text-anchor="middle">
+                <tspan x="{{ label.x }}" dy="0">{{ label.month }}</tspan>
+                {% if label.year %}
+                  <tspan x="{{ label.x }}" dy="12">{{ label.year }}</tspan>
+                {% endif %}
+              </text>
+            {% endfor %}
+          </g>
+          <rect x="{{ inventory_mix_trend_chart.grid.left }}" y="{{ inventory_mix_trend_chart.grid.top }}"
+                width="{{ inventory_mix_trend_chart.plot_width }}" height="{{ inventory_mix_trend_chart.plot_height }}" fill="none" class="frameLine"/>
+        </svg>
+      </div>
+    </div>
+  </div>
+
+    <div class="card mt12">
+      <div class="cardHeader">
+      <div class="hleft">
+        <img src="{% static 'images/borrowing_icon.svg' %}" 
+          alt="Current Update Icon"
+          class="current-update-icon" />
+        Inventory Recovery Overview
+      </div>
+    </div>
+    <div class="tableWrap">
+      <table class="recovery-table">
+        <colgroup>
+          <col class="col-label" />
+          <col class="col-num" />
+          <col class="col-num" />
+          <col class="col-num" />
+          <col class="col-num" />
+          <col class="col-num" />
+          <col class="col-num" />
+          <col class="col-num" />
+        </colgroup>
+        <thead>
+          <tr class="tblGroup">
+            <th></th>
+            <th>Available Inventory</th>
+            <th colspan="2">Gross Recovery</th>
+            <th colspan="2">Liquidation Cost</th>
+            <th colspan="2">Net Recovery Trend</th>
+          </tr>
+          <tr class="tblSub">
+            <th></th>
+            <th>$</th>
+            <th>$</th>
+            <th>% Of Cost</th>
+            <th>$</th>
+            <th>% Of Cost</th>
+            <th>$</th>
+            <th>% Of Cost</th>
+          </tr>
+        </thead>
+        <tbody>
+          {% for row in inventory_breakdown %}
+          <tr>
+            <td>{{ row.label }}</td>
+            <td>{{ row.available_value }}</td>
+            <td>{{ row.gross_value }}</td>
+            <td>{{ row.gross_pct }}</td>
+            <td>{{ row.liquidation_value }}</td>
+            <td>{{ row.liquidation_pct }}</td>
+            <td>{{ row.net_value }}</td>
+            <td>{{ row.net_pct }}</td>
+          </tr>
+          {% endfor %}
+        </tbody>
+      </table>
+    </div>
+  </div>
+
+  <div class="card mt12">
+    <div class="cardHeader">
+      <div class="hleft">
+        <img src="{% static 'images/borrowing_icon.svg' %}" 
+          alt="Current Update Icon"
+          class="current-update-icon" />
+        Net Recovery Trend
+      </div>
+      <div class="legend">
+        <div class="legItem"><span class="sw navy"></span>Finished Goods</div>
+        <div class="legItem"><span class="sw mid"></span>Raw Materials</div>
+        <div class="legItem"><span class="sw bright"></span>Work-In-Progress</div>
+      </div>
+    </div>
+    <div class="chartPad">
+      <div class="chart-tooltip" aria-hidden="true"></div>
+      <svg class="svgBox" viewBox="0 0 760 250" width="100%" height="250" role="presentation">
+        <rect x="60" y="22" width="670" height="170" fill="#fff"/>
+        <g>
+          <line class="gridLine" x1="60" y1="192" x2="730" y2="192"/>
+          <line class="gridLine" x1="60" y1="158" x2="730" y2="158"/>
+          <line class="gridLine" x1="60" y1="124" x2="730" y2="124"/>
+          <line class="gridLine" x1="60" y1="90" x2="730" y2="90"/>
+          <line class="gridLine" x1="60" y1="56" x2="730" y2="56"/>
+          <line class="gridLine" x1="60" y1="22" x2="730" y2="22"/>
+        </g>
+        <g class="axisText">
+          <text x="26" y="195">0%</text>
+          <text x="22" y="161">10%</text>
+          <text x="22" y="127">30%</text>
+          <text x="22" y="93">50%</text>
+          <text x="22" y="59">70%</text>
+          <text x="22" y="25">100%</text>
+        </g>
+        {% for series in inventory_trend_series %}
+        <polyline fill="none" stroke="{{ series.color }}" stroke-width="2" points="{{ series.points }}"/>
+        <g>
+          {% for point in series.points_list %}
+          <circle cx="{{ point.x }}" cy="{{ point.y }}" r="2.8" fill="{{ series.color }}"
+                  data-label="{{ point.label }}" data-value="{{ point.value }}">
+            <title>{{ point.label }} – {{ point.value }}</title>
+          </circle>
+          {% endfor %}
+        </g>
+        {% endfor %}
+        <g class="axisText">
+          <text x="70" y="230">May 2019</text>
+          <text x="126" y="230">Jun 2019</text>
+          <text x="184" y="230">Jul 2019</text>
+          <text x="238" y="230">Aug 2019</text>
+          <text x="304" y="230">Sep 2019</text>
+          <text x="360" y="230">Oct 2019</text>
+          <text x="420" y="230">Nov 2019</text>
+          <text x="478" y="230">Dec 2019</text>
+          <text x="536" y="230">Jan 2020</text>
+          <text x="594" y="230">Feb 2020</text>
+          <text x="650" y="230">Mar 2020</text>
+        </g>
+        <rect x="60" y="22" width="670" height="170" fill="none" class="frameLine"/>
+      </svg>
+    </div>
+  </div>
+</div>

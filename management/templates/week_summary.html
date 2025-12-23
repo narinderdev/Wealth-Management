@@ -1,0 +1,853 @@
+{% extends "layout/app_base.html" %}
+{% load static %}
+
+{% block title %}Collateral Dynamic{% endblock %}
+
+{% block body_class %}collateral-static{% endblock %}
+
+{% block extra_head %}
+  {{ block.super }}
+  <style>
+    .cd-static{
+      margin-top:12px;
+      display:grid;
+      grid-template-columns:280px 1fr;
+      grid-auto-rows:auto;
+      gap:18px;
+      align-items:start;
+    }
+    .cd-card{
+      background:#fff;
+      border:1px solid #e3e8f4;
+      border-radius:16px;
+      box-shadow:0 12px 28px rgba(15,23,42,.08);
+    }
+    .summary-card{
+      padding:16px;
+      display:flex;
+      flex-direction:column;
+      gap:14px;
+      align-self:stretch;
+      height:100%;
+    }
+    .summary-title{
+      font-size:13px;
+      font-weight:600;
+      color:#0f1f44;
+      letter-spacing:.02em;
+      margin-bottom:4px;
+    }
+    .kv-pair{
+      display:flex;
+      justify-content:space-between;
+      font-size:12px;
+      color:#475569;
+      padding:8px 0 6px;
+    }
+    .kv-pair span:last-child{
+      font-weight:600;
+      color:#0f172a;
+    }
+    .section-block{
+      border-top:1px solid #eef1f6;
+      padding-top:12px;
+    }
+    .section-block .summary-title{
+      margin-bottom:8px;
+    }
+    .stacked-list{
+      display:flex;
+      flex-direction:column;
+      gap:12px;
+      font-size:12px;
+      color:#475569;
+    }
+    .stacked-list span{
+      display:flex;
+      justify-content:space-between;
+    }
+    .cashflow-card{
+      padding:18px;
+      display:flex;
+      flex-direction:column;
+      gap:16px;
+      min-height:560px;
+    }
+    .cashflow-header{
+      display:flex;
+      justify-content:space-between;
+      align-items:flex-start;
+      font-size:14px;
+      font-weight:600;
+      color:#0f1f44;
+    }
+    .stat-row{
+      display:grid;
+      grid-template-columns:repeat(auto-fit,minmax(180px,1fr));
+      gap:12px;
+    }
+    .stat-card{
+      border:1px solid #dfe6f6;
+      border-radius:14px;
+      padding:40px 16px;
+      display:flex;
+      flex-direction:column;
+      gap:10px;
+      min-height:110px;
+    }
+    .stat-card small{
+      font-size:11px;
+      color:#64748b;
+      text-transform:uppercase;
+      letter-spacing:.04em;
+    }
+    .stat-value{
+          margin-top: 17px;
+      font-size:22px;
+      font-weight:700;
+      color:#0f172a;
+    }
+    .stat-card-header{
+      display:flex;
+      justify-content:space-between;
+      align-items:center;
+      gap:10px;
+    }
+    .stat-icon{
+      width:44px;
+      height:44px;
+      border-radius:14px;
+      background:#e7f2ff;
+      display:flex;
+      align-items:center;
+      justify-content:center;
+      flex-shrink:0;
+    }
+    .stat-icon img{
+      width:22px;
+      height:22px;
+      object-fit:contain;
+      display:block;
+    }
+    .stat-delta{
+      font-size:13px;
+      font-weight:700;
+      margin-top:8px;
+    }
+    .stat-delta.down{color:#e11d48}
+    .stat-delta.up{color:#16a34a}
+    .chart-panel{
+      border:1px solid #c7d5f4;
+      border-radius:18px;
+      padding:18px;
+      background:#fdfefe;
+    }
+    .chart-wrap{position:relative;}
+    .chart-tooltip{
+      position:absolute;
+      padding:6px 10px;
+      background:#0f172a;
+      color:#fff;
+      font-size:12px;
+      border-radius:8px;
+      box-shadow:0 12px 20px rgba(15,23,42,.2);
+      pointer-events:none;
+      opacity:0;
+      transform:translate(-50%,-120%);
+      transition:opacity .15s ease;
+      display:flex;
+      flex-direction:column;
+      gap:2px;
+      z-index:5;
+    }
+    .chart-tooltip strong{font-size:11px;font-weight:700;}
+    .chart-tooltip span{font-size:12px;}
+    .chart-tooltip.is-visible{opacity:1;}
+    .chart-panel svg{
+      width:100%;
+      height:auto;
+      display:block;
+    }
+    .snapshot-card{
+      padding:18px;
+    }
+    .snapshot-card h3{
+      margin:0 0 10px;
+      font-size:16px;
+      color:#0f1f44;
+      font-weight:700;
+    }
+    .snapshot-card p{
+      margin:0;
+      color:#737791;
+      font-family:"Poppins", sans-serif;
+      font-weight:400;
+      font-size:18px;
+      line-height:27px;
+    }
+    body.collateral-static .tabs-shell{
+      display:none;
+    }
+    .forecast-card{
+      padding:18px;
+      display:flex;
+      flex-direction:column;
+      gap:12px;
+      margin-bottom:18px;
+    }
+    .forecast-header{
+      display:flex;
+      justify-content:space-between;
+      align-items:center;
+      font-size:13px;
+      font-weight:600;
+      color:#0f1f44;
+    }
+    .heading-with-icon{
+      display:inline-flex;
+      align-items:center;
+      gap:8px;
+    }
+    .heading-with-icon img{
+      width:16px;
+      height:16px;
+      display:block;
+    }
+    .liquidity-legend{
+      display:flex;
+      gap:12px;
+      align-items:center;
+      font-size:11px;
+      color:#64748b;
+      flex-wrap:wrap;
+    }
+    .liquidity-legend span{
+      display:flex;
+      align-items:center;
+      gap:6px;
+    }
+    .legend-swatch{
+      width:10px;
+      height:10px;
+      border-radius:3px;
+      display:inline-block;
+    }
+    .table-wrapper{
+      overflow-x:auto;
+    }
+    .cashflow-wrapper{
+      overflow-x:visible;
+    }
+    .cash-table{
+      width:100%;
+      border-collapse:separate;
+      border-spacing:0;
+      font-size:11px;
+      color:#475569;
+      min-width:900px;
+    }
+    .cash-table thead th{
+      font-size:10px;
+      text-transform:uppercase;
+      letter-spacing:.03em;
+      background:#f8fbff;
+      padding:10px;
+      color:#64748b;
+      border-bottom:1px solid #e3e8f4;
+      text-align:left;
+      white-space:nowrap;
+    }
+    .cash-table tbody td{
+      padding:10px;
+      border-bottom:1px solid #f0f2f7;
+      white-space:nowrap;
+    }
+    .cash-table tbody tr:nth-child(even) td{
+      background:#fbfcfe;
+    }
+    .cash-table tbody tr.title-row td{
+      font-weight:600;
+      color:#0f1f44;
+      background:#f5f7fb;
+    }
+    .cashflow-table{
+      min-width:0;
+      table-layout:fixed;
+    }
+    .cashflow-table thead th{
+      text-align:center;
+      font-size:10px;
+      line-height:1.2;
+      font-weight:600;
+      white-space:normal;
+    }
+    .cashflow-table thead th:first-child{
+      text-align:left;
+      width:200px;
+    }
+    .cashflow-table tbody td{
+      text-align:center;
+      white-space:normal;
+    }
+    .cashflow-table tbody td:first-child{
+      text-align:left;
+      font-weight:500;
+      color:#334155;
+    }
+    .cashflow-table tbody tr.section-row td{
+      background:#f5f7fb;
+      font-weight:600;
+      color:#0f1f44;
+    }
+    .cashflow-table tbody tr.section-row td:not(:first-child){
+      color:transparent;
+    }
+    .cashflow-table tbody tr.title-row td{
+      background:#f8fafc;
+    }
+    .cash-forecast-table{
+      min-width:1200px;
+    }
+    .cash-forecast-table thead th{
+      text-align:center;
+      font-size:10px;
+      line-height:1.2;
+      font-weight:600;
+      background:#f8fbff;
+    }
+    .cash-forecast-table thead th:first-child{
+      text-align:left;
+      width:200px;
+      background:#fff;
+    }
+    .cash-forecast-table tbody td{
+      text-align:center;
+    }
+    .cash-forecast-table tbody td:first-child{
+      text-align:left;
+      font-weight:500;
+      color:#334155;
+    }
+    .availability-table{
+      min-width:1200px;
+    }
+    .availability-table thead th{
+      text-align:center;
+      font-size:10px;
+      line-height:1.2;
+      font-weight:600;
+      background:#f8fbff;
+    }
+    .availability-table thead th:first-child{
+      text-align:left;
+      width:200px;
+      background:#fff;
+    }
+    .availability-table tbody td{
+      text-align:center;
+    }
+    .availability-table tbody td:first-child{
+      text-align:left;
+      font-weight:500;
+      color:#334155;
+    }
+    .variance-grid{
+      display:grid;
+      grid-template-columns:repeat(auto-fit,minmax(360px,1fr));
+      gap:0;
+      border-top:1px solid #eef1f6;
+      padding-top:12px;
+    }
+    .variance-block{
+      padding:0 12px;
+      background:#fff;
+    }
+    .variance-block + .variance-block{
+      border-left:1px solid #eef1f6;
+      padding-left:24px;
+    }
+    .variance-title{
+      text-align:center;
+      font-size:11px;
+      font-weight:600;
+      color:#0f1f44;
+      padding:6px 0 10px;
+      border-bottom:1px solid #eef1f6;
+    }
+    .variance-table{
+      width:100%;
+      border-collapse:separate;
+      border-spacing:0;
+      font-size:11px;
+      color:#475569;
+    }
+    .variance-table thead th{
+      font-size:10px;
+      text-transform:none;
+      letter-spacing:0;
+      background:#f8fbff;
+      padding:8px;
+      color:#64748b;
+      border-bottom:1px solid #e3e8f4;
+      text-align:center;
+      white-space:nowrap;
+    }
+    .variance-table thead th:first-child{
+      text-align:left;
+    }
+    .variance-table tbody td{
+      padding:8px;
+      border-bottom:1px solid #f0f2f7;
+      text-align:center;
+      white-space:nowrap;
+    }
+    .variance-table tbody td:first-child{
+      text-align:left;
+      font-weight:500;
+      color:#334155;
+    }
+    .variance-table tbody tr:nth-child(even) td{
+      background:#fbfcfe;
+    }
+    .variance-table tbody tr.section-row td{
+      background:#f5f7fb;
+      font-weight:600;
+      color:#0f1f44;
+    }
+    .variance-table tbody tr.title-row td{
+      font-weight:600;
+      color:#0f1f44;
+      background:#f8fafc;
+    }
+    .cd-static .wide{
+      grid-column:1/3;
+    }
+    .cd-stack{
+      grid-column:1/3;
+      display:flex;
+      flex-direction:column;
+      gap:18px;
+      margin-top:18px;
+    }
+  </style>
+{% endblock %}
+
+{% block page_content %}
+  <div class="cd-static">
+    <aside class="cd-card summary-card">
+      <div>
+        <p class="summary-title">Current Week Summary</p>
+        <div>
+          {% for stat in week_summary.stats %}
+            <div class="kv-pair">
+              <span>{{ stat.label }}</span>
+              <span>{{ stat.value }}</span>
+            </div>
+          {% endfor %}
+        </div>
+      </div>
+      <div class="section-block">
+        <p class="summary-title">Top Customer Receipts</p>
+        <div class="stacked-list">
+          {% for item in week_summary.top_receipts %}
+            <span>{{ item.name }}<span>{{ item.value }}</span></span>
+          {% endfor %}
+        </div>
+      </div>
+      <div class="section-block">
+        <p class="summary-title">Top Spend Categories</p>
+        <div class="stacked-list">
+          {% for item in week_summary.top_spend %}
+            <span>{{ item.name }}<span>{{ item.value }}</span></span>
+          {% endfor %}
+        </div>
+      </div>
+    </aside>
+
+    <div class="cd-card cashflow-card">
+      <div class="cashflow-header">
+        <span class="heading-with-icon">
+          <img src="{% static 'images/tick.svg' %}" alt="tick icon"/>
+          13 Week Cash Flow Summary
+        </span>
+        <span style="font-size:11px;color:#64748b;">
+          As of week ending {{ week_summary.period_label|default:"—" }}
+        </span>
+      </div>
+
+      <div class="stat-row">
+        {% for stat in week_summary.summary_cards %}
+          <div class="stat-card">
+            <div class="stat-card-header">
+              <div>
+                <small>{{ stat.label }}</small>
+                <div class="stat-value">{{ stat.value }}</div>
+              </div>
+              
+                {% if stat.label == "Ending Cash" %}
+                  <img src="{% static 'images/endingcash.svg' %}" alt="Ending Cash"/>
+                {% elif stat.label == "Total Receipts" %}
+                  <img src="{% static 'images/totalreciept.svg' %}" alt="Total Receipts"/>
+                {% else %}
+                  <img src="{% static 'images/totaldisbursement.svg' %}" alt="Total Disbursement"/>
+                {% endif %}
+              
+            </div>
+            {% if stat.delta %}
+              <div class="stat-delta {{ stat.delta_class }}">{{ stat.delta }}</div>
+            {% endif %}
+          </div>
+        {% empty %}
+          <div class="stat-card">
+            <small>Ending Cash</small>
+            <div class="stat-value">—</div>
+          </div>
+        {% endfor %}
+      </div>
+
+      <div class="chart-panel">
+        <div class="chart-wrap">
+          <svg viewBox="0 0 1080 300" preserveAspectRatio="none">
+            <rect x="0" y="0" width="1080" height="300" fill="#f8fbff" stroke="#dfe6f6"/>
+            <g stroke="#dce3f5">
+              {% for tick in week_summary.chart.ticks %}
+                <line x1="80" y1="{{ tick.y }}" x2="1030" y2="{{ tick.y }}"/>
+              {% endfor %}
+            </g>
+            <g fill="#94a3b8" font-size="11">
+              {% for tick in week_summary.chart.ticks %}
+                <text x="68" y="{{ tick.y|add:4 }}" text-anchor="end">{{ tick.label }}</text>
+              {% endfor %}
+            </g>
+            <g fill="#1889E6">
+              {% for bar in week_summary.chart.collections_bars %}
+                <rect x="{{ bar.x }}" y="{{ bar.y }}" width="{{ bar.width }}" height="{{ bar.height }}"
+                  class="ws-tip" data-label="{{ bar.label }}" data-series="Collections" data-value="{{ bar.value }}"/>
+              {% endfor %}
+            </g>
+            <g fill="#FC912E">
+              {% for bar in week_summary.chart.disbursement_bars %}
+                <rect x="{{ bar.x }}" y="{{ bar.y }}" width="{{ bar.width }}" height="{{ bar.height }}"
+                  class="ws-tip" data-label="{{ bar.label }}" data-series="Disbursements" data-value="{{ bar.value }}"/>
+              {% endfor %}
+            </g>
+            <g fill="#94a3b8" font-size="11">
+              {% for label in week_summary.chart.labels %}
+                <text x="{{ label.x }}" y="280">{{ label.text }}</text>
+              {% endfor %}
+            </g>
+            {% comment %} Inline legend aligned near the top-right with padding from edge {% endcomment %}
+            <g font-size="12" font-weight="600" fill="#0f1f44">
+              <rect x="760" y="6" width="21" height="21" fill="#1889E6" rx="4"/>
+              <text x="790" y="22">Collections</text>
+              <rect x="900" y="6" width="21" height="21" fill="#FC912E" rx="4"/>
+              <text x="930" y="22">Disbursements</text>
+            </g>
+          </svg>
+          <div class="chart-tooltip" aria-hidden="true"></div>
+        </div>
+      </div>
+    </div>
+
+    <div class="cd-card snapshot-card wide">
+      <h3 class="heading-with-icon">
+        <img src="{% static 'images/tick.svg' %}" alt="tick icon"/>
+        Snapshot Summary
+      </h3>
+      <p>{{ week_summary.snapshot_summary }}</p>
+    </div>
+
+    <div class="cd-card forecast-card wide">
+      <div class="forecast-header">
+        <span class="heading-with-icon">
+          <img src="{% static 'images/tick.svg' %}" alt="tick icon"/>
+          13-Week Cash Flow Forecast
+        </span>
+        <span style="font-size:11px;color:#64748b;">Updated {{ week_summary.forecast_updated_label }}</span>
+      </div>
+      <div class="table-wrapper cashflow-wrapper">
+        <table class="cash-table cashflow-table">
+            <thead>
+            <tr>
+                <th></th>
+                <th>{{ week_summary.cashflow_actual_label|safe }}</th>
+                {% for forecast_label in week_summary.cashflow_forecast_labels %}
+                  <th>{{ forecast_label|safe }}</th>
+                {% endfor %}
+                <th>13-Week<br/>Total</th>
+              </tr>
+            </thead>
+            <tbody>
+              {% if week_summary.cashflow_table_rows %}
+                {% for row in week_summary.cashflow_table_rows %}
+                  <tr{% if row.row_class %} class="{{ row.row_class }}"{% endif %}>
+                    <td>{{ row.label }}</td>
+                    <td>{{ row.actual }}</td>
+                    {% for forecast in row.forecasts %}
+                      <td>{{ forecast }}</td>
+                    {% endfor %}
+                    <td>{{ row.total }}</td>
+                  </tr>
+                {% endfor %}
+              {% else %}
+                <tr>
+                  <td colspan="{{ week_summary.cashflow_table_colspan }}">{{ week_summary.cashflow_empty_state|default:"No forecast data available." }}</td>
+                </tr>
+              {% endif %}
+            </tbody>
+          </table>
+        </div>
+      </div>
+    </div>
+
+    <div class="cd-card forecast-card wide">
+      <div class="forecast-header">
+        <span class="heading-with-icon">
+          <img src="{% static 'images/tick.svg' %}" alt="tick icon"/>
+          Cash Forecast
+        </span>
+        <span style="font-size:11px;color:#64748b;">Updated {{ week_summary.forecast_updated_label|default:"—" }}</span>
+      </div>
+      <div class="table-wrapper">
+        <table class="cash-table cash-forecast-table">
+            <thead>
+              <tr>
+                <th></th>
+                <th>{{ week_summary.cashflow_actual_label|safe }}</th>
+                {% for forecast_label in week_summary.cashflow_forecast_labels %}
+                  <th>{{ forecast_label|safe }}</th>
+                {% endfor %}
+                <th>13-Week<br/>Total</th>
+              </tr>
+            </thead>
+            <tbody>
+              {% if week_summary.cashflow_cash_rows %}
+                {% for row in week_summary.cashflow_cash_rows %}
+                  <tr{% if row.row_class %} class="{{ row.row_class }}"{% endif %}>
+                    <td>{{ row.label }}</td>
+                    <td>{{ row.actual }}</td>
+                    {% for forecast in row.forecasts %}
+                      <td>{{ forecast }}</td>
+                    {% endfor %}
+                    <td>{{ row.total }}</td>
+                  </tr>
+                {% endfor %}
+              {% else %}
+                <tr>
+                  <td colspan="{{ week_summary.cashflow_cash_colspan }}">{{ week_summary.cashforecast_empty_state|default:"No forecast data available." }}</td>
+                </tr>
+              {% endif %}
+            </tbody>
+          </table>
+      </div>
+    </div>
+
+  <div class="cd-stack">
+  <div class="cd-card forecast-card">
+    <div class="forecast-header">
+      <span class="heading-with-icon">
+        <img src="{% static 'images/tick.svg' %}" alt="tick icon"/>
+        Availability Forecast
+      </span>
+      <span style="font-size:11px;color:#64748b;">Collateral view + cash cushion</span>
+    </div>
+    <div class="table-wrapper">
+        <table class="cash-table availability-table">
+        <thead>
+          <tr>
+            <th></th>
+            <th>{{ week_summary.availability_actual_label|safe }}</th>
+            {% for label in week_summary.availability_week_labels %}
+              <th>{{ label }}</th>
+            {% endfor %}
+            <th>13-Week<br/>Total</th>
+          </tr>
+        </thead>
+        <tbody>
+          {% if week_summary.availability_rows %}
+            {% for row in week_summary.availability_rows %}
+              <tr>
+                <td>{{ row.label }}</td>
+                <td>{{ row.actual }}</td>
+                {% for value in row.weeks %}
+                  <td>{{ value }}</td>
+                {% endfor %}
+                <td>{{ row.total }}</td>
+              </tr>
+            {% endfor %}
+            {% else %}
+              <tr>
+                <td colspan="{{ week_summary.availability_week_labels|length|add:'2' }}">$&nbsp;—</td>
+              </tr>
+            {% endif %}
+        </tbody>
+      </table>
+    </div>
+  </div>
+
+  <div class="cd-card forecast-card">
+    <div class="forecast-header">
+      <span class="heading-with-icon">
+        <img src="{% static 'images/tick.svg' %}" alt="tick icon"/>
+        13-Week Liquidity Forecast
+      </span>
+      <div class="liquidity-legend">
+        {% for item in week_summary.liquidity_legend %}
+          <span><span class="legend-swatch" style="background:{{ item.color }};"></span>{{ item.label }}</span>
+        {% endfor %}
+      </div>
+    </div>
+    <div class="chart-panel">
+      <div class="chart-wrap">
+        <svg viewBox="0 0 800 280" preserveAspectRatio="none">
+          <rect x="0" y="0" width="800" height="280" fill="#f8fbff" stroke="#dfe6f6"/>
+          <g stroke="#dce3f5">
+            {% for tick in week_summary.liquidity_ticks %}
+              <line x1="70" y1="{{ tick.y }}" x2="740" y2="{{ tick.y }}"/>
+            {% endfor %}
+          </g>
+          <g fill="#94a3b8" font-size="11">
+            {% for tick in week_summary.liquidity_ticks %}
+              <text x="58" y="{{ tick.y|add:4 }}" text-anchor="end">{{ tick.label }}</text>
+            {% endfor %}
+          </g>
+          {% for series in week_summary.liquidity_series %}
+            <polyline
+              fill="none"
+              stroke="{{ series.color }}"
+              stroke-width="3"
+              stroke-linecap="round"
+              points="{{ series.points }}"
+            />
+            {% for dot in series.dots %}
+              <circle cx="{{ dot.cx }}" cy="{{ dot.cy }}" r="3" fill="{{ series.color }}"/>
+              <circle
+                cx="{{ dot.cx }}"
+                cy="{{ dot.cy }}"
+                r="9"
+                fill="transparent"
+                class="ws-tip"
+                data-label="{{ dot.label }}"
+                data-series="{{ series.label }}"
+                data-value="{{ dot.value }}"
+              />
+            {% endfor %}
+          {% endfor %}
+          <g fill="#94a3b8" font-size="11">
+            {% for label in week_summary.liquidity_labels %}
+              <text x="{{ label.x }}" y="250" text-anchor="middle">{{ label.text }}</text>
+            {% endfor %}
+          </g>
+        </svg>
+        <div class="chart-tooltip" aria-hidden="true"></div>
+      </div>
+    </div>
+  </div>
+
+  <div class="cd-card forecast-card">
+    <div class="forecast-header">
+      <span class="heading-with-icon">
+        <img src="{% static 'images/tick.svg' %}" alt="tick icon"/>
+        Variance Reporting
+      </span>
+      <span style="font-size:11px;color:#64748b;">Current vs. cumulative</span>
+    </div>
+    <div class="variance-grid">
+      <div class="variance-block">
+        <div class="variance-title">Current Week Variance Report</div>
+        <div class="table-wrapper">
+          <table class="variance-table">
+            <thead>
+              <tr>
+                <th></th>
+                <th>Projected</th>
+                <th>Actual</th>
+                <th>Variance</th>
+                <th>Variance %</th>
+              </tr>
+            </thead>
+            <tbody>
+              {% for row in week_summary.variance_current_rows %}
+                <tr{% if row.row_class %} class="{{ row.row_class }}"{% endif %}>
+                  <td>{{ row.category }}</td>
+                  <td>{{ row.projected }}</td>
+                  <td>{{ row.actual }}</td>
+                  <td>{{ row.variance_amount }}</td>
+                  <td>{{ row.variance_pct }}</td>
+                </tr>
+              {% endfor %}
+            </tbody>
+          </table>
+        </div>
+      </div>
+      <div class="variance-block">
+        <div class="variance-title">Cumulative Variance Report</div>
+        <div class="table-wrapper">
+          <table class="variance-table">
+            <thead>
+              <tr>
+                <th></th>
+                <th>Projected</th>
+                <th>Actual</th>
+                <th>Variance</th>
+                <th>Variance %</th>
+              </tr>
+            </thead>
+            <tbody>
+              {% for row in week_summary.variance_cumulative_rows %}
+                <tr{% if row.row_class %} class="{{ row.row_class }}"{% endif %}>
+                  <td>{{ row.category }}</td>
+                  <td>{{ row.projected }}</td>
+                  <td>{{ row.actual }}</td>
+                  <td>{{ row.variance_amount }}</td>
+                  <td>{{ row.variance_pct }}</td>
+                </tr>
+              {% endfor %}
+            </tbody>
+          </table>
+        </div>
+      </div>
+    </div>
+  </div>
+  </div>
+</div>
+{% endblock %}
+
+{% block extra_scripts %}
+  {{ block.super }}
+  <script>
+    document.body.classList.add('collateral-static');
+  </script>
+  <script>
+    (function(){
+      document.querySelectorAll(".chart-wrap").forEach((wrap)=>{
+        const tooltip = wrap.querySelector(".chart-tooltip");
+        const points = wrap.querySelectorAll(".ws-tip");
+        if(!tooltip || !points.length) return;
+        const position = (event)=>{
+          const rect = wrap.getBoundingClientRect();
+          return {x: event.clientX - rect.left, y: event.clientY - rect.top};
+        };
+        const show = (event)=>{
+          const target = event.currentTarget;
+          const label = (target.dataset.label||"").replace(/\n/g," ");
+          const series = target.dataset.series||"";
+          const value = target.dataset.value||"";
+          tooltip.innerHTML = `<strong>${value}</strong><span>${label} • ${series}</span>`;
+          const {x,y} = position(event);
+          tooltip.style.left = `${Math.max(14, Math.min(wrap.clientWidth-14, x))}px`;
+          tooltip.style.top = `${Math.max(18, Math.min(wrap.clientHeight-14, y-12))}px`;
+          tooltip.classList.add("is-visible");
+        };
+        const hide = ()=>tooltip.classList.remove("is-visible");
+        points.forEach(point=>{
+          point.style.cursor = "pointer";
+          point.addEventListener("mousemove", show);
+          point.addEventListener("mouseenter", show);
+          point.addEventListener("mouseleave", hide);
+          point.addEventListener("blur", hide);
+        });
+      });
+    })();
+  </script>
+{% endblock %}

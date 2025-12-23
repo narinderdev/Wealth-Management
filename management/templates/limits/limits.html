@@ -1,0 +1,176 @@
+{% extends "layout/app_base.html" %}
+{% load static %}
+{% block title %}Limits{% endblock %}
+
+{% block extra_head %}
+  {{ block.super }}
+  <style>
+    .limits-page .card{
+      background:#ffffff;
+      border:1px solid #e5e7eb;
+      border-radius:12px;
+      padding:12px 16px;
+      max-width:1819px;
+      margin-bottom:16px;
+      margin-top:16px;
+      box-shadow:0 1px 0 rgba(16,24,40,.04);
+    }
+    .limits-page .table-scroll {
+      margin-bottom:0;
+    }
+    .limits-page .card-title{
+      display:flex;
+      align-items:center;
+      gap:6px;
+      font-size:20px;
+      font-weight:600;
+      color:#585858;
+      margin-bottom:10px;
+    }
+    .limits-page table{
+      width:100%;
+      border-collapse:collapse;
+      font-size:12px;
+    }
+    .limits-page thead th{
+      text-align:left;
+      font-weight:600;
+      font-size: 14px;
+      color:#65758B;
+      padding:12px 14px;
+      background-color: #f5f7f8;
+      border-bottom:1px solid #e2e2e2;
+    }
+    .limits-page tbody td{
+      padding:8px 14px;
+      border-bottom:1px solid #f6f5f5;
+      color:#65758B;
+      font-size: 12px;
+      font-weight: 600;
+    }
+    .limits-page .right{text-align:right;}
+    .limits-page .table-footer{
+      display:flex;
+      align-items:center;
+      justify-content:space-between;
+      font-size:12px;
+      color:#6b7280;
+      margin-top:8px;
+    }
+    .limits-page .pager{
+      display:flex;
+      gap:8px;
+    }
+    .limits-page .pager a{
+      text-decoration:none;
+      color:#1d4ed8;
+      font-weight:600;
+    }
+    .limits-page .pager .disabled{
+      color:#9ca3af;
+      pointer-events:none;
+    }
+  </style>
+{% endblock %}
+
+{% block page_content %}
+  <div class="limits-page">
+    <div class="card">
+      <div class="card-title"> <img src="{% static 'images/borrowing_icon.svg' %}" 
+          alt="Current Update Icon"
+          class="current-update-icon" /> Collateral Limits</div>
+      <div class="table-scroll">
+      <table>
+        <thead>
+          <tr>
+            <th>Division</th>
+            <th>Collateral Type</th>
+            <th>Collateral Sub-Type</th>
+            <th class="right">$ Limit</th>
+            <th class="right">% Limit</th>
+          </tr>
+        </thead>
+        <tbody>
+          {% for row in limit_page %}
+          <tr>
+            <td>{{ row.division }}</td>
+            <td>{{ row.collateral_type }}</td>
+            <td>{{ row.collateral_sub_type }}</td>
+            <td class="right">{{ row.usd_limit }}</td>
+            <td class="right">{{ row.pct_limit }}</td>
+          </tr>
+          {% empty %}
+          <tr>
+            <td colspan="5" class="right">No collateral limits have been configured.</td>
+          </tr>
+          {% endfor %}
+        </tbody>
+      </table>
+      </div>
+      {% if limit_page.paginator.num_pages > 1 %}
+        <div class="table-footer">
+          <div>Page {{ limit_page.number }} of {{ limit_page.paginator.num_pages }}</div>
+          <div class="pager">
+            {% if limit_page.has_previous %}
+              <a href="?limits_page={{ limit_page.previous_page_number }}&ineligibles_page={{ ineligible_page.number }}">Prev</a>
+            {% else %}
+              <span class="disabled">Prev</span>
+            {% endif %}
+            {% if limit_page.has_next %}
+              <a href="?limits_page={{ limit_page.next_page_number }}&ineligibles_page={{ ineligible_page.number }}">Next</a>
+            {% else %}
+              <span class="disabled">Next</span>
+            {% endif %}
+          </div>
+        </div>
+      {% endif %}
+    </div>
+
+    <div class="card">
+      <div class="card-title"> <img src="{% static 'images/borrowing_icon.svg' %}" 
+          alt="Current Update Icon"
+          class="current-update-icon" />Ineligibles</div>
+      <div class="table-scroll">
+      <table>
+        <thead>
+          <tr>
+            <th>Division</th>
+            <th>Collateral Type</th>
+            <th>Collateral Sub-Type</th>
+          </tr>
+        </thead>
+        <tbody>
+          {% for row in ineligible_page %}
+          <tr>
+            <td>{{ row.division }}</td>
+            <td>{{ row.collateral_type }}</td>
+            <td>{{ row.collateral_sub_type }}</td>
+          </tr>
+          {% empty %}
+          <tr>
+            <td colspan="3">No ineligible collateral at this time.</td>
+          </tr>
+          {% endfor %}
+        </tbody>
+      </table>
+      </div>
+      {% if ineligible_page.paginator.num_pages > 1 %}
+        <div class="table-footer">
+          <div>Page {{ ineligible_page.number }} of {{ ineligible_page.paginator.num_pages }}</div>
+          <div class="pager">
+            {% if ineligible_page.has_previous %}
+              <a href="?limits_page={{ limit_page.number }}&ineligibles_page={{ ineligible_page.previous_page_number }}">Prev</a>
+            {% else %}
+              <span class="disabled">Prev</span>
+            {% endif %}
+            {% if ineligible_page.has_next %}
+              <a href="?limits_page={{ limit_page.number }}&ineligibles_page={{ ineligible_page.next_page_number }}">Next</a>
+            {% else %}
+              <span class="disabled">Next</span>
+            {% endif %}
+          </div>
+        </div>
+      {% endif %}
+    </div>
+  </div>
+{% endblock %}

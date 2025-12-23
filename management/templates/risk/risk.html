@@ -1,0 +1,655 @@
+{% extends "layout/app_base.html" %}
+{% load static %}
+{% block title %}Risk Overview{% endblock %}
+
+{% block extra_head %}
+  {{ block.super }}
+  <style>
+    /* ===============================
+       Base + Panel
+    =============================== */
+    .risk-page{
+      --rk-line:#e6eef6;
+      --rk-panel:#ffffff;
+      --rk-muted:#6b7280;
+      --rk-accent:#0b57d0;
+      --rk-shadow:0 1px 0 rgba(17,24,39,.02), 0 8px 24px rgba(17,24,39,.06);
+      padding: 12px;
+    }
+
+    .risk-page .panel{
+      background:var(--rk-panel);
+      border:1px solid var(--rk-line);
+      border-radius:10px;
+      box-shadow:var(--rk-shadow);
+      margin-bottom:14px;
+      overflow:hidden;
+    }
+
+    .risk-page .snapshot-icon{
+      width:18px;
+      height:18px;
+      display:block;
+    }
+
+    .risk-page .panel-title{
+      display:flex;
+      align-items:center;
+      gap:8px;
+      padding:12px 14px;
+      font-size:20px;
+      font-weight:600;
+      color:#585858;
+      /* border-bottom:1px solid var(--rk-line); */
+      background:#fff;
+    }
+
+    .risk-page .panel-body{
+      padding:12px 14px 14px;
+    }
+
+    /* ===============================
+       Current Primary Risk Rating bar
+    =============================== */
+    .risk-page .rating-wrap{
+      padding:12px 14px 60px ;
+    }
+    .risk-page .rating-scale{
+      display:flex;
+      justify-content:space-between;
+      font-size:20px;
+      color:#585858;
+      font-weight:600;
+      letter-spacing:.01em;
+      margin-bottom:8px;
+      padding:0 16px;
+    }
+    .risk-page .rating-bar{
+      position:relative;
+      height:16px;
+      border-radius:999px;
+      background:#e6eef6;
+      overflow:visible;
+      box-shadow:inset 0 1px 2px rgba(15,23,42,.1);
+    }
+    .risk-page .rating-fill{
+      position:absolute;
+      inset:0;
+      border-radius:999px;
+      background:linear-gradient(90deg,#7ec459 0%,#d7c63c 25%,#fbb82e 50%,#fc8f2e 75%,#f74c34 100%);
+    }
+    .risk-page .rating-pin{
+      position:absolute;
+      top:50%;
+      transform:translate(-50%,-50%);
+      width:16px;
+      height:16px;
+      border-radius:50%;
+      background:#fff;
+      border:2px solid #d67113;
+      box-shadow:0 4px 8px rgba(15,23,42,.18);
+      left:var(--risk-pos,50%);
+    }
+    .risk-page .rating-value{
+      position:absolute;
+      top:calc(100% + 8px);
+      left:var(--risk-pos,50%);
+      transform:translate(-50%,0);
+      font-size:15px;
+      color:#344256;
+      font-weight:700;
+      z-index:1;
+      white-space:nowrap;
+    }
+
+    /* ===============================
+       Snapshot Summary (top card)
+    =============================== */
+    .risk-page .snapshot-text{
+      font-size:16px;
+      color:#737791;
+      line-height:1.5;
+      margin:0;
+    }
+
+    /* ===============================
+       Main grid (Composite + High Impact)
+    =============================== */
+    .risk-page .risk-main-grid{
+      display:grid;
+      grid-template-columns: 1.55fr 1fr;
+      gap:14px;
+      margin-bottom:14px;
+    }
+
+    /* Composite inside layout: Score | Trend */
+    .risk-page .composite-inner{
+      display:grid;
+      grid-template-columns: 260px 1fr;
+      gap:14px;
+    }
+
+    .risk-page .subcard{
+      border:1px solid var(--rk-line);
+      border-radius:10px;
+      background:#fff;
+      padding:12px;
+    }
+
+    .risk-page .subcard-title{
+      display:flex;
+      align-items:center;
+      gap:8px;
+      font-size:16px;
+      font-weight:600;
+      color:#404040;
+      margin-bottom:10px;
+    }
+
+    /* Score card */
+    .risk-page .score-card{
+      display:flex;
+      flex-direction:column;
+      gap:12px;
+    }
+
+    .risk-page .score-donut{
+      display:flex;
+      justify-content:center;
+      align-items:center;
+      padding:8px 0 4px;
+    }
+
+    .risk-page .score-donut svg{
+      width:120px;
+      height:120px;
+    }
+
+    .risk-page .score-donut text{
+      font-size:8px;
+      fill:#404040;
+      font-weight:700;
+    }
+
+    .risk-page .pill-list{
+      display:flex;
+      flex-direction:column;
+      gap:8px;
+    }
+
+    .risk-page .pill2{
+      height:26px;
+      border-radius:6px;
+      display:flex;
+      align-items:center;
+      justify-content:center;
+      font-size:11px;
+      font-weight:700;
+      border:1px solid #dbe7f6;
+      text-transform:capitalize;
+    }
+    .risk-page .pill2.blue{ background:#116BFD; color:#fff; border-color:#116BFD; }
+    .risk-page .pill2.navy{ background:#083a8a; color:#fff; border-color:#083a8a; }
+    .risk-page .pill2.lt{ background:#cfe4f7; color:#0f172a; }
+    .risk-page .pill2.wt{ background:#f8fbff; color:#0f172a; }
+
+    /* Trend chart */
+    .risk-page .chartbox{
+      position:relative;
+    }
+
+    .risk-page .chart{
+      width:100%;
+      height:250px;
+      border-top:1px solid #eef4fb;
+      padding-top:10px;
+    }
+
+    .risk-page .trend-axis{
+      display:flex;
+      justify-content:space-between;
+      margin-top:8px;
+      font-size:10px;
+      color:#94a3b8;
+    }
+
+    .risk-page .y-axis{
+      position:absolute;
+      left:6px;
+      top:52px;
+      bottom:48px;
+      display:flex;
+      flex-direction:column;
+      justify-content:space-between;
+      font-size:10px;
+      color:#94a3b8;
+      pointer-events:none;
+    }
+
+    .risk-page .risk-tooltip{
+      position:absolute;
+      background:rgba(15,23,39,.95);
+      color:#fff;
+      padding:6px 10px;
+      border-radius:6px;
+      font-size:11px;
+      pointer-events:none;
+      opacity:0;
+      transition:opacity .2s ease;
+      transform:translate(-50%, -110%);
+      white-space:nowrap;
+      z-index: 10;
+    }
+
+    /* ===============================
+       High Impact Factors table
+    =============================== */
+    .risk-page .impact-table table{
+      width:100%;
+      border-collapse:collapse;
+      font-size:12px;
+    }
+
+    .risk-page .impact-table th{
+      font-size:11px;
+      color:#64748b;
+      font-weight:700;
+      padding:10px 8px;
+      border-bottom:1px solid var(--rk-line);
+      text-align:left;
+      white-space:nowrap;
+    }
+
+    .risk-page .impact-table td{
+      padding:10px 8px;
+      border-bottom:1px solid #f1f5f9;
+      color:#0f172a;
+      white-space:nowrap;
+    }
+
+    .risk-page .impact-table td:last-child,
+    .risk-page .impact-table th:last-child{
+      text-align:right;
+    }
+
+    .risk-page .chg2{
+      display:inline-flex;
+      align-items:center;
+      gap:6px;
+      font-weight:800;
+      justify-content:flex-end;
+    }
+    .risk-page .chg2.up{ color:#16a34a; }
+    .risk-page .chg2.down{ color:#dc2626; }
+
+    /* ===============================
+       Risk Metrics (your existing block)
+    =============================== */
+    .risk-page .risk-metrics{
+      padding:10px 12px 14px;
+      background:linear-gradient(#ffffff,#ffffff) padding-box,
+                 linear-gradient(180deg,#ffffff,#f7fbff) border-box;
+    }
+
+    .risk-page .divider{
+      height:1px;
+      background:var(--rk-line);
+      margin:0 0 10px 0;
+    }
+
+    .risk-page .grid2{
+      display:grid;
+      grid-template-columns:1fr 1fr;
+      gap:16px;
+      margin-top:12px;
+    }
+
+    .risk-page .metric{
+      --metric-donut:82px;
+      --metric-gap:14px;
+      --metric-label:156px;
+      --metric-label-gap:14px;
+      padding:18px 20px;
+      border-radius:14px;
+      background:#fff;
+      border:1px solid #e4ecf7;
+      box-shadow:0 12px 24px rgba(15, 23, 42, .08);
+    }
+
+    .risk-page .metric-title{
+      font-size:22px;
+      font-weight:700;
+      color:#404040;
+    }
+
+    .risk-page .metric-body{
+      display:grid;
+      grid-template-columns:var(--metric-donut) 1fr;
+      gap:var(--metric-gap);
+      margin-top:6px;
+      align-items:start;
+    }
+
+    .risk-page .bars{
+      position:relative;
+      display:flex;
+      flex-direction:column;
+      gap:14px;
+      padding:26px 6px 4px 0;
+    }
+
+    .risk-page .bars > .scale{
+      position:absolute;
+      top:0;
+      left:calc(var(--metric-label) + var(--metric-label-gap));
+      right:0;
+      display:flex;
+      justify-content:space-between;
+      gap:18px;
+      font-size:12px;
+      font-weight:700;
+      color:#6b7280;
+    }
+
+    .risk-page .barrow{
+      display:grid;
+      grid-template-columns:var(--metric-label) 1fr;
+      gap:var(--metric-label-gap);
+      align-items:center;
+      position:relative;
+    }
+
+    .risk-page .barrow .lbl{
+      font-size:12px;
+      color:#475467;
+      overflow:hidden;
+      text-overflow:ellipsis;
+      white-space:nowrap;
+    }
+
+    .risk-page .track{
+      height:7px;
+      /* background:#eaf0fb; */
+      border-radius:999px;
+      overflow:hidden;
+      /* border:1px solid #dbe4f4; */
+    }
+
+    .risk-page .fill{
+      height:100%;
+      border-radius:999px;
+      box-shadow:inset 0 1px 0 rgba(255,255,255,.3);
+    }
+
+    .risk-page .bar-tooltip{
+      position:absolute;
+      top:-26px;
+      left:var(--bar-left,50%);
+      transform:translateX(-50%);
+      background:rgba(17,24,39,.92);
+      color:#fff;
+      padding:4px 8px;
+      border-radius:4px;
+      font-size:9px;
+      white-space:nowrap;
+      opacity:0;
+      transition:opacity .2s ease;
+      pointer-events:none;
+    }
+    .risk-page .barrow:hover .bar-tooltip{opacity:1;}
+
+    @media (max-width:980px){
+      .risk-page .risk-main-grid{ grid-template-columns:1fr; }
+      .risk-page .composite-inner{ grid-template-columns:1fr; }
+      .risk-page .grid2{ grid-template-columns:1fr; }
+      .risk-page .barrow{ grid-template-columns:150px 1fr; }
+      .risk-page .metric{ --metric-label:150px; }
+    }
+  </style>
+{% endblock %}
+
+{% block page_content %}
+<div class="risk-page">
+
+  <!-- Current Primary Risk Rating -->
+  <section class="panel">
+    <div class="panel-title">
+      <img src="{% static 'images/borrowing_icon.svg' %}" alt="Risk Icon" class="snapshot-icon" />
+      Current Primary Risk Rating
+    </div>
+    <div class="panel-body rating-wrap">
+      <div class="rating-scale">
+        <span>Low</span><span>Mild</span><span>Average</span><span>Elevated</span><span>High</span>
+      </div>
+      <div class="rating-bar" aria-label="Current primary risk rating" style="--risk-pos: {{ risk.rating_position }}%;">
+        <div class="rating-fill"></div>
+        <span class="rating-pin"></span>
+        <span class="rating-value">{{ risk.rating_score }}</span>
+      </div>
+    </div>
+  </section>
+
+  <!-- Snapshot Summary (FULL WIDTH) -->
+  <section class="panel">
+    <div class="panel-title">
+      <img src="{% static 'images/borrowing_icon.svg' %}" alt="Snapshot Icon" class="snapshot-icon" />
+      Snapshot Summary
+    </div>
+    <div class="panel-body" style="padding-left: 40px; padding-bottom:22px">
+      <p class="snapshot-text">{{ risk.snapshot }}</p>
+    </div>
+  </section>
+
+  <!-- Composite + High Impact row -->
+  <div class="risk-main-grid">
+
+    <!-- LEFT: Composite Risk Index -->
+    <section class="panel">
+      <div class="panel-title">
+        <img src="{% static 'images/borrowing_icon.svg' %}" alt="Snapshot Icon" class="snapshot-icon" />
+        Composite Risk Index
+      </div>
+
+      <div class="panel-body" style="padding-left: 25px; padding-right: 25px;">
+        <div class="composite-inner">
+
+          <!-- Risk Index Score -->
+          <div class="subcard score-card">
+            <div class="subcard-title" style="font-size: 16px; font-weight: 600; color: #404040;">Risk Index Score</div>
+
+            <div class="score-donut">
+              <svg viewBox="0 0 42 42" aria-label="Composite risk donut">
+                <circle cx="21" cy="21" r="15.915" fill="transparent" stroke="#cfe3f0" stroke-width="4"></circle>
+                <circle cx="21" cy="21" r="15.915" fill="transparent" stroke="{{ risk.rating_color }}" stroke-width="4"
+                        stroke-linecap="round" stroke-dasharray="{{ risk.rating_dasharray }}"
+                        transform="rotate(-90 21 21)"></circle>
+                <text x="21" y="22" text-anchor="middle">{{ risk.rating_score }}/5</text>
+              </svg>
+            </div>
+
+            <div class="pill-list">
+              {% for pill in risk.pills %}
+                <div class="pill2 {{ pill.class }}">
+                 <p style="font-size: 16px; font-weight: 600 ; margin-right: 8px;">{{ pill.value }}</p>  <p style="font-weight: 400;">{{ pill.label }}</p>
+                </div>
+              {% endfor %}
+            </div>
+          </div>
+
+          <!-- Risk Index Trend -->
+          <div class="subcard">
+            <div class="subcard-title">
+              <img src="{% static 'images/borrowing_icon.svg' %}" alt="" class="snapshot-icon" />
+              Risk Index Trend
+            </div>
+
+            <div class="chartbox">
+              <svg class="chart" viewBox="0 0 300 110" preserveAspectRatio="none" aria-label="Risk trend chart">
+                <line x1="10" y1="20" x2="290" y2="20" stroke="#eef4fb" />
+                <line x1="10" y1="55" x2="290" y2="55" stroke="#eef4fb" />
+                <line x1="10" y1="90" x2="290" y2="90" stroke="#eef4fb" />
+
+                <polyline fill="none" stroke="#0b57d0" stroke-width="1" stroke-linecap="round" stroke-linejoin="round"
+                          points="{{ risk.trend_points }}" />
+
+                <g fill="#0b57d0">
+                  {% for point in risk.trend_data %}
+                    <circle cx="{{ point.x }}" cy="{{ point.y }}" r="3.2"
+                            data-label="{{ point.label }}" data-score="{{ point.score }}"></circle>
+                  {% endfor %}
+                </g>
+              </svg>
+
+              <div class="y-axis">
+                <span>90%</span><span>70%</span><span>50%</span><span>30%</span><span>10%</span>
+              </div>
+
+              <div class="trend-axis">
+                {% for label in risk.trend_axis %}
+                  <span>{{ label }}</span>
+                {% endfor %}
+              </div>
+
+              <div class="risk-tooltip" id="risk-tooltip"></div>
+            </div>
+          </div>
+
+        </div>
+      </div>
+    </section>
+
+    <!-- RIGHT: High Impact Factors -->
+    <section class="panel">
+      <div class="panel-title">
+        <img src="{% static 'images/borrowing_icon.svg' %}" alt="Snapshot Icon" class="snapshot-icon" />
+        High Impact Factors
+      </div>
+
+      <div class="panel-body impact-table">
+        <table aria-label="High impact factors">
+          <thead style="background-color: #f9fcff; font-size: 14px !important;">
+            <tr>
+              <th style="font-size: 14px">Risk</th>
+              <th style="font-size: 14px">Current Risk</th>
+              <th style="font-size: 14px">Prior Risk</th>
+              <th style="font-size: 14px">Change</th>
+            </tr>
+          </thead>
+          <tbody style="font-size: 14px ; color: #344256;">
+            {% for factor in risk.high_impact %}
+              <tr>
+                <td >{{ factor.risk }}</td>
+                <td style="color: #65758B;">{{ factor.current }}</td>
+                <td style="color: #65758B;">{{ factor.prior }}</td>
+                <td style="color: #65758B;">
+                  <span class="chg2 {% if factor.direction %}{{ factor.direction }}{% endif %}">
+                    {% if factor.direction == "up" %}↑{% elif factor.direction == "down" %}↓{% endif %}
+                    {{ factor.change }}
+                  </span>
+                </td>
+              </tr>
+            {% endfor %}
+          </tbody>
+        </table>
+      </div>
+    </section>
+
+  </div>
+
+  <!-- Risk Metrics (kept from your existing page) -->
+  <section class="panel risk-metrics">
+    <div class="panel-title" style="border-bottom:0;">
+      <img src="{% static 'images/borrowing_icon.svg' %}" alt="Snapshot Icon" class="snapshot-icon" />
+      Risk Metrics
+    </div>
+    <div class="divider"></div>
+
+    <div class="grid2">
+      {% for metric in risk.metrics %}
+        <div class="metric">
+          <div class="metric-title">{{ metric.label }}</div>
+
+          <div class="metric-body">
+            <svg class="donut" viewBox="0 0 42 42" aria-label="{{ metric.label }} score donut">
+              <circle cx="21" cy="21" r="15.915" fill="transparent" stroke="{{ metric.donut_bg }}" stroke-width="4"></circle>
+              <circle cx="21" cy="21" r="15.915" fill="transparent" stroke="{{ metric.donut_color }}" stroke-width="4"
+                      stroke-linecap="round" stroke-dasharray="{{ metric.donut_dash }}" transform="rotate(-90 21 21)"></circle>
+              <text x="21" y="22" text-anchor="middle">{{ metric.score_display }}</text>
+            </svg>
+
+            <div class="bars">
+              <div class="scale">
+                <span>Low</span><span>Mild</span><span>Moderate</span><span>Elevated</span><span>High</span>
+              </div>
+
+              {% for bar in metric.bars %}
+                <div class="barrow" style="--bar-left: {{ bar.width }};">
+                  <div class="lbl">{{ bar.label }}</div>
+                  <div class="track">
+                    <div class="fill" style="width:{{ bar.width }}; background:{{ metric.fill_color }}"></div>
+                  </div>
+                  <span class="bar-tooltip">{{ bar.width }}</span>
+                </div>
+              {% endfor %}
+            </div>
+
+          </div>
+        </div>
+      {% endfor %}
+    </div>
+  </section>
+
+</div>
+{% endblock %}
+
+{% block extra_scripts %}
+<script>
+  document.addEventListener("DOMContentLoaded", function(){
+    const chartBox = document.querySelector(".risk-page .chartbox");
+    const tooltip = document.getElementById("risk-tooltip");
+    if(!chartBox || !tooltip) return;
+
+    const svg = chartBox.querySelector("svg");
+    const circles = svg.querySelectorAll("circle[data-score]");
+    let activeCircle = null;
+
+    const formatPercent = value => {
+      const pct = Math.min(Math.max(parseFloat(value) / 5, 0), 1) * 100;
+      return `${pct.toFixed(1)}%`;
+    };
+
+    const updateTooltip = (label, score, event) => {
+      const pct = score ? formatPercent(score) : null;
+      tooltip.innerHTML = `${label}: <strong>${score}${pct ? ` (${pct})` : ""}</strong>`;
+      const rect = chartBox.getBoundingClientRect();
+      tooltip.style.left = `${event.clientX - rect.left}px`;
+      tooltip.style.top  = `${event.clientY - rect.top - 10}px`;
+      tooltip.style.opacity = "1";
+    };
+
+    circles.forEach(circle => {
+      circle.addEventListener("mousemove", function(event){
+        if(activeCircle && activeCircle !== circle) return;
+        updateTooltip(circle.dataset.label || "", circle.dataset.score || "", event);
+      });
+
+      circle.addEventListener("click", function(event){
+        activeCircle = circle;
+        updateTooltip(circle.dataset.label || "", circle.dataset.score || "", event);
+      });
+
+      circle.addEventListener("mouseleave", function(){
+        if(activeCircle && activeCircle !== circle) return;
+        tooltip.style.opacity = "0";
+      });
+    });
+
+    document.addEventListener("click", function(event){
+      if(!chartBox.contains(event.target)){
+        tooltip.style.opacity = "0";
+        activeCircle = null;
+      }
+    });
+  });
+</script>
+{% endblock %}

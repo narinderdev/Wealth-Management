@@ -1,0 +1,105 @@
+{% load static %}
+{% extends "layout/app_base.html" %}
+
+{% block title %}Cash Flow Forecast{% endblock %}
+
+{% block extra_head %}
+  {{ block.super }}
+  <link rel="stylesheet" href="{% static 'css/reports.css' %}">
+{% endblock %}
+
+{% block page_content %}
+  <div class="report-shell">
+    <aside class="report-menu">
+      <div class="menu-title">Available Reports</div>
+      {% for item in report_menu %}
+        <a class="menu-item {% if item.key == active_report %}active{% endif %}" href="{% url 'reports' %}?report={{ item.key }}">
+          <span class="menu-icon" aria-hidden="true">
+            {% if item.icon == "document" %}
+              <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                <path d="M6 3h9l5 5v13H6z"/>
+                <path d="M14 3v6h6"/>
+              </svg>
+            {% elif item.icon == "chart" %}
+              <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                <path d="M4 19V5"/>
+                <path d="M4 19h16"/>
+                <path d="M8 16V9"/>
+                <path d="M12 16V7"/>
+                <path d="M16 16v-4"/>
+              </svg>
+            {% else %}
+              <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                <path d="M6 3h12"/>
+                <path d="M6 12h12"/>
+                <path d="M6 21h12"/>
+              </svg>
+            {% endif %}
+          </span>
+          {{ item.label }}
+        </a>
+      {% endfor %}
+    </aside>
+
+    <section class="report-card">
+      <header class="report-card__header">
+        <h1>{{ report_section.title }}</h1>
+        <p>{{ report_section.description }}</p>
+      </header>
+
+      {% if report_section.rows %}
+        <div class="report-list">
+          {% for row in report_section.rows %}
+          <article class="report-row">
+            <div class="report-description">
+              {% if row.highlight %}
+              <span class="dot" aria-hidden="true"></span>
+              {% endif %}
+              <div>
+                {{ row.name }}
+                {% if row.report_date %}
+                <span class="report-date">{{ row.report_date|date:"M d, Y" }}</span>
+                {% endif %}
+              </div>
+            </div>
+            {% if row.download_url %}
+              <a class="download-btn" href="{{ row.download_url }}">Download</a>
+            {% else %}
+              <button class="download-btn" disabled>Download</button>
+            {% endif %}
+          </article>
+          {% endfor %}
+        </div>
+      {% endif %}
+
+      {% if report_section.forecast %}
+        <div class="forecast-card">
+          <header class="forecast-header">
+            <h2>13-Week Cash Flow Forecast</h2>
+            <span class="forecast-note">As of latest upload</span>
+          </header>
+          <div class="table-wrapper">
+            <table class="cash-table">
+              <thead>
+                <tr>
+              {% for column in report_section.forecast.0.keys %}
+                <th>{{ column|capfirst }}</th>
+              {% endfor %}
+              </tr>
+              </thead>
+              <tbody>
+                {% for row in report_section.forecast %}
+                <tr>
+                  {% for value in row.values %}
+                  <td>{{ value }}</td>
+                  {% endfor %}
+                </tr>
+                {% endfor %}
+              </tbody>
+            </table>
+          </div>
+        </div>
+      {% endif %}
+    </section>
+  </div>
+{% endblock %}

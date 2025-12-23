@@ -1,0 +1,16 @@
+asgiref
+Django
+django-environ
+djangorestframework
+et_xmlfile
+numpy
+openpyxl
+pandas
+psycopg2-binary
+python-dateutil
+python-dotenv
+pytz
+six
+sqlparse
+typing_extensions
+tzdata

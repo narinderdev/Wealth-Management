@@ -1,0 +1,892 @@
+{% load static %}
+<style>
+  .finished-goals{
+    --bg:#f4f7fb;
+    --card:#fff;
+    --ink:#101828;
+    --muted:#667085;
+    --muted2:#98A2B3;
+    --border:#E6EAF2;
+    --grid:#EEF2F7;
+    --shadow: 0 1px 2px rgba(16,24,40,.06);
+    --r:12px;
+
+    --blue:#175CD3;
+    --blue2:#2E90FA;
+    --bar:#2F3A8F;
+    --barSoft:#D6D9FF;
+    --good:#12B76A;
+    --bad:#F04438;
+  }
+  .finished-goals{font-family:ui-sans-serif,system-ui,-apple-system,Segoe UI,Roboto,Helvetica,Arial,"Apple Color Emoji","Segoe UI Emoji";}
+  .finished-goals .wrap{max-width:1120px;margin:0 auto;padding:0 18px 30px;background:none;}
+  .finished-goals .grid-2{display:grid;grid-template-columns:1fr 1fr;gap:12px;}
+  @media (max-width:920px){.finished-goals .grid-2{grid-template-columns:1fr;}}
+  .finished-goals .card{background:var(--card);border:1px solid var(--border);border-radius:var(--r);box-shadow:var(--shadow);overflow:hidden;}
+  .finished-goals .card-pad{padding:12px 14px;}
+  .finished-goals .card-head{display:flex;align-items:center;gap:8px;padding:12px 14px 8px;font-size:12px;font-weight:800;color:#344054;}
+  .finished-goals .ico{width:16px;height:16px;border-radius:6px;background:rgba(23,92,211,.10);border:1px solid rgba(23,92,211,.18);display:grid;place-items:center;flex:0 0 auto;}
+  .finished-goals .ico svg{width:10px;height:10px;fill:var(--blue);opacity:.9;}
+  .finished-goals .divider{height:1px;background:var(--border);}
+  .finished-goals .metrics{
+    display:grid;
+    grid-template-columns:repeat(auto-fit, minmax(160px,1fr));
+    gap:10px;
+    padding:10px 14px 14px;
+  }
+  .finished-goals .stat-grid{
+    display:grid;
+    grid-template-columns:1fr;
+    gap:10px;
+    padding:10px 14px 14px;
+  }
+  .finished-goals .section-body{
+    padding:8px 14px 14px;
+  }
+  .finished-goals .sales-grid{
+    display:grid;
+    grid-template-columns:280px 1fr;
+    gap:12px;
+  }
+  @media (max-width:980px){
+    .finished-goals .sales-grid{grid-template-columns:1fr;}
+  }
+  .finished-goals .insights-card .stat-grid{
+    padding:10px 12px 12px;
+  }
+  .finished-goals .insights-card .stat-card{
+    min-height:78px;
+    padding:10px 12px;
+  }
+  .finished-goals .charts-card .chart-block + .chart-block{
+    border-top:1px solid var(--border);
+  }
+  .finished-goals .filters{
+    display:flex;
+    gap:10px;
+    align-items:center;
+    padding:6px 0 12px;
+    flex-wrap:wrap;
+    justify-content:flex-end;
+    width:100%;
+    margin-top: -45px;
+  }
+  .finished-goals .filters .select{
+    position:relative;
+    display:inline-flex;
+    align-items:center;
+  }
+  .finished-goals .filters select{
+    appearance:none;
+    border:1px solid var(--border);
+    background:#fff;
+    border-radius:8px;
+    padding:7px 34px 7px 10px;
+    font-size:12px;
+    color:#475467;
+    min-width:120px;
+    box-shadow:var(--shadow);
+  }
+  .finished-goals .filters select:focus{
+    outline:2px solid rgba(46,144,250,.25);
+    outline-offset:1px;
+  }
+  .finished-goals .filters .caret{
+    position:absolute;
+    right:10px;
+    pointer-events:none;
+    color:#667085;
+    display:grid;
+    place-items:center;
+  }
+  .finished-goals .filters .caret svg{
+    width:12px;
+    height:12px;
+    stroke:currentColor;
+    fill:none;
+    stroke-width:2;
+    stroke-linecap:round;
+    stroke-linejoin:round;
+  }
+  .finished-goals .stat-card{
+    border:1px solid var(--border);
+    border-radius:12px;
+    padding:12px 14px;
+    background:#fff;
+    min-height:90px;
+    display:flex;
+    flex-direction:column;
+    gap:6px;
+    box-shadow:0 1px 2px rgba(16,24,40,.05);
+  }
+  .finished-goals .stat-top{
+    display:flex;
+    align-items:flex-start;
+    justify-content:space-between;
+    gap:12px;
+  }
+  .finished-goals .stat-main{
+    display:flex;
+    flex-direction:column;
+    gap:2px;
+  }
+  .finished-goals .stat-icon{
+    width:34px;
+    height:34px;
+    border-radius:50%;
+    background:rgba(46,144,250,.14);
+    border:1px solid rgba(46,144,250,.25);
+    color:var(--blue2);
+    display:grid;
+    place-items:center;
+    flex:0 0 auto;
+  }
+  .finished-goals .stat-icon svg{
+    width:16px;
+    height:16px;
+    stroke:currentColor;
+    fill:none;
+    stroke-width:1.8;
+    stroke-linecap:round;
+    stroke-linejoin:round;
+  }
+  .finished-goals .stat-card .label{
+    font-size:12px;
+    color:var(--muted);
+    font-weight:600;
+  }
+  .finished-goals .stat-card .value{
+    font-size:20px;
+    font-weight:700;
+    color:#0f172a;
+  }
+  .finished-goals .stat-card .delta{
+    font-size:12px;
+    font-weight:700;
+    display:flex;
+    align-items:center;
+    gap:6px;
+  }
+  .finished-goals .delta-icon{
+    width:14px;
+    height:14px;
+    display:inline-flex;
+    align-items:center;
+    justify-content:center;
+  }
+  .finished-goals .delta-icon svg{
+    width:12px;
+    height:12px;
+    stroke:currentColor;
+    fill:none;
+    stroke-width:2;
+    stroke-linecap:round;
+    stroke-linejoin:round;
+  }
+  .finished-goals .delta.bad .delta-icon svg{transform:rotate(180deg);}
+  .finished-goals .delta.good{color:var(--good);}
+  .finished-goals .delta.bad{color:var(--bad);}
+  .finished-goals .mini-table{width:100%;border-collapse:collapse;font-size:11px;color:#344054;}
+  .finished-goals .mini-table tr{border-bottom:1px solid rgba(230,234,242,.65);}
+  .finished-goals .mini-table tr:last-child{border-bottom:none;}
+  .finished-goals .mini-table td{padding:9px 14px;}
+  .finished-goals .mini-table td:first-child{color:var(--muted);font-weight:700;}
+  .finished-goals .mini-table td:last-child{text-align:right;font-weight:900;}
+  .finished-goals .table-wrap{overflow:auto;}
+  .finished-goals .chart-wrap{
+    padding:8px 10px 12px;
+    position:relative;
+  }
+  .finished-goals .chart-tooltip{
+    position:absolute;
+    top:0;
+    left:0;
+    padding:6px 10px;
+    background:var(--ink);
+    color:#fff;
+    font-size:12px;
+    border-radius:8px;
+    box-shadow:0 12px 22px rgba(15,23,42,.2);
+    pointer-events:none;
+    opacity:0;
+    transform:translate(-50%,-110%);
+    transition:opacity .2s ease;
+    z-index:5;
+    min-width:90px;
+    display:flex;
+    flex-direction:column;
+    gap:2px;
+  }
+  .finished-goals .chart-tooltip.is-visible{opacity:1;}
+  .finished-goals .chart-tooltip strong{
+    font-size:11px;
+    font-weight:700;
+  }
+  .finished-goals .chart-tooltip span{
+    font-size:12px;
+  }
+  .finished-goals .chart-head{display:flex;justify-content:space-between;align-items:flex-start;gap:12px;padding:8px 14px 0;}
+  .finished-goals .chart-title{display:flex;align-items:center;gap:8px;font-size:12px;font-weight:800;color:#344054;padding:12px 14px 2px;}
+  .finished-goals .legend{display:flex;gap:10px;align-items:center;font-size:11px;color:var(--muted);white-space:nowrap;}
+  .finished-goals .legend .sw{width:10px;height:10px;border-radius:3px;background:var(--blue);}
+  .finished-goals .legend .sw.bar{background:var(--bar);}
+  .finished-goals .legend .sw.soft{background:var(--barSoft);}
+  .finished-goals .seg{display:flex;justify-content:center;gap:18px;font-size:11px;color:var(--muted2);margin:2px 0 6px;user-select:none;}
+  .finished-goals .seg span:first-child{color:#344054;font-weight:800;}
+  .finished-goals svg{width:100%;height:auto;display:block;}
+  .finished-goals .axis text{fill:var(--muted2);font-size:10px;}
+  .finished-goals .axis-label{fill:var(--muted2);font-size:10px;}
+  .finished-goals .gridline{stroke:var(--grid);stroke-width:1;}
+  .finished-goals .borderline{stroke:var(--border);stroke-width:1;fill:none;}
+  .finished-goals .line{stroke:var(--blue);stroke-width:2.5;fill:none;stroke-linecap:round;stroke-linejoin:round;}
+  .finished-goals .pt{fill:var(--blue2);opacity:.9;}
+  .finished-goals .bar-strong{fill:var(--bar);rx:3;}
+  .finished-goals .bar-soft{fill:var(--barSoft);rx:3;}
+  .finished-goals .bar-label{fill:var(--muted);font-size:10px;font-weight:700;}
+  .finished-goals .stack .sub{padding-bottom:6px;}
+  .finished-goals .stack .sub + .sub{border-top:1px solid var(--border);padding-top:6px;}
+  .finished-goals .table-card .card-head{padding-bottom:10px;}
+  .finished-goals .table-scroll{overflow:auto;}
+  .finished-goals table.data{width:100%;border-collapse:collapse;font-size:10.5px;min-width:860px;}
+  .finished-goals table.data thead th{position:sticky;top:0;background:#FBFCFE;color:#475467;font-weight:900;text-align:left;padding:10px 12px;border-bottom:1px solid var(--border);white-space:nowrap;}
+  .finished-goals table.data tbody td{padding:10px 12px;border-bottom:1px solid rgba(230,234,242,.65);color:#344054;white-space:nowrap;}
+  .finished-goals table.data tbody tr:last-child td{border-bottom:none;}
+  .finished-goals .numR{text-align:right;}
+  .finished-goals .numC{text-align:center;}
+  .finished-goals table.category{width:100%;border-collapse:collapse;font-size:10px;min-width:980px;color:#344054;}
+  .finished-goals table.category thead th{padding:8px 10px;border-bottom:1px solid var(--border);white-space:nowrap;}
+  .finished-goals table.category thead tr:first-child th{background:#F7F9FC;color:#475467;font-weight:800;text-align:center;}
+  .finished-goals table.category thead tr:last-child th{background:#FBFCFE;color:#667085;font-weight:700;text-align:center;}
+  .finished-goals table.category thead th.rowhead{text-align:left;}
+  .finished-goals table.category tbody td{padding:8px 10px;border-bottom:1px solid rgba(230,234,242,.65);white-space:nowrap;}
+  .finished-goals table.category tbody tr:last-child td{border-bottom:none;}
+  .finished-goals table.category tfoot td{padding:8px 10px;font-weight:800;background:#FBFCFE;border-top:1px solid var(--border);}
+  .finished-goals table.sku{width:100%;border-collapse:collapse;font-size:10px;min-width:880px;color:#344054;}
+  .finished-goals table.sku thead th{padding:8px 10px;border-bottom:1px solid var(--border);white-space:nowrap;}
+  .finished-goals table.sku thead tr:first-child th{background:#F7F9FC;color:#475467;font-weight:800;text-align:center;}
+  .finished-goals table.sku thead tr:last-child th{background:#FBFCFE;color:#667085;font-weight:700;text-align:left;}
+  .finished-goals table.sku thead th.center{text-align:center;}
+  .finished-goals table.sku tbody td{padding:8px 10px;border-bottom:1px solid rgba(230,234,242,.65);white-space:nowrap;color:#344054;}
+  .finished-goals table.sku tbody tr:last-child td{border-bottom:none;}
+  .finished-goals .pill{display:inline-flex;padding:3px 8px;border-radius:999px;font-size:10px;font-weight:900;border:1px solid rgba(230,234,242,.9);background:#F8FAFD;color:#475467;}
+</style>
+
+<div class="wrap finished-goals">
+
+  <form class="filters" method="get">
+    <input type="hidden" name="section" value="inventory">
+    <input type="hidden" name="inventory_tab" value="finished_goods">
+    <label class="select">
+      <select name="finished_goals_range" aria-label="Date range" onchange="this.form.submit()">
+        {% for option in finished_goals_range_options %}
+          <option value="{{ option.value }}" {% if option.value == finished_goals_selected_range %}selected{% endif %}>
+            {{ option.label }}
+          </option>
+        {% endfor %}
+      </select>
+      <span class="caret" aria-hidden="true">
+        <svg viewBox="0 0 24 24"><path d="M6 9l6 6 6-6"></path></svg>
+      </span>
+    </label>
+    <label class="select">
+      <select name="finished_goals_division" aria-label="Division filter" onchange="this.form.submit()">
+        {% for option in finished_goals_division_options %}
+          <option value="{{ option.value }}" {% if option.value == finished_goals_selected_division %}selected{% endif %}>
+            {{ option.label }}
+          </option>
+        {% endfor %}
+      </select>
+      <span class="caret" aria-hidden="true">
+        <svg viewBox="0 0 24 24"><path d="M6 9l6 6 6-6"></path></svg>
+      </span>
+    </label>
+  </form>
+
+  <div class="grid-2">
+   <div class="card">
+  <div class="card-head">
+    <img
+      src="{% static 'images/borrowing_icon.svg' %}"
+      alt="Available Inventory Icon"
+      class="current-update-icon"
+    />
+    <span>Available Inventory Breakdown</span>
+  </div>
+
+  <div class="stat-grid">
+    {% for metric in finished_goals_metrics %}
+      <div class="stat-card">
+        <div class="stat-top">
+          <div class="stat-main">
+            <div class="label">{{ metric.label }}</div>
+            <div class="value">{{ metric.value }}</div>
+          </div>
+          <div class="stat-icon" aria-hidden="true">
+            {{ metric.icon|safe }}
+          </div>
+        </div>
+
+        {% if metric.delta %}
+          <div class="delta {{ metric.delta_class }}">
+            <span>{{ metric.delta }}</span>
+          </div>
+        {% endif %}
+      </div>
+    {% empty %}
+      <div class="stat-card">
+        <div class="stat-top">
+          <div class="stat-main">
+            <div class="label">Awaiting data</div>
+            <div class="value">—</div>
+          </div>
+        </div>
+      </div>
+    {% endfor %}
+  </div>
+</div>
+
+
+    <div class="card">
+          <img src="{% static 'images/borrowing_icon.svg' %}" 
+          alt="Current Update Icon"
+          class="current-update-icon" />
+      <div class="table-wrap">
+        <table>
+          <thead>
+            <tr>
+              <th>Ineligibles</th>
+              <th class="num">Amount</th>
+              <th class="num">% of Ineligible</th>
+            </tr>
+          </thead>
+          <tbody>
+            {% for row in finished_goals_ineligible_detail %}
+              <tr>
+                <td>{{ row.reason }}</td>
+                <td class="num">{{ row.amount }}</td>
+                <td class="num">{{ row.pct }}</td>
+              </tr>
+            {% empty %}
+              <tr><td colspan="3">No ineligible detail.</td></tr>
+            {% endfor %}
+          </tbody>
+        </table>
+      </div>
+    </div>
+  </div>
+
+  <div class="card" style="margin-top:12px" data-chart="inventoryTrend"></div>
+
+  <div class="card section-card" style="margin-top:12px">
+    <img src="{% static 'images/borrowing_icon.svg' %}" 
+          alt="Current Update Icon"
+          class="current-update-icon" />
+      Sales and Gross Margin
+    <div class="section-body sales-grid">
+      <div class="card insights-card">
+        <div class="card-head">
+          <img src="{% static 'images/borrowing_icon.svg' %}" 
+          alt="Current Update Icon"
+          class="current-update-icon" />
+          Key Insights
+        </div>
+        <div class="stat-grid">
+          {% for metric in finished_goals_sales_insights %}
+            <div class="stat-card">
+              <div class="stat-top">
+                <div class="stat-main">
+                  <div class="label">{{ metric.label }}</div>
+                  <div class="value">{{ metric.value }}</div>
+                </div>
+                <div class="stat-icon" aria-hidden="true">
+                  <svg viewBox="0 0 24 24">
+                    <rect x="5" y="5" width="14" height="14" rx="2"></rect>
+                    <path d="M9 12h6M9 9h4"></path>
+                  </svg>
+                </div>
+              </div>
+              {% if metric.delta %}
+                <div class="delta {{ metric.delta_class }}">
+                  <span class="delta-icon" aria-hidden="true">
+                    <svg viewBox="0 0 24 24">
+                      <path d="M12 19V5m0 0l-5 5m5-5l5 5"></path>
+                    </svg>
+                  </span>
+                  <span>{{ metric.delta }}</span>
+                </div>
+              {% endif %}
+            </div>
+          {% empty %}
+            <div class="stat-card">
+              <div class="stat-top">
+                <div class="stat-main">
+                  <div class="label">Awaiting data</div>
+                  <div class="value">—</div>
+                </div>
+                <div class="stat-icon" aria-hidden="true">
+                  <svg viewBox="0 0 24 24">
+                    <rect x="5" y="5" width="14" height="14" rx="2"></rect>
+                    <path d="M9 12h6M9 9h4"></path>
+                  </svg>
+                </div>
+              </div>
+            </div>
+          {% endfor %}
+        </div>
+      </div>
+
+      <div class="card charts-card">
+        <div class="chart-block" data-chart="agedStock"></div>
+        <div class="chart-block" data-chart="agedStockTrend"></div>
+      </div>
+    </div>
+  </div>
+
+  <div class="card section-card" style="margin-top:12px">
+    
+      <img src="{% static 'images/borrowing_icon.svg' %}" 
+          alt="Current Update Icon"
+          class="current-update-icon" />
+      In-line vs Excess Analysis
+    <div class="section-body">
+      <div class="grid-2">
+        <div class="card" data-chart="inlineExcess"></div>
+        <div class="card" data-chart="inlineExcessTrend"></div>
+      </div>
+    </div>
+  </div>
+
+  <div class="card table-card" style="margin-top:12px">
+    <div class="card-head">
+      <img src="{% static 'images/borrowing_icon.svg' %}" 
+          alt="Current Update Icon"
+          class="current-update-icon" />
+      In-Line/Excess by Category
+    </div>
+    <div class="divider"></div>
+    <div class="table-scroll">
+      <table class="category" aria-label="In-Line/Excess by Category">
+        <thead>
+          <tr>
+            <th class="rowhead" rowspan="2">Category</th>
+            <th colspan="2">New</th>
+            <th colspan="2">0 - 52 Week In-Line</th>
+            <th colspan="2">Total In-Line</th>
+            <th colspan="2">52+ Week</th>
+            <th colspan="2">No Sales</th>
+            <th colspan="2">Total Excess</th>
+          </tr>
+          <tr>
+            <th>$</th>
+            <th>% Of Cat.</th>
+            <th>$</th>
+            <th>% Of Cat.</th>
+            <th>$</th>
+            <th>% Of Cat.</th>
+            <th>$</th>
+            <th>% Of Cat.</th>
+            <th>$</th>
+            <th>% Of Cat.</th>
+            <th>$</th>
+            <th>% Of Cat.</th>
+          </tr>
+        </thead>
+        <tbody>
+          {% for row in finished_goals_inline_excess_by_category %}
+            <tr>
+              <td>{{ row.category }}</td>
+              <td class="numC">{{ row.new_amount }}</td>
+              <td class="numC">{{ row.new_pct }}</td>
+              <td class="numC">{{ row.inline_0_52_amount }}</td>
+              <td class="numC">{{ row.inline_0_52_pct }}</td>
+              <td class="numC">{{ row.inline_total_amount }}</td>
+              <td class="numC">{{ row.inline_total_pct }}</td>
+              <td class="numC">{{ row.week_52_amount }}</td>
+              <td class="numC">{{ row.week_52_pct }}</td>
+              <td class="numC">{{ row.no_sales_amount }}</td>
+              <td class="numC">{{ row.no_sales_pct }}</td>
+              <td class="numC">{{ row.excess_total_amount }}</td>
+              <td class="numC">{{ row.excess_total_pct }}</td>
+            </tr>
+          {% empty %}
+            <tr><td colspan="13" class="numC">No category analysis available.</td></tr>
+          {% endfor %}
+        </tbody>
+        {% if finished_goals_inline_excess_totals %}
+          <tfoot>
+            <tr>
+              <td>Total</td>
+              <td class="numC">{{ finished_goals_inline_excess_totals.new_amount }}</td>
+              <td class="numC">{{ finished_goals_inline_excess_totals.new_pct }}</td>
+              <td class="numC">{{ finished_goals_inline_excess_totals.inline_0_52_amount }}</td>
+              <td class="numC">{{ finished_goals_inline_excess_totals.inline_0_52_pct }}</td>
+              <td class="numC">{{ finished_goals_inline_excess_totals.inline_total_amount }}</td>
+              <td class="numC">{{ finished_goals_inline_excess_totals.inline_total_pct }}</td>
+              <td class="numC">{{ finished_goals_inline_excess_totals.week_52_amount }}</td>
+              <td class="numC">{{ finished_goals_inline_excess_totals.week_52_pct }}</td>
+              <td class="numC">{{ finished_goals_inline_excess_totals.no_sales_amount }}</td>
+              <td class="numC">{{ finished_goals_inline_excess_totals.no_sales_pct }}</td>
+              <td class="numC">{{ finished_goals_inline_excess_totals.excess_total_amount }}</td>
+              <td class="numC">{{ finished_goals_inline_excess_totals.excess_total_pct }}</td>
+            </tr>
+          </tfoot>
+        {% endif %}
+      </table>
+    </div>
+  </div>
+
+  <div class="card table-card" style="margin-top:12px">
+    <div class="card-head">
+      <img src="{% static 'images/borrowing_icon.svg' %}" 
+          alt="Current Update Icon"
+          class="current-update-icon" />
+      In-Line Category Analysis
+    </div>
+    <div class="divider"></div>
+    <div class="table-scroll">
+      <table class="data" aria-label="In-Line Category Analysis">
+        <thead>
+          <tr>
+            <th>Category</th>
+            <th class="numC">FG Total</th>
+            <th class="numC">FG Ineligible</th>
+            <th class="numC">FG Available</th>
+            <th class="numC">% of Available</th>
+            <th class="numC">Sales</th>
+            <th class="numC">COGS</th>
+            <th class="numC">GM</th>
+            <th class="numC">GM %</th>
+            <th class="numC">Weeks Supply</th>
+          </tr>
+        </thead>
+        <tbody>
+          {% for row in finished_goals_inline_category_rows %}
+            <tr>
+              <td>{{ row.category }}</td>
+              <td class="numC">{{ row.fg_total }}</td>
+              <td class="numC">{{ row.fg_ineligible }}</td>
+              <td class="numC">{{ row.fg_available }}</td>
+              <td class="numC">{{ row.pct_of_available }}</td>
+              <td class="numC">{{ row.sales }}</td>
+              <td class="numC">{{ row.cogs }}</td>
+              <td class="numC">{{ row.gm }}</td>
+              <td class="numC">{{ row.gm_pct }}</td>
+              <td class="numC">{{ row.weeks_supply }}</td>
+            </tr>
+          {% empty %}
+            <tr><td colspan="10" class="numC">No inline category analysis available.</td></tr>
+          {% endfor %}
+        </tbody>
+      </table>
+    </div>
+  </div>
+
+  <div class="card table-card" style="margin-top:12px">
+    <div class="card-head">
+      <img src="{% static 'images/borrowing_icon.svg' %}" 
+          alt="Current Update Icon"
+          class="current-update-icon" />
+      Top Sku Analysis
+    </div>
+    <div class="divider"></div>
+    <div class="table-scroll">
+      <table class="sku" aria-label="Top SKU Analysis">
+        <thead>
+          <tr>
+            <th rowspan="2">Item Number</th>
+            <th rowspan="2">Category</th>
+            <th rowspan="2">Description</th>
+            <th colspan="2" class="center">Inventory</th>
+            <th colspan="4" class="center">Sales Metrics</th>
+          </tr>
+          <tr>
+            <th>Cost</th>
+            <th>% of Total</th>
+            <th>COGS</th>
+            <th>GM</th>
+            <th>GM%</th>
+            <th>WOS</th>
+          </tr>
+        </thead>
+        <tbody>
+          {% for row in finished_goals_top_skus %}
+            <tr>
+              <td>{{ row.item_number }}</td>
+              <td>{{ row.category }}</td>
+              <td>{{ row.description }}</td>
+              <td class="numC">{{ row.cost }}</td>
+              <td class="numC">{{ row.pct_of_total }}</td>
+              <td class="numC">{{ row.cogs }}</td>
+              <td class="numC">{{ row.gm }}</td>
+              <td class="numC">{{ row.gm_pct }}</td>
+              <td class="numC">{{ row.wos }}</td>
+            </tr>
+          {% empty %}
+            <tr><td colspan="9" class="numC">No SKU analysis available.</td></tr>
+          {% endfor %}
+        </tbody>
+      </table>
+    </div>
+  </div>
+
+</div>
+
+<script>
+  const charts = {{ finished_goals_chart_config_json|safe }};
+
+  function fmtY(v,c){
+    const dec = Number.isFinite(c.yDecimals) ? c.yDecimals : 2;
+    if (c.yPrefix || c.ySuffix) return `${c.yPrefix||""}${v.toFixed(dec)}${c.ySuffix||""}`;
+    if (Number.isFinite(c.yDecimals)) return v.toFixed(dec);
+    return String(v);
+  }
+  function fmtAxis(v,opts){
+    const dec = Number.isFinite(opts.decimals) ? opts.decimals : 0;
+    const prefix = opts.prefix || "";
+    const suffix = opts.suffix || "";
+    return `${prefix}${Number(v).toFixed(dec)}${suffix}`;
+  }
+  function pathFrom(pts){
+    return pts.map((p,i)=> (i===0?`M ${p[0]} ${p[1]}`:`L ${p[0]} ${p[1]}`)).join(" ");
+  }
+  function axisLabel(lab,x,y,anchor){
+    const text = String(lab);
+    if (!text.includes("\n")) return `<text x="${x}" y="${y}" text-anchor="${anchor}">${text}</text>`;
+    const lines = text.split("\n");
+    const lineHeight = 10;
+    return `<text x="${x}" y="${y}" text-anchor="${anchor}">${
+      lines.map((line,i)=>`<tspan x="${x}" dy="${i===0?0:lineHeight}">${line}</tspan>`).join("")
+    }</text>`;
+  }
+
+  function renderLine(el,c){
+    if (!c.values || c.values.length < 2 || !c.labels || c.labels.length < 2) {
+      el.innerHTML = `
+        <div class="card-head">
+          ${c.title}
+        </div>
+        <div class="card-pad">No data available.</div>
+      `;
+      return;
+    }
+    const W = 560, H = 190;
+    const hasMulti = c.labels.some(l => String(l).includes("\n"));
+    const pad = {l:c.yLabel ? 58 : 46,r:c.yRight ? 42 : 14,t:16,b:hasMulti ? 44 : 30};
+    const plotW = W-pad.l-pad.r, plotH = H-pad.t-pad.b;
+
+    const customTicks = Array.isArray(c.yTickValues) && c.yTickValues.length > 1;
+    let min = (c.yMin !== undefined && c.yMin !== null) ? c.yMin : Math.min(...c.values);
+    let max = (c.yMax !== undefined && c.yMax !== null) ? c.yMax : Math.max(...c.values);
+    if (customTicks) {
+      if (c.yMin === undefined || c.yMin === null) {
+        min = Math.min(...c.yTickValues);
+      }
+      if (c.yMax === undefined || c.yMax === null) {
+        max = Math.max(...c.yTickValues);
+      }
+    } else if (c.yMin === undefined || c.yMax === undefined) {
+      const range = (max-min)||1;
+      min -= range*0.15; max += range*0.15;
+    }
+    const range = (max-min)||1;
+
+    const x = i => pad.l + (i/(c.labels.length-1))*plotW;
+    const y = v => pad.t + (1-(v-min)/range)*plotH;
+
+    const pts = c.values.map((v,i)=>[x(i),y(v)]);
+    const ticks = c.yTicks||5;
+    const yTicks = customTicks ? c.yTickValues.map((val)=>({
+      val:Number(val),
+      yy:y(Number(val)),
+    })) : Array.from({length:ticks},(_,i)=>{
+      const t=i/(ticks-1);
+      const val=max - t*range;
+      return {val, yy:y(val)};
+    });
+    const right = c.yRight;
+    const rightTicks = right ? Array.from({length: right.ticks || ticks},(_,i)=>{
+      const t=i/((right.ticks || ticks)-1);
+      const val=right.max - t*(right.max-right.min);
+      const yy=pad.t + (1-(val-right.min)/((right.max-right.min)||1))*plotH;
+      return {val, yy};
+    }) : [];
+
+    const xStep = c.labels.length>10 ? 2 : 1;
+
+    el.innerHTML = `
+      <div class="card-head">
+        
+        ${c.title}
+      </div>
+      <div class="chart-wrap">
+        <svg viewBox="0 0 ${W} ${H}" role="img" aria-label="${c.title} chart">
+          <rect x="${pad.l}" y="${pad.t}" width="${plotW}" height="${plotH}" class="borderline"></rect>
+          ${c.yLabel ? `<text class="axis-label" transform="translate(16 ${pad.t + plotH/2}) rotate(-90)" text-anchor="middle">${c.yLabel}</text>` : ""}
+          ${yTicks.map(t=>`
+            <line x1="${pad.l}" y1="${t.yy}" x2="${W-pad.r}" y2="${t.yy}" class="gridline"></line>
+            <g class="axis">
+              <text x="${pad.l-8}" y="${t.yy+3}" text-anchor="end">${fmtY(t.val,c)}</text>
+            </g>
+          `).join("")}
+          ${right ? rightTicks.map(t=>`
+            <g class="axis">
+              <text x="${W-pad.r+8}" y="${t.yy+3}" text-anchor="start">${fmtAxis(t.val,right)}</text>
+            </g>
+          `).join("") : ""}
+          <g class="axis">
+            ${c.labels.map((lab,i)=>{
+              if(i%xStep!==0) return "";
+              return axisLabel(lab, x(i), H-18, "middle");
+            }).join("")}
+          </g>
+          <path d="${pathFrom(pts)}" class="line"></path>
+          ${pts.map((p,i)=>{
+            if (c.showPoints === false) return "";
+            if (!c.showAllPoints && (i===0||i===pts.length-1)) return "";
+            const r = Number.isFinite(c.pointRadius) ? c.pointRadius : 2.1;
+            return `<circle cx="${p[0]}" cy="${p[1]}" r="${r}" class="pt trend-point"
+              data-label="${c.labels[i]}" data-value="${fmtY(c.values[i],c)}"></circle>`;
+          }).join("")}
+        </svg>
+        <div class="chart-tooltip" aria-hidden="true"></div>
+      </div>
+    `;
+    attachFinishedGoalsTooltip(el);
+  }
+
+  function renderBar(el,c){
+    if (!c.values || c.values.length < 1 || !c.labels || c.labels.length < 1) {
+      el.innerHTML = `
+        <div class="card-head">
+         
+          ${c.title}
+        </div>
+        <div class="card-pad">No data available.</div>
+      `;
+      return;
+    }
+    const W = 560, H = 190;
+    const hasMulti = c.labels.some(l => String(l).includes("\n"));
+    const pad = {l:c.yLabel ? 58 : 46,r:c.yRight ? 42 : 14,t:16,b:hasMulti ? 44 : 30};
+    const plotW = W-pad.l-pad.r, plotH = H-pad.t-pad.b;
+
+    const min = (c.yMin !== undefined && c.yMin !== null) ? c.yMin : 0;
+    let max = (c.yMax !== undefined && c.yMax !== null) ? c.yMax : Math.max(...c.values);
+    if (c.yMax === undefined || c.yMax === null) {
+      max += max*0.18;
+    }
+    const range = (max-min)||1;
+
+    const n = c.values.length;
+    const gap = Number.isFinite(c.barGap) ? c.barGap : 10;
+    const barW = Number.isFinite(c.barWidth) ? c.barWidth : Math.max(18, (plotW - gap*(n-1))/n);
+    const totalW = n*barW + gap*(n-1);
+    const left = pad.l + Math.max(0, (plotW - totalW)/2);
+
+    const x = i => left + i*(barW+gap);
+    const y = v => pad.t + (1-(v-min)/range)*plotH;
+    const h = v => (pad.t+plotH) - y(v);
+
+    const ticks = c.yTicks||4;
+    const yTicks = Array.from({length:ticks},(_,i)=>{
+      const t=i/(ticks-1);
+      const val=max - t*range;
+      return {val, yy:y(val)};
+    });
+    const right = c.yRight;
+    const rightTicks = right ? Array.from({length: right.ticks || ticks},(_,i)=>{
+      const t=i/((right.ticks || ticks)-1);
+      const val=right.max - t*(right.max-right.min);
+      const yy=pad.t + (1-(val-right.min)/((right.max-right.min)||1))*plotH;
+      return {val, yy};
+    }) : [];
+
+    el.innerHTML = `
+      <div class="card-head">
+        ${c.title}
+      </div>
+      <div class="chart-wrap">
+        <svg viewBox="0 0 ${W} ${H}" role="img" aria-label="${c.title} chart">
+          <rect x="${pad.l}" y="${pad.t}" width="${plotW}" height="${plotH}" class="borderline"></rect>
+          ${c.yLabel ? `<text class="axis-label" transform="translate(16 ${pad.t + plotH/2}) rotate(-90)" text-anchor="middle">${c.yLabel}</text>` : ""}
+          ${yTicks.map(t=>`
+            <line x1="${pad.l}" y1="${t.yy}" x2="${W-pad.r}" y2="${t.yy}" class="gridline"></line>
+            <g class="axis">
+              <text x="${pad.l-8}" y="${t.yy+3}" text-anchor="end">${fmtY(t.val,c)}</text>
+            </g>
+          `).join("")}
+          ${right ? rightTicks.map(t=>`
+            <g class="axis">
+              <text x="${W-pad.r+8}" y="${t.yy+3}" text-anchor="start">${fmtAxis(t.val,right)}</text>
+            </g>
+          `).join("") : ""}
+        ${c.values.map((v,i)=>{
+            const cls = c.barClass ? c.barClass : (typeof c.highlightIndex==="number" && i===c.highlightIndex) ? "bar-strong" : "bar-soft";
+            return `<rect x="${x(i)}" y="${y(v)}" width="${barW}" height="${h(v)}" class="${cls} trend-point"
+              data-label="${c.labels[i]}" data-value="${fmtY(v,c)}"></rect>`;
+          }).join("")}
+          ${c.showValueLabels ? `
+            <g class="bar-labels">
+              ${c.values.map((v,i)=>{
+                const xx = x(i) + barW/2;
+                const yy = Math.max(pad.t+10, y(v) - 6);
+                const label = (c.valueLabels && c.valueLabels[i]) ? c.valueLabels[i] : fmtY(v,c);
+                return `<text x="${xx}" y="${yy}" text-anchor="middle" class="bar-label">${label}</text>`;
+              }).join("")}
+            </g>
+          ` : ""}
+          <g class="axis">
+            ${c.labels.map((lab,i)=>{
+              const xx = x(i) + barW/2;
+              return axisLabel(lab, xx, H-18, "middle");
+            }).join("")}
+          </g>
+        </svg>
+        <div class="chart-tooltip" aria-hidden="true"></div>
+      </div>
+    `;
+    attachFinishedGoalsTooltip(el);
+  }
+
+  function positionTooltip(el,event){
+    const rect = el.getBoundingClientRect();
+    const x = event.clientX - rect.left;
+    const y = event.clientY - rect.top;
+    return {x,y};
+  }
+
+  function attachFinishedGoalsTooltip(el){
+    const tooltip = el.querySelector(".chart-tooltip");
+    if(!tooltip) return;
+    const points = el.querySelectorAll(".trend-point");
+    const show = (event)=>{
+      const target = event.currentTarget;
+      const label = target.dataset.label||"";
+      const value = target.dataset.value||"";
+      tooltip.innerHTML = `<strong>${value}</strong><span>${label}</span>`;
+      const {x,y} = positionTooltip(el,event);
+      tooltip.style.left = `${Math.max(12, Math.min(el.offsetWidth-12, x))}px`;
+      tooltip.style.top = `${Math.max(18, Math.min(el.offsetHeight-12, y-12))}px`;
+      tooltip.classList.add("is-visible");
+    };
+    const hide = ()=>tooltip.classList.remove("is-visible");
+    points.forEach(point=>{
+      point.style.cursor="pointer";
+      point.addEventListener("mousemove", show);
+      point.addEventListener("mouseenter", show);
+      point.addEventListener("mouseleave", hide);
+      point.addEventListener("blur", hide);
+    });
+  }
+
+  function initFinishedGoalsCharts(){
+    document.querySelectorAll("[data-chart]").forEach(el=>{
+      const key = el.getAttribute("data-chart");
+      const c = charts[key];
+      if(!c) return;
+      if(c.type==="line") renderLine(el,c);
+      if(c.type==="bar") renderBar(el,c);
+    });
+  }
+  initFinishedGoalsCharts();
+</script>

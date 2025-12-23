@@ -1,0 +1,698 @@
+{% load static %}
+<style>
+  .other-collateral{
+    --bg:#f4f7fb;
+    --card:#fff;
+    --ink:#101828;
+    --muted:#667085;
+    --muted2:#98A2B3;
+    --border:#E6EAF2;
+    --grid:#EEF2F7;
+    --shadow: 0 1px 2px rgba(16,24,40,.06);
+    --r:12px;
+
+    --purple:#845bf5;
+    --blue:#175CD3;
+    --blue2:#2E90FA;
+    --indigo:#3B4BD8;
+    --danger:#F04438;
+    --success:#12B76A;
+  }
+  *{box-sizing:border-box;}
+  .other-collateral{
+    font-family: ui-sans-serif,system-ui,-apple-system,Segoe UI,Roboto,Helvetica,Arial,"Apple Color Emoji","Segoe UI Emoji";
+    color:var(--ink);
+    background:var(--bg);
+  }
+  .other-collateral .page{
+    max-width:1180px;
+    margin:14px auto;
+    padding:0 18px 34px;
+  }
+  .other-collateral .card{
+    background:var(--card);
+    border:1px solid var(--border);
+    border-radius:var(--r);
+    box-shadow:var(--shadow);
+    overflow:hidden;
+  }
+  .other-collateral .section{margin-top:12px;}
+  .other-collateral .card-head{
+    display:flex;
+    align-items:center;
+    gap:8px;
+    padding:12px 14px;
+    font-size:20px;
+    font-weight:600;
+    color:#585858;
+  }
+  .other-collateral .ico{
+    width:16px;
+    height:16px;
+    border-radius:6px;
+    background: rgba(23,92,211,.10);
+    border:1px solid rgba(23,92,211,.18);
+    display:grid;
+    place-items:center;
+  }
+  .other-collateral .ico svg{width:10px;height:10px;fill:var(--blue);opacity:.95}
+
+  .other-collateral .kpi-row{display:grid;grid-template-columns:repeat(3,1fr);gap:12px;padding:0 14px 14px;}
+  @media (max-width:980px){.other-collateral .kpi-row{grid-template-columns:1fr;}}
+  .other-collateral .kpi{
+    border:1px solid var(--border);
+    border-radius:12px;
+    background:#fff;
+    padding:12px 10px 12px 12px;
+    display:flex;
+    justify-content:space-between;
+    gap:12px;
+    position:relative;
+  }
+  .other-collateral .kpi .left .t{
+    font-size:20px;
+    font-weight:600;
+    color:#475467;
+    margin-bottom:8px;
+  }
+  .other-collateral .kpi .left{
+    flex:1;
+  }
+  .other-collateral .kpi .big{
+    font-size:18px;
+    font-weight:1000;
+    color:#65758B;
+    letter-spacing:.1px;
+    margin-bottom:10px;
+  }
+  .other-collateral .kpi .pair{
+    display:flex;
+    flex-direction: column;
+    justify-content:space-between;
+    gap:10px;
+    font-size:18px;
+    color:#475467;
+    margin-top:6px;
+    width:100%;
+  }
+  .other-collateral .kpi .pair + .pair{
+    border-top:1px solid var(--border);
+    padding-top:12px;
+    margin-top:12px;
+  }
+  .other-collateral .kpi .pair b{color:#1D2939;font-weight:950;}
+  .other-collateral .kpi .right{display:flex;flex-direction:column;align-items:flex-end;gap:8px;min-width:56px;}
+  .other-collateral .kpi .right{
+    position:absolute;
+    right:12px;
+    top:12px;
+  }
+  .other-collateral .info{
+    width:40px;
+    height:40px;
+    display:grid;
+    place-items:center;
+  }
+  .other-collateral .info img{
+    width:40px;
+    height:40px;
+    display:block;
+  }
+  .other-collateral .delta{
+    font-size:11px;
+    font-weight:950;
+    display:flex;
+    align-items:center;
+    gap:6px;
+    color:var(--danger);
+  }
+  
+  .other-collateral .delta.good{color:var(--success);}
+  .other-collateral .arrow{font-size:12px;line-height:1;}
+
+  .other-collateral .divider{height:1px;background:var(--border);}
+  .other-collateral .chart-head{padding:14px 14px 0;display:flex;justify-content:flex-end;align-items:center;gap:12px;width:100%;}
+  .other-collateral .legend{display:flex;gap:12px;align-items:center;font-size:11px;color:var(--muted);flex-wrap:wrap;}
+  .other-collateral .chart-head .legend{margin-left:auto;}
+  .other-collateral .litem{display:flex;align-items:center;gap:6px;}
+    .other-collateral .sw{width:10px;height:10px;border-radius:3px;background:var(--purple);}
+    .other-collateral .sw.ind{background:var(--blue);}
+  .other-collateral .toggle{display:inline-flex;gap:2px;padding:2px;border:1px solid var(--border);border-radius:10px;background:#fff;user-select:none;}
+  .other-collateral .toggle span{padding:6px 10px;border-radius:8px;font-size:11px;font-weight:950;color:var(--muted);}
+  .other-collateral .toggle span.active{background:#EEF4FF;color:#344054;}
+  .other-collateral .svg-wrap{padding:6px 16px 16px;}
+  .other-collateral .chart-wrap{position:relative;}
+  .other-collateral .chart-tooltip{
+    position:absolute;
+    padding:6px 10px;
+    background:#101828;
+    color:#fff;
+    font-size:12px;
+    border-radius:8px;
+    box-shadow:0 12px 22px rgba(15,23,42,.2);
+    pointer-events:none;
+    opacity:0;
+    transform:translate(-50%,-120%);
+    transition:opacity .15s ease;
+    display:flex;
+    flex-direction:column;
+    gap:2px;
+    z-index:5;
+  }
+  .other-collateral .chart-tooltip strong{font-size:11px;font-weight:700;}
+  .other-collateral .chart-tooltip span{font-size:12px;}
+  .other-collateral .chart-tooltip.is-visible{opacity:1;}
+  .other-collateral .hit{fill:transparent;pointer-events:all;}
+  .other-collateral svg{width:100%;height:auto;display:block;}
+  .other-collateral .axis text{fill:var(--muted2);font-size:10px;}
+  .other-collateral .gridline{stroke:var(--grid);stroke-width:1;}
+  .other-collateral .borderline{stroke:var(--border);stroke-width:1;fill:none;}
+    .other-collateral .lineA{stroke:var(--purple);stroke-width:2.6;fill:none;stroke-linecap:round;stroke-linejoin:round;}
+    .other-collateral .lineB{stroke:var(--blue);stroke-width:2.2;fill:none;stroke-linecap:round;stroke-linejoin:round;}
+    .other-collateral .pt{fill:#fff;stroke:var(--purple);stroke-width:2;}
+    .other-collateral .ptb{fill:#fff;stroke:var(--blue);stroke-width:2;}
+
+  .other-collateral .table-scroll{
+    overflow:auto;
+    max-height:420px;
+  }
+  .other-collateral table.data{width:100%;border-collapse:collapse;font-size:10.5px;min-width: 980px;}
+  .other-collateral table.data.value-analysis-table{table-layout:fixed;}
+  .other-collateral table.data.value-analysis-table col.col-id{width:6%;}
+  .other-collateral table.data.value-analysis-table col.col-equipment{width:22%;}
+  .other-collateral table.data.value-analysis-table col.col-manufacturer{width:14%;}
+  .other-collateral table.data.value-analysis-table col.col-num{width:7.25%;}
+  .other-collateral table.data.asset-register-table{table-layout:fixed;}
+  .other-collateral table.data.asset-register-table col.col-id{width:6%;}
+  .other-collateral table.data.asset-register-table col.col-equipment{width:20%;}
+  .other-collateral table.data.asset-register-table col.col-manufacturer{width:14%;}
+  .other-collateral table.data.asset-register-table col.col-serial{width:17%;}
+  .other-collateral table.data.asset-register-table col.col-year{width:7%;}
+  .other-collateral table.data.asset-register-table col.col-condition{width:12%;}
+  .other-collateral table.data.asset-register-table col.col-num{width:12%;}
+  .other-collateral table.data thead th{position:sticky;top:0;background:#FBFCFE;color:#475467;font-weight:950;text-align:left;padding:10px 12px;border-bottom:1px solid var(--border);white-space:nowrap;}
+  .other-collateral table.data.value-analysis-table thead tr:first-child th{
+    text-align:center;
+    vertical-align:bottom;
+    padding-top:6px;
+    padding-bottom:2px;
+    font-size:9px;
+    border-bottom:none;
+  }
+  .other-collateral table.data.value-analysis-table thead tr:first-child th[rowspan]{
+    text-align:left;
+    vertical-align:bottom;
+    padding-bottom:8px;
+    font-size:9px;
+  }
+  .other-collateral table.data.value-analysis-table thead tr.grouphead th{
+    padding-top:2px;
+    padding-bottom:8px;
+    font-size:9px;
+    border-bottom:1px solid var(--border);
+  }
+  .other-collateral table.data tbody td{padding:10px 12px;border-bottom:1px solid rgba(230,234,242,.65);color:#344054;white-space:nowrap;}
+  .other-collateral table.data tbody tr:last-child td{border-bottom:none;}
+  .other-collateral tbody tr:hover td{background:#FAFCFF;}
+  .other-collateral .numR{text-align:right;}
+  .other-collateral table.data.value-analysis-table th.numR,
+  .other-collateral table.data.value-analysis-table td.numR{
+    text-align:center;
+  }
+  .other-collateral table.data.asset-register-table th.numR,
+  .other-collateral table.data.asset-register-table td.numR{
+    text-align:center;
+  }
+  .other-collateral .grouphead{font-size:10px;font-weight:950;color:#475467;background:#FBFCFE;}
+  .other-collateral .mini-note{font-size:12px;color:var(--muted);margin:12px;}
+  .other-collateral .table-controls{
+    display:flex;
+    justify-content:space-between;
+    align-items:center;
+    gap:12px;
+    padding:8px 0 6px;
+  }
+  .other-collateral .table-search{
+    width:220px;
+    max-width:100%;
+    padding:6px 10px;
+    border:1px solid #d6dde8;
+    border-radius:6px;
+    font-size:11px;
+  }
+  .other-collateral .pager{
+    display:flex;
+    align-items:center;
+    gap:8px;
+    font-size:11px;
+    color:#4b5563;
+  }
+  .other-collateral .pager button{
+    padding:4px 8px;
+    border:1px solid #d6dde8;
+    background:#fff;
+    border-radius:6px;
+    font-size:11px;
+    cursor:pointer;
+  }
+  .other-collateral .pager button:disabled{
+    opacity:.4;
+    cursor:not-allowed;
+  }
+</style>
+
+<div class="page other-collateral">
+  <div class="card">
+    <div class="card-head">
+      <span class="ico" aria-hidden="true"><svg viewBox="0 0 24 24"><path d="M12 2l4 8h6l-5 4 2 8-7-4-7 4 2-8-5-4h6l4-8z"/></svg></span>
+      Value Monitor
+    </div>
+    <div class="kpi-row">
+      {% for card in other_collateral_value_monitor %}
+        <div class="kpi">
+          <div class="left">
+            <div class="t">{{ card.title }}</div>
+            <!-- <div class="big">{{ card.big }}</div> -->
+            {% for row in card.rows %}
+              <div class="pair"><span>{{ row.label }}</span><b>{{ row.value }}</b></div>
+            {% endfor %}
+          </div>
+          <div class="right">
+            <div class="info" aria-hidden="true">
+              <img src="{% static 'images/Background.svg' %}" alt="" />
+            </div>
+            {% for delta in card.deltas %}
+              <div class="delta {{ delta.delta_class }}" title="{{ delta.label }}">
+                <span class="arrow">{{ delta.symbol }}</span>
+                {{ delta.value }}
+              </div>
+            {% endfor %}
+          </div>
+        </div>
+      {% empty %}
+        <div class="kpi">
+          <div class="left">
+            <div class="t">Awaiting data</div>
+            <div class="big">—</div>
+          </div>
+          <div class="right"></div>
+        </div>
+      {% endfor %}
+    </div>
+    <div class="divider"></div>
+    <div class="card-head" style="padding-bottom:0">
+      <span class="ico" aria-hidden="true"><svg viewBox="0 0 24 24"><path d="M4 17l5-6 4 4 7-10 0 3-7 10-4-4-5 6z"/></svg></span>
+      Value Trend
+    </div>
+    <div class="chart-head">
+      <div class="legend">
+        <div class="litem"><span class="sw"></span>Estimated OLV</div>
+        <div class="litem"><span class="sw ind"></span>Appraisal OLV</div>
+      </div>
+    </div>
+    <div class="svg-wrap" data-chart="valueTrend"></div>
+  </div>
+
+  <div class="section card">
+    <div class="card-head">
+      <span class="ico" aria-hidden="true"><svg viewBox="0 0 24 24"><path d="M3 4h18v16H3V4zm2 4h14V6H5v2zm0 3h6V9H5v2zm0 3h14v-2H5v2z"/></svg></span>
+  Value Analysis
+    </div>
+    <div class="divider"></div>
+    <div class="table-controls">
+      <input type="search" class="table-search" data-table="value-analysis-table" placeholder="Search value analysis...">
+      <div class="pager table-pager" data-table="value-analysis-table">
+        <button type="button" data-action="prev">Prev</button>
+        <span class="pager-info"></span>
+        <button type="button" data-action="next">Next</button>
+      </div>
+    </div>
+    <div class="table-scroll">
+      <table class="data" aria-label="Value Analysis Table" id="value-analysis-table" data-empty="Value analysis data not available.">
+        <thead>
+          <tr>
+            <th rowspan="2">ID</th>
+            <th rowspan="2">Equipment Type</th>
+            <th rowspan="2">Manufacturer</th>
+            <th class="numR" colspan="2">Appraised Values</th>
+            <th class="numR" colspan="2">Estimated</th>
+            <th class="numR" colspan="4">Variance</th>
+          </tr>
+          <tr class="grouphead">
+            <th class="numR">FMV</th><th class="numR">OLV</th>
+            <th class="numR">FMV</th><th class="numR">OLV</th>
+            <th class="numR">FMV $</th><th class="numR">FMV %</th>
+            <th class="numR">OLV $</th><th class="numR">OLV %</th>
+          </tr>
+        </thead>
+        <tbody>
+          {% for row in other_collateral_value_analysis_rows %}
+            <tr>
+              <td>{{ row.id }}</td>
+              <td>{{ row.equipment_type }}</td>
+              <td>{{ row.manufacturer }}</td>
+              <td class="numR">{{ row.fmv }}</td>
+              <td class="numR">{{ row.olv }}</td>
+              <td class="numR">{{ row.estimated_fmv }}</td>
+              <td class="numR">{{ row.estimated_olv }}</td>
+              <td class="numR">{{ row.variance_amount }}</td>
+              <td class="numR">{{ row.variance_pct }}</td>
+              <td class="numR">{{ row.variance_olv_amount }}</td>
+              <td class="numR">{{ row.variance_olv_pct }}</td>
+            </tr>
+
+          {% empty %}
+            <tr class="empty-placeholder"><td colspan="9" class="numR">Value analysis data not available.</td></tr>
+          {% endfor %}
+        </tbody>
+      </table>
+    </div>
+  </div>
+
+  <div class="section card">
+    <div class="card-head">
+      <span class="ico" aria-hidden="true"><svg viewBox="0 0 24 24"><path d="M4 6h16v2H4V6zm0 5h16v2H4v-2zm0 5h16v2H4v-2z"/></svg></span>
+      Appraisal Asset Register
+    </div>
+    <div class="divider"></div>
+    <div class="table-controls">
+      <input type="search" class="table-search" data-table="asset-register-table" placeholder="Search asset register...">
+      <div class="pager table-pager" data-table="asset-register-table">
+        <button type="button" data-action="prev">Prev</button>
+        <span class="pager-info"></span>
+        <button type="button" data-action="next">Next</button>
+      </div>
+    </div>
+    <div class="table-scroll">
+      <table class="data" aria-label="Appraisal Asset Register" id="asset-register-table" data-empty="Asset register data not available.">
+        <thead>
+          <tr>
+            <th>Item ID</th>
+            <th>Equipment Type</th>
+            <th>Manufacturer</th>
+            <th>Serial Number</th>
+            <th class="numR">Year</th>
+            <th>Condition</th>
+            <th class="numR">Fair Market Value</th>
+            <th class="numR">Orderly Liquidation Value</th>
+          </tr>
+        </thead>
+        <tbody>
+          {% for row in other_collateral_asset_rows %}
+            <tr>
+              <td>{{ row.id }}</td>
+              <td>{{ row.equipment_type }}</td>
+              <td>{{ row.manufacturer }}</td>
+              <td>{{ row.serial_number }}</td>
+              <td class="numR">{{ row.year }}</td>
+              <td>{{ row.condition }}</td>
+              <td class="numR">{{ row.fmv }}</td>
+              <td class="numR">{{ row.olv }}</td>
+            </tr>
+            <tr class="empty-placeholder"><td colspan="8" class="numR">Asset register data not available.</td></tr>
+          {% empty %}
+            <tr class="empty-placeholder"><td colspan="8" class="numR">Asset register data not available.</td></tr>
+          {% endfor %}
+        </tbody>
+      </table>
+    </div>
+  </div>
+</div>
+
+{{ other_collateral_value_trend_config|json_script:"otherCollateralValueTrendData" }}
+<script>
+  function linePath(pts){
+    return pts.map((p,i)=> (i===0?`M ${p[0]} ${p[1]}`:`L ${p[0]} ${p[1]}`)).join(" ");
+  }
+  function renderTwoLine(el,cfg){
+    const W=980, H=260;
+    const pad={l:96,r:40,t:14,b:44};
+    const plotW=W-pad.l-pad.r, plotH=H-pad.t-pad.b;
+    const seriesEstimated = (cfg.estimated||[]).map(val => Number(val) || 0);
+    const seriesAppraisal = (cfg.appraisal||[]).map(val => Number(val) || 0);
+    const all = [...seriesEstimated, ...seriesAppraisal];
+    if(!all.length){
+      el.innerHTML="<div class='mini-note'>Value trend data is unavailable.</div>";
+      return;
+    }
+    const formatCurrencyLabel = val => `$${Math.round(val).toLocaleString('en-US')}`;
+    let min = Math.min(...all);
+    let max = Math.max(...all);
+    if(min === Infinity) min = 0;
+    if(max === -Infinity) max = 0;
+    const range = (max-min)||1;
+    min -= range*0.12;
+    max += range*0.12;
+    const totalPoints = cfg.labels?.length || Math.max(seriesEstimated.length, seriesAppraisal.length);
+    const denominator = totalPoints>1 ? totalPoints-1 : 1;
+    const x = i => pad.l + (i/denominator)*plotW;
+    const y = v => pad.t + (1-(v-min)/(max-min))*plotH;
+    const ptsEst = seriesEstimated.map((v,i)=>[x(i),y(v)]);
+    const ptsApp = seriesAppraisal.map((v,i)=>[x(i),y(v)]);
+    const ticks=6;
+    const yTicks = Array.from({length:ticks},(_,i)=>{
+      const t=i/(ticks-1);
+      const val=max - t*(max-min);
+      return {val, yy:y(val)};
+    });
+    const xStep = (cfg.labels?.length || 0) > 10 ? 2 : 1;
+    const xLabelY = H - 12;
+    const yLabelX = pad.l - 12;
+    el.innerHTML = `
+      <div class="chart-wrap">
+        <svg viewBox="0 0 ${W} ${H}" role="img" aria-label="${cfg.title||'Value Trend'}">
+        <rect x="${pad.l}" y="${pad.t}" width="${plotW}" height="${plotH}" class="borderline"></rect>
+        ${yTicks.map(t=>`
+          <line x1="${pad.l}" y1="${t.yy}" x2="${W-pad.r}" y2="${t.yy}" class="gridline"></line>
+          <g class="axis"><text x="${yLabelX}" y="${t.yy+3}" text-anchor="end">${formatCurrencyLabel(t.val)}</text></g>
+        `).join("")}
+        <g class="axis">
+          ${(cfg.labels||[]).map((lab,i)=>{
+            if(i%xStep!==0) return "";
+            const isFirst = i === 0;
+            const isLast = i === (cfg.labels.length - 1);
+            const anchor = isFirst ? "start" : (isLast ? "end" : "middle");
+            return `<text x="${x(i)}" y="${xLabelY}" text-anchor="${anchor}">${lab}</text>`;
+          }).join("")}
+        </g>
+        <path d="${linePath(ptsEst)}" class="lineA"></path>
+        <path d="${linePath(ptsApp)}" class="lineB"></path>
+        ${ptsEst.map((p,i)=> (ptsEst.length <= 2 || i%2===1) ? `<circle cx="${p[0]}" cy="${p[1]}" r="3" class="pt"></circle>`:"").join("")}
+        ${ptsApp.map((p,i)=> (ptsApp.length <= 2 || i%2===1) ? `<circle cx="${p[0]}" cy="${p[1]}" r="3" class="ptb"></circle>`:"").join("")}
+        ${ptsEst.map((p,i)=>`<circle cx="${p[0]}" cy="${p[1]}" r="8" class="hit oc-point"
+          data-label="${(cfg.labels||[])[i]||''}" data-value="${formatCurrencyLabel(seriesEstimated[i]||0)}"
+          data-series="Estimated OLV"></circle>`).join("")}
+        ${ptsApp.map((p,i)=>`<circle cx="${p[0]}" cy="${p[1]}" r="8" class="hit oc-point"
+          data-label="${(cfg.labels||[])[i]||''}" data-value="${formatCurrencyLabel(seriesAppraisal[i]||0)}"
+          data-series="Appraisal OLV"></circle>`).join("")}
+      </svg>
+        <div class="chart-tooltip" aria-hidden="true"></div>
+      </div>
+    `;
+    attachOtherCollateralTooltip(el);
+  }
+
+  function positionTooltip(el,event){
+    const rect = el.getBoundingClientRect();
+    const x = event.clientX - rect.left;
+    const y = event.clientY - rect.top;
+    return {x,y};
+  }
+
+  function attachOtherCollateralTooltip(el){
+    const wrap = el.querySelector(".chart-wrap");
+    const tooltip = el.querySelector(".chart-tooltip");
+    if (!wrap || !tooltip) return;
+    const points = el.querySelectorAll(".oc-point");
+    const show = (event)=>{
+      const target = event.currentTarget;
+      const label = (target.dataset.label||"").replace(/\n/g," ");
+      const value = target.dataset.value||"";
+      const series = target.dataset.series||"";
+      tooltip.innerHTML = `<strong>${value}</strong><span>${label}${series ? ` • ${series}` : ""}</span>`;
+      const {x,y} = positionTooltip(wrap,event);
+      tooltip.style.left = `${Math.max(14, Math.min(wrap.clientWidth-14, x))}px`;
+      tooltip.style.top = `${Math.max(18, Math.min(wrap.clientHeight-14, y-12))}px`;
+      tooltip.classList.add("is-visible");
+    };
+    const hide = ()=>tooltip.classList.remove("is-visible");
+    points.forEach(point=>{
+      point.style.cursor = "pointer";
+      point.addEventListener("mousemove", show);
+      point.addEventListener("mouseenter", show);
+      point.addEventListener("mouseleave", hide);
+      point.addEventListener("blur", hide);
+    });
+  }
+function initPagedTable(tableId){
+    const PAGE_SIZE = 20;
+    const table = document.getElementById(tableId);
+    if(!table) return;
+    const tbody = table.querySelector("tbody");
+    const allRows = Array.from(tbody.querySelectorAll("tr")).filter(row => !row.classList.contains("empty-placeholder"));
+    tbody.querySelectorAll(".empty-placeholder").forEach(el => el.remove());
+    const searchInput = document.querySelector(`.table-search[data-table="${tableId}"]`);
+    const pager = document.querySelector(`.table-pager[data-table="${tableId}"]`);
+    const info = pager ? pager.querySelector(".pager-info") : null;
+    const btnPrev = pager ? pager.querySelector('[data-action="prev"]') : null;
+    const btnNext = pager ? pager.querySelector('[data-action="next"]') : null;
+    const emptyRow = document.createElement("tr");
+    emptyRow.className = "empty-row";
+    const emptyCell = document.createElement("td");
+    emptyCell.colSpan = table.querySelectorAll("thead th").length || 1;
+    emptyCell.textContent = table.dataset.empty || "No results found.";
+    emptyRow.appendChild(emptyCell);
+    let filtered = allRows.slice();
+    let page = 1;
+    function render(){
+      const total = filtered.length;
+      const pageCount = Math.max(1, Math.ceil(total / PAGE_SIZE));
+      page = Math.min(Math.max(1, page), pageCount);
+      allRows.forEach(r => r.style.display = "none");
+      if (emptyRow.parentElement === tbody) emptyRow.remove();
+      if(total === 0){
+        tbody.appendChild(emptyRow);
+        if(info) info.textContent = "0 of 0";
+        if(btnPrev) btnPrev.disabled = true;
+        if(btnNext) btnNext.disabled = true;
+        return;
+      }
+      const start = (page - 1) * PAGE_SIZE;
+      const end = start + PAGE_SIZE;
+      filtered.slice(start, end).forEach(r => { r.style.display = ""; });
+      if(info) info.textContent = `Page ${page} of ${pageCount}`;
+      if(btnPrev) btnPrev.disabled = page <= 1;
+      if(btnNext) btnNext.disabled = page >= pageCount;
+    }
+    function applyFilter(){
+      const term = (searchInput && searchInput.value || "").toLowerCase();
+      if(!term){
+        filtered = allRows.slice();
+      } else {
+        filtered = allRows.filter(row => row.textContent.toLowerCase().includes(term));
+      }
+      page = 1;
+      render();
+    }
+    if(searchInput){
+      searchInput.addEventListener("input", applyFilter);
+    }
+    if(btnPrev){
+      btnPrev.addEventListener("click", function(){
+        page = Math.max(1, page - 1);
+        render();
+      });
+    }
+    if(btnNext){
+      btnNext.addEventListener("click", function(){
+        page += 1;
+        render();
+      });
+    }
+    render();
+  }
+
+  function initPagedTable(tableId){
+    const PAGE_SIZE = 20;
+    const table = document.getElementById(tableId);
+    if(!table) return;
+    const tbody = table.querySelector("tbody");
+    const allRows = Array.from(tbody.querySelectorAll("tr")).filter(row => !row.classList.contains("empty-placeholder"));
+    tbody.querySelectorAll(".empty-placeholder").forEach(el => el.remove());
+
+    const searchInput = document.querySelector(`.table-search[data-table="${tableId}"]`);
+    const pager = document.querySelector(`.table-pager[data-table="${tableId}"]`);
+    const info = pager ? pager.querySelector(".pager-info") : null;
+    const btnPrev = pager ? pager.querySelector('[data-action="prev"]') : null;
+    const btnNext = pager ? pager.querySelector('[data-action="next"]') : null;
+
+    const emptyRow = document.createElement("tr");
+    emptyRow.className = "empty-row";
+    const emptyCell = document.createElement("td");
+    emptyCell.colSpan = table.querySelectorAll("thead th").length || 1;
+    emptyCell.textContent = table.dataset.empty || "No results found.";
+    emptyRow.appendChild(emptyCell);
+
+    let filtered = allRows.slice();
+    let page = 1;
+
+    function render(){
+      const total = filtered.length;
+      const pageCount = Math.max(1, Math.ceil(total / PAGE_SIZE));
+      page = Math.min(Math.max(1, page), pageCount);
+
+      allRows.forEach(r => r.style.display = "none");
+      if (emptyRow.parentElement === tbody) emptyRow.remove();
+
+      if(total === 0){
+        tbody.appendChild(emptyRow);
+        if(info) info.textContent = "0 of 0";
+        if(btnPrev) btnPrev.disabled = true;
+        if(btnNext) btnNext.disabled = true;
+        return;
+      }
+
+      const start = (page - 1) * PAGE_SIZE;
+      const end = start + PAGE_SIZE;
+      filtered.slice(start, end).forEach(r => { r.style.display = ""; });
+
+      if(info) info.textContent = `Page ${page} of ${pageCount}`;
+      if(btnPrev) btnPrev.disabled = page <= 1;
+      if(btnNext) btnNext.disabled = page >= pageCount;
+    }
+
+    function applyFilter(){
+      const term = (searchInput && searchInput.value || "").toLowerCase();
+      if(!term){
+        filtered = allRows.slice();
+      } else {
+        filtered = allRows.filter(row => row.textContent.toLowerCase().includes(term));
+      }
+      page = 1;
+      render();
+    }
+
+    if(searchInput){
+      searchInput.addEventListener("input", applyFilter);
+    }
+    if(btnPrev){
+      btnPrev.addEventListener("click", function(){
+        page = Math.max(1, page - 1);
+        render();
+      });
+    }
+    if(btnNext){
+      btnNext.addEventListener("click", function(){
+        page += 1;
+        render();
+      });
+    }
+
+    render();
+  }
+
+  const initializeValueTrend = () => {
+    const chartEl = document.querySelector('[data-chart="valueTrend"]');
+    const dataEl = document.getElementById("otherCollateralValueTrendData");
+    const cfg = dataEl ? JSON.parse(dataEl.textContent || "{}") : {};
+    if(chartEl){
+      if(cfg.labels && cfg.labels.length){
+        renderTwoLine(chartEl,cfg);
+      } else {
+        chartEl.innerHTML="<div class='mini-note'>Value trend data is unavailable.</div>";
+      }
+    }
+  };
+
+  if(document.readyState === "loading"){
+    document.addEventListener("DOMContentLoaded", function(){
+      initializeValueTrend();
+      initPagedTable("value-analysis-table");
+      initPagedTable("asset-register-table");
+    });
+  } else {
+    initializeValueTrend();
+    initPagedTable("value-analysis-table");
+    initPagedTable("asset-register-table");
+  }
+</script>

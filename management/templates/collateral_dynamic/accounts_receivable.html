@@ -1,0 +1,1673 @@
+{% extends "layout/app_base.html" %}
+{% load static %}
+{% block title %}Collateral Dynamic{% endblock %}
+
+{% block extra_head %}
+  {{ block.super }}
+  <style>
+    .collateral-dynamic{
+      --cd-panel:#ffffff;
+      --cd-muted:#6b7280;
+      --cd-accent:#0a6af0;
+      --cd-line:#e5edf6;
+      --cd-ink:#1f2937;
+      --cd-shadow:0 4px 12px rgba(15,23,42,.04);
+      --blue:#1d4089;
+      --blue-2:#2b6ff7;
+      --blue-3:#0b5bd3;
+      --teal:#1aa37a;
+      --purple:#8b3aa8;
+    }
+    .collateral-dynamic .section-tabs{
+      display:flex;
+      gap:12px;
+      margin-top:12px;
+      font-size:12px;
+      text-transform:uppercase;
+    }
+    .collateral-dynamic .section-tab{
+      padding:6px 14px;
+      border-radius:999px;
+      border:1px solid transparent;
+      background:var(--cd-panel);
+      color:var(--cd-muted);
+      font-weight:500;
+      text-decoration:none;
+    }
+    .collateral-dynamic .section-tab.active{
+      color:var(--cd-accent);
+      border-color:var(--cd-line);
+      box-shadow:0 8px 16px rgba(15,23,42,.08);
+    }
+    .collateral-dynamic .section-content{
+      margin-top:18px;
+    }
+    .collateral-dynamic .layout{
+      display:grid;
+      grid-template-columns:240px 1fr;
+      gap:20px;
+    }
+    .collateral-dynamic .menu-card{
+
+    width: 255px;
+    height: 382px;
+      background:#fff;
+      border-radius:18px;
+      padding:16px;
+      box-shadow:0 12px 30px rgba(15,23,42,.1);
+    }
+    .collateral-dynamic .menu-card .menu-title{
+      font-size:12px;
+      font-weight:600;
+      color:#4b5563;
+      margin-bottom:16px;
+      letter-spacing:.2px;
+    }
+    .collateral-dynamic .menu-item{
+      width:100%;
+      border:none;
+      background:transparent;
+      padding:10px 12px;
+      border-radius:12px;
+      display:flex;
+      align-items:center;
+      gap:12px;
+      font-size:14px;
+      color:#475569;
+      cursor:pointer;
+      text-decoration:none;
+      transition:background .2s ease,color .2s ease;
+    }
+    .collateral-dynamic .menu-item img{
+      width:18px;
+      height:18px;
+      flex-shrink:0;
+    }
+    .collateral-dynamic .menu-item.menu-static{
+      cursor:default;
+      pointer-events:none;
+      color:#64748b;
+    }
+    .collateral-dynamic .menu-item.inventory-header.is-active{
+      background:transparent;
+      color:var(--blue);
+      font-weight:600;
+    }
+    .collateral-dynamic .menu-item.inventory-header.is-active img{
+      filter:none;
+    }
+    .collateral-dynamic .menu-item.menu-toggle{
+      text-align:left;
+    }
+    .collateral-dynamic .menu-item.menu-toggle .menu-caret{
+      margin-left:auto;
+      width:8px;
+      height:8px;
+      border-right:2px solid #94a3b8;
+      border-bottom:2px solid #94a3b8;
+      transform:rotate(45deg);
+      transition:transform .2s ease, border-color .2s ease;
+    }
+    .collateral-dynamic .menu-item.menu-toggle[aria-expanded="true"] .menu-caret{
+      transform:rotate(-135deg);
+      border-color:#0b2a66;
+    }
+    .collateral-dynamic .menu-item.active{
+      background:var(--blue);
+      color:#fff;
+      font-weight:600;
+      border-radius:1px;
+    }
+    .collateral-dynamic .menu-item.active img{
+      filter:brightness(0) invert(1);
+    }
+    .collateral-dynamic .menu-item.menu-toggle.active{
+      background:transparent;
+      color:#0b2a66;
+    }
+    .collateral-dynamic .menu-item.menu-toggle.active img{
+      filter:none;
+    }
+    .collateral-dynamic .menu-item.sub.active{
+      background:var(--blue);
+      color:#fff;
+      font-weight:600;
+      border-radius:1px;
+    }
+    .collateral-dynamic .menu-item.sub.active img{
+      filter:brightness(0) invert(1);
+    }
+    .collateral-dynamic .menu-icon{
+      width:24px;
+      height:24px;
+      border-radius:6px;
+      display:flex;
+      align-items:center;
+      justify-content:center;
+      background:#eef2ff;
+      color:#0b2a66;
+      font-size:12px;
+    }
+    .collateral-dynamic .menu-group-label{
+      margin-top:10px;
+      display:flex;
+      align-items:center;
+      gap:10px;
+      font-size:14px;
+      font-weight:600;
+      color:#0b2a66;
+    }
+    .collateral-dynamic .menu-sublist{
+      display:none;
+      flex-direction:column;
+      gap:0;
+      margin-top:4px;
+      padding-left:6px;
+    }
+    .collateral-dynamic .menu-sublist.is-open{
+      display:flex;
+    }
+    .collateral-dynamic .menu-item.sub{
+      padding-left:26px;
+      font-size:13px;
+      border-radius:0;
+    }
+    .collateral-dynamic .menu-item.sub + .menu-item.sub{
+      border-top:1px solid #eef1f6;
+    }
+    .collateral-dynamic .menu-divider{
+      height:1px;
+      background:#eef1f6;
+      margin:10px 0;
+    }
+    .collateral-dynamic .inventory-sublist{
+      display:flex;
+      flex-direction:column;
+      gap:8px;
+      margin-top:12px;
+      padding-left:14px;
+    }
+    .collateral-dynamic .inventory-subitem{
+      border-radius:12px;
+      padding:10px 16px;
+      background:#f5f7fb;
+      color:#475569;
+      font-weight:600;
+      text-decoration:none;
+      transition:background .2s ease;
+      font-size:13px;
+    }
+    .collateral-dynamic .inventory-subitem.active{
+      background:#0b2a66;
+      color:#fff;
+      box-shadow:0 6px 12px rgba(15,23,42,.2);
+    }
+    .collateral-dynamic .panel{
+      background:var(--cd-panel);
+      border:1px solid var(--cd-line);
+      border-radius:14px;
+      padding:18px;
+      box-shadow:var(--cd-shadow);
+      margin-bottom:18px;
+    }
+    .collateral-dynamic .page{
+      display:flex;
+      flex-direction:column;
+      gap:16px;
+    }
+    .collateral-dynamic .card{
+      background:#fff;
+      border:1px solid var(--cd-line);
+      border-radius:12px;
+      box-shadow:var(--cd-shadow);
+      padding:12px;
+    }
+    .collateral-dynamic .cardHeader{
+      display:flex;
+      align-items:center;
+      justify-content:space-between;
+      gap:10px;
+      padding-bottom:6px;
+      border-bottom:1px solid #eef1f7;
+    }
+    .collateral-dynamic .hleft{
+      display:flex;
+      align-items:center;
+      gap:8px;
+      font-weight:600;
+      font-size:12px;
+      color:#1f2a37;
+    }
+    .collateral-dynamic .spark{
+      width:14px;
+      height:14px;
+      color:var(--cd-accent);
+    }
+    .collateral-dynamic .snapshotText{
+      font-size:12px;
+      color:#475569;
+      line-height:1.5;
+      padding:8px 0 0 2px;
+    }
+    .collateral-dynamic .grid2{
+      display:grid;
+      grid-template-columns:260px 1fr;
+      gap:12px;
+    }
+    .collateral-dynamic .smallTitle{
+      font-size:10px;
+      font-weight:600;
+      color:#4b5563;
+      padding-bottom:8px;
+    }
+    .collateral-dynamic .donutWrap{
+      display:flex;
+      flex-direction:column;
+      gap:12px;
+      align-items:center;
+      padding:10px 0 0 0;
+    }
+    .collateral-dynamic .donutCard{
+      position:relative;
+      width:190px;
+      height:190px;
+    }
+    .collateral-dynamic .donutBox{
+      position:relative;
+      width:190px;
+      height:190px;
+      display:grid;
+      place-items:center;
+    }
+    .collateral-dynamic .donutCenter{
+      position:absolute;
+      inset:0;
+      display:grid;
+      place-items:center;
+      font-weight:800;
+      font-size:18px;
+      text-align:center;
+      padding:0 8px;
+      font-variant-numeric:tabular-nums;
+    }
+    .collateral-dynamic .bars{
+      width:100%;
+      display:flex;
+      flex-direction:column;
+      gap:8px;
+    }
+    .collateral-dynamic .barRow{
+      display:flex;
+      flex-direction:column;
+      gap:4px;
+    }
+    .collateral-dynamic .barLine{
+      height:20px;
+      border-radius:6px;
+      display:flex;
+      align-items:center;
+      justify-content:center;
+      gap:8px;
+      padding:0 10px;
+      color:#ffffff;
+      font-weight:600;
+      font-size:10px;
+      letter-spacing:.2px;
+    }
+    .collateral-dynamic .barLine span{display:flex;align-items:center;gap:4px}
+    .collateral-dynamic .barLine .dot{display:none}
+    .collateral-dynamic .barLine.navy{background:#116BFD;}
+    .collateral-dynamic .barLine.mid{background:#0753B2;}
+    .collateral-dynamic .barLine.bright{background:#CADFEF;color:#1f2a37;}
+    .collateral-dynamic .legend{
+      display:flex;
+      gap:12px;
+      align-items:center;
+      font-size:10px;
+      color:#6b7280;
+    }
+    .collateral-dynamic .legItem{
+      display:flex;
+      gap:6px;
+      align-items:center;
+      /* text-transform:uppercase; */
+      font-size:9px;
+      letter-spacing:.3px;
+    }
+    .collateral-dynamic .sw{
+      width:10px;
+      height:10px;
+      border-radius:2px;
+      display:inline-block;
+    }
+    .collateral-dynamic .sw.navy{background:#116BFD}
+    .collateral-dynamic .sw.mid{background:#0753B2}
+    .collateral-dynamic .sw.bright{background:#CADFEF}
+    .collateral-dynamic .chartPad{
+      padding:12px 6px 4px 6px;
+    }
+    .collateral-dynamic .svgBox{
+      width:100%;
+      height:100%;
+      border-radius:10px;
+      background:#fff;
+    }
+    .collateral-dynamic .axisText{
+      font-size:8px;
+      fill:#9aa7b8;
+    }
+    .collateral-dynamic .gridLine{
+      stroke:#eef2f7;
+      stroke-width:1;
+    }
+    .collateral-dynamic .tableWrap{
+      padding:8px 4px 8px 4px;
+    }
+    .collateral-dynamic table{
+      width:100%;
+      border-collapse:collapse;
+      font-size:11px;
+      color:#374151;
+    }
+    .collateral-dynamic thead th{
+      font-weight:600;
+      color:#6b7280;
+      padding:8px 6px;
+      border-bottom:1px solid #f0f4fa;
+      text-align:left;
+    }
+    .collateral-dynamic tbody td{
+      padding:10px 6px;
+      border-bottom:1px solid #f0f4fa;
+      text-align:left;
+    }
+    .collateral-dynamic tbody tr:last-child td{
+      border-bottom:none;
+    }
+    .collateral-dynamic .recovery-table{
+      table-layout:fixed;
+    }
+    .collateral-dynamic .recovery-table th,
+    .collateral-dynamic .recovery-table td{
+      text-align:center;
+    }
+    .collateral-dynamic .recovery-table th:first-child,
+    .collateral-dynamic .recovery-table td:first-child{
+      text-align:left;
+    }
+    .collateral-dynamic .recovery-table thead tr.tblGroup th{
+      text-align:center;
+      font-weight:700;
+      border-bottom:none;
+      padding-bottom:2px;
+    }
+    .collateral-dynamic .recovery-table thead tr.tblGroup th:first-child{
+      text-align:left;
+    }
+    .collateral-dynamic .recovery-table thead tr.tblSub th{
+      font-size:10px;
+      color:#94a3b8;
+      font-weight:600;
+      letter-spacing:.2px;
+      padding-top:2px;
+    }
+    .collateral-dynamic .mt12{
+      margin-top:12px;
+    }
+    .collateral-dynamic .value-grid{
+      display:grid;
+      grid-template-columns:repeat(auto-fit,minmax(150px,1fr));
+      gap:10px;
+      margin-top:12px;
+    }
+    .collateral-dynamic .value-card{
+      border:1px solid #f0f4fa;
+      border-radius:10px;
+      padding:12px;
+      background:#f8fafc;
+    }
+    .collateral-dynamic .value-card .label{
+      font-size:10px;
+      color:#6b7280;
+      text-transform:uppercase;
+      letter-spacing:.3px;
+    }
+    .collateral-dynamic .value-card .value{
+      font-size:18px;
+      font-weight:700;
+      margin-top:4px;
+      color:#111827;
+    }
+    .collateral-dynamic .value-card .trend{
+      font-size:11px;
+      margin-top:4px;
+      color:#16a34a;
+    }
+    .collateral-dynamic .value-card .trend.down{
+      color:#dc2626;
+    }
+    .collateral-dynamic .table-card{
+      border:1px solid #e5e7eb;
+      border-radius:12px;
+      overflow:hidden;
+      margin-top:12px;
+    }
+    .collateral-dynamic .stats-row{
+      display:grid;
+      grid-template-columns:repeat(auto-fit,minmax(150px,1fr));
+      gap:16px;
+      margin-bottom:12px;
+      margin-top:12px;
+    }
+    .collateral-dynamic .chart-card header{
+      font-size:12px;
+      font-weight:600;
+      display:flex;
+      justify-content:space-between;
+      margin-bottom:8px;
+    }
+    .collateral-dynamic .panel-header{
+      display:flex;align-items:center;gap:10px;
+      font-size:14px;font-weight:600;
+      margin-bottom:14px;
+      color:var(--cd-ink);
+    }
+    .collateral-dynamic .panel-header svg{width:16px;height:16px;stroke:var(--cd-accent)}
+    .collateral-dynamic .snapshot-text{
+      font-size:13px;
+      color:#475569;
+      line-height:1.6;
+      margin-bottom:16px;
+    }
+    .collateral-dynamic .snapshot-grid{
+      display:grid;
+      grid-template-columns:220px 1fr;
+      gap:20px;
+    }
+    .collateral-dynamic .donut-card{
+      border:1px solid var(--cd-line);
+      border-radius:12px;
+      padding:12px;
+      text-align:center;
+    }
+    .collateral-dynamic .donut-card .total{
+      font-size:24px;font-weight:700;margin:8px 0;
+    }
+    .collateral-dynamic .donut-card .labels{
+      margin-top:12px;
+      text-align:left;
+      display:flex;
+      flex-direction:column;
+      gap:6px;
+      font-size:12px;
+      color:#475569;
+    }
+    .collateral-dynamic .legend-dot{
+      width:10px;height:10px;border-radius:50%;display:inline-block;margin-right:6px;
+    }
+    .collateral-dynamic .chart-card{
+      border:1px solid var(--cd-line);
+      border-radius:12px;
+      padding:12px;
+    }
+    .collateral-dynamic .chart-wrap{position:relative;}
+    .collateral-dynamic .chart-tooltip{
+      position:absolute;
+      padding:6px 10px;
+      background:#111827;
+      color:#fff;
+      font-size:12px;
+      border-radius:8px;
+      box-shadow:0 12px 22px rgba(15,23,42,.2);
+      pointer-events:none;
+      opacity:0;
+      transform:translate(-50%,-120%);
+      transition:opacity .15s ease;
+      display:flex;
+      flex-direction:column;
+      gap:2px;
+      z-index:5;
+    }
+    .collateral-dynamic .chart-tooltip strong{font-size:11px;font-weight:700;}
+    .collateral-dynamic .chart-tooltip span{font-size:12px;}
+    .collateral-dynamic .chart-tooltip.is-visible{opacity:1;}
+    .collateral-dynamic .chart-card header{
+      font-size:13px;
+      font-weight:600;
+      margin-bottom:8px;
+      display:flex;
+      justify-content:space-between;
+      color:var(--cd-ink);
+    }
+    .collateral-dynamic .value-grid{
+      display:grid;
+      grid-template-columns: repeat(auto-fit,minmax(150px,1fr));
+      gap:12px;
+      margin-bottom:12px;
+    }
+    .collateral-dynamic .value-card{
+      border:1px solid var(--cd-line);
+      border-radius:10px;
+      padding:12px;
+      background:#fafcff;
+    }
+    .collateral-dynamic .value-card .label{
+      font-size:11px;
+      color:var(--cd-muted);
+      text-transform:uppercase;
+      letter-spacing:.3px;
+    }
+    .collateral-dynamic .value-card .value{
+      font-size:18px;
+      font-weight:600;
+      margin-top:6px;
+      color:var(--cd-ink);
+    }
+    .collateral-dynamic .value-card .trend{
+      font-size:12px;
+      margin-top:4px;
+      color:#16a34a;
+    }
+    .collateral-dynamic .value-card .trend.down{color:#dc2626}
+    .collateral-dynamic .table-card{
+      border:1px solid var(--cd-line);
+      border-radius:12px;
+      overflow:hidden;
+    }
+    .collateral-dynamic .stats-row{
+      display:grid;
+      grid-template-columns: repeat(auto-fit,minmax(220px,1fr));
+      gap:16px;
+    }
+    .collateral-dynamic table{
+      width:100%;
+      border-collapse:collapse;
+      font-size:12px;
+      color:#475569;
+    }
+    .collateral-dynamic th,
+    .collateral-dynamic td{
+      padding:10px 8px;
+      border-bottom:1px solid var(--cd-line);
+      text-align:left;
+    }
+    .collateral-dynamic th{
+      background:#f9fbff;
+      color:#6b7280;
+      font-weight:600;
+    }
+    .collateral-dynamic tbody tr:last-child td{border-bottom:none}
+    .collateral-dynamic .placeholder-panel{
+      min-height:280px;
+      display:flex;
+      flex-direction:column;
+      justify-content:center;
+      align-items:flex-start;
+      gap:8px;
+      color:#475569;
+    }
+    .collateral-dynamic .placeholder-panel p{
+      margin:0;
+      font-size:13px;
+      line-height:1.5;
+      color:#475569;
+    }
+    .collateral-dynamic .ar-section{
+      display:flex;
+      flex-direction:column;
+      gap:18px;
+    }
+    .collateral-dynamic .ar-section .card{
+      background:#fff;
+      border:1px solid #dfe4f2;
+      border-radius: 11px;
+      box-shadow:0 20px 40px rgba(15,23,42,.08);
+      padding:18px 20px;
+      margin-top: 12px;
+    }
+    .collateral-dynamic .ar-section .h2{
+      font-size:1.5em;
+      font-weight:700;
+      margin:0 0 8px;
+      display:flex;
+      align-items:center;
+      gap:8px;
+      color:#0f172a;
+    }
+    .collateral-dynamic .ar-section .p{
+      margin:0;
+      font-size:12px;
+      color:#4b5563;
+      line-height:1.6;
+    }
+    .collateral-dynamic .ar-section .filters{
+      display:flex;
+      gap:10px;
+      align-items:center;
+      justify-content:flex-end;
+      flex-wrap:wrap;
+      margin-bottom:12px;
+    }
+    .collateral-dynamic .ar-section .filters .select{
+      position:relative;
+      display:inline-flex;
+      align-items:center;
+    }
+    .collateral-dynamic .ar-section .filters select{
+      appearance:none;
+      border:1px solid var(--cd-line);
+      background:#fff;
+      border-radius:8px;
+      padding:7px 34px 7px 10px;
+      font-size:12px;
+      color:#475467;
+      min-width:120px;
+      box-shadow:var(--cd-shadow);
+    }
+    .collateral-dynamic .ar-section .filters select:focus{
+      outline:2px solid rgba(46,144,250,.25);
+      outline-offset:1px;
+    }
+    .collateral-dynamic .ar-section .filters .caret{
+      position:absolute;
+      top:50%;
+      right:10px;
+      pointer-events:none;
+      color:#667085;
+      display:grid;
+      place-items:center;
+      transform:translateY(-50%);
+    }
+    .collateral-dynamic .ar-section .filters .caret svg{
+      width:12px;
+      height:12px;
+      stroke:currentColor;
+      fill:none;
+      stroke-width:2;
+      stroke-linecap:round;
+      stroke-linejoin:round;
+    }
+    .collateral-dynamic .borrowing-base-insight{
+      display:grid;
+      grid-template-columns:repeat(auto-fit,minmax(260px,1fr));
+      gap:16px;
+    }
+    .collateral-dynamic .borrowing-base-column{
+      display:flex;
+      flex-direction:column;
+      gap:12px;
+    }
+    .collateral-dynamic .borrowing-base-kpi{
+      border:1px solid #dfe4f2;
+      border-radius:14px;
+      background:#ffffff;
+      padding:40px 16px;
+      position:relative;
+      box-shadow:0 14px 26px rgba(15,23,42,.06);
+    }
+    .collateral-dynamic .borrowing-base-kpi .kpi-top{
+      display:flex;
+      justify-content:space-between;
+      align-items:flex-start;
+      gap:10px;
+    }
+    .collateral-dynamic .borrowing-base-kpi .kpi-label{
+        font-size: 12px;
+    font-weight: 600;
+    color: #65758B;
+    }
+    .collateral-dynamic .borrowing-base-kpi .kpi-value{
+      margin-top: 16px;
+      font-size: 24px;
+      font-weight: 700;
+      color: #101a3c;
+    }
+    .collateral-dynamic .borrowing-base-kpi .kpi-delta{
+      font-size:11px;
+      font-weight:700;
+      margin-top:6px;
+      display:flex;
+      align-items:center;
+      gap:6px;
+    }
+    .collateral-dynamic .borrowing-base-kpi .kpi-delta.up{margin-top: 20px;color:var(--teal);}
+    .collateral-dynamic .borrowing-base-kpi .kpi-delta.down{margin-top: 20px;color:#e05555;}
+    .collateral-dynamic .borrowing-base-kpi .kpi-icon{
+      width:36px;
+      height:36px;
+      border-radius:999px;
+      background:#dbeafe;
+      display:grid;
+      place-items:center;
+      flex-shrink:0;
+    }
+    .collateral-dynamic .borrowing-base-kpi .kpi-icon img{
+      width:18px;
+      height:18px;
+    }
+    .collateral-dynamic .borrowing-base-kpi .kpi-tooltip{
+      position:absolute;
+      left:16px;
+      bottom:-8px;
+      transform:translateY(100%);
+      background:#111827;
+      color:#fff;
+      padding:8px 10px;
+      border-radius:8px;
+      font-size:12px;
+      box-shadow:0 12px 24px rgba(15,23,42,.2);
+      opacity:0;
+      pointer-events:none;
+      transition:opacity .15s ease;
+      display:flex;
+      flex-direction:column;
+      gap:2px;
+      z-index:6;
+    }
+    .collateral-dynamic .borrowing-base-kpi:hover .kpi-tooltip{
+      opacity:1;
+    }
+    .collateral-dynamic .borrowing-base-chart{
+      height: 234px;
+    width: 488px;
+    padding: 43px 8px 8px;
+     position: relative;
+    background: #f8fafc;
+    }
+    .collateral-dynamic .borrowing-base-chart svg{
+      width:100%;
+      height:140px;
+      display:block;
+    }
+    .collateral-dynamic .bb-bg{
+      fill:#f8fafc;
+    }
+    .collateral-dynamic .bb-grid line{
+      stroke:#e9edf4;
+      stroke-width:1;
+    }
+    .collateral-dynamic .bb-line{
+      fill:none;
+      stroke-width:2.2;
+      stroke-linecap:round;
+      stroke-linejoin:round;
+    }
+    .collateral-dynamic .bb-axis text{
+      font-size:9px;
+      fill:#9aa6b2;
+    }
+    .collateral-dynamic .bb-dots circle{
+      stroke-linecap:round;
+      stroke-linejoin:round;
+      stroke-width:0;
+    }
+    .collateral-dynamic .borrowing-base-grid{
+      display:grid;
+      grid-template-columns:repeat(auto-fit,minmax(240px,1fr));
+      gap:16px;
+    }
+    .collateral-dynamic .borrowing-base-card{
+      border:1px solid #dfe4f2;
+      border-radius:18px;
+      padding:16px;
+      box-shadow:0 20px 30px rgba(15,23,42,.08);
+      background:linear-gradient(180deg,#ffffff,#f7fbff);
+      display:flex;
+      flex-direction:column;
+      gap:10px;
+    }
+    .collateral-dynamic .borrowing-base-card .title-row{
+      display:flex;
+      align-items:center;
+      justify-content:space-between;
+    }
+    .collateral-dynamic .borrowing-base-card .kpi-label{
+      font-size:12px;
+      color:#475569;
+      font-weight:600;
+    }
+    .collateral-dynamic .borrowing-base-card .kpi-value{
+      font-size:26px;
+      font-weight:800;
+      color:#0f172a;
+    }
+    .collateral-dynamic .borrowing-base-card .kpi-delta{
+      font-size:12px;
+      font-weight:700;
+      display:flex;
+      align-items:center;
+      gap:6px;
+    }
+    .collateral-dynamic .borrowing-base-card .kpi-delta.up{color:var(--teal);}
+    .collateral-dynamic .borrowing-base-card .kpi-delta.down{color:#e05555;}
+    .collateral-dynamic .borrowing-base-card .borrowing-base-chart{
+      border-radius:12px;
+      background:#fff;
+      border:1px solid rgba(15,23,42,.08);
+      padding:8px;
+    }
+    .collateral-dynamic .borrowing-base-card svg{
+      width:100%;
+      height:120px;
+    }
+    .collateral-dynamic .ar-section .kpi .mini{
+      border-top:1px solid rgba(226,232,248,.7);
+      padding-top:6px;
+    }
+    .collateral-dynamic .ar-section .two-col,
+    .collateral-dynamic .ar-section .three-col,
+    .collateral-dynamic .ar-section .tables-row{
+      display:grid;
+      gap:14px;
+    }
+   .collateral-dynamic .ar-section .two-col{
+  grid-template-columns: minmax(280px, 0.85fr) minmax(380px, 1.15fr);
+}
+
+    .collateral-dynamic .ar-section .tables-row{
+      grid-template-columns:repeat(auto-fit,minmax(320px,1fr));
+      margin-top:14px;
+    }
+    .collateral-dynamic .ar-section .three-col{
+      grid-template-columns:repeat(auto-fit,minmax(280px,1fr));
+    }
+    .collateral-dynamic .ar-section .subcard{
+      border:1px solid #e2e8f8;
+      border-radius:14px;
+      padding:14px;
+      background:#fff;
+    }
+    .collateral-dynamic .ar-section .ineligible-detail .two-col{
+      grid-template-columns:minmax(240px,.85fr) minmax(320px,1.15fr);
+      align-items:stretch;
+    }
+    @media (max-width: 980px){
+      .collateral-dynamic .ar-section .ineligible-detail .two-col{
+        grid-template-columns:1fr;
+      }
+    }
+    .collateral-dynamic .ar-section .subhead{
+      display:flex;
+      align-items:center;
+      justify-content:space-between;
+      margin-bottom:8px;
+      gap:12px;
+    }
+    .collateral-dynamic .ar-section .h3{
+      font-size:12px;
+      font-weight:700;
+      margin:0;
+      display:flex;
+      align-items:center;
+      gap:6px;
+      color:#0f172a;
+    }
+    .collateral-dynamic .ar-section .pct-label{
+      font-size:10px;
+      color:rgba(15,23,42,.6);
+    }
+    .collateral-dynamic .ar-section .legend{
+      font-size:10px;
+      color:rgba(15,23,42,.65);
+      display:flex;
+      gap:12px;
+    }
+    .collateral-dynamic .ar-section .swatch{
+      width:10px;
+      height:10px;
+      border-radius:3px;
+      display:inline-block;
+      margin-right:6px;
+    }
+    .collateral-dynamic .ar-section .swatch.past{background:#1b2a55;}
+    .collateral-dynamic .ar-section .swatch.current{background:var(--blue-2);}
+    .collateral-dynamic .ar-section .swatch.current{background:#6d82ff;}
+    .collateral-dynamic .ar-section table{
+      width:100%;
+      border-collapse:separate;
+      border-spacing:0;
+      font-size:11px;
+      color:#475569;
+    }
+    .collateral-dynamic .ar-section .aging-table .align-right{
+      text-align:left;
+    }
+    .collateral-dynamic .ar-section thead th{
+      text-align:left;
+      padding:6px 8px;
+      font-weight:700;
+      font-size:10px;
+      color:#6b7280;
+      background:#f7faff;
+      border-top:1px solid #e3eaf7;
+      border-bottom:1px solid #e3eaf7;
+    }
+    .collateral-dynamic .ar-section thead th:first-child{
+      border-left:1px solid #e3eaf7;
+      border-top-left-radius:8px;
+    }
+    .collateral-dynamic .ar-section thead th:last-child{
+      border-right:1px solid #e3eaf7;
+      border-top-right-radius:8px;
+    }
+    .collateral-dynamic .ar-section tbody td{
+      padding:6px 8px;
+      border-bottom:1px solid #eef2fb;
+      background:#fff;
+    }
+    .collateral-dynamic .ar-section tbody tr:last-child td{
+      border-bottom:1px solid #e3eaf7;
+    }
+    .collateral-dynamic .ar-section .table-title{
+      font-size:11px;
+      font-weight:700;
+      color:#111827;
+      margin-bottom:10px;
+    }
+    .collateral-dynamic .ar-section .align-right{text-align:right;}
+    .collateral-dynamic .ar-section .align-center{text-align:center;}
+    .collateral-dynamic .ar-section .centered-table th,
+    .collateral-dynamic .ar-section .centered-table td{
+      text-align:center;
+    }
+    .collateral-dynamic .ar-section .centered-table th:first-child,
+    .collateral-dynamic .ar-section .centered-table td:first-child{
+      text-align:left;
+    }
+    .collateral-dynamic .ar-section .comparison-blocks{
+      gap:0;
+    }
+    .collateral-dynamic .ar-section .comparison-blocks .subcard{
+      border:0;
+      border-radius:0;
+      padding:0 18px;
+    }
+    .collateral-dynamic .ar-section .comparison-blocks .subcard + .subcard{
+      border-left:1px solid #e2e8f8;
+    }
+    .collateral-dynamic .ar-section .comparison-blocks .centered-title{
+      text-align:center;
+      font-weight:700;
+      color:#1f2b5b;
+      margin-bottom:8px;
+      position:relative;
+    }
+    .collateral-dynamic .ar-section .comparison-blocks .centered-title::before,
+    .collateral-dynamic .ar-section .comparison-blocks .centered-title::after{
+      content:"";
+      display:inline-block;
+      width:64px;
+      height:1px;
+      background:#e2e8f8;
+      vertical-align:middle;
+      margin:0 10px;
+    }
+    .collateral-dynamic .ar-section .total td{
+      font-weight:800;
+    }
+    .collateral-dynamic .borrowing-base{
+      border:1px solid rgba(0,122,245,.1);
+      box-shadow:0px 1px 2px rgba(0,0,0,.05);
+      border-radius:12px;
+      padding:18px 20px 20px;
+      background:#fff;
+    }
+    .collateral-dynamic .borrowing-base .h2{
+      font-family:'Roboto',sans-serif;
+      font-weight:600;
+      font-size:24px;
+      line-height:24px;
+      letter-spacing:-0.6px;
+      color:#585858;
+      align-items:center;
+      gap:8px;
+    }
+    .collateral-dynamic .borrowing-base .kpis{
+      margin-top:16px;
+      display:flex;
+      gap:14px;
+      flex-wrap:wrap;
+    }
+    .collateral-dynamic .borrowing-base .kpi{
+      flex:1;
+      min-width:200px;
+      border:1px solid rgba(15,23,42,.08);
+      box-shadow:0px 4px 12px rgba(15,23,42,.08);
+      border-radius:12px;
+      padding:18px;
+      background:#fff;
+    }
+    .collateral-dynamic .borrowing-base .kpi .label{
+      font-size:11px;
+      color:#6b7280;
+      letter-spacing:.3px;
+      text-transform:uppercase;
+    }
+    .collateral-dynamic .borrowing-base .kpi .value{
+      font-size:26px;
+      font-weight:700;
+      margin-top:6px;
+      color:#111827;
+    }
+    .collateral-dynamic .borrowing-base .kpi .delta{
+      margin-top:10px;
+      display:flex;
+      align-items:center;
+      gap:6px;
+      font-weight:600;
+      font-size:12px;
+    }
+    .collateral-dynamic .borrowing-base .kpi .delta span{
+      display:inline-flex;
+      align-items:center;
+    }
+  </style>
+{% endblock %}
+
+{% block page_content %}
+  <div class="collateral-dynamic">
+    <div class="layout">
+      {% include "collateral_dynamic/inventory/_menu.html" with inventory_tab=inventory_tab|default:"summary" active_section=active_section %}
+      <div class="page">
+        {% if active_section == 'overview' %}
+          <div class="panel placeholder-panel">
+            <div class="panel-header">
+              <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                <path d="M3 3h18v18H3z"/>
+                <path d="M3 9h18"/>
+                <path d="M9 21V9"/>
+              </svg>
+              Overview
+            </div>            
+          </div>
+        {% elif active_section == 'accounts_receivable' %}
+          <div class="ar-section">
+            <main class="content">
+              <div class="content-inner">
+                <form class="filters" method="get">
+                  <input type="hidden" name="section" value="accounts_receivable">
+                  <label class="select">
+                    <select name="ar_range" aria-label="Date range" onchange="this.form.submit()">
+                      {% for option in ar_range_options %}
+                        <option value="{{ option.value }}" {% if option.value == ar_selected_range %}selected{% endif %}>
+                          {{ option.label }}
+                        </option>
+                      {% endfor %}
+                    </select>
+                    <span class="caret" aria-hidden="true">
+                      <svg viewBox="0 0 24 24"><path d="M6 9l6 6 6-6"></path></svg>
+                    </span>
+                  </label>
+                  <label class="select">
+                    <select name="ar_division" aria-label="Division filter" onchange="this.form.submit()">
+                      {% for option in ar_division_options %}
+                        <option value="{{ option.value }}" {% if option.value == ar_selected_division %}selected{% endif %}>
+                          {{ option.label }}
+                        </option>
+                      {% endfor %}
+                    </select>
+                    <span class="caret" aria-hidden="true">
+                      <svg viewBox="0 0 24 24"><path d="M6 9l6 6 6-6"></path></svg>
+                    </span>
+                  </label>
+                </form>
+
+                <!-- Snapshot Summary -->
+                <section class="card ineligible-detail">
+                  <div class="h2">
+                    <img src="{% static 'images/borrowing_icon.svg' %}" 
+          alt="Current Update Icon"
+          class="current-update-icon" />
+                    Snapshot Summary
+                  </div>
+                  <p class="p">
+                    AR balances expanded while payment timing weakened, pushing a larger share into past‑due categories.
+                    Rising aging, combined with concentrated exposure to key customers, increases the sensitivity of the BBC to shifts in performance and collection trends.
+                  </p>
+                </section>
+
+                <!-- Borrowing Base Insight -->
+                <section class="card">
+                  <div class="h2">
+                    <img src="{% static 'images/borrowing_icon.svg' %}" 
+          alt="Current Update Icon"
+          class="current-update-icon" />
+                    Borrowing Base Insight
+                  </div>
+
+                  <div class="borrowing-base-insight">
+                    {% for kpi in ar_borrowing_base_kpis %}
+                      <div class="borrowing-base-column">
+                        <div class="borrowing-base-kpi">
+                          <div class="kpi-top">
+                            <div>
+                              <div class="kpi-label">{{ kpi.label }}</div>
+                              <div class="kpi-value">{{ kpi.value }}</div>
+                              {% if kpi.delta %}
+                                <div class="kpi-delta {{ kpi.delta_class }}">
+                                  {{ kpi.symbol }} <span>{{ kpi.delta }}</span>
+                                </div>
+                              {% endif %}
+                            </div>
+                              <img src="{% static kpi.icon|default:'images/balance.svg' %}" alt="{{ kpi.label }} icon" />
+                            
+                          </div>
+                          <div class="kpi-tooltip" aria-hidden="true">
+                            <strong>{{ kpi.label }}</strong>
+                            <span>{{ kpi.value }}</span>
+                            {% if kpi.delta %}
+                              <span>{{ kpi.symbol }} {{ kpi.delta }}</span>
+                            {% endif %}
+                          </div>
+                        </div>
+                        <div class="borrowing-base-chart chart-wrap ar-chart">
+                          <div class="chart-tooltip" aria-hidden="true"></div>
+                          <svg viewBox="0 0 260 140" preserveAspectRatio="none" aria-label="{{ kpi.label }} trend">
+                            <rect class="bb-bg" x="0" y="0" width="260" height="140" rx="10"></rect>
+                            <g class="bb-grid">
+                              {% for tick in kpi.chart.y_ticks %}
+                                <line x1="{{ kpi.chart.grid.left }}" y1="{{ tick.y }}" x2="{{ kpi.chart.grid.right }}" y2="{{ tick.y }}"></line>
+                              {% endfor %}
+                              {% for x in kpi.chart.x_grid %}
+                                <line x1="{{ x }}" y1="{{ kpi.chart.grid.top }}" x2="{{ x }}" y2="{{ kpi.chart.grid.bottom }}"></line>
+                              {% endfor %}
+                            </g>
+                            <polyline class="bb-line" stroke="{{ kpi.color|default:'var(--blue-3)' }}" points="{{ kpi.chart.points }}"></polyline>
+                            <g class="bb-dots" stroke="{{ kpi.color|default:'var(--blue-3)' }}" fill="{{ kpi.color|default:'var(--blue-3)' }}">
+                              {% for dot in kpi.chart.dots %}
+                                <circle class="bb-dot" cx="{{ dot.cx }}" cy="{{ dot.cy }}" r="2.2"></circle>
+                                <circle class="ar-tip"
+                                  cx="{{ dot.cx }}"
+                                  cy="{{ dot.cy }}"
+                                  r="9"
+                                  fill="transparent"
+                                  data-label="{{ dot.label }}"
+                                  data-series="{{ kpi.label }}"
+                                  data-value="{{ dot.value }}"></circle>
+                              {% endfor %}
+                            </g>
+                            <g class="bb-axis">
+                              {% for tick in kpi.chart.y_ticks %}
+                                <text x="{{ kpi.chart.label_x }}" y="{{ tick.y|add:3 }}" text-anchor="end">{{ tick.label }}</text>
+                              {% endfor %}
+                              {% for label in kpi.chart.x_labels %}
+                                <text x="{{ label.x }}" y="{{ kpi.chart.label_y }}" text-anchor="middle">{{ label.text }}</text>
+                              {% endfor %}
+                            </g>
+                          </svg>
+                        </div>
+                      </div>
+                    {% empty %}
+                      <div class="borrowing-base-column">
+                        <div class="borrowing-base-kpi">
+                          <div class="kpi-top">
+                            <div>
+                              <div class="kpi-label">Balance</div>
+                              <div class="kpi-value">—</div>
+                              <div class="kpi-delta">—</div>
+                            </div>
+                              <img src="{% static 'images/balance.svg' %}" alt="Balance icon" />
+                            
+                          </div>
+                        </div>
+                        <div class="borrowing-base-chart chart-wrap">
+                          <svg viewBox="0 0 260 140" preserveAspectRatio="none" aria-label="Balance trend">
+                            <rect class="bb-bg" x="0" y="0" width="260" height="140" rx="10"></rect>
+                          </svg>
+                        </div>
+                      </div>
+                    {% endfor %}
+                  </div>
+                </section>
+
+                <!-- Aging Analysis -->
+                <section class="card">
+                  <div class="h2">
+                    <img src="{% static 'images/borrowing_icon.svg' %}" 
+          alt="Current Update Icon"
+          class="current-update-icon" />
+                    Aging Analysis
+                  </div>
+
+                  <div class="two-col">
+                    <!-- Aging Composition -->
+                    <div class="subcard ineligible-overview">
+                      <div class="subhead">
+                        <div class="h3">
+                          <img src="{% static 'images/borrowing_icon.svg' %}" 
+          alt="Current Update Icon"
+          class="current-update-icon" />
+                          Aging Composition
+                        </div>
+                        <div style="font-size:10px;color:rgba(15,23,42,.45)">%</div>
+                      </div>
+
+                      <div class="chart-wrap ar-chart">
+                        <svg viewBox="0 0 520 170" width="100%" height="170" aria-label="Aging composition bar chart">
+                          <g stroke="rgba(15,23,42,.08)" stroke-width="1">
+                            <path d="M40 140H500"/>
+                            <path d="M40 110H500"/>
+                            <path d="M40 80H500"/>
+                            <path d="M40 50H500"/>
+                          </g>
+
+                          <g fill="rgba(15,23,42,.45)" font-size="10">
+                            <text x="10" y="143">$20</text>
+                            <text x="10" y="113">$40</text>
+                            <text x="10" y="83">$60</text>
+                            <text x="10" y="53">$80</text>
+                          </g>
+
+                          <g>
+                            {% for bucket in ar_aging_chart_buckets %}
+                              <rect x="{{ bucket.x }}" y="{{ bucket.y }}" width="{{ bucket.width }}" height="{{ bucket.height }}" rx="3" fill="{{ bucket.color }}"
+                                class="ar-tip" data-label="{{ bucket.label }}" data-value="{{ bucket.percent_display }}" data-extra="{{ bucket.amount_display }}"/>
+                              <text x="{{ bucket.text_x }}" y="{{ bucket.percent_y }}" text-anchor="middle" font-size="10" fill="rgba(15,23,42,.55)">{{ bucket.percent_display }}</text>
+                              <text x="{{ bucket.text_x }}" y="{{ bucket.label_y }}" text-anchor="middle" font-size="9" fill="rgba(15,23,42,.55)">{{ bucket.label_primary }}</text>
+                              {% if bucket.label_secondary %}
+                                <text x="{{ bucket.text_x }}" y="{{ bucket.label_secondary_y }}" text-anchor="middle" font-size="9" fill="rgba(15,23,42,.55)">{{ bucket.label_secondary }}</text>
+                              {% endif %}
+                            {% empty %}
+                              <text x="260" y="96" text-anchor="middle" font-size="12" fill="rgba(15,23,42,.45)">No aging data</text>
+                            {% endfor %}
+                          </g>
+                        </svg>
+                        <div class="chart-tooltip" aria-hidden="true"></div>
+                      </div>
+                    </div>
+
+                    <!-- Current vs Past Due Trend -->
+                    <div class="subcard ineligible-trend">
+                      <div class="subhead">
+                        <div class="h3">
+                          <img src="{% static 'images/borrowing_icon.svg' %}" 
+          alt="Current Update Icon"
+          class="current-update-icon" />
+                          Current vs Past Due Trend
+                        </div>
+                        <div class="legend">
+                          <span><i class="swatch past"></i>Past Due</span>
+                          <span><i class="swatch current"></i>Current</span>
+                        </div>
+                      </div>
+
+                      <div class="chart-wrap ar-chart">
+                        <svg viewBox="0 0 520 190" width="100%" height="190" aria-label="Current vs Past Due stacked bar chart">
+                          <g stroke="rgba(15,23,42,.08)" stroke-width="1">
+                            {% for tick in ar_current_vs_past_due_trend.ticks %}
+                              <path d="M40 {{ tick.y|floatformat:1 }}H500"/>
+                            {% endfor %}
+                          </g>
+                          <g fill="rgba(15,23,42,.55)" font-size="10">
+                            {% for tick in ar_current_vs_past_due_trend.ticks %}
+                              <text x="10" y="{{ tick.y|add:'3'|floatformat:1 }}">{{ tick.label }}</text>
+                            {% endfor %}
+                          </g>
+
+                          <g>
+                            {% if ar_current_vs_past_due_trend.bars %}
+                              {% for bar in ar_current_vs_past_due_trend.bars %}
+                                <rect x="{{ bar.x }}" y="{{ bar.past_due_y }}" width="{{ bar.width }}" height="{{ bar.past_due_height }}" rx="4" fill="#1b2a55"
+                                  class="ar-tip" data-label="{{ bar.label }}" data-series="Past Due" data-value="{{ bar.past_due_value }}"/>
+                                <rect x="{{ bar.x }}" y="{{ bar.current_y }}" width="{{ bar.width }}" height="{{ bar.current_height }}" rx="4" fill="#6d82ff"
+                                  class="ar-tip" data-label="{{ bar.label }}" data-series="Current" data-value="{{ bar.current_value }}"/>
+                              {% endfor %}
+                            {% else %}
+                              <text x="260" y="120" fill="rgba(15,23,42,.45)" font-size="12" text-anchor="middle">No trend data</text>
+                            {% endif %}
+                          </g>
+
+                          <g fill="rgba(15,23,42,.55)" font-size="9">
+                            {% for label in ar_current_vs_past_due_trend.labels %}
+                              <text x="{{ label.x }}" y="176" text-anchor="middle">{{ label.text }}</text>
+                            {% endfor %}
+                          </g>
+                        </svg>
+                        <div class="chart-tooltip" aria-hidden="true"></div>
+                      </div>
+                    </div>
+                  </div>
+
+                  <div class="tables-row">
+                    <div class="subcard">
+                      <div class="table-title">Customer Aging Composition by Total Balance</div>
+                      <table class="aging-table">
+                        <thead>
+                          <tr>
+                            <th style="width:34%">Customer</th>
+                            <th>Current</th>
+                            <th>0-30</th>
+                            <th>31-60</th>
+                            <th>61-90</th>
+                            <th>91+</th>
+                            <th>Total</th>
+                          </tr>
+                        </thead>
+                        <tbody>
+                          {% for row in ar_customer_aging_total_rows %}
+                            <tr>
+                              <td>{{ row.customer }}</td>
+                              {% for value in row.values %}
+                                <td class="align-right">{{ value }}</td>
+                              {% endfor %}
+                              <td class="align-right">{{ row.total }}</td>
+                            </tr>
+                          {% empty %}
+                            <tr>
+                              <td colspan="7" class="align-center">No aging composition data</td>
+                            </tr>
+                          {% endfor %}
+                        </tbody>
+                      </table>
+                    </div>
+
+                    <div class="subcard">
+                      <div class="table-title">Customer Aging Composition by Past Due Balance</div>
+                      <table class="aging-table">
+                        <thead>
+                          <tr>
+                            <th style="width:34%">Customer</th>
+                            <th>Current</th>
+                            <th>0-30</th>
+                            <th>31-60</th>
+                            <th>61-90</th>
+                            <th>91+</th>
+                            <th>Total</th>
+                          </tr>
+                        </thead>
+                        <tbody>
+                          {% for row in ar_customer_aging_past_due_rows %}
+                            <tr>
+                              <td>{{ row.customer }}</td>
+                              {% for value in row.values %}
+                                <td class="align-right">{{ value }}</td>
+                              {% endfor %}
+                              <td class="align-right">{{ row.total }}</td>
+                            </tr>
+                          {% empty %}
+                            <tr>
+                              <td colspan="7" class="align-center">No aging composition data</td>
+                            </tr>
+                          {% endfor %}
+                        </tbody>
+                      </table>
+                    </div>
+                  </div>
+                </section>
+
+                <!-- Ineligible Detail -->
+                <section class="card">
+                  <div class="h2">
+                    <img src="{% static 'images/borrowing_icon.svg' %}" 
+          alt="Current Update Icon"
+          class="current-update-icon" />
+                    Ineligible Detail
+                  </div>
+
+                  <div class="two-col">
+                    <div class="subcard">
+                      <div class="h3" style="margin-bottom:8px">
+                        <img src="{% static 'images/borrowing_icon.svg' %}" 
+          alt="Current Update Icon"
+          class="current-update-icon" />
+                        Ineligible Overview
+                      </div>
+
+                      <table>
+                        <thead>
+                          <tr>
+                            <th>Ineligibles</th>
+                            <th style="text-align:center">Amount</th>
+                            <th style="text-align:center">% Of Total</th>
+                          </tr>
+                        </thead>
+                        <tbody>
+                          {% for row in ar_ineligible_overview_rows %}
+                            <tr>
+                              <td>{{ row.label }}</td>
+                              <td class="align-center">{{ row.amount }}</td>
+                              <td class="align-center">{{ row.pct }}</td>
+                            </tr>
+                          {% empty %}
+                            <tr>
+                              <td colspan="3" class="align-center">No ineligible overview data</td>
+                            </tr>
+                          {% endfor %}
+                          {% if ar_ineligible_overview_total %}
+                            <tr class="total">
+                              <td>{{ ar_ineligible_overview_total.label }}</td>
+                              <td class="align-center">{{ ar_ineligible_overview_total.amount }}</td>
+                              <td class="align-center">{{ ar_ineligible_overview_total.pct }}</td>
+                            </tr>
+                          {% endif %}
+                        </tbody>
+                      </table>
+                    </div>
+
+                    <div class="subcard">
+                      <div class="subhead">
+                        <div class="h3">
+                          <img src="{% static 'images/borrowing_icon.svg' %}" 
+          alt="Current Update Icon"
+          class="current-update-icon" />
+                          Ineligible Accounts Receivable Trend
+                        </div>
+                      </div>
+
+                      <div class="chart-wrap ar-chart">
+                        <svg viewBox="0 0 520 260" width="100%" height="290" aria-label="Ineligible AR trend line chart">
+                          <text x="-10" y="100" transform="rotate(-90 0 200)" fill="rgba(15,23,42,.55)" font-size="12">
+                            % of Accounts Receivable
+                          </text>
+                          <g stroke="rgba(15,23,42,.08)" stroke-width="1">
+                            <path d="M60 220H500"/>
+                            <path d="M60 175H500"/>
+                            <path d="M60 130H500"/>
+                            <path d="M60 85H500"/>
+                            <path d="M60 40H500"/>
+                          </g>
+
+                          <g fill="rgba(15,23,42,.45)" font-size="10">
+                            <text x="28" y="224">10%</text>
+                            <text x="28" y="179">30%</text>
+                            <text x="28" y="134">50%</text>
+                            <text x="28" y="89">70%</text>
+                            <text x="28" y="44">90%</text>
+                          </g>
+
+                          {% if ar_ineligible_trend.points %}
+                            <polyline fill="none" stroke="var(--blue-3)" stroke-width="2.5"
+                              points="{{ ar_ineligible_trend.points }}"/>
+                            <g fill="#fff" stroke="var(--blue-3)" stroke-width="2">
+                              {% for dot in ar_ineligible_trend.dots %}
+                                <circle cx="{{ dot.cx }}" cy="{{ dot.cy }}" r="3.2"
+                                  class="ar-tip" data-label="{{ dot.label }}" data-value="{{ dot.value }}"/>
+                              {% endfor %}
+                            </g>
+                            <g fill="rgba(15,23,42,.45)" font-size="9">
+                              {% for label in ar_ineligible_trend.labels %}
+                                <text x="{{ label.x }}" y="234" text-anchor="start">
+                                  <tspan x="{{ label.x }}" dy="0">{{ label.month }}</tspan>
+                                  {% if label.year %}
+                                    <tspan x="{{ label.x }}" dy="12">{{ label.year }}</tspan>
+                                  {% endif %}
+                                </text>
+                              {% endfor %}
+                            </g>
+                          {% else %}
+                            <text x="260" y="110" text-anchor="middle" fill="rgba(15,23,42,.45)" font-size="12">
+                              No ineligible trend data
+                            </text>
+                          {% endif %}
+                        </svg>
+                        <div class="chart-tooltip" aria-hidden="true"></div>
+                      </div>
+
+                    </div>
+                  </div>
+                </section>
+
+                <!-- Customer Exposure & Collection Trend -->
+                <section class="card">
+                  <div class="h2">
+                    <img src="{% static 'images/borrowing_icon.svg' %}" 
+          alt="Current Update Icon"
+          class="current-update-icon" />
+                    Customer Exposure &amp; Collection Trend
+                  </div>
+
+                  <div class="three-col comparison-blocks">
+                    <div class="subcard">
+                      <div class="table-title centered-title">Concentration</div>
+                      <table class="centered-table">
+                        <thead>
+                          <tr>
+                            <th>Customer</th>
+                            <th style="text-align:center">Current</th>
+                            <th style="text-align:center">Average TTM</th>
+                            <th style="text-align:center">Variance (PP)</th>
+                          </tr>
+                        </thead>
+                        <tbody>
+                          {% for row in ar_concentration_rows %}
+                            <tr>
+                              <td>{{ row.customer }}</td>
+                              <td class="align-center">{{ row.current }}</td>
+                              <td class="align-center">{{ row.average }}</td>
+                              <td class="align-center">{{ row.variance }}</td>
+                            </tr>
+                          {% empty %}
+                            <tr>
+                              <td colspan="4" class="align-center">No concentration data</td>
+                            </tr>
+                          {% endfor %}
+                        </tbody>
+                      </table>
+                    </div>
+
+                    <div class="subcard">
+                      <div class="table-title centered-title">Average Days Outstanding</div>
+                      <table class="centered-table">
+                        <thead>
+                          <tr>
+                            <th style="text-align:center">Customer</th>
+                            <th style="text-align:center">Current</th>
+                            <th style="text-align:center">Average TTM</th>
+                            <th style="text-align:center">Variance (Days)</th>
+                          </tr>
+                        </thead>
+                        <tbody>
+                          {% for row in ar_ado_rows %}
+                            <tr>
+                              <td class="align-center">{{ row.customer }}</td>
+                              <td class="align-center">{{ row.current }}</td>
+                              <td class="align-center">{{ row.average }}</td>
+                              <td class="align-center">{{ row.variance }}</td>
+                            </tr>
+                          {% empty %}
+                            <tr>
+                              <td colspan="4" class="align-center">No ADO data</td>
+                            </tr>
+                          {% endfor %}
+                        </tbody>
+                      </table>
+                    </div>
+
+                    <div class="subcard">
+                      <div class="table-title centered-title">Days Sales Outstanding</div>
+                      <table class="centered-table">
+                        <thead>
+                          <tr>
+                            <th style="text-align:center">Customer</th>
+                            <th style="text-align:center">Current</th>
+                            <th style="text-align:center">Average TTM</th>
+                            <th style="text-align:center">Variance (Days)</th>
+                          </tr>
+                        </thead>
+                        <tbody>
+                          {% for row in ar_dso_rows %}
+                            <tr>
+                              <td class="align-center">{{ row.customer }}</td>
+                              <td class="align-center">{{ row.current }}</td>
+                              <td class="align-center">{{ row.average }}</td>
+                              <td class="align-center">{{ row.variance }}</td>
+                            </tr>
+                          {% empty %}
+                            <tr>
+                              <td colspan="4" class="align-center">No DSO data</td>
+                            </tr>
+                          {% endfor %}
+                        </tbody>
+                      </table>
+                    </div>
+                  </div>
+                </section>
+
+              </div>
+            </main>
+          </div>
+        {% else %}
+          {% if inventory_tab == 'finished_goods' %}
+            {% include "collateral_dynamic/inventory/finished_goals.html" %}
+          {% elif inventory_tab == 'raw_materials' %}
+            {% include "collateral_dynamic/inventory/raw_materials.html" %}
+          {% elif inventory_tab == 'work_in_progress' %}
+            {% include "collateral_dynamic/inventory/work_in_progress.html" %}
+          {% elif inventory_tab == 'liquidation_model' %}
+            {% include "collateral_dynamic/inventory/liquidation_model.html" %}
+          {% elif inventory_tab == 'other_collateral' %}
+            {% include "collateral_dynamic/inventory/other_collateral.html" %}
+          {% else %}
+            {% include "collateral_dynamic/inventory/summary.html" %}
+          {% endif %}
+        {% endif %}
+      </div>
+    </div>
+  </div>
+
+  <script>
+    (function(){
+      function positionTooltip(wrap, event){
+        const rect = wrap.getBoundingClientRect();
+        const x = event.clientX - rect.left;
+        const y = event.clientY - rect.top;
+        return {x,y};
+      }
+      function attachArTooltips(){
+        document.querySelectorAll(".ar-chart").forEach(chart=>{
+          const tooltip = chart.querySelector(".chart-tooltip");
+          if(!tooltip) return;
+          const targets = chart.querySelectorAll(".ar-tip");
+          const show = (event)=>{
+            const target = event.currentTarget;
+            const label = (target.dataset.label||"").replace(/\n/g," ");
+            const series = target.dataset.series||"";
+            const value = target.dataset.value||"";
+            const extra = target.dataset.extra||"";
+            const title = series ? `${label} • ${series}` : label;
+            tooltip.innerHTML = `<strong>${value}</strong><span>${title}</span>${extra ? `<span>${extra}</span>` : ""}`;
+            const {x,y} = positionTooltip(chart, event);
+            tooltip.style.left = `${Math.max(12, Math.min(chart.clientWidth-12, x))}px`;
+            tooltip.style.top = `${Math.max(18, Math.min(chart.clientHeight-12, y-12))}px`;
+            tooltip.classList.add("is-visible");
+          };
+          const hide = ()=>tooltip.classList.remove("is-visible");
+          targets.forEach(target=>{
+            target.style.cursor = "pointer";
+            target.addEventListener("mousemove", show);
+            target.addEventListener("mouseenter", show);
+            target.addEventListener("mouseleave", hide);
+            target.addEventListener("blur", hide);
+          });
+        });
+      }
+      if(document.readyState === "loading"){
+        document.addEventListener("DOMContentLoaded", ()=>{
+          attachArTooltips();
+        });
+      } else {
+        attachArTooltips();
+      }
+    })();
+  </script>
+{% endblock %}

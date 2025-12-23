@@ -1,0 +1,258 @@
+{% extends "layout/app_base.html" %}
+{% load static %}
+{% block title %}Reports{% endblock %}
+
+{% block extra_head %}
+  {{ block.super }}
+  <style>
+    .reports-shell{
+      display:flex;
+      gap:18px;
+    }
+    .reports-menu{
+      width:300px;
+      background:#fff;
+      border:1px solid #e4e9f2;
+      border-radius:12px;
+      padding:16px;
+      box-shadow:0 8px 18px rgba(15,23,42,.06);
+      height:max-content;
+    }
+    .reports-menu__title{
+      font-size:12px;
+      font-weight:600;
+      letter-spacing:.02em;
+      color:#64748b;
+      margin:4px 0 10px;
+      text-transform:uppercase;
+    }
+    .reports-menu__item{
+      display:flex;
+      align-items:center;
+      gap:10px;
+      padding:10px 12px;
+      border-radius:12px;
+      color:#70717b;
+      text-decoration:none;
+      font-size:13px;
+      font-weight:500;
+    }
+    .reports-menu__item:not(.active):hover{background:#f4f7ff}
+    .reports-menu__item.active{
+      background:#1d4089;
+      color:#fff;
+      font-weight:600;
+      box-shadow:0 6px 14px rgba(29,64,137,.22);
+    }
+    .reports-menu__icon{
+      width:26px;
+      height:26px;
+      border-radius:8px;
+      /* background:#eef2ff; */
+      color:#1d4ed8;
+      display:grid;
+      place-items:center;
+    }
+    .reports-menu__icon img{
+      display:block;
+      /* tint inactive icons to #70717b (matches secondary text) */
+      filter:brightness(0) saturate(100%) invert(43%) sepia(6%) saturate(520%) hue-rotate(201deg) brightness(90%) contrast(88%);
+      transition:filter .2s ease;
+    }
+    .reports-menu__item.active .reports-menu__icon{
+      /* background:rgba(255,255,255,.18); */
+      color:#fff;
+    }
+    .reports-menu__item.active .reports-menu__icon img{
+      filter:brightness(0) invert(1);
+    }
+    .reports-card{
+      flex:1;
+      background:#fff;
+      border:1px solid #e4e9f2;
+      border-radius:12px;
+      padding:20px;
+      box-shadow:0 14px 34px rgba(15,23,42,.08);
+    }
+    .reports-card__header{
+      display:flex;
+      align-items:flex-start;
+      justify-content:space-between;
+      background-color: #FAFAFA;
+      gap:12px;
+      margin-bottom:10px;
+      padding-left:10px;
+      padding-right:10px;
+      padding-top:8px;
+      padding-bottom:8px
+    }
+    .reports-card__title{
+      font-size:13px;
+      font-weight:700;
+      color:#65758B;
+      margin:0 0 4px;
+    }
+    .reports-card__description{
+      margin:0;
+      color:#64748b;
+      font-size:12px;
+    }
+    .reports-list .report-row{
+      display:flex;
+      align-items:center;
+      justify-content:space-between;
+      padding:14px 0;
+      border-top:1px solid #eef1f7;
+      font-size:13px;
+    }
+    .reports-list .report-row:first-of-type{border-top:none}
+    .report-name{
+      display:flex;
+      align-items:center;
+      gap:8px;
+      color:#0f172a;
+      font-weight:500;
+    }
+    .report-name .dot{
+      width:8px;height:8px;
+      border-radius:50%;
+      background:#007AF5;
+    }
+    .report-date{
+      font-size:11px;
+      color:#94a3b8;
+      margin-left:6px;
+      text-transform:none;
+    }
+    .download-btn{
+      border:none;
+      border-radius:999px;
+      background:#2563eb;
+      color:#fff;
+      font-size:12px;
+      padding:6px 16px;
+      cursor:pointer;
+      box-shadow:0 6px 14px rgba(37,99,235,.3);
+    }
+    .download-btn:hover{background:#1d4ed8}
+    .download-btn--solid{
+      background:#007AF5;
+      border-radius:4px;
+      padding:6px 14px;
+      box-shadow:none;
+      font-weight:600;
+      text-decoration:none;
+      display:inline-flex;
+      align-items:center;
+      justify-content:center;
+    }
+    .download-btn--solid:hover{background:#1e5be0}
+    .forecast-table{
+      width:100%;
+      border-collapse:separate;
+      border-spacing:0;
+      margin-top:6px;
+      font-size:13px;
+      color:#0f172a;
+      overflow:hidden;
+      border-radius:12px;
+      border:1px solid #e5e7eb;
+    }
+    .forecast-table th,
+    .forecast-table td{
+      padding:12px;
+      text-align:left;
+      border-bottom:1px solid #eef1f7;
+    }
+    .forecast-table th{
+      background:#f7f9ff;
+      font-weight:600;
+      font-size:12px;
+      color:#475569;
+    }
+    .forecast-table tr:last-child td{border-bottom:none}
+    @media (max-width:900px){
+      .reports-shell{flex-direction:column;}
+      .reports-menu{width:100%;}
+    }
+  </style>
+{% endblock %}
+
+{% block page_content %}
+  <div class="reports-shell">
+    <aside class="reports-menu" aria-label="Reports">
+      <!-- <div class="reports-menu__title">Reports</div> -->
+      {% for item in report_menu %}
+        <a class="reports-menu__item {% if item.key == active_report %}active{% endif %}" style="font-size: 14px; font-weight: 400; padding-left: 18px; padding-right: 18px; border-radius: 4px;" href="{% url 'reports' %}?report={{ item.key }}">
+          <span class="reports-menu__icon" aria-hidden="true">
+            {% if item.icon == "document" %}
+              <img src="{% static 'images/reporticon1.svg' %}" alt="Snapshot Icon" class="snapshot-icon" />
+            {% elif item.icon == "chart" %}
+              <img src="{% static 'images/reporticon2.svg' %}" alt="Snapshot Icon" class="snapshot-icon" />
+            {% else %}
+             <img src="{% static 'images/reporticon3.svg' %}" alt="Snapshot Icon" class="snapshot-icon" />
+            {% endif %}
+          </span>
+          {{ item.label }}
+        </a>
+      {% endfor %}
+    </aside>
+
+    <section class="reports-card">
+      <header class="reports-card__header">
+        <div>
+          <p class="reports-card__title">{{ report_section.title }}</p>
+          <p class="reports-card__description">{{ report_section.description }}</p>
+        </div>
+      </header>
+
+      {% if report_section.rows %}
+        <div class="reports-list" role="list">
+          {% for row in report_section.rows %}
+              <div class="report-row" role="listitem">
+                <div class="report-name">
+                  {% if row.highlight %}
+                    <span class="dot" aria-hidden="true"></span>
+                  {% endif %}
+                  <div style="font-size: 14px; font-weight: 500; color: #344256;">
+                    {{ row.name }}
+                    <!-- {% if row.report_date %}
+                      <span class="report-date">{{ row.report_date|date:"M d, Y" }}</span>
+                    {% endif %} -->
+                  </div>
+                </div>
+                {% if row.download_url %}
+                  <a class="download-btn download-btn--solid" href="{{ row.download_url }}">Download</a>
+                {% else %}
+                  <button class="download-btn download-btn--solid" type="button" disabled>Download</button>
+                {% endif %}
+              </div>
+          {% endfor %}
+        </div>
+      {% elif report_section.forecast %}
+        <table class="forecast-table">
+          <thead>
+            <tr>
+              <th>Period</th>
+              <th>Projected Inflow</th>
+              <th>Projected Outflow</th>
+              <th>Net Change</th>
+            </tr>
+          </thead>
+          <tbody>
+            {% for row in report_section.forecast %}
+              <tr>
+                <td>{{ row.period }}</td>
+                <td>{{ row.inflow }}</td>
+                <td>{{ row.outflow }}</td>
+                <td>{{ row.net }}</td>
+              </tr>
+            {% endfor %}
+          </tbody>
+        </table>
+      {% else %}
+        <p>No data available for this report.</p>
+      {% endif %}
+    </section>
+  </div>
+{% endblock %}
