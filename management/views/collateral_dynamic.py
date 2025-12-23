@@ -723,7 +723,10 @@ def _week_summary_context(borrower):
         if pct is None:
             pct = Decimal("0")
         delta_class = "up" if pct > 0 else "down" if pct < 0 else ""
-        return f"{pct:+.2f}%", delta_class
+        symbol = "▲" if pct > 0 else "▼" if pct < 0 else ""
+        value = f"{abs(pct):.2f}%"
+        text = f"{symbol} {value}" if symbol else value
+        return text, delta_class
 
     def _sum_present(values):
         total = Decimal("0")
