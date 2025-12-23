@@ -1351,6 +1351,26 @@ def _format_signed_pct(value):
     return f"{sign}{pct:.1f}%"
 
 
+def _format_compact_currency(value):
+    if value is None:
+        return "—"
+    val = _to_decimal(value)
+    sign = "-" if val < 0 else ""
+    abs_val = abs(val)
+
+    def _trim(value):
+        text = f"{value:.1f}"
+        return text.rstrip("0").rstrip(".")
+
+    if abs_val >= Decimal("1000000000"):
+        return f"{sign}${_trim(abs_val / Decimal('1000000000'))}B"
+    if abs_val >= Decimal("1000000"):
+        return f"{sign}${_trim(abs_val / Decimal('1000000'))}M"
+    if abs_val >= Decimal("1000"):
+        return f"{sign}${_trim(abs_val / Decimal('1000'))}k"
+    return _format_currency(val)
+
+
 def _inventory_context(borrower):
     empty_mix = [
         {"label": item["label"], "percentage_display": "0%", "bar_class": item["bar_class"]}
@@ -1399,7 +1419,7 @@ def _inventory_context(borrower):
     inventory_rows = state["inventory_rows"]
     category_metrics = state["category_metrics"]
 
-    inventory_available_display = _format_currency(inventory_available_total)
+    inventory_available_display = _format_compact_currency(inventory_available_total)
     ineligible_display = _format_currency(inventory_ineligible)
     snapshot_text = (
         f"Inventory levels increased this period, primarily in finished goods, while turns softened due to slower sales velocity. Excess and obsolete inventory ticked up, raising the risk profile and influencing NOLV recovery expectations. Raw materials and WIP remained steady with no significant swings"
@@ -1608,6 +1628,7 @@ def _inventory_context(borrower):
     x_labels = []
     x_grid = []
     columns = []
+    bar_gap = 4.0
     for idx, label in enumerate(series_labels):
         x_center = left + idx * step_x
         x = x_center - bar_width / 2
@@ -1615,11 +1636,24 @@ def _inventory_context(borrower):
         x_labels.append({"x": round(x_center, 1), "month": month_label, "year": year_label})
         x_grid.append(round(x_center, 1))
 
-        stacked_height = 0.0
-        column_bars = []
+        heights = []
+        values = []
         for category in CATEGORY_CONFIG:
             value = series_values[category["key"]][idx] if series_values[category["key"]] else Decimal("0")
             height = float(_to_decimal(value) / axis_max) * plot_height
+            heights.append(height)
+            values.append(value)
+
+        nonzero_indices = [i for i, height in enumerate(heights) if height > 0]
+        total_height = sum(heights)
+        gap_count = max(len(nonzero_indices) - 1, 0)
+        gap = min(bar_gap, total_height / (gap_count + 1)) if gap_count and total_height > 0 else 0.0
+        scale = ((total_height - (gap * gap_count)) / total_height) if total_height > 0 else 0.0
+
+        stacked_height = 0.0
+        column_bars = []
+        for index, category in enumerate(CATEGORY_CONFIG):
+            height = heights[index] * scale
             y = baseline_y - stacked_height - height
             column_bars.append(
                 {
@@ -1629,11 +1663,13 @@ def _inventory_context(borrower):
                     "width": bar_width,
                     "color": category["color"],
                     "series_label": category["label"],
-                    "value_display": _format_currency(value),
+                    "value_display": _format_currency(values[index]),
                     "month_label": label,
                 }
             )
             stacked_height += height
+            if index in nonzero_indices and index != nonzero_indices[-1]:
+                stacked_height += gap
         columns.append({"month_label": label, "bars": column_bars})
 
     inventory_mix_trend_chart = {
