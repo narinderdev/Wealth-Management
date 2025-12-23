@@ -27,8 +27,8 @@
     }
 
     .risk-page .snapshot-icon{
-      width:14px;
-      height:14px;
+      width:18px;
+      height:18px;
       display:block;
     }
 
@@ -37,10 +37,10 @@
       align-items:center;
       gap:8px;
       padding:12px 14px;
-      font-size:14px;
-      font-weight:700;
-      color:#111827;
-      border-bottom:1px solid var(--rk-line);
+      font-size:20px;
+      font-weight:600;
+      color:#585858;
+      /* border-bottom:1px solid var(--rk-line); */
       background:#fff;
     }
 
@@ -52,17 +52,17 @@
        Current Primary Risk Rating bar
     =============================== */
     .risk-page .rating-wrap{
-      padding:12px 14px 24px;
+      padding:12px 14px 60px ;
     }
     .risk-page .rating-scale{
       display:flex;
       justify-content:space-between;
-      font-size:12px;
-      color:#111827;
-      font-weight:700;
+      font-size:20px;
+      color:#585858;
+      font-weight:600;
       letter-spacing:.01em;
       margin-bottom:8px;
-      padding:0 4px;
+      padding:0 16px;
     }
     .risk-page .rating-bar{
       position:relative;
@@ -86,7 +86,7 @@
       height:16px;
       border-radius:50%;
       background:#fff;
-      border:2px solid #1366d6;
+      border:2px solid #d67113;
       box-shadow:0 4px 8px rgba(15,23,42,.18);
       left:var(--risk-pos,50%);
     }
@@ -96,8 +96,8 @@
       left:var(--risk-pos,50%);
       transform:translate(-50%,0);
       font-size:15px;
-      color:#0f172a;
-      font-weight:800;
+      color:#344256;
+      font-weight:700;
       z-index:1;
       white-space:nowrap;
     }
@@ -106,8 +106,8 @@
        Snapshot Summary (top card)
     =============================== */
     .risk-page .snapshot-text{
-      font-size:12px;
-      color:#6b7280;
+      font-size:16px;
+      color:#737791;
       line-height:1.5;
       margin:0;
     }
@@ -140,9 +140,9 @@
       display:flex;
       align-items:center;
       gap:8px;
-      font-size:12px;
-      font-weight:700;
-      color:#111827;
+      font-size:16px;
+      font-weight:600;
+      color:#404040;
       margin-bottom:10px;
     }
 
@@ -167,8 +167,8 @@
 
     .risk-page .score-donut text{
       font-size:8px;
-      fill:#111827;
-      font-weight:800;
+      fill:#404040;
+      font-weight:700;
     }
 
     .risk-page .pill-list{
@@ -188,7 +188,7 @@
       border:1px solid #dbe7f6;
       text-transform:capitalize;
     }
-    .risk-page .pill2.blue{ background:#0b57d0; color:#fff; border-color:#0b57d0; }
+    .risk-page .pill2.blue{ background:#116BFD; color:#fff; border-color:#116BFD; }
     .risk-page .pill2.navy{ background:#083a8a; color:#fff; border-color:#083a8a; }
     .risk-page .pill2.lt{ background:#cfe4f7; color:#0f172a; }
     .risk-page .pill2.wt{ background:#f8fbff; color:#0f172a; }
@@ -200,7 +200,7 @@
 
     .risk-page .chart{
       width:100%;
-      height:170px;
+      height:250px;
       border-top:1px solid #eef4fb;
       padding-top:10px;
     }
@@ -317,9 +317,9 @@
     }
 
     .risk-page .metric-title{
-      font-size:13px;
+      font-size:22px;
       font-weight:700;
-      color:#111827;
+      color:#404040;
     }
 
     .risk-page .metric-body{
@@ -346,7 +346,7 @@
       display:flex;
       justify-content:space-between;
       gap:18px;
-      font-size:10px;
+      font-size:12px;
       font-weight:700;
       color:#6b7280;
     }
@@ -360,7 +360,7 @@
     }
 
     .risk-page .barrow .lbl{
-      font-size:10px;
+      font-size:12px;
       color:#475467;
       overflow:hidden;
       text-overflow:ellipsis;
@@ -369,10 +369,10 @@
 
     .risk-page .track{
       height:7px;
-      background:#eaf0fb;
+      /* background:#eaf0fb; */
       border-radius:999px;
       overflow:hidden;
-      border:1px solid #dbe4f4;
+      /* border:1px solid #dbe4f4; */
     }
 
     .risk-page .fill{
@@ -435,7 +435,7 @@
       <img src="{% static 'images/borrowing_icon.svg' %}" alt="Snapshot Icon" class="snapshot-icon" />
       Snapshot Summary
     </div>
-    <div class="panel-body">
+    <div class="panel-body" style="padding-left: 40px; padding-bottom:22px">
       <p class="snapshot-text">{{ risk.snapshot }}</p>
     </div>
   </section>
@@ -450,12 +450,12 @@
         Composite Risk Index
       </div>
 
-      <div class="panel-body">
+      <div class="panel-body" style="padding-left: 25px; padding-right: 25px;">
         <div class="composite-inner">
 
           <!-- Risk Index Score -->
           <div class="subcard score-card">
-            <div class="subcard-title">Risk Index Score</div>
+            <div class="subcard-title" style="font-size: 16px; font-weight: 600; color: #404040;">Risk Index Score</div>
 
             <div class="score-donut">
               <svg viewBox="0 0 42 42" aria-label="Composite risk donut">
@@ -470,7 +470,7 @@
             <div class="pill-list">
               {% for pill in risk.pills %}
                 <div class="pill2 {{ pill.class }}">
-                  {{ pill.value }} {{ pill.label }}
+                 <p style="font-size: 16px; font-weight: 600 ; margin-right: 8px;">{{ pill.value }}</p>  <p style="font-weight: 400;">{{ pill.label }}</p>
                 </div>
               {% endfor %}
             </div>
@@ -489,7 +489,7 @@
                 <line x1="10" y1="55" x2="290" y2="55" stroke="#eef4fb" />
                 <line x1="10" y1="90" x2="290" y2="90" stroke="#eef4fb" />
 
-                <polyline fill="none" stroke="#0b57d0" stroke-width="3" stroke-linecap="round" stroke-linejoin="round"
+                <polyline fill="none" stroke="#0b57d0" stroke-width="1" stroke-linecap="round" stroke-linejoin="round"
                           points="{{ risk.trend_points }}" />
 
                 <g fill="#0b57d0">
@@ -527,21 +527,21 @@
 
       <div class="panel-body impact-table">
         <table aria-label="High impact factors">
-          <thead>
+          <thead style="background-color: #f9fcff; font-size: 14px !important;">
             <tr>
-              <th>Risk</th>
-              <th>Current Risk</th>
-              <th>Prior Risk</th>
-              <th>Change</th>
+              <th style="font-size: 14px">Risk</th>
+              <th style="font-size: 14px">Current Risk</th>
+              <th style="font-size: 14px">Prior Risk</th>
+              <th style="font-size: 14px">Change</th>
             </tr>
           </thead>
-          <tbody>
+          <tbody style="font-size: 14px ; color: #344256;">
             {% for factor in risk.high_impact %}
               <tr>
-                <td>{{ factor.risk }}</td>
-                <td>{{ factor.current }}</td>
-                <td>{{ factor.prior }}</td>
-                <td>
+                <td >{{ factor.risk }}</td>
+                <td style="color: #65758B;">{{ factor.current }}</td>
+                <td style="color: #65758B;">{{ factor.prior }}</td>
+                <td style="color: #65758B;">
                   <span class="chg2 {% if factor.direction %}{{ factor.direction }}{% endif %}">
                     {% if factor.direction == "up" %}↑{% elif factor.direction == "down" %}↓{% endif %}
                     {{ factor.change }}
