@@ -344,6 +344,34 @@ def _week_summary_context(borrower):
             return value.strftime("%b %d")
         return "Week"
 
+    def _format_liquidity_label(value, year_offset=0):
+        if isinstance(value, str):
+            return value
+        if hasattr(value, "strftime"):
+            if year_offset:
+                try:
+                    value = value.replace(year=value.year + year_offset)
+                except ValueError:
+                    value = value.replace(year=value.year + year_offset, day=28)
+            return value.strftime("%b %Y")
+        return "Week"
+
+    def _liquidity_year_offset(values, base_date):
+        if not base_date:
+            return 0
+        first_date = next(
+            (val for val in values if hasattr(val, "year") and hasattr(val, "month")),
+            None,
+        )
+        if not first_date:
+            return 0
+        diff_months = (first_date.year - base_date.year) * 12 + (first_date.month - base_date.month)
+        if diff_months > 6:
+            return -1
+        if diff_months < -6:
+            return 1
+        return 0
+
     def _trim_axis_value(value):
         text = f"{value:.1f}"
         return text.rstrip("0").rstrip(".")
@@ -1121,13 +1149,16 @@ def _week_summary_context(borrower):
     trend_rows = ordered_forecast_rows[-len(TREND_X_POSITIONS) :]
     if not trend_rows:
         trend_rows = ordered_forecast_rows[-1:] if ordered_forecast_rows else sorted_forecast_rows[-1:]
-    period_labels = [
-        _format_chart_label(
-            getattr(row, "period", None)
-            or getattr(row, "as_of_date", None)
-            or getattr(getattr(row, "report", None), "report_date", None)
-        )
+    period_values = [
+        getattr(row, "period", None)
+        or getattr(row, "as_of_date", None)
+        or getattr(getattr(row, "report", None), "report_date", None)
         for row in trend_rows
+    ]
+    liquidity_year_offset = _liquidity_year_offset(period_values, report_date)
+    period_labels = [
+        _format_liquidity_label(value, liquidity_year_offset)
+        for value in period_values
     ]
     series_values = []
     for field, label, color in liquidity_fields:

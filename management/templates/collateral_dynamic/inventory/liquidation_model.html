@@ -21,13 +21,117 @@
     margin:0 auto;
     padding:0 14px 34px;
   }
+
+
+
+/* TABLE */
+.no-bg{
+  background-color: transparent!important;
+}
+.table-wrap {
+  border: transparent!important;
+  overflow-x: auto;
+}
+
+table {
+  width: 100%;
+  border-collapse: separate;
+  border-spacing: 0;
+  font-size: 14px;
+  color: var(--text-light);
+}
+
+/* GROUP HEADER */
+thead tr.group th {
+  background: transparent;
+  text-align: center;
+  font-weight: 600;
+  color: var(--text-dark);
+  padding: 10px 8px;
+  border-bottom: 1px solid var(--border);
+}
+
+thead tr.group th:first-child {
+  text-align: left;
+}
+
+/* COLUMN HEADER */
+thead tr.columns th {
+  background: var(--header-bg);
+  font-weight: 600;
+  color: var(--text-dark);
+  padding: 12px 10px;
+  border-bottom: 1px solid var(--border);
+}
+
+thead tr.columns th:first-child {
+  border-top-left-radius: 8px;
+}
+
+thead tr.columns th:last-child {
+  border-top-right-radius: 8px;
+}
+
+/* BODY */
+tbody tr {
+  transition: background 0.2s ease;
+}
+
+tbody tr:hover {
+  background: var(--row-hover);
+}
+
+tbody td {
+  padding: 12px 10px;
+  border-bottom: 1px solid #f1f4f9;
+}
+
+tbody td:first-child {
+  color: var(--text-dark);
+  font-weight: 500;
+}
+
+/* ALIGNMENTS */
+.left { text-align: left; }
+.center { text-align: center; }
+.right { text-align: right; }
+
+/* TOTAL ROW */
+.total {
+  font-weight: 800;
+  background-color: #FAFAFA;
+  color: var(--text-dark);
+}
+.table-wrap .columns{
+    background-color: #FAFAFA;
+}
+
+/* RESPONSIVE */
+@media (max-width: 900px) {
+  table {
+    min-width: 900px;
+  }
+}
+
+
+
+.n-title{
+  color: #585858;
+
+font-family: Roboto;
+font-size: 24px;
+font-style: normal;
+font-weight: 600;
+line-height: 24px; /* 100% */
+letter-spacing: -0.6px;
+}
   .liquidation-model .card{
     background:var(--card);
     border:1px solid var(--line);
     border-radius:var(--radius);
-    box-shadow:var(--shadow);
+ 
   }
-  .liquidation-model .section{ padding:16px 18px; }
+  /* .liquidation-model .section{ padding:16px 18px; } */
   .liquidation-model .mb{ margin-bottom:14px; }
   .liquidation-model .title{
     display:flex;
@@ -38,6 +142,13 @@
     margin:2px 0 12px;
     letter-spacing:.1px;
   }
+  .liquidation-model .title,
+  .liquidation-model .n-title,
+  .liquidation-model summary,
+  .liquidation-model .acc-header,
+  .liquidation-model thead th{
+    font-family: "Roboto", sans-serif;
+  }
   .liquidation-model .title .icon{
     width:18px;
     height:18px;
@@ -46,6 +157,9 @@
     place-items:center;
   }
   .liquidation-model .grid-top{
+    padding-bottom: 15px;
+    padding-right: 15px;
+
     display:grid;
     grid-template-columns: 330px 1fr;
     gap:14px;
@@ -69,16 +183,17 @@
     min-height:74px;
   }
   .liquidation-model .metric .label{
-    font-size:12px;
-    color:var(--muted);
-    font-weight:700;
-    margin-bottom:4px;
+ color: #65758B;
+font-size: 14px;
+font-weight: 400;
+line-height: 18.521px; /* 132.296% */
   }
   .liquidation-model .metric .value{
-    font-size:20px;
-    font-weight:900;
-    letter-spacing:.2px;
-    margin-bottom:6px;
+  color: #344256;
+font-size: 24.078px;
+
+font-weight: 700;
+line-height: 33.339px; /* 138.462% */
   }
   .liquidation-model .delta{
     display:flex;
@@ -102,7 +217,8 @@
   }
   .liquidation-model .table-wrap{
     border:1px solid var(--line);
-    border-radius:12px;
+    padding-top: 15px;
+    /* border-radius:12px; */
     overflow:hidden;
     background:#fff;
   }
@@ -112,20 +228,23 @@
     font-size:13px;
   }
   .liquidation-model thead th{
-    background:#f4f7fc;
+    /* background:#f4f7fc; */
     color:#475569;
-    font-weight:900;
-    font-size:12px;
+    font-weight:600;
+    font-size:14px;
     text-align:left;
     padding:10px 12px;
     border-bottom:1px solid var(--line);
     white-space:nowrap;
   }
   .liquidation-model thead tr.group th{
-    background:#f7f9fe;
+    background:#FAFAFA;
     text-align:center;
     font-weight:900;
     border-bottom:1px solid var(--line);
+  }
+  .n-table .columns{
+background:#FAFAFA;
   }
   .liquidation-model tbody td{
     padding:10px 12px;
@@ -135,10 +254,10 @@
   }
   .liquidation-model tbody tr:last-child td{ border-bottom:none; }
   .liquidation-model td.num, .liquidation-model th.num{ text-align:right; font-variant-numeric:tabular-nums; }
-  .liquidation-model .row-label{ color:#334155; font-weight:800; }
+  .liquidation-model .row-label{ color:#334155; font-weight:500; }
   .liquidation-model .subtle{ color:#64748b; font-weight:700; }
   .liquidation-model .tfoot td{ background:#fbfdff; font-weight:900; border-top:1px solid var(--line); }
-  .liquidation-model .acc{ border:1px solid var(--line); border-radius:12px; overflow:hidden; background:#fff; }
+  .liquidation-model .acc{  overflow:hidden; background:#fff; padding-top: 20px; }
   .liquidation-model summary,
   .liquidation-model .acc-header {
     list-style: none;
@@ -160,7 +279,10 @@
   .liquidation-model .caret{ width:18px; height:18px; display:grid; place-items:center; opacity:.9; transform:rotate(0deg); transition:transform .15s ease; }
   .liquidation-model .mini{ width:18px; height:18px; display:grid; place-items:center; opacity:.95; }
   .liquidation-model details[open] .caret{ transform:rotate(180deg); }
-  .liquidation-model .acc-body{ padding:10px 12px 12px; background:#fff; }
+  .liquidation-model .acc-body{  background:#fff; margin-bottom: 10px;padding-top: 0px!important;}
+  .acc-body .table-wrap{
+padding-top: 0px!important;
+  }
   .liquidation-model .mini-note{ font-size:12px; color:var(--muted); font-weight:700; margin:8px 0 0; }
   .liquidation-model .section-row td{ background:#ffffff; color:#475569; font-weight:900; padding-top:14px; border-bottom:none; }
   .liquidation-model .compact tbody td{ padding:9px 12px; }
@@ -189,24 +311,69 @@
   }
   /* Adding space between the sections */
 .liquidation-model .card.section {
-    margin-bottom: 20px; /* Adds space between the sections */
+  padding: 20px;
+    /* margin-bottom: 20px;  */
 }
 
 /* Optional: If you want more space inside each section */
 .liquidation-model .acc-body {
     padding-top: 10px; /* Adds space inside the collapsible section */
 }
+
+.n-full-card{
+border-radius: 12px;
+border: 1px solid rgba(0, 122, 245, 0.10);
+
+background: #FFF;
+
+box-shadow: 0 1px 2px 0 rgba(0, 0, 0, 0.05);
+}
+.n-full-card .card-left{
+/* margin-left: 10px; */
+border: none!important;
+background-color: transparent!important;
+
+}
+
+.table-header{
+  background: #FAFAFA;
+
+}
+.table-header tr{
+  background: transparent!important
+
+}
+
+.sum-left{
+  font-weight: 400;
+}
+
+.collateral-dynamic .page{
+gap: 0px;
+}
+.n-table-change{
+
+}
+
+/* .n-table-change th{text-align: center!important;} */
+.badge svg{
+  width: 24px;
+    height: 24px;
+}
+.center-alighment{
+  text-align: center!important;
+}
 </style>
 
 <div class="page liquidation-model">
 
-  <div class="grid-top mb">
-    <div class="card section">
+  <div class="grid-top mb n-full-card">
+    <div class="card section card-left">
       <div class="title">
         <span class="icon" aria-hidden="true">
           <svg viewBox="0 0 24 24"><path d="M4 16.5l6-6 4 4 6-7" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"/><path d="M20 7h-5" stroke="currentColor" stroke-width="2.2" stroke-linecap="round"/></svg>
         </span>
-        <span>Recovery Summary</span>
+        <span class="n-title">Recovery Summary</span>
       </div>
       <div class="metric-stack">
         {% for metric in liquidation_summary_metrics %}
@@ -242,7 +409,7 @@
         <span class="icon" aria-hidden="true">
           <svg viewBox="0 0 24 24"><path d="M4 16.5l6-6 4 4 6-7" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"/><path d="M20 7h-5" stroke="currentColor" stroke-width="2.2" stroke-linecap="round"/></svg>
         </span>
-        <span>Liquidation Expenses</span>
+        <span class="n-title">Liquidation Expenses</span>
       </div>
       <div class="acc">
         {% for group in liquidation_expense_groups %}
@@ -261,7 +428,7 @@
               <div class="acc-body">
                 <div class="table-wrap">
                   <table>
-                    <thead>
+                    <thead class="table-header">
                       <tr>
                         <th>Category</th>
                         <th class="num">Cost Amount</th>
@@ -286,7 +453,7 @@
               </div>
             </details>
           {% elif group.title == "Operating Costs" and liquidation_operating_rows %}
-            <details open>
+            <details>
               <summary>
                 <span class="sum-left">
                   <span>{{ group.title }}</span>
@@ -325,7 +492,7 @@
               </div>
             </details>
           {% elif group.title == "Liquidation Expenses" and liquidation_liquidation_rows %}
-            <details open>
+            <details>
               <summary>
                 <span class="sum-left">
                   <span>{{ group.title }}</span>
@@ -442,27 +609,95 @@
     </div>
   </div>
 
-  <div class="card section mb">
+  <div class="card section mb n-table">
     <div class="title">
       <span class="icon" aria-hidden="true">
         <svg viewBox="0 0 24 24"><path d="M4 16.5l6-6 4 4 6-7" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"/><path d="M20 7h-5" stroke="currentColor" stroke-width="2.2" stroke-linecap="round"/></svg>
       </span>
-      <span>Finished Goods Gross Recovery</span>
+      <span class="n-title">Finished Goods Gross Recovery</span>
     </div>
-    <div class="table-wrap">
+
+  <div class="table-wrap">
+    <table>
+      <thead>
+        <tr class="group">
+          <th class="left no-bg"></th>
+          <th colspan="2">Inventory</th>
+          <th colspan="3">Recovery</th>
+          <th colspan="2">Primary Factors</th>
+        </tr>
+
+        <tr class="columns">
+          <th class="left">In-line</th>
+          <th class="center">Cost</th>
+          <th class="center">Selling Price</th>
+          <th class="center">$</th>
+          <th class="center">% of Cost</th>
+          <th class="center">% of SP</th>
+          <th class="center">WOS</th>
+          <th class="center">GM%</th>
+        </tr>
+      </thead>
+
+      <tbody>
+        {% for row in fg_gross_recovery_history_rows %}
+          <tr>
+            <td class="left">
+              {% if row.category %}
+                {{ row.category }}
+              {% elif row.type %}
+                {{ row.type }}
+              {% elif row.division %}
+                {{ row.division }}
+              {% else %}
+                {{ row.date }}
+              {% endif %}
+            </td>
+            <td class="center">{{ row.cost }}</td>
+            <td class="center">{{ row.selling }}</td>
+            <td class="center">{{ row.gross }}</td>
+            <td class="center">{{ row.pct_cost }}</td>
+            <td class="center">{{ row.pct_sp }}</td>
+            <td class="center">{{ row.wos }}</td>
+            <td class="center">{{ row.gr_pct }}</td>
+          </tr>
+        {% empty %}
+          <tr><td colspan="8" class="center">Finished goods gross recovery history not available.</td></tr>
+        {% endfor %}
+        {% if fg_gross_recovery_history_rows %}
+          <tr class="total">
+            <td class="left">Total</td>
+            <td class="center">{{ fg_gross_recovery_history_totals.cost }}</td>
+            <td class="center">{{ fg_gross_recovery_history_totals.selling }}</td>
+            <td class="center">{{ fg_gross_recovery_history_totals.gross }}</td>
+            <td class="center">{{ fg_gross_recovery_history_totals.pct_cost }}</td>
+            <td class="center">{{ fg_gross_recovery_history_totals.pct_sp }}</td>
+            <td class="center">{{ fg_gross_recovery_history_totals.wos }}</td>
+            <td class="center">{{ fg_gross_recovery_history_totals.gr_pct }}</td>
+          </tr>
+        {% endif %}
+      </tbody>
+    </table>
+  </div>
+
+
+   
+
+    <!-- <div class="table-wrap">
       <div class="fg-scroll">
         <table>
           <thead>
             <tr class="group">
-              <th rowspan="2">As Of</th>
-              <th rowspan="2">Division</th>
-              <th rowspan="2">Category</th>
-              <th rowspan="2">Type</th>
+           
               <th colspan="3">Inventory</th>
               <th colspan="2">Recovery</th>
               <th colspan="2">Recovery Factors</th>
             </tr>
             <tr>
+                 <th rowspan="2">As Of</th>
+              <th rowspan="2">Division</th>
+              <th rowspan="2">Category</th>
+              <th rowspan="2">Type</th>
               <th class="num">Cost</th>
               <th class="num">Selling Price</th>
               <th class="num">Gross</th>
@@ -507,7 +742,7 @@
           {% endif %}
         </table>
       </div>
-    </div>
+    </div> -->
   </div>
 
   <div class="grid-2 mb">
@@ -517,9 +752,44 @@
           <span class="icon" aria-hidden="true">
             <svg viewBox="0 0 24 24"><path d="M4 16.5l6-6 4 4 6-7" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"/><path d="M20 7h-5" stroke="currentColor" stroke-width="2.2" stroke-linecap="round"/></svg>
           </span>
-          <span>{{ tab.label }}</span>
+          <span  class="n-title">{{ tab.label }}</span>
         </div>
-        <div class="table-wrap">
+
+
+
+        <div class="table-wrap n-table-change">
+          <table>
+            <thead>
+              <tr class="group">
+                <th class="left no-bg"></th>
+                <th colspan="2">Inventory Cost</th>
+                <th colspan="1">Gross Recovery</th>
+              </tr>
+
+              <tr class="columns">
+                <th class="left">Rank</th>
+                <th class="center center-alighment">$</th>
+                <th class="center center-alighment">% of Cost</th>
+                <th class="center center-alighment">% of Cost</th>
+              </tr>
+            </thead>
+
+            <tbody>
+              {% for row in tab.rows %}
+                <tr{% if row.rank == "Total" %} class="total"{% endif %}>
+                  <td class="left">{{ row.rank }}</td>
+                  <td class="center center-alighment">{{ row.cost }}</td>
+                  <td class="center center-alighment">{{ row.percent }}</td>
+                  <td class="center center-alighment">{{ row.gr_pct }}</td>
+                </tr>
+              {% empty %}
+                <tr><td colspan="4" class="center">Data not available.</td></tr>
+              {% endfor %}
+            </tbody>
+          </table>
+        </div>
+
+        <!-- <div class="table-wrap">
           <table class="compact">
             <thead>
               <tr class="group">
@@ -546,7 +816,7 @@
               {% endfor %}
             </tbody>
           </table>
-        </div>
+        </div> -->
       </div>
     {% endfor %}
   </div>
@@ -556,48 +826,49 @@
       <span class="icon" aria-hidden="true">
         <svg viewBox="0 0 24 24"><path d="M4 16.5l6-6 4 4 6-7" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"/><path d="M20 7h-5" stroke="currentColor" stroke-width="2.2" stroke-linecap="round"/></svg>
       </span>
-      <span>Net Orderly Liquidated Value Analysis</span>
+      <span  class="n-title">Net Orderly Liquidated Value Analysis</span>
     </div>
+
     <div class="table-wrap">
       <div class="nol-scroll">
         <table>
-        <thead>
-          <tr class="group">
-            <th rowspan="2">Line Item</th>
-            <th colspan="2">Finished Goods</th>
-            <th colspan="2">Raw Materials</th>
-            <th colspan="2">Work-In-Process</th>
-            <th colspan="2">Total</th>
-          </tr>
-          <tr>
-            <th class="num">$</th><th class="num">% of Cost</th>
-            <th class="num">$</th><th class="num">% of Cost</th>
-            <th class="num">$</th><th class="num">% of Cost</th>
-            <th class="num">$</th><th class="num">% of Cost</th>
-          </tr>
-        </thead>
-        <tbody>
-          {% for row in liquidation_net_orderly_rows %}
-            <tr>
-              <td class="row-label">{{ row.label }}</td>
-              <td class="num">{{ row.fg }}</td><td class="num">{{ row.fg_pct }}</td>
-              <td class="num">{{ row.rm }}</td><td class="num">{{ row.rm_pct }}</td>
-              <td class="num">{{ row.wip }}</td><td class="num">{{ row.wip_pct }}</td>
-              <td class="num">{{ row.total }}</td><td class="num">{{ row.total_pct }}</td>
+          <thead>
+            <tr class="group">
+              <th rowspan="2">Line Item</th>
+              <th colspan="2">Finished Goods</th>
+              <th colspan="2">Raw Materials</th>
+              <th colspan="2">Work-In-Process</th>
+              <th colspan="2">Total</th>
             </tr>
-          {% empty %}
-            <tr><td colspan="9" class="num">Net orderly liquidation data not available.</td></tr>
-          {% endfor %}
-        </tbody>
-        <tfoot>
-          <tr class="tfoot">
-            <td>{{ liquidation_net_orderly_footer.label }}</td>
-            <td class="num">{{ liquidation_net_orderly_footer.fg }}</td><td class="num">{{ liquidation_net_orderly_footer.fg_pct }}</td>
-            <td class="num">{{ liquidation_net_orderly_footer.rm }}</td><td class="num">{{ liquidation_net_orderly_footer.rm_pct }}</td>
-            <td class="num">{{ liquidation_net_orderly_footer.wip }}</td><td class="num">{{ liquidation_net_orderly_footer.wip_pct }}</td>
-            <td class="num">{{ liquidation_net_orderly_footer.total }}</td><td class="num">{{ liquidation_net_orderly_footer.total_pct }}</td>
-          </tr>
-        </tfoot>
+            <tr class="columns">
+              <th class="num">$</th><th class="num">% of Cost</th>
+              <th class="num">$</th><th class="num">% of Cost</th>
+              <th class="num">$</th><th class="num">% of Cost</th>
+              <th class="num">$</th><th class="num">% of Cost</th>
+            </tr>
+          </thead>
+          <tbody>
+            {% for row in liquidation_net_orderly_rows %}
+              <tr>
+                <td class="row-label">{{ row.label }}</td>
+                <td class="num">{{ row.fg }}</td><td class="num">{{ row.fg_pct }}</td>
+                <td class="num">{{ row.rm }}</td><td class="num">{{ row.rm_pct }}</td>
+                <td class="num">{{ row.wip }}</td><td class="num">{{ row.wip_pct }}</td>
+                <td class="num">{{ row.total }}</td><td class="num">{{ row.total_pct }}</td>
+              </tr>
+            {% empty %}
+              <tr><td colspan="9" class="num">Net orderly liquidation data not available.</td></tr>
+            {% endfor %}
+          </tbody>
+          <tfoot>
+            <tr class="tfoot">
+              <td>{{ liquidation_net_orderly_footer.label }}</td>
+              <td class="num">{{ liquidation_net_orderly_footer.fg }}</td><td class="num">{{ liquidation_net_orderly_footer.fg_pct }}</td>
+              <td class="num">{{ liquidation_net_orderly_footer.rm }}</td><td class="num">{{ liquidation_net_orderly_footer.rm_pct }}</td>
+              <td class="num">{{ liquidation_net_orderly_footer.wip }}</td><td class="num">{{ liquidation_net_orderly_footer.wip_pct }}</td>
+              <td class="num">{{ liquidation_net_orderly_footer.total }}</td><td class="num">{{ liquidation_net_orderly_footer.total_pct }}</td>
+            </tr>
+          </tfoot>
         </table>
       </div>
     </div>
