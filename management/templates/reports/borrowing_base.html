@@ -10,11 +10,11 @@
       gap:18px;
     }
     .reports-menu{
-      width:240px;
+      width:300px;
       background:#fff;
       border:1px solid #e4e9f2;
-      border-radius:16px;
-      padding:12px;
+      border-radius:12px;
+      padding:16px;
       box-shadow:0 8px 18px rgba(15,23,42,.06);
       height:max-content;
     }
@@ -48,34 +48,39 @@
       width:26px;
       height:26px;
       border-radius:8px;
-      background:#eef2ff;
+      /* background:#eef2ff; */
       color:#1d4ed8;
       display:grid;
       place-items:center;
     }
     .reports-menu__item.active .reports-menu__icon{
-      background:rgba(255,255,255,.18);
+      /* background:rgba(255,255,255,.18); */
       color:#fff;
     }
     .reports-card{
       flex:1;
       background:#fff;
       border:1px solid #e4e9f2;
-      border-radius:18px;
-      padding:18px;
+      border-radius:12px;
+      padding:20px;
       box-shadow:0 14px 34px rgba(15,23,42,.08);
     }
     .reports-card__header{
       display:flex;
       align-items:flex-start;
       justify-content:space-between;
+      background-color: #FAFAFA;
       gap:12px;
       margin-bottom:10px;
+      padding-left:10px;
+      padding-right:10px;
+      padding-top:8px;
+      padding-bottom:8px
     }
     .reports-card__title{
-      font-size:15px;
-      font-weight:600;
-      color:#0f172a;
+      font-size:13px;
+      font-weight:700;
+      color:#65758B;
       margin:0 0 4px;
     }
     .reports-card__description{
@@ -102,7 +107,7 @@
     .report-name .dot{
       width:8px;height:8px;
       border-radius:50%;
-      background:#2563eb;
+      background:#007AF5;
     }
     .report-date{
       font-size:11px;
@@ -122,8 +127,8 @@
     }
     .download-btn:hover{background:#1d4ed8}
     .download-btn--solid{
-      background:#3073ff;
-      border-radius:8px;
+      background:#007AF5;
+      border-radius:4px;
       padding:6px 14px;
       box-shadow:none;
       font-weight:600;
@@ -167,9 +172,9 @@
 {% block page_content %}
   <div class="reports-shell">
     <aside class="reports-menu" aria-label="Reports">
-      <div class="reports-menu__title">Reports</div>
+      <!-- <div class="reports-menu__title">Reports</div> -->
       {% for item in report_menu %}
-        <a class="reports-menu__item {% if item.key == active_report %}active{% endif %}" href="{% url 'reports' %}?report={{ item.key }}">
+        <a class="reports-menu__item {% if item.key == active_report %}active{% endif %}" style="font-size: 14px; font-weight: 400; padding-left: 18px; padding-right: 18px; border-radius: 4px;" href="{% url 'reports' %}?report={{ item.key }}">
           <span class="reports-menu__icon" aria-hidden="true">
             {% if item.icon == "document" %}
               <img src="{% static 'images/reporticon1.svg' %}" alt="Snapshot Icon" class="snapshot-icon" />
@@ -200,11 +205,11 @@
                   {% if row.highlight %}
                     <span class="dot" aria-hidden="true"></span>
                   {% endif %}
-                  <div>
+                  <div style="font-size: 14px; font-weight: 500; color: #344256;">
                     {{ row.name }}
-                    {% if row.report_date %}
+                    <!-- {% if row.report_date %}
                       <span class="report-date">{{ row.report_date|date:"M d, Y" }}</span>
-                    {% endif %}
+                    {% endif %} -->
                   </div>
                 </div>
                 {% if row.download_url %}
