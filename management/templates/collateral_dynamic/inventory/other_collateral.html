@@ -95,6 +95,21 @@
     margin-top:36px;
     width:100%;
   }
+  .other-collateral .kpi-change .pair{
+    display:grid;
+    grid-template-columns:1fr auto;
+    align-items:center;
+    gap:12px;
+    margin-top:24px;
+  }
+  .other-collateral .kpi-change .left{padding-right:56px;}
+  .other-collateral .kpi-change .pair-left{
+    display:flex;
+    flex-direction:column;
+    gap:4px;
+  }
+  .other-collateral .kpi-change .pair b{display:block;}
+  .other-collateral .kpi-change .pair .delta{font-size:12px;}
   .other-collateral .kpi .pair + .pair{
     border-top:1px solid var(--border);
     padding-top:12px;
@@ -271,24 +286,41 @@
     </div>
     <div class="kpi-row">
       {% for card in other_collateral_value_monitor %}
-        <div class="kpi">
+        <div class="kpi{% if card.row_deltas %} kpi-change{% endif %}">
           <div class="left">
             <div class="t">{{ card.title }}</div>
             <!-- <div class="big">{{ card.big }}</div> -->
             {% for row in card.rows %}
-              <div class="pair"><span>{{ row.label }}</span><b>{{ row.value }}</b></div>
+              {% if card.row_deltas %}
+                <div class="pair">
+                  <div class="pair-left">
+                    <span>{{ row.label }}</span>
+                    <b>{{ row.value }}</b>
+                  </div>
+                  {% if row.delta %}
+                    <div class="delta {{ row.delta_class }}">
+                      <span class="arrow">{{ row.delta_symbol }}</span>
+                      {{ row.delta }}
+                    </div>
+                  {% endif %}
+                </div>
+              {% else %}
+                <div class="pair"><span>{{ row.label }}</span><b>{{ row.value }}</b></div>
+              {% endif %}
             {% endfor %}
           </div>
           <div class="right">
             
               <img src="{% static 'images/Background.svg' %}" alt="" />
             
-            {% for delta in card.deltas %}
-              <div class="delta {{ delta.delta_class }}" title="{{ delta.label }}">
-                <span class="arrow">{{ delta.symbol }}</span>
-                {{ delta.value }}
-              </div>
-            {% endfor %}
+            {% if not card.row_deltas %}
+              {% for delta in card.deltas %}
+                <div class="delta {{ delta.delta_class }}" title="{{ delta.label }}">
+                  <span class="arrow">{{ delta.symbol }}</span>
+                  {{ delta.value }}
+                </div>
+              {% endfor %}
+            {% endif %}
           </div>
         </div>
       {% empty %}

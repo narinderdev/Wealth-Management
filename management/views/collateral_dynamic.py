@@ -4567,8 +4567,30 @@ def _other_collateral_context(borrower):
         "Orderly Liquidation Value", total_olv, prev_total_olv, estimated_olv_total
     )
 
-    change_fmv = total_fmv - prev_total_fmv if prev_total_fmv is not None else None
-    change_olv = total_olv - prev_total_olv if prev_total_olv is not None else None
+    def _change_value(current, previous, fallback):
+        baseline = previous if previous not in (None, 0) else fallback
+        if baseline is None:
+            return None
+        return current - baseline
+
+    change_fmv = _change_value(total_fmv, prev_total_fmv, estimated_fmv_total)
+    change_olv = _change_value(total_olv, prev_total_olv, estimated_olv_total)
+    change_rows = [
+        {
+            "label": "Fair Market Value",
+            "value": _format_currency(change_fmv) if change_fmv is not None else "—",
+            "delta": delta_fmv["value"] if delta_fmv else None,
+            "delta_symbol": delta_fmv["symbol"] if delta_fmv else "",
+            "delta_class": delta_fmv["delta_class"] if delta_fmv else "",
+        },
+        {
+            "label": "Orderly Liquidation Value",
+            "value": _format_currency(change_olv) if change_olv is not None else "—",
+            "delta": delta_olv["value"] if delta_olv else None,
+            "delta_symbol": delta_olv["symbol"] if delta_olv else "",
+            "delta_class": delta_olv["delta_class"] if delta_olv else "",
+        },
+    ]
 
     value_monitor_cards = [
         {
@@ -4594,12 +4616,10 @@ def _other_collateral_context(borrower):
         {
             "title": "Change in Value",
             "big": "Fair Market Value",
-            "rows": [
-                {"label": "Fair Market Value", "value": _format_currency(change_fmv) if change_fmv is not None else "—"},
-                {"label": "Orderly Liquidation Value", "value": _format_currency(change_olv) if change_olv is not None else "—"},
-            ],
+            "rows": change_rows,
             "info": "i",
             "deltas": [delta for delta in (delta_fmv, delta_olv) if delta],
+            "row_deltas": True,
         },
     ]
 
