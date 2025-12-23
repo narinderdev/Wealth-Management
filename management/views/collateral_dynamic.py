@@ -4526,8 +4526,22 @@ def _other_collateral_context(borrower):
     prev_rows = snapshots[snapshot_keys[-2]] if len(snapshot_keys) > 1 else []
 
     def _aggregate(rows):
-        total_fmv = sum(_to_decimal(row.fair_market_value) for row in rows)
-        total_olv = sum(_to_decimal(row.orderly_liquidation_value) for row in rows)
+        total_fmv_values = [
+            _to_decimal(row.total_fair_market_value)
+            for row in rows
+            if getattr(row, "total_fair_market_value", None) is not None
+        ]
+        total_olv_values = [
+            _to_decimal(row.total_orderly_liquidation_value)
+            for row in rows
+            if getattr(row, "total_orderly_liquidation_value", None) is not None
+        ]
+        total_fmv = max(total_fmv_values) if total_fmv_values else sum(
+            _to_decimal(row.fair_market_value) for row in rows
+        )
+        total_olv = max(total_olv_values) if total_olv_values else sum(
+            _to_decimal(row.orderly_liquidation_value) for row in rows
+        )
         return total_fmv, total_olv
 
     total_fmv, total_olv = _aggregate(latest_rows)
@@ -4553,6 +4567,9 @@ def _other_collateral_context(borrower):
         "Orderly Liquidation Value", total_olv, prev_total_olv, estimated_olv_total
     )
 
+    change_fmv = total_fmv - prev_total_fmv if prev_total_fmv is not None else None
+    change_olv = total_olv - prev_total_olv if prev_total_olv is not None else None
+
     value_monitor_cards = [
         {
             "title": "Appraised Values",
@@ -4577,7 +4594,10 @@ def _other_collateral_context(borrower):
         {
             "title": "Change in Value",
             "big": "Fair Market Value",
-            "rows": [],
+            "rows": [
+                {"label": "Fair Market Value", "value": _format_currency(change_fmv) if change_fmv is not None else "—"},
+                {"label": "Orderly Liquidation Value", "value": _format_currency(change_olv) if change_olv is not None else "—"},
+            ],
             "info": "i",
             "deltas": [delta for delta in (delta_fmv, delta_olv) if delta],
         },
