@@ -49,6 +49,10 @@
 .tabs-shell{
   width: 652px;   /* apne hisaab se */
 }
+.bar{
+  display: flex;
+  gap: 11px;
+}
 
 
 </style>
@@ -155,16 +159,19 @@
           </div>
 
           {% block tabs_shell %}
-          <div class="tabs-shell">
-            <a class="tabs-back" href="{% url 'borrower_portfolio' %}" aria-label="Change borrower">
-              <div class="back-icon">
+          
+          <!-- <a class="tabs-back"  aria-label="Change borrower">
+              <div class="back-icon" href="{% url 'borrower_portfolio' %}" >
                 <svg viewBox="0 0 28 28" class="back-icon-svg">
                   <path d="M15 5l-9 9 9 9" fill="none" stroke="currentColor" stroke-width="6" stroke-linecap="round" stroke-linejoin="round"/>
                 </svg>
               </div>
-            </a>
-
-
+            </a> -->
+          <div class="bar">
+            <img src="{% static 'images/backarrow.svg' %}" 
+            alt="Icon"
+            class="icon" href="{% url 'borrower_portfolio' %}" />   
+          <div class="tabs-shell" >                 
             <nav class="tabs">
               <a class="tab {% if active_tab == 'summary' %}active{% endif %}" href="{% url 'dashboard' %}">Summary</a>
               <a class="tab {% if active_tab == 'collateral_dynamic' %}active{% endif %}" href="{% url 'collateral_dynamic' %}">Collateral Dynamic</a>
@@ -173,6 +180,7 @@
               <a class="tab {% if active_tab == 'reports' %}active{% endif %}" href="{% url 'reports' %}">Reports</a>
               <a class="tab {% if active_tab == 'limits' %}active{% endif %}" href="{% url 'limits' %}">Limits</a>
             </nav>
+          </div>
           </div>
           {% endblock %}
 

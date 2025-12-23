@@ -196,7 +196,7 @@ def _normalize_series(values, target_len, fallback_value):
     return values
 
 
-def _build_line_series(values, labels, series_label=None, width=220, height=120):
+def _build_line_series(values, labels, series_label=None, width=220, height=140):
     values = [float(_to_decimal(val)) for val in values] if values else [0.0]
     labels = labels or [f"{idx + 1:02d}" for idx in range(len(values))]
 
@@ -226,11 +226,10 @@ def _build_line_series(values, labels, series_label=None, width=220, height=120)
 
     plot_width = width - left - right
     plot_height = height - top - bottom
-    plot_size = min(plot_width, plot_height)
-    plot_left = left + (plot_width - plot_size) / 2
-    plot_top = top + (plot_height - plot_size) / 2
-    baseline_y = plot_top + plot_size
-    step_x = plot_size / max(1, len(values) - 1)
+    plot_left = left
+    plot_top = top
+    baseline_y = plot_top + plot_height
+    step_x = plot_width / max(1, len(values) - 1)
 
     x_positions = []
     x_labels = []
@@ -240,7 +239,7 @@ def _build_line_series(values, labels, series_label=None, width=220, height=120)
         x = plot_left + idx * step_x
         ratio = (val - axis_min) / axis_range if axis_range else 0
         ratio = max(0.0, min(1.0, ratio))
-        y = baseline_y - ratio * plot_size
+        y = baseline_y - ratio * plot_height
         x_positions.append(round(x, 1))
         x_labels.append({"x": round(x, 1), "text": labels[idx]})
         points.append(f"{x:.1f},{y:.1f}")
@@ -258,7 +257,7 @@ def _build_line_series(values, labels, series_label=None, width=220, height=120)
     for idx in range(tick_count):
         ratio = idx / (tick_count - 1)
         value = axis_max - step_value * idx
-        y = plot_top + plot_size * ratio
+        y = plot_top + plot_height * ratio
         y_ticks.append({"y": round(y, 1), "label": _format_axis_value(value)})
 
     return {
@@ -269,7 +268,7 @@ def _build_line_series(values, labels, series_label=None, width=220, height=120)
         "x_grid": x_positions,
         "grid": {
             "left": round(plot_left, 1),
-            "right": round(plot_left + plot_size, 1),
+            "right": round(plot_left + plot_width, 1),
             "top": round(plot_top, 1),
             "bottom": round(baseline_y, 1),
         },

@@ -8,166 +8,125 @@
    
     <link rel="stylesheet" href="{% static 'css/summary.css' %}">
 </head>
+<div class="pill">Borrower Overview</div>  
   <div class="grid">
     <!-- Left: Borrower -->
-    <div class="card borrower">
-      <div class="pill">Borrower Overview</div>
+     <div class="card borrower">      
+            <div class="kv">
+              <img src="{% static 'images/company_logo.svg' %}" 
+              alt="Company Logo"
+              class="company-logo" />
 
+              <div>Company Name</div>
+              <div class="v">{{ borrower_summary.company_name }}</div>
+            </div>
+            <div class="kv">
+              <img src="{% static 'images/company_idicon.svg' %}" 
+              alt="Company ID"
+              class="company-id" />
+              <div>Company ID</div>
+              <div class="v">{{ borrower_summary.company_id }}</div>
+            </div>
+            <div class="kv">
+              <img src="{% static 'images/industory_icon.svg' %}" 
+              alt="Industry Icon"
+              class="industry-icon" />
+
+              <div>Industry</div>
+              <div class="v">{{ borrower_summary.industry }}</div>
+            </div>
+            <div class="kv">
+              <img src="{% static 'images/naics_icon.svg' %}" 
+              alt="NAICS Icon"
+              class="naics-icon" />
+              <div>NAICS</div>
+              <div class="v">{{ borrower_summary.primary_naics }}</div>
+            </div>
+            <div class="kv">
+              <img src="{% static 'images/website_icon.svg' %}" 
+              alt="Website Icon"
+              class="website-icon" />
+              <div>Website</div>
+              <div class="v link">
+                {% if borrower_summary.website != "—" and borrower_summary.website_url %}
+                <a href="{{ borrower_summary.website_url }}" target="_blank" rel="noreferrer">
+                  {{ borrower_summary.website }}
+                </a>
+                {% else %}
+                  {{ borrower_summary.website }}
+                {% endif %}
+              </div>
+            </div>
+
+            <div class="divider"></div>
+
+            <div class="kv">
+              <img src="{% static 'images/primary_contant_icon.svg' %}" 
+              alt="Primary Icon"
+              class="primary_contact" />
+              <div>Primary Contact</div>
+              <div class="v">{{ borrower_summary.primary_contact }}</div>
+            </div>
+            <div class="kv">
+              <img src="{% static 'images/contact_no.svg' %}" 
+              alt="contact Icon"
+              class="contact-icon" />
+              <div>Contact Number</div>
+              <div class="v">{{ borrower_summary.primary_contact_phone }}</div>
+            </div>
+            <div class="kv">
+                      <img src="{% static 'images/email.svg' %}" 
+              alt="Email Icon"
+              class="email-icon" />
+              <div>Contact Email</div>
+              <div class="v">
+                {% if borrower_summary.primary_contact_email != "—" %}
+                <a href="mailto:{{ borrower_summary.primary_contact_email }}">
+                  {{ borrower_summary.primary_contact_email }}
+                </a>
+                {% else %}
+                  {{ borrower_summary.primary_contact_email }}
+                {% endif %}
+              </div>
+            </div>
+
+            <div class="divider"></div>
+
+            <div class="kv">
+                      <img src="{% static 'images/update_interval.svg' %}" 
+              alt="Update Interval Icon"
+              class="update-interval-icon" />
+
+              <div>Project Renewal</div>
+              <div class="v">{{ borrower_summary.update_interval }}</div>
+            </div>
+            <div class="kv">
+              <img src="{% static 'images/current_update.svg' %}" 
+              alt="Current Update Icon"
+              class="current-update-icon" />
+              <div>Current Update</div>
+              <div class="v">{{ borrower_summary.current_update }}</div>
+            </div>
+            <div class="kv">
+              <img src="{% static 'images/previous_update.svg' %}" 
+              alt="Previous Update Icon"
+              class="previous-update-icon" />
+              <div>Previous Update</div>
+              <div class="v">{{ borrower_summary.previous_update }}</div>
+            </div>
+            <div class="kv">
+              <img src="{% static 'images/next_update.svg' %}" 
+              alt="Next Update Icon"
+              class="next-update-icon" />
+              <div>Next Update</div>
+              <div class="v">{{ borrower_summary.next_update }}</div>
+            </div>
+      </div>        
+      
+    <div style=margin:10px;>
+      
       <div>
-        <div class="kv">
-          <img src="{% static 'images/company_logo.svg' %}" 
-          alt="Company Logo"
-          class="company-logo" />
-
-          <div>Company Name</div>
-          <div class="v">{{ borrower_summary.company_name }}</div>
-        </div>
-        <div class="kv">
-           <img src="{% static 'images/company_idicon.svg' %}" 
-          alt="Company ID"
-          class="company-id" />
-          <div>Company ID</div>
-          <div class="v">{{ borrower_summary.company_id }}</div>
-        </div>
-        <div class="kv">
-          <img src="{% static 'images/industory_icon.svg' %}" 
-          alt="Industry Icon"
-          class="industry-icon" />
-
-          <div>Industry</div>
-          <div class="v">{{ borrower_summary.industry }}</div>
-        </div>
-        <div class="kv">
-          <img src="{% static 'images/naics_icon.svg' %}" 
-          alt="NAICS Icon"
-          class="naics-icon" />
-          <div>NAICS</div>
-          <div class="v">{{ borrower_summary.primary_naics }}</div>
-        </div>
-        <div class="kv">
-          <img src="{% static 'images/website_icon.svg' %}" 
-          alt="Website Icon"
-          class="website-icon" />
-          <div>Website</div>
-          <div class="v link">
-            {% if borrower_summary.website != "—" and borrower_summary.website_url %}
-            <a href="{{ borrower_summary.website_url }}" target="_blank" rel="noreferrer">
-              {{ borrower_summary.website }}
-            </a>
-            {% else %}
-              {{ borrower_summary.website }}
-            {% endif %}
-          </div>
-        </div>
-
-        <div class="divider"></div>
-
-        <div class="kv">
-          <img src="{% static 'images/primary_contant_icon.svg' %}" 
-          alt="Primary Icon"
-          class="primary_contact" />
-          <div>Primary Contact</div>
-          <div class="v">{{ borrower_summary.primary_contact }}</div>
-        </div>
-        <div class="kv">
-          <img src="{% static 'images/contact_no.svg' %}" 
-          alt="contact Icon"
-          class="contact-icon" />
-          <div>Contact Number</div>
-          <div class="v">{{ borrower_summary.primary_contact_phone }}</div>
-        </div>
-        <div class="kv">
-                   <img src="{% static 'images/email.svg' %}" 
-          alt="Email Icon"
-          class="email-icon" />
-          <div>Contact Email</div>
-          <div class="v">
-            {% if borrower_summary.primary_contact_email != "—" %}
-            <a href="mailto:{{ borrower_summary.primary_contact_email }}">
-              {{ borrower_summary.primary_contact_email }}
-            </a>
-            {% else %}
-              {{ borrower_summary.primary_contact_email }}
-            {% endif %}
-          </div>
-        </div>
-
-        <div class="divider"></div>
-
-        <div class="kv">
-                   <img src="{% static 'images/update_interval.svg' %}" 
-          alt="Update Interval Icon"
-          class="update-interval-icon" />
-
-          <div>Project Renewal</div>
-          <div class="v">{{ borrower_summary.update_interval }}</div>
-        </div>
-        <div class="kv">
- <img src="{% static 'images/current_update.svg' %}" 
-          alt="Current Update Icon"
-          class="current-update-icon" />
-          <div>Current Update</div>
-          <div class="v">{{ borrower_summary.current_update }}</div>
-        </div>
-        <div class="kv">
-          <img src="{% static 'images/previous_update.svg' %}" 
-          alt="Previous Update Icon"
-          class="previous-update-icon" />
-          <div>Previous Update</div>
-          <div class="v">{{ borrower_summary.previous_update }}</div>
-        </div>
-        <div class="kv">
-          <img src="{% static 'images/next_update.svg' %}" 
-          alt="Next Update Icon"
-          class="next-update-icon" />
-          <div>Next Update</div>
-          <div class="v">{{ borrower_summary.next_update }}</div>
-        </div>
-      </div>
-
-      <div class="risk">
-        <div class="risk-title">Risk Profile</div>
-        <div class="risk-score">
-          <div class="risk-circle" data-tooltip="{{ risk_profile_detail|default:'Risk detail unavailable' }}">
-            <span>{{ risk_profile_value|default:"3.1" }}</span>
-          </div>
-        </div>
-        <div class="risk-scale">
-            <div class="risk-bar">
-              <span class="risk-marker" style="--pos:{{ risk_profile_position }}%"></span>
-            </div>
-            <div class="risk-labels">
-              <span>Low</span>
-              <span>Mild</span>
-              <span>Average</span>
-              <span>Elevated</span>
-              <span>High</span>
-            </div>
-          </div>
-        <div class="risk-tooltip" aria-hidden="true"></div>
-        <div class="risk-metrics">
-          {% for metric in risk_metrics %}
-          <div class="risk-row">
-            <span>{{ metric.label }}</span>
-            <span class="risk-change {{ metric.direction }}">
-              {% if metric.direction == 'up' %}
-              <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
-                <path d="M12 19V5"/><path d="M5 12l7-7 7 7"/>
-              </svg>
-              {% else %}
-              <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
-                <path d="M12 5v14"/><path d="M19 12l-7 7-7-7"/>
-              </svg>
-              {% endif %}
-              {{ metric.detail }}
-            </span>
-          </div>
-          {% endfor %}
-        </div>
-      </div>
-    </div>
-
-    <!-- Right: Borrowing base insight -->
+        <!-- Right: Borrowing base insight -->
     <div class="insight-card">
       <div class="insight-card__header">
         <div class="insight-head-left">
@@ -241,11 +200,11 @@
 
         <div class="insight-chart-grid">
           <div class="chart-card chart-card--blue">
-          <header>Net Collateral</header>
+          
           <div class="panel-chart">
             <div class="chart-tooltip" aria-hidden="true"></div>
-            <svg viewBox="0 0 220 120" preserveAspectRatio="none">
-              <rect class="panel-bg" x="0" y="0" width="220" height="120" rx="0"></rect>
+            <svg viewBox="0 0 220 140" preserveAspectRatio="none">
+              <rect class="panel-bg" x="0" y="0" width="220" height="140" rx="0"></rect>
               <g class="panel-grid">
                 {% for tick in net_chart.y_ticks %}
                   <line x1="{{ net_chart.grid.left }}" y1="{{ tick.y }}" x2="{{ net_chart.grid.right }}" y2="{{ tick.y }}"></line>
@@ -275,11 +234,10 @@
           </div>
 
           <div class="chart-card chart-card--purple">
-          <header>Outstanding Balance</header>
           <div class="panel-chart">
             <div class="chart-tooltip" aria-hidden="true"></div>
-            <svg viewBox="0 0 220 120" preserveAspectRatio="none">
-              <rect class="panel-bg" x="0" y="0" width="220" height="120" rx="0"></rect>
+            <svg viewBox="0 0 220 140" preserveAspectRatio="none">
+              <rect class="panel-bg" x="0" y="0" width="220" height="140" rx="0"></rect>
               <g class="panel-grid">
                 {% for tick in outstanding_chart.y_ticks %}
                   <line x1="{{ outstanding_chart.grid.left }}" y1="{{ tick.y }}" x2="{{ outstanding_chart.grid.right }}" y2="{{ tick.y }}"></line>
@@ -309,11 +267,10 @@
           </div>
 
           <div class="chart-card chart-card--green">
-          <header>Availability</header>
           <div class="panel-chart">
             <div class="chart-tooltip" aria-hidden="true"></div>
-            <svg viewBox="0 0 220 120" preserveAspectRatio="none">
-              <rect class="panel-bg" x="0" y="0" width="220" height="120" rx="0"></rect>
+            <svg viewBox="0 0 220 140" preserveAspectRatio="none">
+              <rect class="panel-bg" x="0" y="0" width="220" height="140" rx="0"></rect>
               <g class="panel-grid">
                 {% for tick in availability_chart.y_ticks %}
                   <line x1="{{ availability_chart.grid.left }}" y1="{{ tick.y }}" x2="{{ availability_chart.grid.right }}" y2="{{ tick.y }}"></line>
@@ -343,8 +300,9 @@
           </div>
         </div>
       </div>
-
-      <div class="table-card table-card--collateral2">
+    </div>
+  </div>
+  <div class="table-card table-card--collateral2">
         <div class="cc-head">
           <div class="cc-head-left">
              <img src="{% static 'images/borrowing_icon.svg' %}" 
@@ -358,7 +316,7 @@
           <table class="cc-table">
             <thead>
               <tr>
-                <th>Type</th>
+                <th></th>
                 <th>Beginning Collateral</th>
                 <th>Ineligibles</th>
                 <th>Eligible Collateral</th>
@@ -383,10 +341,53 @@
             </tbody>
           </table>
         </div>
+  </div>
+  
+           
+      </div>
+      <div class="risk">
+        <div class="risk-title">Risk Profile</div>
+        <div class="risk-score">
+          <div class="risk-circle" data-tooltip="{{ risk_profile_detail|default:'Risk detail unavailable' }}">
+            <span>{{ risk_profile_value|default:"3.1" }}</span>
+          </div>
+        </div>
+        <div class="risk-scale">
+            <div class="risk-bar">
+              <span class="risk-marker" style="--pos:{{ risk_profile_position }}%"></span>
+            </div>
+            <div class="risk-labels">
+              <span>Low</span>
+              <span>Mild</span>
+              <span>Average</span>
+              <span>Elevated</span>
+              <span>High</span>
+            </div>
+          </div>
+        <div class="risk-tooltip" aria-hidden="true"></div>
+        <div class="risk-metrics">
+          {% for metric in risk_metrics %}
+          <div class="risk-row">
+            <span>{{ metric.label }}</span>
+            <span class="risk-change {{ metric.direction }}">
+              {% if metric.direction == 'up' %}
+              <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                <path d="M12 19V5"/><path d="M5 12l7-7 7 7"/>
+              </svg>
+              {% else %}
+              <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                <path d="M12 5v14"/><path d="M19 12l-7 7-7-7"/>
+              </svg>
+              {% endif %}
+              {{ metric.detail }}
+            </span>
+          </div>
+          {% endfor %}
+        </div>
+      </div>
       </div>
 
-    </div>
-  </div>
+    
 {% endblock %}
 
 {% block extra_scripts %}
