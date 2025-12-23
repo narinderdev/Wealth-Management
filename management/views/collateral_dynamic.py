@@ -1678,10 +1678,10 @@ def _accounts_receivable_context(borrower, range_key="today", division="all"):
             return None
         diff = (curr - prev) / prev * Decimal("100")
         is_positive = diff >= 0
-        symbol = "▲" if is_positive else "▼"
         value = f"{abs(diff):.1f}%"
         if not improvement_on_increase:
             is_positive = not is_positive
+        symbol = "▲" if is_positive else "▼"
         return {
             "symbol": symbol,
             "value": value,
