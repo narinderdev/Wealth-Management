@@ -779,6 +779,11 @@ margin-top: 5px;
       align-items:center;
       justify-content:center;
     }
+    .cc-toggle--empty{
+      cursor:default;
+      opacity:0.4;
+      pointer-events:none;
+    }
     .cc-chevron{
       width:8px;
       height:8px;

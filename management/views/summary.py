@@ -408,41 +408,107 @@ def _resolve_rate_limit(row, limit_map):
     return None
 
 
-def _build_collateral_tree(collateral_rows):
+def _sum_collateral_field(rows, field_name):
+    values = [getattr(row, field_name) for row in rows if getattr(row, field_name) is not None]
+    if not values:
+        return None
+    return sum((_to_decimal(value) for value in values), Decimal("0"))
+
+
+def _weighted_collateral_pct(rows, value_fn, weight_field="eligible_collateral"):
+    weighted_sum = Decimal("0")
+    total_weight = Decimal("0")
+    values = []
+    for row in rows:
+        raw_value = value_fn(row)
+        if raw_value is None:
+            continue
+        value = _to_decimal(raw_value)
+        values.append(value)
+        raw_weight = getattr(row, weight_field, None)
+        weight = _to_decimal(raw_weight) if raw_weight is not None else Decimal("0")
+        weighted_sum += value * weight
+        total_weight += weight
+    if total_weight > 0:
+        return weighted_sum / total_weight
+    if values:
+        return sum(values) / Decimal(len(values))
+    return None
+
+
+def _build_collateral_parent_payload(label, rows, limit_map=None):
+    def resolved_rate(row):
+        return _resolve_rate_limit(row, limit_map) or row.rate_limit
+
+    beginning = _sum_collateral_field(rows, "beginning_collateral")
+    ineligibles = _sum_collateral_field(rows, "ineligibles")
+    eligible = _sum_collateral_field(rows, "eligible_collateral")
+    pre_reserve = _sum_collateral_field(rows, "pre_reserve_collateral")
+    reserves = _sum_collateral_field(rows, "reserves")
+    net = _sum_collateral_field(rows, "net_collateral")
+
+    return {
+        "label": _safe_str(label, default="Collateral"),
+        "detail": "",
+        "beginning_collateral": _format_currency(beginning),
+        "ineligibles": _format_currency(ineligibles),
+        "eligible_collateral": _format_currency(eligible),
+        "nolv_pct": _format_pct(
+            _weighted_collateral_pct(rows, lambda row: row.nolv_pct)
+        ),
+        "dilution_rate": _format_pct(
+            _weighted_collateral_pct(rows, lambda row: row.dilution_rate)
+        ),
+        "advanced_rate": _format_pct(
+            _weighted_collateral_pct(rows, lambda row: row.advanced_rate)
+        ),
+        "rate_limit": _format_pct(
+            _weighted_collateral_pct(rows, resolved_rate)
+        ),
+        "utilized_rate": _format_pct(
+            _weighted_collateral_pct(rows, lambda row: row.utilized_rate)
+        ),
+        "pre_reserve_collateral": _format_currency(pre_reserve),
+        "reserves": _format_currency(reserves),
+        "net_collateral": _format_currency(net),
+    }
+
+
+def _build_collateral_child_payload(row, limit_map=None, detail_override=None):
+    payload = _collateral_row_payload(row, limit_map=limit_map)
+    if detail_override:
+        payload["detail"] = detail_override
+    return payload
+
+
+def _build_collateral_tree(collateral_rows, limit_map=None):
+    grouped = {}
+    for row in collateral_rows:
+        label = _safe_str(row.main_type, default="Collateral")
+        grouped.setdefault(label, []).append(row)
+
     tree = []
-    parents = {}
-
-    for row in collateral_rows:
-        label = row.get("label") or "collateral"
-        detail = (row.get("detail") or "").strip()
-        node_id = slugify(label)
-        if not detail:
-            node = {
-                "id": node_id,
-                "row": row,
-                "children": [],
-            }
-            parents[label] = node
-            tree.append(node)
-
-    for row in collateral_rows:
-        label = row.get("label") or "collateral"
-        detail = (row.get("detail") or "").strip()
-        node_id = slugify(f"{label}-{detail}") if detail else slugify(label)
-        if detail:
-            parent = parents.get(label)
-            if not parent:
-                parent = {
-                    "id": node_id,
-                    "row": row,
-                    "children": [],
-                }
-                parents[label] = parent
-                tree.append(parent)
-            parent["children"].append({
-                "id": node_id,
-                "row": row,
-            })
+    for label, rows in grouped.items():
+        node = {
+            "id": slugify(label),
+            "row": _build_collateral_parent_payload(label, rows, limit_map=limit_map),
+            "children": [],
+        }
+        has_details = any((row.sub_type or "").strip() for row in rows)
+        if len(rows) > 1 or has_details:
+            children = []
+            for idx, row in enumerate(rows, start=1):
+                payload = _build_collateral_child_payload(
+                    row,
+                    limit_map=limit_map,
+                    detail_override=(row.sub_type or f"Line {idx}"),
+                )
+                children.append({
+                    "id": slugify(f"{label}-{payload['detail']}-{idx}"),
+                    "row": payload,
+                })
+            node["children"] = children
+        tree.append(node)
 
     return tree
 
@@ -619,9 +685,10 @@ def summary_view(request):
         collateral_base_qs, "created_at__date", range_start, range_end
     )
     latest_collateral_time = collateral_range_qs.aggregate(time=Max("created_at"))["time"]
+    latest_collateral_date = latest_collateral_time.date() if latest_collateral_time else None
     collateral_rows = (
-        list(collateral_range_qs.filter(created_at=latest_collateral_time))
-        if latest_collateral_time
+        list(collateral_range_qs.filter(created_at__date=latest_collateral_date))
+        if latest_collateral_date
         else []
     )
     limit_rows = list(CollateralLimitsRow.objects.filter(borrower=borrower))
@@ -821,7 +888,7 @@ def summary_view(request):
     context = {
         "borrower_summary": borrower_summary,
         "collateral_rows": collateral_data,
-        "collateral_tree": _build_collateral_tree(collateral_data),
+        "collateral_tree": _build_collateral_tree(collateral_rows, limit_map=limit_map),
         "insights": insights,
         "risk_metrics": risk_metrics,
         "user": request.user,
@@ -871,14 +938,15 @@ def borrower_portfolio_view(request):
             CollateralOverviewRow.objects.filter(borrower=borrower)
             .aggregate(time=Max("created_at"))["time"]
         )
+        latest_collateral_date = latest_collateral_time.date() if latest_collateral_time else None
         collateral_rows = (
             list(
                 CollateralOverviewRow.objects.filter(
                     borrower=borrower,
-                    created_at=latest_collateral_time,
+                    created_at__date=latest_collateral_date,
                 )
             )
-            if latest_collateral_time
+            if latest_collateral_date
             else []
         )
         net_total = sum((_to_decimal(row.net_collateral) for row in collateral_rows), Decimal("0"))
