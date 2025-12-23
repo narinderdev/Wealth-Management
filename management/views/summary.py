@@ -1,7 +1,8 @@
 import math
+from collections import defaultdict
 from datetime import timedelta
 
-from decimal import Decimal, InvalidOperation
+from decimal import Decimal, InvalidOperation, ROUND_HALF_UP
 
 from django.contrib.auth.decorators import login_required
 from django.shortcuts import redirect, render
@@ -17,6 +18,7 @@ from management.models import (
     CollateralOverviewRow,
     Company,
     CompositeIndexRow,
+    RiskSubfactorsRow,
 )
 
 
@@ -445,6 +447,105 @@ def _build_collateral_tree(collateral_rows):
     return tree
 
 
+def _risk_direction(score):
+    if score is None:
+        return "up"
+    return "down" if score >= Decimal("3.5") else "up"
+
+
+def _risk_color(score):
+    palette = ["#7EC459", "#D7C63C", "#FBB82E", "#FC8F2E", "#F74C34"]
+    dec_score = _to_decimal(score)
+    if dec_score <= 0:
+        return palette[2]
+    bucket = int(dec_score.quantize(Decimal("1"), rounding=ROUND_HALF_UP))
+    bucket = max(1, min(5, bucket))
+    return palette[bucket - 1]
+
+
+def _build_summary_risk_metrics(borrower, ar_row, composite_latest):
+    ar_past_due_pct = (
+        _normalize_pct(ar_row.pct_past_due)
+        if ar_row and ar_row.pct_past_due is not None
+        else Decimal("0")
+    )
+    ar_score = max(
+        Decimal("0"),
+        min(Decimal("5"), Decimal("5") - (ar_past_due_pct / Decimal("20"))),
+    )
+
+    risk_rows = list(
+        RiskSubfactorsRow.objects.filter(borrower=borrower).order_by(
+            "main_category", "sub_risk"
+        )
+    )
+    rows_by_category = defaultdict(list)
+    for row in risk_rows:
+        key = (row.main_category or "").strip().lower()
+        if not key:
+            continue
+        rows_by_category[key].append(row)
+
+    def _metric_rows(label):
+        key = label.lower()
+        if key in rows_by_category:
+            return rows_by_category[key]
+        for stored_key in rows_by_category:
+            if stored_key.startswith(key) or key.startswith(stored_key):
+                return rows_by_category[stored_key]
+        return []
+
+    def _row_label(row):
+        return row.sub_risk or row.high_impact_factor or row.main_category or "Metric"
+
+    def _metric_score(label, fallback_score):
+        rows = _metric_rows(label)
+        score_vals = []
+        seen = set()
+        for row in rows:
+            metric_label = _row_label(row)
+            if metric_label in seen:
+                continue
+            seen.add(metric_label)
+            score_vals.append(_to_decimal(row.risk_score))
+        if score_vals:
+            return sum(score_vals) / Decimal(len(score_vals))
+        return fallback_score
+
+    metric_definitions = [
+        ("Accounts Receivable", max(ar_score, Decimal("3"))),
+        (
+            "Inventory",
+            _to_decimal(getattr(composite_latest, "inventory_risk", None))
+            if composite_latest
+            else Decimal("3"),
+        ),
+        (
+            "Company",
+            _to_decimal(getattr(composite_latest, "company_risk", None))
+            if composite_latest
+            else Decimal("2.5"),
+        ),
+        (
+            "Industry",
+            _to_decimal(getattr(composite_latest, "industry_risk", None))
+            if composite_latest
+            else Decimal("2"),
+        ),
+    ]
+
+    risk_metrics = []
+    for label, fallback in metric_definitions:
+        score = _metric_score(label, fallback)
+        risk_metrics.append({
+            "label": label,
+            "detail": f"{score:.1f}",
+            "direction": _risk_direction(score),
+            "color": _risk_color(score),
+        })
+    return risk_metrics
+
+
 @login_required(login_url="login")
 def summary_view(request):
     company = get_active_company(request)
@@ -534,6 +635,11 @@ def summary_view(request):
         ar_qs = ar_qs.filter(division__iexact=normalized_division)
     ar_qs = _apply_date_filter(ar_qs, "as_of_date", range_start, range_end)
     ar_row = ar_qs.order_by("-as_of_date", "-created_at").first()
+    risk_ar_row = (
+        ARMetricsRow.objects.filter(borrower=borrower)
+        .order_by("-as_of_date", "-created_at")
+        .first()
+    )
 
     collateral_data = [
         _collateral_row_payload(row, limit_map=limit_map) for row in collateral_rows
@@ -635,74 +741,21 @@ def summary_view(request):
     inventory_ineligible = sum((_to_decimal(row.ineligibles) for row in inventory_rows), Decimal("0"))
     inventory_total_base = inventory_eligible + inventory_ineligible
     inventory_ratio = (inventory_ineligible / inventory_total_base) if inventory_total_base else None
-    inventory_ratio_pct = inventory_ratio * Decimal("100") if inventory_ratio is not None else None
 
     composite_latest = (
         CompositeIndexRow.objects.filter(borrower=borrower)
         .order_by("-date", "-created_at", "-id")
         .first()
     )
-
-    def _risk_direction(score):
-        if score is None:
-            return "up"
-        return "down" if score >= Decimal("3.5") else "up"
-
-    def _score_text(score):
-        return f"{score:.1f}" if score is not None else "—"
-
-    risk_defaults = {
-        "ar_risk": Decimal("3.0"),
-        "inventory_risk": Decimal("3.1"),
-        "company_risk": Decimal("3.8"),
-        "industry_risk": Decimal("2.9"),
-    }
-
-    risk_metrics = []
-    ar_score = _to_decimal(getattr(composite_latest, "ar_risk", None))
-    if ar_score is None:
-        ar_score = risk_defaults["ar_risk"]
-    risk_metrics.append({
-        "label": "Accounts Receivable",
-        "detail": _score_text(ar_score),
-        "direction": _risk_direction(ar_score),
-    })
-
-    inventory_score = _to_decimal(getattr(composite_latest, "inventory_risk", None))
-    if inventory_score is None:
-        inventory_score = risk_defaults["inventory_risk"]
-    risk_metrics.append({
-        "label": "Inventory",
-        "detail": _score_text(inventory_score),
-        "direction": _risk_direction(inventory_score),
-    })
-
-    company_score = _to_decimal(getattr(composite_latest, "company_risk", None))
-    if company_score is None:
-        company_score = risk_defaults["company_risk"]
-    risk_metrics.append({
-        "label": "Company",
-        "detail": _score_text(company_score),
-        "direction": _risk_direction(company_score),
-    })
-
-    industry_score = _to_decimal(getattr(composite_latest, "industry_risk", None))
-    if industry_score is None:
-        industry_score = risk_defaults["industry_risk"]
-    risk_metrics.append({
-        "label": "Industry",
-        "detail": _score_text(industry_score),
-        "direction": _risk_direction(industry_score),
-    })
+    risk_metrics = _build_summary_risk_metrics(borrower, risk_ar_row, composite_latest)
 
     inventory_pct_text = _format_pct(inventory_ratio) if inventory_ratio is not None else "—"
-    ar_pct_text = _format_pct(ar_row.pct_past_due) if ar_row and ar_row.pct_past_due is not None else "—"
+    ar_pct_text = (
+        _format_pct(risk_ar_row.pct_past_due)
+        if risk_ar_row and risk_ar_row.pct_past_due is not None
+        else "—"
+    )
     risk_profile_score = _to_decimal(getattr(composite_latest, "overall_score", None))
-    if risk_profile_score is None:
-        risk_profile_score = Decimal("3.1")
-        if inventory_ratio_pct is not None:
-            suggested = (inventory_ratio_pct / Decimal("20")) + Decimal("3")
-            risk_profile_score = max(Decimal("1"), min(Decimal("5"), suggested))
     risk_profile_detail = f"AR past due {ar_pct_text} · Inventory ineligible {inventory_pct_text}"
 
     risk_profile_position = float(

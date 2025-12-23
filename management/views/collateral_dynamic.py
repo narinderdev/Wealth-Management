@@ -62,16 +62,16 @@ def collateral_dynamic_view(request):
     if inventory_tab not in allowed_inventory_tabs:
         inventory_tab = "summary"
 
-    finished_goals_range = request.GET.get("finished_goals_range", "today")
+    finished_goals_range = request.GET.get("finished_goals_range", "last_12_months")
     finished_goals_division = request.GET.get(
         "finished_goals_division",
         request.GET.get("finished_goals_view", "all"),
     )
-    ar_range = request.GET.get("ar_range", "today")
+    ar_range = request.GET.get("ar_range", "last_12_months")
     ar_division = request.GET.get("ar_division", "all")
-    raw_materials_range = request.GET.get("raw_materials_range", "today")
+    raw_materials_range = request.GET.get("raw_materials_range", "last_12_months")
     raw_materials_division = request.GET.get("raw_materials_division", "all")
-    work_in_progress_range = request.GET.get("work_in_progress_range", "today")
+    work_in_progress_range = request.GET.get("work_in_progress_range", "last_12_months")
     work_in_progress_division = request.GET.get("work_in_progress_division", "all")
 
     context = {
@@ -2126,49 +2126,46 @@ def _accounts_receivable_context(borrower, range_key="today", division="all"):
 
 
 RANGE_OPTIONS = [
-    {"value": "today", "label": "Today"},
-    {"value": "yesterday", "label": "Yesterday"},
-    {"value": "last_7_days", "label": "Last 7 Days"},
-    {"value": "last_14_days", "label": "Last 14 Days"},
-    {"value": "last_30_days", "label": "Last 30 Days"},
-    {"value": "last_90_days", "label": "Last 90 Days"},
+    {"value": "last_12_months", "label": "12 Months"},
+    {"value": "last_6_months", "label": "6 Months"},
+    {"value": "last_3_months", "label": "3 Months"},
+    {"value": "last_1_month", "label": "1 Month"},
 ]
 
 RANGE_ALIASES = {
-    "today": "today",
-    "yesterday": "yesterday",
-    "last_7_days": "last_7_days",
-    "last_14_days": "last_14_days",
-    "last_30_days": "last_30_days",
-    "last_90_days": "last_90_days",
-    "last7days": "last_7_days",
-    "last14days": "last_14_days",
-    "last30days": "last_30_days",
-    "last90days": "last_90_days",
-    "last 7 days": "last_7_days",
-    "last 14 days": "last_14_days",
-    "last 30 days": "last_30_days",
-    "last 90 days": "last_90_days",
+    "last_12_months": "last_12_months",
+    "last12months": "last_12_months",
+    "last 12 months": "last_12_months",
+    "12 months": "last_12_months",
+    "last_6_months": "last_6_months",
+    "last6months": "last_6_months",
+    "last 6 months": "last_6_months",
+    "6 months": "last_6_months",
+    "last_3_months": "last_3_months",
+    "last3months": "last_3_months",
+    "last 3 months": "last_3_months",
+    "3 months": "last_3_months",
+    "last_1_month": "last_1_month",
+    "last1month": "last_1_month",
+    "last 1 month": "last_1_month",
+    "1 month": "last_1_month",
 }
 
 def _normalize_range(range_key):
-    normalized_range = (range_key or "today").strip().lower()
-    return RANGE_ALIASES.get(normalized_range, "today")
+    normalized_range = (range_key or "last_12_months").strip().lower()
+    return RANGE_ALIASES.get(normalized_range, "last_12_months")
 
 def _range_dates(range_key):
     today = date.today()
-    if range_key == "yesterday":
-        day = today - timedelta(days=1)
-        return day, day
-    if range_key == "last_7_days":
-        return today - timedelta(days=6), today
-    if range_key == "last_14_days":
-        return today - timedelta(days=13), today
-    if range_key == "last_30_days":
-        return today - timedelta(days=29), today
-    if range_key == "last_90_days":
+    if range_key == "last_12_months":
+        return today - timedelta(days=364), today
+    if range_key == "last_6_months":
+        return today - timedelta(days=182), today
+    if range_key == "last_3_months":
         return today - timedelta(days=89), today
-    return today, today
+    if range_key == "last_1_month":
+        return today - timedelta(days=29), today
+    return today - timedelta(days=364), today
 
 def _normalize_division(division):
     normalized_division = (division or "all").strip()

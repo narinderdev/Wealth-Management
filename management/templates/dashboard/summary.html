@@ -369,7 +369,7 @@
           {% for metric in risk_metrics %}
           <div class="risk-row">
             <span>{{ metric.label }}</span>
-            <span class="risk-change {{ metric.direction }}">
+            <span class="risk-change {{ metric.direction }}" style="--risk-color: {{ metric.color }};">
               {% if metric.direction == 'up' %}
               <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
                 <path d="M12 19V5"/><path d="M5 12l7-7 7 7"/>
