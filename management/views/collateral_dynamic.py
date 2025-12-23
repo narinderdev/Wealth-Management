@@ -344,17 +344,16 @@ def _week_summary_context(borrower):
             return value.strftime("%b %d")
         return "Week"
 
-    def _format_liquidity_label(value, year_offset=0):
-        if isinstance(value, str):
-            return value
-        if hasattr(value, "strftime"):
-            if year_offset:
-                try:
-                    value = value.replace(year=value.year + year_offset)
-                except ValueError:
-                    value = value.replace(year=value.year + year_offset, day=28)
-            return value.strftime("%b %Y")
-        return "Week"
+    def _format_liquidity_label(value, year_override=None, fallback_date=None):
+        label_date = value if hasattr(value, "strftime") else fallback_date
+        if not label_date:
+            return "—"
+        if year_override:
+            try:
+                label_date = label_date.replace(year=year_override)
+            except ValueError:
+                label_date = label_date.replace(year=year_override, day=28)
+        return label_date.strftime("%b %Y")
 
     def _liquidity_year_offset(values, base_date):
         if not base_date:
@@ -403,7 +402,16 @@ def _week_summary_context(borrower):
             nice = 10
         return nice * magnitude
 
-    def _build_chart_bars(rows, width=1080, height=300, left=80, right=50, top=30, bottom=60):
+    def _build_chart_bars(
+        rows,
+        label_texts=None,
+        width=1080,
+        height=300,
+        left=80,
+        right=50,
+        top=30,
+        bottom=60,
+    ):
         if not rows:
             return [], [], [], []
         max_value = max(
@@ -444,7 +452,10 @@ def _week_summary_context(borrower):
             disbursement_val = _to_decimal(row.get("disbursements"))
             collections_height = float(collections_val / Decimal(str(axis_max))) * plot_height
             disbursement_height = float(disbursement_val / Decimal(str(axis_max))) * plot_height
-            label_text = _format_chart_label(row.get("label"))
+            if label_texts and idx < len(label_texts):
+                label_text = label_texts[idx]
+            else:
+                label_text = _format_chart_label(row.get("label"))
             collections_bars.append(
                 {
                     "x": start_x,
@@ -769,7 +780,11 @@ def _week_summary_context(borrower):
     sorted_forecast_rows = _sort_forecast_rows(forecast_rows)
     column_entries, ordered_forecast_rows = _prepare_column_entries(sorted_forecast_rows)
     chart_rows = _build_chart_rows(ordered_forecast_rows or sorted_forecast_rows)
-    actual_bars, forecast_bars, chart_labels, chart_ticks = _build_chart_bars(chart_rows)
+    chart_week_labels = [f"Week {idx + 1}" for idx in range(len(chart_rows))]
+    actual_bars, forecast_bars, chart_labels, chart_ticks = _build_chart_bars(
+        chart_rows,
+        label_texts=chart_week_labels,
+    )
 
     if column_entries:
         cashflow_actual_label = column_entries[0]["label"]
@@ -1155,10 +1170,15 @@ def _week_summary_context(borrower):
         or getattr(getattr(row, "report", None), "report_date", None)
         for row in trend_rows
     ]
-    liquidity_year_offset = _liquidity_year_offset(period_values, report_date)
+    current_year = date.today().year
+    base_date = report_date or date.today()
     period_labels = [
-        _format_liquidity_label(value, liquidity_year_offset)
-        for value in period_values
+        _format_liquidity_label(
+            value,
+            year_override=current_year,
+            fallback_date=base_date + timedelta(days=7 * idx),
+        )
+        for idx, value in enumerate(period_values)
     ]
     series_values = []
     for field, label, color in liquidity_fields:
@@ -1171,7 +1191,7 @@ def _week_summary_context(borrower):
         series_values.append(values)
         liquidity_legend.append({"label": label, "color": color})
     if series_values and period_labels:
-        chart = _build_liquidity_chart(series_values, period_labels)
+        chart = _build_liquidity_chart(series_values, period_labels, height=240)
         liquidity_labels = chart["labels"]
         liquidity_ticks = chart["ticks"]
         for idx, (_, label, color) in enumerate(liquidity_fields):
@@ -4649,43 +4669,74 @@ def _filter_rows_by_keyword(rows, keyword):
     return [row for row in rows if (row.main_type or "").lower().find(keyword) >= 0]
 
 
-def _build_liquidation_category_table(rows, max_rows=5):
+def _strip_inventory_prefix(text):
+    if not text:
+        return ""
+    label = text.strip()
+    if not label:
+        return ""
+    if label.lower().startswith("inventory"):
+        label = label[len("inventory"):].lstrip(" -:/")
+    return label.strip()
+
+
+def _liquidation_item_label(row, default_label=None):
+    for value in (row.sub_type, row.main_type):
+        cleaned = _strip_inventory_prefix(value)
+        if cleaned:
+            return cleaned
+    return default_label or "Item"
+
+
+def _build_liquidation_category_table(rows, max_rows=5, default_label=None):
     total = sum((_to_decimal(row.beginning_collateral) or Decimal("0")) for row in rows)
+    total_gross = sum((_to_decimal(row.eligible_collateral) or Decimal("0")) for row in rows)
     sorted_rows = sorted(rows, key=lambda row: _to_decimal(row.beginning_collateral), reverse=True)
     table = []
     aggregated = Decimal("0")
+    aggregated_gross = Decimal("0")
     last_gr_pct = "0%"
     for idx, row in enumerate(sorted_rows[:max_rows]):
         cost = _to_decimal(row.beginning_collateral)
         eligible = _to_decimal(row.eligible_collateral)
         pct_cost = cost / total if total else Decimal("0")
         gr_pct = eligible / cost if cost else Decimal("0")
+        item_label = _liquidation_item_label(row, default_label)
         table.append(
             {
                 "rank": idx + 1,
+                "item": item_label,
                 "cost": _format_currency(cost),
+                "gross": _format_currency(eligible),
                 "percent": f"{pct_cost * 100:.0f}%",
                 "gr_pct": _format_pct(gr_pct),
             }
         )
         aggregated += cost
+        aggregated_gross += eligible
         last_gr_pct = table[-1]["gr_pct"]
     other_cost = total - aggregated
+    other_gross = total_gross - aggregated_gross
     if other_cost > 0:
-      table.append(
-        {
-          "rank": "Other",
-          "cost": _format_currency(other_cost),
-          "percent": f"{(other_cost / total * 100):.0f}%" if total else "0%",
-          "gr_pct": last_gr_pct,
-        }
-      )
+        other_gr_pct = other_gross / other_cost if other_cost else Decimal("0")
+        table.append(
+            {
+                "rank": "Other",
+                "item": "Other",
+                "cost": _format_currency(other_cost),
+                "gross": _format_currency(other_gross),
+                "percent": f"{(other_cost / total * 100):.0f}%" if total else "0%",
+                "gr_pct": _format_pct(other_gr_pct) if other_cost else last_gr_pct,
+            }
+        )
     table.append(
-      {
-        "rank": "Total",
+        {
+            "rank": "Total",
+            "item": "Total",
             "cost": _format_currency(total),
+            "gross": _format_currency(total_gross),
             "percent": "100%",
-            "gr_pct": _format_pct(sum(_to_decimal(r.eligible_collateral) for r in rows) / total if total else Decimal("0")),
+            "gr_pct": _format_pct(total_gross / total if total else Decimal("0")),
         }
     )
     return table
@@ -4870,20 +4921,12 @@ def _liquidation_model_context(borrower):
         ),
     }
 
-    raw_rows = [
-        row
-        for row in state["inventory_rows"]
-        if row.main_type and "raw" in (row.main_type or "").lower()
-    ]
-    wip_rows = [
-        row
-        for row in state["inventory_rows"]
-        if row.main_type and "work" in (row.main_type or "").lower()
-    ]
+    raw_rows = _filter_inventory_rows_by_key(state, "raw_materials")
+    wip_rows = _filter_inventory_rows_by_key(state, "work_in_progress")
 
     category_tables = {
-        "raw_materials": _build_liquidation_category_table(raw_rows),
-        "work_in_progress": _build_liquidation_category_table(wip_rows),
+        "raw_materials": _build_liquidation_category_table(raw_rows, default_label="Raw Materials"),
+        "work_in_progress": _build_liquidation_category_table(wip_rows, default_label="Work-In-Process"),
     }
     category_tabs = [
         {"key": "raw_materials", "label": "Raw Material", "rows": category_tables["raw_materials"]},

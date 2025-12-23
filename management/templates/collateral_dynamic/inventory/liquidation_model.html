@@ -762,24 +762,24 @@ gap: 0px;
             <thead>
               <tr class="group">
                 <th class="left no-bg"></th>
-                <th colspan="2">Inventory Cost</th>
-                <th colspan="1">Gross Recovery</th>
+                <th colspan="1">Inventory Cost</th>
+                <th colspan="2">Gross Recovery</th>
               </tr>
 
               <tr class="columns">
-                <th class="left">Rank</th>
+                <th class="left">Item</th>
                 <th class="center center-alighment">$</th>
-                <th class="center center-alighment">% of Cost</th>
+                <th class="center center-alighment">$</th>
                 <th class="center center-alighment">% of Cost</th>
               </tr>
             </thead>
 
             <tbody>
               {% for row in tab.rows %}
-                <tr{% if row.rank == "Total" %} class="total"{% endif %}>
-                  <td class="left">{{ row.rank }}</td>
+                <tr{% if row.item == "Total" %} class="total"{% endif %}>
+                  <td class="left">{{ row.item }}</td>
                   <td class="center center-alighment">{{ row.cost }}</td>
-                  <td class="center center-alighment">{{ row.percent }}</td>
+                  <td class="center center-alighment">{{ row.gross }}</td>
                   <td class="center center-alighment">{{ row.gr_pct }}</td>
                 </tr>
               {% empty %}

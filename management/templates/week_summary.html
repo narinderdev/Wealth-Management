@@ -536,7 +536,7 @@
             </g>
             <g fill="#94a3b8" font-size="11">
               {% for label in week_summary.chart.labels %}
-                <text x="{{ label.x }}" y="280">{{ label.text }}</text>
+                <text x="{{ label.x }}" y="280" text-anchor="middle">{{ label.text }}</text>
               {% endfor %}
             </g>
             {% comment %} Inline legend aligned near the top-right with padding from edge {% endcomment %}
@@ -702,8 +702,8 @@
     </div>
     <div class="chart-panel">
       <div class="chart-wrap">
-        <svg viewBox="0 0 800 280" preserveAspectRatio="none">
-          <rect x="0" y="0" width="800" height="280" fill="none" stroke="none"/>
+        <svg viewBox="0 0 800 240" preserveAspectRatio="none">
+          <rect x="0" y="0" width="800" height="240" fill="none" stroke="none"/>
           <g stroke="#dce3f5">
             {% for tick in week_summary.liquidity_ticks %}
               <line x1="70" y1="{{ tick.y }}" x2="740" y2="{{ tick.y }}"/>
@@ -738,7 +738,7 @@
           {% endfor %}
           <g fill="#94a3b8" font-size="11">
             {% for label in week_summary.liquidity_labels %}
-              <text x="{{ label.x }}" y="252" text-anchor="middle">{{ label.text }}</text>
+              <text x="{{ label.x }}" y="212" text-anchor="middle">{{ label.text }}</text>
             {% endfor %}
           </g>
         </svg>
