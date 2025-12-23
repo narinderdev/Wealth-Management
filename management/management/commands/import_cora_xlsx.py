@@ -11,13 +11,15 @@ from management.models import (
     Company,
     Borrower,
     SpecificIndividual,
-    # BorrowerReport,
+    BorrowerReport,
 
     BorrowerOverviewRow,
     CollateralOverviewRow,
     MachineryEquipmentRow,
     AgingCompositionRow,
     ARMetricsRow,
+    Top20ByTotalARRow,
+    Top20ByPastDueRow,
     IneligibleTrendRow,
     IneligibleOverviewRow,
     ConcentrationADODSORow,
@@ -50,6 +52,8 @@ from management.models import (
 
     ForecastRow,
     AvailabilityForecastRow,
+    CashFlowForecastRow,
+    CashForecastRow,
     CurrentWeekVarianceRow,
     CummulativeVarianceRow,
 
@@ -145,8 +149,8 @@ def normalize_header(h: str) -> str:
     return h2
 
 
-def read_df(xlsx_path, sheet_name):
-    df = pd.read_excel(xlsx_path, sheet_name=sheet_name)
+def read_df(xlsx_path, sheet_name, header=0):
+    df = pd.read_excel(xlsx_path, sheet_name=sheet_name, header=header)
     # drop fully empty rows
     df = df.dropna(how="all")
     # normalize headers
@@ -320,6 +324,8 @@ class Command(BaseCommand):
 
     "Forecast": ForecastRow,
     "Availability Forecast": AvailabilityForecastRow,
+    "Cash Flow Forecast": CashFlowForecastRow,
+    "Cash Forecast": CashForecastRow,
 
     "Current Week Variance": CurrentWeekVarianceRow,
     "Cummulative Variance": CummulativeVarianceRow,
@@ -328,10 +334,14 @@ class Command(BaseCommand):
     "Ineligibles": IneligiblesRow,
 }
 
+        header_overrides = {
+            "Cash Flow Forecast": 1,
+            "Cash Forecast": 1,
+        }
 
         for sheet, model_cls in sheet_model_map.items():
             try:
-                df = read_df(xlsx_path, sheet)
+                df = read_df(xlsx_path, sheet, header=header_overrides.get(sheet, 0))
             except Exception:
                 continue
 

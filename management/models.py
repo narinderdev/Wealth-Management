@@ -89,6 +89,16 @@ class Borrower(TimeStampedModel):
 
 # Removed BorrowerUser to ensure Borrower cannot log in
 
+class BorrowerReport(TimeStampedModel):
+    borrower = models.ForeignKey(
+        "Borrower",
+        on_delete=models.CASCADE,
+        related_name="reports",
+    )
+    source_file = models.CharField(max_length=255, null=True, blank=True)
+    report_date = models.DateField(null=True, blank=True)
+
+
 class ReportRow(TimeStampedModel):
     class Meta:
         abstract = True
@@ -223,6 +233,59 @@ class ARMetricsRow(TimeStampedModel):
 
     class Meta:
         db_table = 'ar_metrics'
+
+
+# -------------------------
+# Sheet: Top20_By_Total_AR
+# -------------------------
+class Top20ByTotalARRow(TimeStampedModel):
+    division = models.CharField(max_length=255, null=True, blank=True)  # Division
+    as_of_date = models.DateField(null=True, blank=True)  # AsOfDate
+    customer = models.CharField(max_length=255, null=True, blank=True)  # Customer
+    current = MoneyField()  # Current
+    col_0_30 = MoneyField()  # 0-30
+    col_31_60 = MoneyField()  # 31-60
+    col_61_90 = MoneyField()  # 61-90
+    col_91_plus = MoneyField()  # 91+
+    total_ar = MoneyField()  # TotalAR
+    coverage_pct_of_division_ar = PctField()  # CoveragePctOfDivisionAR
+    report = models.ForeignKey(
+        "BorrowerReport",
+        on_delete=models.CASCADE,
+        related_name="%(class)s_rows",
+        null=True,
+        blank=True,
+    )
+
+    class Meta:
+        db_table = 'top20_by_total_ar'
+
+
+# -------------------------
+# Sheet: Top20_By_PastDue
+# -------------------------
+class Top20ByPastDueRow(TimeStampedModel):
+    division = models.CharField(max_length=255, null=True, blank=True)  # Division
+    as_of_date = models.DateField(null=True, blank=True)  # AsOfDate
+    customer = models.CharField(max_length=255, null=True, blank=True)  # Customer
+    current = MoneyField()  # Current
+    col_0_30 = MoneyField()  # 0-30
+    col_31_60 = MoneyField()  # 31-60
+    col_61_90 = MoneyField()  # 61-90
+    col_91_plus = MoneyField()  # 91+
+    total_ar = MoneyField()  # TotalAR
+    total_past_due = MoneyField()  # TotalPastDue
+    coverage_pct_of_division_past_due = PctField()  # CoveragePctOfDivisionPastDue
+    report = models.ForeignKey(
+        "BorrowerReport",
+        on_delete=models.CASCADE,
+        related_name="%(class)s_rows",
+        null=True,
+        blank=True,
+    )
+
+    class Meta:
+        db_table = 'top20_by_past_due'
 
 
 # -------------------------
@@ -945,6 +1008,71 @@ class AvailabilityForecastRow(TimeStampedModel):
 
     class Meta:
         db_table = 'availability_forecast'
+
+
+# -------------------------
+# Sheet: Cash Forecast
+# -------------------------
+class CashForecastRow(TimeStampedModel):
+    date = models.DateField(null=True, blank=True)  # Date
+    category = models.CharField(max_length=255, null=True, blank=True)  # Category
+    x = models.DecimalField(max_digits=20, decimal_places=6, null=True, blank=True)  # X
+    week_1 = models.DecimalField(max_digits=20, decimal_places=6, null=True, blank=True)  # Week 1
+    week_2 = models.DecimalField(max_digits=20, decimal_places=6, null=True, blank=True)  # Week 2
+    week_3 = models.DecimalField(max_digits=20, decimal_places=6, null=True, blank=True)  # Week 3
+    week_4 = models.DecimalField(max_digits=20, decimal_places=6, null=True, blank=True)  # Week 4
+    week_5 = models.DecimalField(max_digits=20, decimal_places=6, null=True, blank=True)  # Week 5
+    week_6 = models.DecimalField(max_digits=20, decimal_places=6, null=True, blank=True)  # Week 6
+    week_7 = models.DecimalField(max_digits=20, decimal_places=6, null=True, blank=True)  # Week 7
+    week_8 = models.DecimalField(max_digits=20, decimal_places=6, null=True, blank=True)  # Week 8
+    week_9 = models.DecimalField(max_digits=20, decimal_places=6, null=True, blank=True)  # Week 9
+    week_10 = models.DecimalField(max_digits=20, decimal_places=6, null=True, blank=True)  # Week 10
+    week_11 = models.DecimalField(max_digits=20, decimal_places=6, null=True, blank=True)  # Week 11
+    week_12 = models.DecimalField(max_digits=20, decimal_places=6, null=True, blank=True)  # Week 12
+    week_13 = models.DecimalField(max_digits=20, decimal_places=6, null=True, blank=True)  # Week 13
+    report = models.ForeignKey(
+        "BorrowerReport",
+        on_delete=models.CASCADE,
+        related_name="%(class)s_rows",
+        null=True,
+        blank=True,
+    )
+
+    class Meta:
+        db_table = 'cash_forecast'
+
+
+# -------------------------
+# Sheet: Cash Flow Forecast
+# -------------------------
+class CashFlowForecastRow(TimeStampedModel):
+    date = models.DateField(null=True, blank=True)  # Date
+    category = models.CharField(max_length=255, null=True, blank=True)  # Category
+    x = models.DecimalField(max_digits=20, decimal_places=6, null=True, blank=True)  # X
+    week_1 = models.DecimalField(max_digits=20, decimal_places=6, null=True, blank=True)  # Week 1
+    week_2 = models.DecimalField(max_digits=20, decimal_places=6, null=True, blank=True)  # Week 2
+    week_3 = models.DecimalField(max_digits=20, decimal_places=6, null=True, blank=True)  # Week 3
+    week_4 = models.DecimalField(max_digits=20, decimal_places=6, null=True, blank=True)  # Week 4
+    week_5 = models.DecimalField(max_digits=20, decimal_places=6, null=True, blank=True)  # Week 5
+    week_6 = models.DecimalField(max_digits=20, decimal_places=6, null=True, blank=True)  # Week 6
+    week_7 = models.DecimalField(max_digits=20, decimal_places=6, null=True, blank=True)  # Week 7
+    week_8 = models.DecimalField(max_digits=20, decimal_places=6, null=True, blank=True)  # Week 8
+    week_9 = models.DecimalField(max_digits=20, decimal_places=6, null=True, blank=True)  # Week 9
+    week_10 = models.DecimalField(max_digits=20, decimal_places=6, null=True, blank=True)  # Week 10
+    week_11 = models.DecimalField(max_digits=20, decimal_places=6, null=True, blank=True)  # Week 11
+    week_12 = models.DecimalField(max_digits=20, decimal_places=6, null=True, blank=True)  # Week 12
+    week_13 = models.DecimalField(max_digits=20, decimal_places=6, null=True, blank=True)  # Week 13
+    total = models.DecimalField(max_digits=20, decimal_places=2, null=True, blank=True)  # Total
+    report = models.ForeignKey(
+        "BorrowerReport",
+        on_delete=models.CASCADE,
+        related_name="%(class)s_rows",
+        null=True,
+        blank=True,
+    )
+
+    class Meta:
+        db_table = 'cash_flow_forecast'
 
 # -------------------------
 # Sheet: Current Week Variance
