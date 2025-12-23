@@ -932,8 +932,23 @@
       font-size:11px;
       color:#475569;
     }
+    .collateral-dynamic .ar-section .aging-table{
+      font-size:12px;
+    }
+    .collateral-dynamic .ar-section .aging-table thead th,
+    .collateral-dynamic .ar-section .aging-table tbody td{
+      padding:8px 12px;
+    }
+    .collateral-dynamic .ar-section .ineligible-table{
+      font-size:12px;
+    }
+    .collateral-dynamic .ar-section .ineligible-table thead th,
+    .collateral-dynamic .ar-section .ineligible-table tbody td{
+      padding:8px 12px;
+    }
     .collateral-dynamic .ar-section .aging-table .align-right{
       text-align:left;
+      font-size: 12px;
     }
     .collateral-dynamic .ar-section thead th{
       text-align:left;
@@ -972,6 +987,13 @@
     .collateral-dynamic .ar-section .centered-table th,
     .collateral-dynamic .ar-section .centered-table td{
       text-align:center;
+    }
+    .collateral-dynamic .ar-section .centered-table{
+      font-size:12px;
+    }
+    .collateral-dynamic .ar-section .centered-table thead th,
+    .collateral-dynamic .ar-section .centered-table tbody td{
+      padding:8px 12px;
     }
     .collateral-dynamic .ar-section .centered-table th:first-child,
     .collateral-dynamic .ar-section .centered-table td:first-child{
@@ -1378,7 +1400,7 @@
                             <th>Total</th>
                           </tr>
                         </thead>
-                        <tbody>
+                          <tbody>
                           {% for row in ar_customer_aging_past_due_rows %}
                             <tr>
                               <td>{{ row.customer }}</td>
@@ -1416,7 +1438,7 @@
                         Ineligible Overview
                       </div>
 
-                      <table>
+                      <table class="ineligible-table">
                         <thead>
                           <tr>
                             <th>Ineligibles</th>
