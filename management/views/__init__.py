@@ -7,6 +7,7 @@ from .reports import reports_view, reports_download, reports_generate_bbc
 from .limits import limits_view
 from .admin_portal import admin_component_view, admin_dashboard_view, admin_company_view
 from .admin_borrower import admin_borrower_view
+from .admin_import import admin_import_excel_view
 
 __all__ = [
     "login_view",
@@ -25,4 +26,5 @@ __all__ = [
     "admin_company_view",
     "admin_component_view",
     "admin_borrower_view",
+    "admin_import_excel_view",
 ]

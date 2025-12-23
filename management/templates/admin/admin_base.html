@@ -280,6 +280,19 @@
       align-items:center;
       gap:12px;
     }
+    .btn.import-btn{
+      height:28px;
+      padding:0 12px;
+      font-size:10px;
+      letter-spacing:.04em;
+      text-transform:uppercase;
+      background:rgba(255,255,255,.14);
+      border:1px solid rgba(255,255,255,.35);
+      color:#fff;
+    }
+    .btn.import-btn:hover{
+      background:rgba(255,255,255,.22);
+    }
     .global-borrower{
       display:flex;
       align-items:center;
@@ -693,6 +706,110 @@
       max-height:60vh;
       overflow:auto;
       padding-right:6px;
+    }
+    .import-hint{
+      font-size:11px;
+      color:#1f2a44;
+      opacity:.8;
+    }
+    .import-checkbox{
+      display:flex;
+      align-items:center;
+      gap:8px;
+      font-size:12px;
+      font-weight:600;
+      color:#0f172a;
+    }
+    .import-checkbox input{
+      width:16px;
+      height:16px;
+    }
+    .import-warning{
+      font-size:11px;
+      color:#b91c1c;
+      font-weight:700;
+    }
+    .import-status{
+      border-radius:12px;
+      padding:10px 12px;
+      background:rgba(255,255,255,.7);
+      border:1px solid rgba(15,23,42,.12);
+      font-size:11px;
+      color:#0f172a;
+      display:flex;
+      align-items:center;
+      gap:8px;
+    }
+    .import-status[hidden],
+    .import-results[hidden]{
+      display:none;
+    }
+    .import-spinner{
+      width:14px;
+      height:14px;
+      border-radius:50%;
+      border:2px solid rgba(15,23,42,.2);
+      border-top-color:#1d4ed8;
+      animation:spin .8s linear infinite;
+    }
+    .import-results{
+      background:rgba(255,255,255,.8);
+      border-radius:12px;
+      border:1px solid rgba(15,23,42,.08);
+      padding:12px;
+      display:flex;
+      flex-direction:column;
+      gap:8px;
+      font-size:11px;
+      color:#0f172a;
+    }
+    .import-results h4{
+      margin:0;
+      font-size:12px;
+      font-weight:800;
+    }
+    .import-summary{
+      width:100%;
+      border-collapse:collapse;
+      font-size:10px;
+    }
+    .import-summary th,
+    .import-summary td{
+      padding:6px 8px;
+      border-bottom:1px solid rgba(15,23,42,.08);
+      text-align:left;
+    }
+    .import-summary th{
+      text-transform:uppercase;
+      letter-spacing:.04em;
+      color:#475569;
+      font-weight:700;
+    }
+    .import-status-badge{
+      display:inline-flex;
+      align-items:center;
+      gap:4px;
+      padding:2px 8px;
+      border-radius:999px;
+      font-size:10px;
+      font-weight:700;
+      text-transform:uppercase;
+      letter-spacing:.04em;
+    }
+    .import-status-success{
+      background:#dcfce7;
+      color:#166534;
+    }
+    .import-status-partial{
+      background:#fef9c3;
+      color:#854d0e;
+    }
+    .import-status-error{
+      background:#fee2e2;
+      color:#991b1b;
+    }
+    @keyframes spin{
+      to{transform:rotate(360deg);}
     }
     .component-modal-footer{
       position:relative;
@@ -1250,6 +1367,7 @@
       <header class="topbar">
         <div class="title">{% block header_title %}Company Form{% endblock %}</div>
         <div class="topbar-actions">
+          <button class="btn import-btn" data-modal-open="modal-import-excel">Import</button>
           {% include "admin/partials/global_borrower_selector.html" %}
         </div>
       </header>
@@ -1270,8 +1388,63 @@
 
   <div id="cora-confirm-root" class="cora-confirm-root" aria-hidden="true"></div>
 
+  <div class="component-modal" id="modal-import-excel" aria-hidden="true">
+    <div class="component-modal-dialog">
+      <div class="component-modal-head">
+        <h3>Import Excel Data</h3>
+        <button type="button" class="modal-close" data-modal-close>&times;</button>
+      </div>
+      <form class="component-form" id="excel-import-form" method="post" enctype="multipart/form-data" action="{% url 'admin_import_excel' %}">
+        {% csrf_token %}
+        <div class="component-modal-body">
+          <div class="component-field">
+            <label for="import-excel-file">Excel File</label>
+            <input id="import-excel-file" class="control" type="file" name="file" accept=".xlsx" required>
+            <div class="import-hint">Upload a .xlsx workbook exported from the CORA template.</div>
+          </div>
+          <div class="component-field">
+            <div class="import-checkbox">
+              <input type="checkbox" id="import-clear-existing" name="clear_existing" value="true">
+              <label for="import-clear-existing">Clear existing imported data before import</label>
+            </div>
+            <div class="import-warning">Clears rows previously imported for this borrower.</div>
+            <div class="import-checkbox">
+              <input type="checkbox" id="import-confirm-clear" name="confirm_clear" value="true" disabled>
+              <label for="import-confirm-clear">I understand and want to clear existing data.</label>
+            </div>
+          </div>
+          <div class="import-status" data-import-status hidden style="display:none">
+            <span class="import-spinner" aria-hidden="true"></span>
+            <span data-import-status-text>Importing…</span>
+          </div>
+          <div class="import-results" data-import-results hidden style="display:none">
+            <h4>Import Summary</h4>
+            <div data-import-summary-status></div>
+            <table class="import-summary">
+              <thead>
+                <tr>
+                  <th>Sheet</th>
+                  <th>Imported</th>
+                  <th>Skipped</th>
+                  <th>Status</th>
+                </tr>
+              </thead>
+              <tbody data-import-summary-body></tbody>
+            </table>
+            <div data-import-errors></div>
+          </div>
+        </div>
+        <div class="component-modal-footer">
+          <button type="button" class="btn ghost" data-modal-close>Cancel</button>
+          <button type="submit" class="btn save" data-import-submit>Import</button>
+        </div>
+      </form>
+    </div>
+  </div>
+
   <script src="{% static 'js/global_borrower.js' %}" defer></script>
   <script src="{% static 'js/modal_validation.js' %}" defer></script>
+  <script src="{% static 'js/excel_import.js' %}" defer></script>
   <script>
     document.addEventListener("DOMContentLoaded", function(){
       document.querySelectorAll("[data-collapsible]").forEach(function(section){

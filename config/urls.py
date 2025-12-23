@@ -47,6 +47,7 @@ urlpatterns = [
     path('admin/dashboard/', management_views.admin_dashboard_view, name='admin_dashboard'),
     path('admin/company/', management_views.admin_company_view, name='admin_company'),
     path('admin/borrower/', management_views.admin_borrower_view, name='admin_borrower'),
+    path('admin/import-excel/', management_views.admin_import_excel_view, name='admin_import_excel'),
     path('admin/', admin.site.urls),
 ]
 # Add this line at the end of the file to serve static files in development

@@ -222,6 +222,7 @@ def normalize_header(h: str) -> str:
     h2 = h2.replace("-", "_")
     h2 = h2.replace("/", "_")
     h2 = h2.replace("+", "_plus")
+    h2 = h2.replace("(", " ").replace(")", " ")
 
     # spaces -> underscore
     h2 = re.sub(r"\s+", "_", h2.strip())
@@ -516,6 +517,349 @@ def import_sheet_rows(model_cls, df, report, borrower=None, debug=False, debug_l
     return len(objs), skipped, reasons, debug_messages
 
 
+def _clear_imported_data(borrower, company_id, model_classes, stdout=None):
+    def log(message):
+        if stdout:
+            stdout.write(message)
+
+    if borrower:
+        BorrowerReport.objects.filter(borrower=borrower).delete()
+        log("Cleared borrower reports.")
+
+    if company_id:
+        BorrowerOverviewRow.objects.filter(company_id=company_id).delete()
+        log("Cleared borrower overview rows.")
+
+    for model_cls in model_classes:
+        if model_cls in (BorrowerOverviewRow, BorrowerReport):
+            continue
+        field_names = {f.name for f in model_cls._meta.fields}
+        if "borrower" in field_names and borrower:
+            model_cls.objects.filter(borrower=borrower).delete()
+            log(f"Cleared {model_cls.__name__}.")
+
+
+def run_cora_import(
+    xlsx_path,
+    source_file=None,
+    report_date=None,
+    debug=False,
+    clear=False,
+    stdout=None,
+):
+    source_file = source_file or xlsx_path.split("/")[-1]
+    summary = []
+    errors = []
+
+    def log(message):
+        if stdout:
+            stdout.write(message)
+
+    # ---------------------------
+    # 1) Borrower Overview (special format)
+    # ---------------------------
+    bo = pd.read_excel(xlsx_path, sheet_name="Borrower Overview", header=None).dropna(how="all")
+    # row 1 = headers, row 2 = values (based on your file format)
+    headers = [str(x).strip() for x in bo.iloc[1].tolist()]
+    values = bo.iloc[2].tolist()
+    overview = dict(zip(headers, values))
+
+    company_id = to_int(overview.get("Company ID"))
+    if not company_id:
+        raise Exception("Borrower Overview sheet missing Company ID")
+
+    company, _ = Company.objects.get_or_create(
+        company_id=company_id,
+        defaults={
+            "company": overview.get("Company"),
+            "industry": overview.get("Industry"),
+            "primary_naics": to_int(overview.get("Primary NAICS")),
+            "website": overview.get("Website"),
+        },
+    )
+
+    borrower, _ = Borrower.objects.get_or_create(
+        company=company,
+        defaults={
+            "primary_contact": overview.get("Primary Contact"),
+            "primary_contact_phone": overview.get("Primary Contact Phone"),
+            "primary_contact_email": overview.get("Primary Contact Email"),
+            "update_interval": overview.get("Update Interval"),
+            "current_update": to_date(overview.get("Current Update")),
+            "previous_update": to_date(overview.get("Previous Update")),
+            "next_update": to_date(overview.get("Next Update")),
+            "lender": overview.get("Lender"),
+            "lender_id": to_int(overview.get("Lender ID")),
+        },
+    )
+
+    if clear:
+        _clear_imported_data(
+            borrower,
+            company_id,
+            [
+                CollateralOverviewRow,
+                MachineryEquipmentRow,
+                AgingCompositionRow,
+                ARMetricsRow,
+                Top20ByTotalARRow,
+                Top20ByPastDueRow,
+                IneligibleTrendRow,
+                IneligibleOverviewRow,
+                ConcentrationADODSORow,
+                FGInventoryMetricsRow,
+                FGIneligibleDetailRow,
+                FGCompositionRow,
+                FGInlineCategoryAnalysisRow,
+                SalesGMTrendRow,
+                FGInlineExcessByCategoryRow,
+                HistoricalTop20SKUsRow,
+                RMInventoryMetricsRow,
+                RMIneligibleOverviewRow,
+                RMCategoryHistoryRow,
+                RMTop20HistoryRow,
+                WIPInventoryMetricsRow,
+                WIPIneligibleOverviewRow,
+                WIPCategoryHistoryRow,
+                WIPTop20HistoryRow,
+                FGGrossRecoveryHistoryRow,
+                WIPRecoveryRow,
+                RawMaterialRecoveryRow,
+                NOLVTableRow,
+                RiskSubfactorsRow,
+                CompositeIndexRow,
+                ForecastRow,
+                AvailabilityForecastRow,
+                CashFlowForecastRow,
+                CashForecastRow,
+                CurrentWeekVarianceRow,
+                CummulativeVarianceRow,
+                CollateralLimitsRow,
+                IneligiblesRow,
+            ],
+            stdout=stdout,
+        )
+
+    # optional: Specific Individual from Borrower Overview
+    si_name = overview.get("Specific Individual")
+    si_id = overview.get("Specific ID")
+    if si_name or si_id:
+        SpecificIndividual.objects.get_or_create(
+            borrower=borrower,
+            specific_individual=str(si_name) if si_name else None,
+            specific_id=to_int(si_id),
+        )
+
+    # report_date preference: CLI -> Current Update -> today
+    report_date = report_date or ""
+    report_date = pd.to_datetime(report_date).date() if report_date else (to_date(overview.get("Current Update")) or now().date())
+
+    report = BorrowerReport.objects.create(
+        borrower=borrower,
+        source_file=source_file,
+        report_date=report_date,
+    )
+
+    # also store Borrower Overview into borrower_overview table
+    bo_df = pd.read_excel(xlsx_path, sheet_name="Borrower Overview", header=1).dropna(how="all")
+    bo_df.columns = [normalize_header(c) for c in bo_df.columns]
+    import_sheet_rows(BorrowerOverviewRow, bo_df, report, borrower=borrower, debug=debug)
+
+    # ---------------------------
+    # 2) Map other sheets -> models
+    # ---------------------------
+    sheet_model_map = {
+        "Collateral Overview": CollateralOverviewRow,
+        "Machinery & Equipment ": MachineryEquipmentRow,
+        "Aging Composition": AgingCompositionRow,
+        "AR_Metrics": ARMetricsRow,
+        "Top20_By_Total_AR": Top20ByTotalARRow,
+        "Top20_By_PastDue": Top20ByPastDueRow,
+        "Ineligible_Trend": IneligibleTrendRow,
+        "Ineligible_Overview": IneligibleOverviewRow,
+        "Concentration_ADO_DSO": ConcentrationADODSORow,
+
+        "FG_Inventory_Metrics": FGInventoryMetricsRow,
+        "FG_Ineligible_detail": FGIneligibleDetailRow,
+        "FG_Composition": FGCompositionRow,
+        "FG_Inline_Category_Analysis": FGInlineCategoryAnalysisRow,
+        "Sales_GM_Trend": SalesGMTrendRow,
+        "FG_Inline_Excess_By_Category": FGInlineExcessByCategoryRow,
+        "Historical_Top_20_SKUs": HistoricalTop20SKUsRow,
+
+        "RM_Inventory_Metrics": RMInventoryMetricsRow,
+        "RM_Ineligible_Overview": RMIneligibleOverviewRow,
+        "RM_Category_History": RMCategoryHistoryRow,
+        "RM_Top20_History": RMTop20HistoryRow,
+
+        "WIP_Inventory_Metrics": WIPInventoryMetricsRow,
+        "WIP_Ineligible_Overview": WIPIneligibleOverviewRow,
+        "WIP_Category_History": WIPCategoryHistoryRow,
+        "WIP_Top20_History": WIPTop20HistoryRow,
+
+        "FG_Gross_Recovery_History": FGGrossRecoveryHistoryRow,
+        "WIP_Recovery": WIPRecoveryRow,
+        "Raw_Material_Recovery": RawMaterialRecoveryRow,
+
+        "NOLV_Table": NOLVTableRow,
+        "Risk_Subfactors": RiskSubfactorsRow,
+        "Composite_Index": CompositeIndexRow,
+
+        "Forecast": ForecastRow,
+        "Availability Forecast": AvailabilityForecastRow,
+        "Cash Flow Forecast": CashFlowForecastRow,
+        "Cash Forecast": CashForecastRow,
+
+        "Current Week Variance": CurrentWeekVarianceRow,
+        "Cummulative Variance": CummulativeVarianceRow,
+
+        "Collateral Limits ": CollateralLimitsRow,
+        "Ineligibles": IneligiblesRow,
+    }
+
+    header_hints = {
+        "Cash Flow Forecast": 1,
+        "Cash Forecast": 1,
+        "Availability Forecast": 1,
+    }
+
+    workbook = pd.ExcelFile(xlsx_path)
+    for sheet in workbook.sheet_names:
+        if sheet == "Borrower Overview":
+            continue
+        if sheet not in sheet_model_map:
+            if ">>>" in sheet:
+                if debug:
+                    log(f"Skipping section marker sheet: {sheet}")
+            else:
+                log(f"Skipping unmapped sheet: {sheet}")
+            continue
+
+    for sheet, model_cls in sheet_model_map.items():
+        if sheet not in workbook.sheet_names:
+            summary.append(
+                {
+                    "sheet": sheet,
+                    "model": model_cls.__name__,
+                    "imported": 0,
+                    "skipped": 0,
+                    "header_rows": None,
+                    "data_start": None,
+                    "status": "missing",
+                    "message": "Missing sheet in workbook",
+                }
+            )
+            continue
+        try:
+            df, meta = read_sheet_df(
+                xlsx_path,
+                sheet,
+                model_cls,
+                header_hint=header_hints.get(sheet),
+            )
+        except Exception as exc:
+            message = f"{exc}"
+            errors.append({"sheet": sheet, "error": message})
+            summary.append(
+                {
+                    "sheet": sheet,
+                    "model": model_cls.__name__,
+                    "imported": 0,
+                    "skipped": 0,
+                    "header_rows": None,
+                    "data_start": None,
+                    "status": "failed",
+                    "message": message,
+                }
+            )
+            continue
+
+        if df.empty:
+            summary.append(
+                {
+                    "sheet": sheet,
+                    "model": model_cls.__name__,
+                    "imported": 0,
+                    "skipped": 0,
+                    "header_rows": meta.get("header_rows"),
+                    "data_start": meta.get("data_start_row"),
+                    "status": "empty",
+                    "message": "No data rows detected",
+                }
+            )
+            continue
+
+        if debug:
+            log(f"{sheet}: detected columns {meta.get('columns')}")
+            model_fields = sorted(get_model_fields(model_cls))
+            used_columns = sorted(
+                c for c in meta.get("columns", []) if c in model_fields
+            )
+            log(f"{sheet}: used columns {used_columns}")
+
+        imported, skipped, reasons, debug_msgs = import_sheet_rows(
+            model_cls,
+            df,
+            report,
+            borrower=borrower,
+            debug=debug,
+        )
+
+        if debug_msgs:
+            for msg in debug_msgs:
+                log(f"{sheet}: {msg}")
+
+        if reasons and skipped:
+            log(f"{sheet}: skipped reasons {dict(reasons)}")
+
+        summary.append(
+            {
+                "sheet": sheet,
+                "model": model_cls.__name__,
+                "imported": imported,
+                "skipped": skipped,
+                "header_rows": meta.get("header_rows"),
+                "data_start": meta.get("data_start_row"),
+                "status": "ok",
+                "message": "",
+            }
+        )
+
+    if summary:
+        log("Import summary:")
+        for row in summary:
+            log(
+                f"{row['sheet']} | {row['model']} | imported={row['imported']} "
+                f"| skipped={row['skipped']} | header_row={row['header_rows']} "
+                f"| data_start={row['data_start']}"
+            )
+
+    total_imported = sum(row.get("imported", 0) for row in summary)
+    total_skipped = sum(row.get("skipped", 0) for row in summary)
+    failed_sheets = [row for row in summary if row.get("status") == "failed"]
+    warning_sheets = [
+        row
+        for row in summary
+        if row.get("status") in {"missing", "empty"}
+    ]
+    if failed_sheets:
+        status = "failed" if total_imported == 0 else "partial"
+    elif warning_sheets:
+        status = "partial" if total_imported > 0 else "failed"
+    else:
+        status = "success"
+
+    return {
+        "report_id": report.id,
+        "borrower_id": borrower.id if borrower else None,
+        "summary": summary,
+        "errors": errors,
+        "status": status,
+        "total_imported": total_imported,
+        "total_skipped": total_skipped,
+    }
+
+
 class Command(BaseCommand):
     help = "Import CORA multi-sheet XLSX into Postgres using BorrowerReport + *Row models"
 
@@ -524,221 +868,27 @@ class Command(BaseCommand):
         parser.add_argument("--source-file", default="", help="Original filename (optional)")
         parser.add_argument("--report-date", default="", help="YYYY-MM-DD (optional)")
         parser.add_argument("--debug", action="store_true", help="Verbose import logging")
+        parser.add_argument(
+            "--clear",
+            action="store_true",
+            help="Clear existing imported data for this borrower before import",
+        )
 
     @transaction.atomic
     def handle(self, *args, **opts):
         xlsx_path = opts["file"]
-        source_file = opts["source_file"] or xlsx_path.split("/")[-1]
-        debug = opts.get("debug", False)
-
-        # ---------------------------
-        # 1) Borrower Overview (special format)
-        # ---------------------------
-        bo = pd.read_excel(xlsx_path, sheet_name="Borrower Overview", header=None).dropna(how="all")
-        # row 1 = headers, row 2 = values (based on your file format)
-        headers = [str(x).strip() for x in bo.iloc[1].tolist()]
-        values = bo.iloc[2].tolist()
-        overview = dict(zip(headers, values))
-
-        company_id = to_int(overview.get("Company ID"))
-        if not company_id:
-            raise Exception("Borrower Overview sheet missing Company ID")
-
-        company, _ = Company.objects.get_or_create(
-            company_id=company_id,
-            defaults={
-                "company": overview.get("Company"),
-                "industry": overview.get("Industry"),
-                "primary_naics": to_int(overview.get("Primary NAICS")),
-                "website": overview.get("Website"),
-            },
+        result = run_cora_import(
+            xlsx_path,
+            source_file=opts.get("source_file") or xlsx_path.split("/")[-1],
+            report_date=opts.get("report_date") or "",
+            debug=opts.get("debug", False),
+            clear=opts.get("clear", False),
+            stdout=self.stdout,
         )
-
-        borrower, _ = Borrower.objects.get_or_create(
-            company=company,
-            defaults={
-                "primary_contact": overview.get("Primary Contact"),
-                "primary_contact_phone": overview.get("Primary Contact Phone"),
-                "primary_contact_email": overview.get("Primary Contact Email"),
-                "update_interval": overview.get("Update Interval"),
-                "current_update": to_date(overview.get("Current Update")),
-                "previous_update": to_date(overview.get("Previous Update")),
-                "next_update": to_date(overview.get("Next Update")),
-                "lender": overview.get("Lender"),
-                "lender_id": to_int(overview.get("Lender ID")),
-            },
-        )
-
-        # optional: Specific Individual from Borrower Overview
-        si_name = overview.get("Specific Individual")
-        si_id = overview.get("Specific ID")
-        if si_name or si_id:
-            SpecificIndividual.objects.get_or_create(
-                borrower=borrower,
-                specific_individual=str(si_name) if si_name else None,
-                specific_id=to_int(si_id),
-            )
-
-        # report_date preference: CLI -> Current Update -> today
-        report_date = opts["report_date"]
-        report_date = pd.to_datetime(report_date).date() if report_date else (to_date(overview.get("Current Update")) or now().date())
-
-        report = BorrowerReport.objects.create(
-            borrower=borrower,
-            source_file=source_file,
-            report_date=report_date,
-        )
-
-        # also store Borrower Overview into borrower_overview table
-        bo_df = pd.read_excel(xlsx_path, sheet_name="Borrower Overview", header=1).dropna(how="all")
-        bo_df.columns = [normalize_header(c) for c in bo_df.columns]
-        import_sheet_rows(BorrowerOverviewRow, bo_df, report, borrower=borrower, debug=debug)
-
-        # ---------------------------
-        # 2) Map other sheets -> models
-        # ---------------------------
-        sheet_model_map = {
-            "Collateral Overview": CollateralOverviewRow,
-            "Machinery & Equipment ": MachineryEquipmentRow,
-            "Aging Composition": AgingCompositionRow,
-            "AR_Metrics": ARMetricsRow,
-            "Top20_By_Total_AR": Top20ByTotalARRow,
-            "Top20_By_PastDue": Top20ByPastDueRow,
-            "Ineligible_Trend": IneligibleTrendRow,
-            "Ineligible_Overview": IneligibleOverviewRow,
-            "Concentration_ADO_DSO": ConcentrationADODSORow,
-
-            "FG_Inventory_Metrics": FGInventoryMetricsRow,
-            "FG_Ineligible_detail": FGIneligibleDetailRow,
-            "FG_Composition": FGCompositionRow,
-            "FG_Inline_Category_Analysis": FGInlineCategoryAnalysisRow,
-            "Sales_GM_Trend": SalesGMTrendRow,
-            "FG_Inline_Excess_By_Category": FGInlineExcessByCategoryRow,
-            "Historical_Top_20_SKUs": HistoricalTop20SKUsRow,
-
-            "RM_Inventory_Metrics": RMInventoryMetricsRow,
-            "RM_Ineligible_Overview": RMIneligibleOverviewRow,
-            "RM_Category_History": RMCategoryHistoryRow,
-            "RM_Top20_History": RMTop20HistoryRow,
-
-            "WIP_Inventory_Metrics": WIPInventoryMetricsRow,
-            "WIP_Ineligible_Overview": WIPIneligibleOverviewRow,
-            "WIP_Category_History": WIPCategoryHistoryRow,
-            "WIP_Top20_History": WIPTop20HistoryRow,
-
-            "FG_Gross_Recovery_History": FGGrossRecoveryHistoryRow,
-            "WIP_Recovery": WIPRecoveryRow,
-            "Raw_Material_Recovery": RawMaterialRecoveryRow,
-
-            "NOLV_Table": NOLVTableRow,
-            "Risk_Subfactors": RiskSubfactorsRow,
-            "Composite_Index": CompositeIndexRow,
-
-            "Forecast": ForecastRow,
-            "Availability Forecast": AvailabilityForecastRow,
-            "Cash Flow Forecast": CashFlowForecastRow,
-            "Cash Forecast": CashForecastRow,
-
-            "Current Week Variance": CurrentWeekVarianceRow,
-            "Cummulative Variance": CummulativeVarianceRow,
-
-            "Collateral Limits ": CollateralLimitsRow,
-            "Ineligibles": IneligiblesRow,
-        }
-
-        header_hints = {
-            "Cash Flow Forecast": 1,
-            "Cash Forecast": 1,
-            "Availability Forecast": 1,
-        }
-
-        workbook = pd.ExcelFile(xlsx_path)
-        for sheet in workbook.sheet_names:
-            if sheet == "Borrower Overview":
-                continue
-            if sheet not in sheet_model_map:
-                if ">>>" in sheet:
-                    if debug:
-                        self.stdout.write(f"Skipping section marker sheet: {sheet}")
-                else:
-                    self.stdout.write(f"Skipping unmapped sheet: {sheet}")
-                continue
-
-        summary = []
-
-        for sheet, model_cls in sheet_model_map.items():
-            if sheet not in workbook.sheet_names:
-                self.stdout.write(f"Missing sheet in workbook: {sheet}")
-                continue
-            try:
-                df, meta = read_sheet_df(
-                    xlsx_path,
-                    sheet,
-                    model_cls,
-                    header_hint=header_hints.get(sheet),
-                )
-            except Exception as exc:
-                self.stdout.write(f"{sheet}: failed to read ({exc})")
-                continue
-
-            if df.empty:
-                summary.append(
-                    {
-                        "sheet": sheet,
-                        "model": model_cls.__name__,
-                        "imported": 0,
-                        "skipped": 0,
-                        "header_rows": meta.get("header_rows"),
-                        "data_start": meta.get("data_start_row"),
-                    }
-                )
-                continue
-
-            if debug:
-                self.stdout.write(f"{sheet}: detected columns {meta.get('columns')}")
-                model_fields = sorted(get_model_fields(model_cls))
-                used_columns = sorted(
-                    c for c in meta.get("columns", []) if c in model_fields
-                )
-                self.stdout.write(f"{sheet}: used columns {used_columns}")
-
-            imported, skipped, reasons, debug_msgs = import_sheet_rows(
-                model_cls,
-                df,
-                report,
-                borrower=borrower,
-                debug=debug,
-            )
-
-            if debug_msgs:
-                for msg in debug_msgs:
-                    self.stdout.write(f"{sheet}: {msg}")
-
-            if reasons and skipped:
-                self.stdout.write(f"{sheet}: skipped reasons {dict(reasons)}")
-
-            summary.append(
-                {
-                    "sheet": sheet,
-                    "model": model_cls.__name__,
-                    "imported": imported,
-                    "skipped": skipped,
-                    "header_rows": meta.get("header_rows"),
-                    "data_start": meta.get("data_start_row"),
-                }
-            )
-
-        if summary:
-            self.stdout.write("Import summary:")
-            for row in summary:
-                self.stdout.write(
-                    f"{row['sheet']} | {row['model']} | imported={row['imported']} "
-                    f"| skipped={row['skipped']} | header_row={row['header_rows']} "
-                    f"| data_start={row['data_start']}"
-                )
 
         self.stdout.write(
             self.style.SUCCESS(
-                f"✅ Imported XLSX into report_id={report.id} for borrower_id={borrower.id}"
+                f"✅ Imported XLSX into report_id={result.get('report_id')} "
+                f"for borrower_id={result.get('borrower_id')}"
             )
         )
