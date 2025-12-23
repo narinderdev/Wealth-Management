@@ -30,8 +30,10 @@ from management.models import (
     IneligibleTrendRow,
     MachineryEquipmentRow,
     NOLVTableRow,
+    RMIneligibleOverviewRow,
     RiskSubfactorsRow,
     SalesGMTrendRow,
+    WIPIneligibleOverviewRow,
 )
 from management.views.summary import (
     _build_borrower_summary,
@@ -3853,34 +3855,72 @@ def _raw_materials_context(borrower, range_key="today", division="all"):
             }
         )
 
-    reason_map = {label: Decimal("0") for label, _ in REASON_ORDER}
-
-    def _categorize_reason(text):
-        value = (text or "").lower()
-        for label, keywords in REASON_ORDER:
-            if any(keyword in value for keyword in keywords):
-                return label
-        return "slow-moving/obsolete"
-
-    for row in inventory_rows:
-        amount = _to_decimal(row.ineligibles)
-        if amount <= 0:
-            continue
-        text = " ".join(filter(None, [(row.sub_type or ""), (row.main_type or "")]))
-        reason_key = _categorize_reason(text)
-        reason_map[reason_key] += amount
-
     ineligible_detail = []
-    for label, _ in REASON_ORDER:
-        amount = reason_map.get(label, Decimal("0"))
-        pct = (amount / inventory_ineligible) if inventory_ineligible else Decimal("0")
-        ineligible_detail.append(
-            {
-                "reason": label.replace("-", " ").title(),
-                "amount": _format_currency(amount),
-                "pct": _format_pct(pct),
-            }
-        )
+    rm_ineligible_qs = RMIneligibleOverviewRow.objects.filter(borrower=borrower)
+    if normalized_division != "all":
+        rm_ineligible_qs = rm_ineligible_qs.filter(division__iexact=normalized_division)
+    if start_date and end_date:
+        rm_ineligible_qs = rm_ineligible_qs.filter(date__range=(start_date, end_date))
+    rm_ineligible_row = rm_ineligible_qs.order_by("-date", "-created_at", "-id").first()
+    if not rm_ineligible_row and normalized_division != "all":
+        rm_ineligible_row = RMIneligibleOverviewRow.objects.filter(borrower=borrower).order_by(
+            "-date", "-created_at", "-id"
+        ).first()
+    if rm_ineligible_row:
+        reason_fields = [
+            ("Slow Moving/Obsolete", getattr(rm_ineligible_row, "slow_moving_obsolete", None)),
+            ("Aged", getattr(rm_ineligible_row, "aged", None)),
+            (
+                "Work In Progress",
+                getattr(rm_ineligible_row, "work_in_progress", None)
+                or getattr(rm_ineligible_row, "wip", None)
+                or getattr(rm_ineligible_row, "off_site", None),
+            ),
+            ("Consigned", getattr(rm_ineligible_row, "consigned", None)),
+            ("In Transit", getattr(rm_ineligible_row, "in_transit", None)),
+            ("Damaged/Non Saleable", getattr(rm_ineligible_row, "damaged_non_saleable", None)),
+        ]
+        total_ineligible = _to_decimal(getattr(rm_ineligible_row, "total_ineligible", None))
+        if total_ineligible <= 0:
+            total_ineligible = sum(_to_decimal(value) for _, value in reason_fields if value is not None)
+        for label, value in reason_fields:
+            amount = _to_decimal(value)
+            pct = (amount / total_ineligible) if total_ineligible else Decimal("0")
+            ineligible_detail.append(
+                {
+                    "reason": label,
+                    "amount": _format_currency(amount),
+                    "pct": _format_pct(pct),
+                }
+            )
+    else:
+        reason_map = {label: Decimal("0") for label, _ in REASON_ORDER}
+
+        def _categorize_reason(text):
+            value = (text or "").lower()
+            for label, keywords in REASON_ORDER:
+                if any(keyword in value for keyword in keywords):
+                    return label
+            return "slow-moving/obsolete"
+
+        for row in inventory_rows:
+            amount = _to_decimal(row.ineligibles)
+            if amount <= 0:
+                continue
+            text = " ".join(filter(None, [(row.sub_type or ""), (row.main_type or "")]))
+            reason_key = _categorize_reason(text)
+            reason_map[reason_key] += amount
+
+        for label, _ in REASON_ORDER:
+            amount = reason_map.get(label, Decimal("0"))
+            pct = (amount / inventory_ineligible) if inventory_ineligible else Decimal("0")
+            ineligible_detail.append(
+                {
+                    "reason": label.replace("-", " ").title(),
+                    "amount": _format_currency(amount),
+                    "pct": _format_pct(pct),
+                }
+            )
 
     category_metrics = {label: {"eligible": Decimal("0"), "beginning": Decimal("0")} for label, _ in RAW_CATEGORY_DEFINITIONS}
     OTHER_LABEL = "Other items"
@@ -4178,28 +4218,69 @@ def _work_in_progress_context(borrower, range_key="today", division="all"):
             }
         )
 
-    reason_map = {label: Decimal("0") for label, _ in REASON_ORDER}
-    for row in wip_rows:
-        amount = _to_decimal(row.ineligibles)
-        if amount <= 0:
-            continue
-        text = " ".join(filter(None, [(row.sub_type or ""), (row.main_type or "")]))
-        for label, keywords in REASON_ORDER:
-            if any(keyword in text.lower() for keyword in keywords):
-                reason_map[label] += amount
-                break
-
     ineligible_detail = []
-    for label, _ in REASON_ORDER:
-        amount = reason_map.get(label, Decimal("0"))
-        pct = (amount / total_ineligible) if total_ineligible else Decimal("0")
-        ineligible_detail.append(
-            {
-                "reason": label.replace("-", " ").title(),
-                "amount": _format_currency(amount),
-                "pct": _format_pct(pct),
-            }
+    wip_ineligible_qs = WIPIneligibleOverviewRow.objects.filter(borrower=borrower)
+    if normalized_division != "all":
+        wip_ineligible_qs = wip_ineligible_qs.filter(division__iexact=normalized_division)
+    if start_date and end_date:
+        wip_ineligible_qs = wip_ineligible_qs.filter(date__range=(start_date, end_date))
+    wip_ineligible_row = wip_ineligible_qs.order_by("-date", "-created_at", "-id").first()
+    if not wip_ineligible_row and normalized_division != "all":
+        wip_ineligible_row = WIPIneligibleOverviewRow.objects.filter(borrower=borrower).order_by(
+            "-date", "-created_at", "-id"
+        ).first()
+    if wip_ineligible_row:
+        total_ineligible_row = _to_decimal(getattr(wip_ineligible_row, "total_ineligible", None))
+        slow_moving = _to_decimal(getattr(wip_ineligible_row, "slow_moving_obsolete", None))
+        aged = _to_decimal(getattr(wip_ineligible_row, "aged", None))
+        off_site = _to_decimal(getattr(wip_ineligible_row, "off_site", None))
+        consigned = _to_decimal(getattr(wip_ineligible_row, "consigned", None))
+        in_transit = _to_decimal(getattr(wip_ineligible_row, "in_transit", None))
+        damaged = _to_decimal(getattr(wip_ineligible_row, "damaged_non_saleable", None))
+        if total_ineligible_row <= 0:
+            total_ineligible_row = slow_moving + aged + off_site + consigned + in_transit + damaged
+        work_in_progress = max(
+            total_ineligible_row - (slow_moving + aged + off_site + consigned + in_transit + damaged),
+            Decimal("0"),
         )
+        reason_fields = [
+            ("Slow Moving/Obsolete", slow_moving),
+            ("Aged", aged),
+            ("Work In Progress", work_in_progress),
+            ("Consigned", consigned),
+            ("In Transit", in_transit),
+            ("Damaged/Non Saleable", damaged),
+        ]
+        for label, amount in reason_fields:
+            pct = (amount / total_ineligible_row) if total_ineligible_row else Decimal("0")
+            ineligible_detail.append(
+                {
+                    "reason": label,
+                    "amount": _format_currency(amount),
+                    "pct": _format_pct(pct),
+                }
+            )
+    else:
+        reason_map = {label: Decimal("0") for label, _ in REASON_ORDER}
+        for row in wip_rows:
+            amount = _to_decimal(row.ineligibles)
+            if amount <= 0:
+                continue
+            text = " ".join(filter(None, [(row.sub_type or ""), (row.main_type or "")]))
+            for label, keywords in REASON_ORDER:
+                if any(keyword in text.lower() for keyword in keywords):
+                    reason_map[label] += amount
+                    break
+        for label, _ in REASON_ORDER:
+            amount = reason_map.get(label, Decimal("0"))
+            pct = (amount / total_ineligible) if total_ineligible else Decimal("0")
+            ineligible_detail.append(
+                {
+                    "reason": label.replace("-", " ").title(),
+                    "amount": _format_currency(amount),
+                    "pct": _format_pct(pct),
+                }
+            )
 
     category_groups = {}
     for row in wip_rows:
