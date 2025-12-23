@@ -235,6 +235,9 @@
     .table-wrapper{
       overflow-x:auto;
     }
+    .cashflow-wrapper{
+      overflow-x:visible;
+    }
     .cash-table{
       width:100%;
       border-collapse:separate;
@@ -268,13 +271,15 @@
       background:#f5f7fb;
     }
     .cashflow-table{
-      min-width:1200px;
+      min-width:0;
+      table-layout:fixed;
     }
     .cashflow-table thead th{
       text-align:center;
       font-size:10px;
       line-height:1.2;
       font-weight:600;
+      white-space:normal;
     }
     .cashflow-table thead th:first-child{
       text-align:left;
@@ -282,6 +287,7 @@
     }
     .cashflow-table tbody td{
       text-align:center;
+      white-space:normal;
     }
     .cashflow-table tbody td:first-child{
       text-align:left;
@@ -559,7 +565,7 @@
         </span>
         <span style="font-size:11px;color:#64748b;">Updated {{ week_summary.forecast_updated_label }}</span>
       </div>
-      <div class="table-wrapper">
+      <div class="table-wrapper cashflow-wrapper">
         <table class="cash-table cashflow-table">
             <thead>
             <tr>
@@ -572,16 +578,22 @@
               </tr>
             </thead>
             <tbody>
-              {% for row in week_summary.cashflow_table_rows %}
-                <tr{% if row.row_class %} class="{{ row.row_class }}"{% endif %}>
-                  <td>{{ row.label }}</td>
-                  <td>{{ row.actual }}</td>
-                  {% for forecast in row.forecasts %}
-                    <td>{{ forecast }}</td>
-                  {% endfor %}
-                  <td>{{ row.total }}</td>
+              {% if week_summary.cashflow_table_rows %}
+                {% for row in week_summary.cashflow_table_rows %}
+                  <tr{% if row.row_class %} class="{{ row.row_class }}"{% endif %}>
+                    <td>{{ row.label }}</td>
+                    <td>{{ row.actual }}</td>
+                    {% for forecast in row.forecasts %}
+                      <td>{{ forecast }}</td>
+                    {% endfor %}
+                    <td>{{ row.total }}</td>
+                  </tr>
+                {% endfor %}
+              {% else %}
+                <tr>
+                  <td colspan="{{ week_summary.cashflow_table_colspan }}">{{ week_summary.cashflow_empty_state|default:"No forecast data available." }}</td>
                 </tr>
-              {% endfor %}
+              {% endif %}
             </tbody>
           </table>
         </div>
@@ -609,16 +621,22 @@
               </tr>
             </thead>
             <tbody>
-              {% for row in week_summary.cashflow_cash_rows %}
-                <tr{% if row.row_class %} class="{{ row.row_class }}"{% endif %}>
-                  <td>{{ row.label }}</td>
-                  <td>{{ row.actual }}</td>
-                  {% for forecast in row.forecasts %}
-                    <td>{{ forecast }}</td>
-                  {% endfor %}
-                  <td>{{ row.total }}</td>
+              {% if week_summary.cashflow_cash_rows %}
+                {% for row in week_summary.cashflow_cash_rows %}
+                  <tr{% if row.row_class %} class="{{ row.row_class }}"{% endif %}>
+                    <td>{{ row.label }}</td>
+                    <td>{{ row.actual }}</td>
+                    {% for forecast in row.forecasts %}
+                      <td>{{ forecast }}</td>
+                    {% endfor %}
+                    <td>{{ row.total }}</td>
+                  </tr>
+                {% endfor %}
+              {% else %}
+                <tr>
+                  <td colspan="{{ week_summary.cashflow_cash_colspan }}">{{ week_summary.cashforecast_empty_state|default:"No forecast data available." }}</td>
                 </tr>
-              {% endfor %}
+              {% endif %}
             </tbody>
           </table>
       </div>

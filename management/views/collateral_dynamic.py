@@ -12,6 +12,9 @@ from management.models import (
     ARMetricsRow,
     AgingCompositionRow,
     AvailabilityForecastRow,
+    BorrowerReport,
+    CashFlowForecastRow,
+    CashForecastRow,
     CollateralOverviewRow,
     ConcentrationADODSORow,
     CurrentWeekVarianceRow,
@@ -532,6 +535,10 @@ def _week_summary_context(borrower):
         "cashflow_forecast_labels": [],
         "cashflow_table_rows": [],
         "cashflow_cash_rows": [],
+        "cashflow_empty_state": "",
+        "cashforecast_empty_state": "",
+        "cashflow_table_colspan": 0,
+        "cashflow_cash_colspan": 0,
         "availability_actual_label": "Actual",
         "availability_week_labels": [f"Week {i}" for i in range(1, 14)],
         "availability_rows": [],
@@ -544,6 +551,10 @@ def _week_summary_context(borrower):
     }
 
     if not borrower:
+        context["cashflow_empty_state"] = "Please select a borrower to view forecast data."
+        context["cashforecast_empty_state"] = "Please select a borrower to view forecast data."
+        context["cashflow_table_colspan"] = 15
+        context["cashflow_cash_colspan"] = 15
         return context
 
     forecast_qs = ForecastRow.objects.filter(borrower=borrower)
@@ -605,6 +616,63 @@ def _week_summary_context(borrower):
     else:
         availability_rows_qs = list(availability_qs.order_by("id"))
 
+    report_qs = BorrowerReport.objects.filter(borrower=borrower).order_by(
+        "-report_date",
+        "-created_at",
+        "-id",
+    )
+    latest_report = report_qs.exclude(report_date__isnull=True).first() or report_qs.first()
+
+    cashflow_rows = []
+    cash_rows = []
+    cashflow_report_date = None
+
+    if latest_report:
+        cashflow_rows = list(
+            CashFlowForecastRow.objects.filter(report=latest_report).order_by("id")
+        )
+        cash_rows = list(
+            CashForecastRow.objects.filter(report=latest_report).order_by("id")
+        )
+        cashflow_report_date = latest_report.report_date
+    else:
+        latest_cashflow = (
+            CashFlowForecastRow.objects.filter(report__borrower=borrower)
+            .order_by("-date", "-created_at", "-id")
+            .first()
+        )
+        if latest_cashflow and latest_cashflow.date:
+            cashflow_rows = list(
+                CashFlowForecastRow.objects.filter(
+                    report__borrower=borrower,
+                    date=latest_cashflow.date,
+                ).order_by("id")
+            )
+            cashflow_report_date = latest_cashflow.date
+        else:
+            cashflow_rows = list(
+                CashFlowForecastRow.objects.filter(report__borrower=borrower).order_by("id")
+            )
+
+        latest_cash = (
+            CashForecastRow.objects.filter(report__borrower=borrower)
+            .order_by("-date", "-created_at", "-id")
+            .first()
+        )
+        if latest_cash and latest_cash.date:
+            cash_rows = list(
+                CashForecastRow.objects.filter(
+                    report__borrower=borrower,
+                    date=latest_cash.date,
+                ).order_by("id")
+            )
+            if not cashflow_report_date:
+                cashflow_report_date = latest_cash.date
+        else:
+            cash_rows = list(
+                CashForecastRow.objects.filter(report__borrower=borrower).order_by("id")
+            )
+
     report_date_candidates = []
     if latest_forecast:
         report_date_candidates.append(latest_forecast.as_of_date or latest_forecast.period)
@@ -614,6 +682,8 @@ def _week_summary_context(borrower):
         report_date_candidates.append(latest_cum.date)
     if latest_availability:
         report_date_candidates.append(latest_availability.date)
+    if cashflow_report_date:
+        report_date_candidates.append(cashflow_report_date)
     report_date = next((val for val in report_date_candidates if val), None)
     summary_map = [
         ("Beginning Cash", ["beginning cash"]),
@@ -925,6 +995,94 @@ def _week_summary_context(borrower):
         _build_table_row(label, accessor, row_class)
         for label, accessor, row_class in cashflow_cash_defs
     ]
+
+    def _resolve_week_fields(rows, default_weeks=12):
+        week_fields = [f"week_{i}" for i in range(1, 14)]
+        max_week = 0
+        for idx, field in enumerate(week_fields, 1):
+            if any(getattr(row, field, None) is not None for row in rows):
+                max_week = idx
+        if max_week == 0:
+            max_week = default_weeks
+        return week_fields[:max_week]
+
+    def _sum_optional(values):
+        total = Decimal("0")
+        has_value = False
+        for val in values:
+            if val is None:
+                continue
+            total += _to_decimal(val)
+            has_value = True
+        return total if has_value else None
+
+    def _cashflow_row_class(label):
+        label_lower = (label or "").strip().lower()
+        if label_lower in {
+            "receipts",
+            "operating disbursements",
+            "non-operating disbursements",
+        }:
+            return "section-row"
+        if "total" in label_lower or "net cash flow" in label_lower or "ending cash" in label_lower:
+            return "title-row"
+        return ""
+
+    def _build_cash_rows(rows, week_fields, total_field=None):
+        output = []
+        for row in rows:
+            label = _safe_str(getattr(row, "category", None), default="—")
+            actual_val = getattr(row, "x", None)
+            forecasts = [getattr(row, field, None) for field in week_fields]
+            total_val = getattr(row, total_field, None) if total_field else None
+            if total_val is None:
+                total_val = _sum_optional([actual_val] + forecasts)
+            output.append(
+                {
+                    "label": label,
+                    "actual": _format_money(actual_val),
+                    "forecasts": [_format_money(val) for val in forecasts],
+                    "total": _format_money(total_val),
+                    "row_class": _cashflow_row_class(label),
+                }
+            )
+        return output
+
+    cashflow_week_fields = _resolve_week_fields(cashflow_rows)
+    cash_week_fields = _resolve_week_fields(cash_rows)
+    max_weeks = max(len(cashflow_week_fields), len(cash_week_fields))
+    week_fields = [f"week_{i}" for i in range(1, max_weeks + 1)]
+
+    cashflow_table_rows = _build_cash_rows(
+        cashflow_rows,
+        week_fields,
+        total_field="total",
+    )
+    cashflow_cash_rows = _build_cash_rows(cash_rows, week_fields)
+
+    actual_date = None
+    if cashflow_rows:
+        actual_date = cashflow_rows[0].date or cashflow_report_date
+    elif cash_rows:
+        actual_date = cash_rows[0].date or cashflow_report_date
+
+    if actual_date:
+        cashflow_actual_label = f"Actual<br/>{_format_date(actual_date)}"
+        cashflow_forecast_labels = [
+            f"Forecast<br/>Week {idx} {_format_date(actual_date + timedelta(days=7 * idx))}"
+            for idx in range(1, len(week_fields) + 1)
+        ]
+    else:
+        cashflow_actual_label = "Actual"
+        cashflow_forecast_labels = [f"Forecast<br/>Week {idx}" for idx in range(1, len(week_fields) + 1)]
+
+    context["cashflow_table_colspan"] = len(week_fields) + 3
+    context["cashflow_cash_colspan"] = len(week_fields) + 3
+
+    if not cashflow_table_rows:
+        context["cashflow_empty_state"] = "No forecast data available. Please import the Excel file."
+    if not cashflow_cash_rows:
+        context["cashforecast_empty_state"] = "No forecast data available. Please import the Excel file."
 
     availability_rows = []
     week_fields = [f"week_{i}" for i in range(1, 14)]
