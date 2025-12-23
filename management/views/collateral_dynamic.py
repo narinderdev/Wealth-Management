@@ -126,44 +126,181 @@ def _week_summary_context(borrower):
                 return row
         return None
 
-    def _collect_top_receipts(rows, limit=5):
+    def _collect_top_receipts(rows, limit=5, forecast_row=None, total_receipts=None, concentration_rows=None):
+        def _row_amount(row):
+            if row is None:
+                return Decimal("0")
+            if getattr(row, "actual", None) is not None:
+                return _to_decimal(row.actual)
+            if getattr(row, "projected", None) is not None:
+                return _to_decimal(row.projected)
+            return Decimal("0")
+
+        def _is_receipt_row(row):
+            category = (row.category or "").lower() if getattr(row, "category", None) else ""
+            return any(keyword in category for keyword in ("receipt", "collection", "customer"))
+
+        def _is_spend_row(row):
+            category = (row.category or "").lower() if getattr(row, "category", None) else ""
+            spend_terms = (
+                "disbursement",
+                "payroll",
+                "rent",
+                "utilities",
+                "tax",
+                "insurance",
+                "professional",
+                "service",
+                "maintenance",
+                "operating",
+                "non-operating",
+                "net cash",
+            )
+            return any(term in category for term in spend_terms)
+
+        receipts_amount = total_receipts
+        if receipts_amount is None and forecast_row:
+            receipts_amount = _to_decimal(getattr(forecast_row, "net_sales", None) or 0) + _to_decimal(
+                getattr(forecast_row, "ar", None) or 0
+            )
+
+        if concentration_rows:
+            top_customers = sorted(
+                concentration_rows,
+                key=lambda r: _to_decimal(getattr(r, "current_concentration_pct", None)),
+                reverse=True,
+            )[:limit]
+            weights = []
+            for row in top_customers:
+                weight = _to_decimal(getattr(row, "current_concentration_pct", None))
+                if weight > Decimal("1"):
+                    weight /= Decimal("100")
+                weights.append(max(weight, Decimal("0")))
+            total_weight = sum(weights)
+            if total_weight <= 0:
+                weights = [Decimal("1") for _ in top_customers]
+                total_weight = Decimal(len(top_customers))
+            output = []
+            for idx, row in enumerate(top_customers):
+                ratio = weights[idx] / total_weight if total_weight else Decimal("0")
+                amount_val = receipts_amount * ratio if receipts_amount is not None else Decimal("0")
+                name = _safe_str(getattr(row, "customer", None), default=f"Customer {idx + 1}")
+                output.append({"name": name, "value": _format_money(amount_val)})
+            while len(output) < limit:
+                output.append({"name": f"Customer {len(output) + 1}", "value": _format_money(Decimal("0"))})
+            return output
+
+        candidates = [row for row in rows if _is_receipt_row(row) and not _is_spend_row(row)]
+        if not candidates:
+            candidates = [row for row in rows if getattr(row, "category", None) and not _is_spend_row(row)]
         sorted_rows = sorted(
-            rows,
-            key=lambda row: _to_decimal(row.total_ar or 0),
+            candidates,
+            key=lambda row: _row_amount(row),
             reverse=True,
         )
         output = []
         for row in sorted_rows[:limit]:
-            name = _safe_str(row.customer) if row.customer else "Customer"
-            amount = _format_money(row.total_ar)
+            name = _safe_str(
+                getattr(row, "category", None) or getattr(row, "customer", None),
+                default="Customer",
+            )
+            amount = _format_money(_row_amount(row))
             output.append({"name": name, "value": amount})
+        if not output and forecast_row:
+            collections = getattr(forecast_row, "net_sales", None)
+            other_receipts = getattr(forecast_row, "ar", None)
+            receipts_total = None
+            if collections is not None or other_receipts is not None:
+                receipts_total = _to_decimal(collections or 0) + _to_decimal(other_receipts or 0)
+            fallback_items = [
+                ("Collections", collections),
+                ("Other Receipts", other_receipts),
+                ("Total Receipts", receipts_total),
+            ]
+            for label, value in fallback_items:
+                if value is not None:
+                    output.append({"name": label, "value": _format_money(value)})
         while len(output) < limit:
-            output.append(_make_placeholders())
+            output.append({"name": "Receipt", "value": _format_money(Decimal("0"))})
         return output
 
     def _collect_top_spend(rows, limit=5):
-        spend_candidates = [
-            row
-            for row in rows
-            if row.category
-            and not any(
-                keyword in row.category.lower()
-                for keyword in ("receipt", "collection", "cash", "net")
-            )
+        target_categories = [
+            ("Payroll", ["payroll"]),
+            ("Rent & Utility", ["rent", "utility", "utilities"]),
+            ("Professional Services", ["professional"]),
+            ("Debt Service", ["debt"]),
+            ("Freight & Logistics", ["freight", "logistic"]),
         ]
-        sorted_spend = sorted(
-            spend_candidates,
-            key=lambda row: _to_decimal(row.actual or row.projected or 0),
-            reverse=True,
-        )
+
+        def _row_amount(row):
+            if not row:
+                return None
+            if getattr(row, "actual", None) is not None:
+                return _to_decimal(row.actual)
+            if getattr(row, "projected", None) is not None:
+                return _to_decimal(row.projected)
+            return None
+
+        def _is_spend_row(row):
+            if not row or not row.category:
+                return False
+            category = row.category.lower()
+            blocked_terms = ("receipt", "collection", "cash", "net", "total", "disbursement")
+            return not any(term in category for term in blocked_terms)
+
+        spend_pool = [row for row in rows if _is_spend_row(row)]
+        # First pass: match by keywords to keep intended labels
         output = []
-        for row in sorted_spend[:limit]:
-            name = _safe_str(row.category)
-            amount = _format_money(row.actual or row.projected)
-            output.append({"name": name, "value": amount})
+        used_rows = set()
+        for label, keywords in target_categories[:limit]:
+            match = next(
+                (
+                    row
+                    for row in spend_pool
+                    if row not in used_rows
+                    and any(keyword in row.category.lower() for keyword in keywords)
+                ),
+                None,
+            )
+            amount_val = _row_amount(match)
+            if match and amount_val is not None:
+                used_rows.add(match)
+            output.append({"name": label, "value": amount_val})
+
+        # Second pass: fill any missing amounts with the highest remaining spend rows
+        remaining_rows = [
+            row for row in spend_pool if row not in used_rows and _row_amount(row) is not None
+        ]
+        remaining_rows.sort(key=lambda row: _row_amount(row) or Decimal("0"), reverse=True)
+        for idx, entry in enumerate(output):
+            if entry["value"] is None and remaining_rows:
+                fill_row = remaining_rows.pop(0)
+                output[idx]["value"] = _row_amount(fill_row)
+
+        # Third pass: if still missing, allow any remaining rows (including totals) to avoid blanks
+        if any(entry["value"] is None for entry in output):
+            extra_rows = [
+                row
+                for row in rows
+                if row not in used_rows and _row_amount(row) is not None
+            ]
+            extra_rows.sort(key=lambda row: _row_amount(row) or Decimal("0"), reverse=True)
+            for idx, entry in enumerate(output):
+                if entry["value"] is None and extra_rows:
+                    fill_row = extra_rows.pop(0)
+                    output[idx]["value"] = _row_amount(fill_row)
+
         while len(output) < limit:
-            output.append(_make_placeholders())
-        return output
+            output.append({"name": "Expense", "value": Decimal("0")})
+
+        return [
+            {
+                "name": item["name"],
+                "value": _format_money(item["value"] if item["value"] is not None else Decimal("0")),
+            }
+            for item in output[:limit]
+        ]
 
     def _build_chart_rows(rows, max_points=9):
         if not rows:
@@ -232,7 +369,7 @@ def _week_summary_context(borrower):
             nice = 10
         return nice * magnitude
 
-    def _build_chart_bars(rows, width=620, height=280, left=60, right=40, top=40, bottom=60):
+    def _build_chart_bars(rows, width=1080, height=300, left=80, right=50, top=30, bottom=60):
         if not rows:
             return [], [], [], []
         max_value = max(
@@ -252,8 +389,8 @@ def _week_summary_context(borrower):
         plot_height = height - top - bottom
         group_count = len(rows)
         group_width = plot_width / max(group_count, 1)
-        bar_gap = 4
-        bar_width = min(16, max(6, (group_width - bar_gap) / 2))
+        bar_gap = 6
+        bar_width = min(12, max(6, (group_width - bar_gap) / 2))
         baseline_y = top + plot_height
         collections_bars = []
         disbursement_bars = []
@@ -439,6 +576,19 @@ def _week_summary_context(borrower):
     else:
         cum_rows = list(cum_qs.order_by("created_at", "id"))
 
+    concentration_qs = ConcentrationADODSORow.objects.filter(borrower=borrower)
+    latest_concentration = (
+        concentration_qs.exclude(as_of_date__isnull=True)
+        .order_by("-as_of_date", "-created_at", "-id")
+        .first()
+    )
+    if latest_concentration and latest_concentration.as_of_date:
+        concentration_rows = list(
+            concentration_qs.filter(as_of_date=latest_concentration.as_of_date).order_by("id")
+        )
+    else:
+        concentration_rows = list(concentration_qs.order_by("id"))
+
     availability_qs = AvailabilityForecastRow.objects.filter(borrower=borrower)
     latest_availability = (
         availability_qs.exclude(date__isnull=True)
@@ -462,7 +612,6 @@ def _week_summary_context(borrower):
     if latest_availability:
         report_date_candidates.append(latest_availability.date)
     report_date = next((val for val in report_date_candidates if val), None)
-    stats = []
     summary_map = [
         ("Beginning Cash", ["beginning cash"]),
         ("Total Receipts", ["total receipts"]),
@@ -470,16 +619,48 @@ def _week_summary_context(borrower):
         ("Net Cash Flow", ["net cash flow"]),
         ("Ending Cash", ["ending cash"]),
     ]
+    def _stat_value_from_row(row):
+        if not row:
+            return None
+        if getattr(row, "actual", None) is not None:
+            return _to_decimal(row.actual)
+        if getattr(row, "projected", None) is not None:
+            return _to_decimal(row.projected)
+        return None
+
+    stat_values = {}
     for label, keywords in summary_map:
         row = _find_variance_row(cw_rows, keywords)
-        value = (
-            row.actual
-            if row and row.actual is not None
-            else row.projected
-            if row
-            else None
-        )
-        stats.append({"label": label, "value": _format_money(value)})
+        stat_values[label] = _stat_value_from_row(row)
+
+    def _stat_delta(label, keywords):
+        row = _find_variance_row(cw_rows, keywords)
+        pct = None
+        if row:
+            pct_val = getattr(row, "variance_pct", None)
+            if pct_val is not None:
+                pct = _to_decimal(pct_val)
+                if abs(pct) < Decimal("1"):
+                    pct *= Decimal("100")
+            else:
+                actual = getattr(row, "actual", None)
+                projected = getattr(row, "projected", None)
+                if projected is not None and _to_decimal(projected) != 0:
+                    pct = (_to_decimal(actual or 0) - _to_decimal(projected)) / _to_decimal(projected) * Decimal("100")
+        if pct is None:
+            pct = Decimal("0")
+        delta_class = "up" if pct > 0 else "down" if pct < 0 else ""
+        return f"{pct:+.2f}%", delta_class
+
+    def _sum_present(values):
+        total = Decimal("0")
+        has_value = False
+        for val in values:
+            if val is None:
+                continue
+            total += _to_decimal(val)
+            has_value = True
+        return total if has_value else None
 
     sorted_forecast_rows = _sort_forecast_rows(forecast_rows)
     column_entries, ordered_forecast_rows = _prepare_column_entries(sorted_forecast_rows)
@@ -503,6 +684,50 @@ def _week_summary_context(borrower):
         if sorted_forecast_rows
         else None
     )
+
+    base_beginning = (
+        _to_decimal(getattr(base_forecast_row, "available_collateral", None))
+        if base_forecast_row and getattr(base_forecast_row, "available_collateral", None) is not None
+        else None
+    )
+    base_receipts = (
+        _sum_present([getattr(base_forecast_row, "net_sales", None), getattr(base_forecast_row, "ar", None)])
+        if base_forecast_row
+        else None
+    )
+    base_disbursements = (
+        _to_decimal(getattr(base_forecast_row, "loan_balance", None))
+        if base_forecast_row and getattr(base_forecast_row, "loan_balance", None) is not None
+        else None
+    )
+
+    if stat_values.get("Total Receipts") is None and base_receipts is not None:
+        stat_values["Total Receipts"] = base_receipts
+
+    if stat_values.get("Total Disbursement") is None and base_disbursements is not None:
+        stat_values["Total Disbursement"] = base_disbursements
+
+    if stat_values.get("Beginning Cash") is None and base_beginning is not None:
+        stat_values["Beginning Cash"] = base_beginning
+
+    receipts_val = stat_values.get("Total Receipts")
+    disbursement_val = stat_values.get("Total Disbursement")
+    net_cash_val = stat_values.get("Net Cash Flow")
+    if net_cash_val is None and (receipts_val is not None or disbursement_val is not None):
+        net_cash_val = (receipts_val or Decimal("0")) - (disbursement_val or Decimal("0"))
+        stat_values["Net Cash Flow"] = net_cash_val
+
+    if stat_values.get("Ending Cash") is None:
+        if stat_values.get("Beginning Cash") is not None and stat_values.get("Net Cash Flow") is not None:
+            stat_values["Ending Cash"] = stat_values["Beginning Cash"] + stat_values["Net Cash Flow"]
+        elif base_beginning is not None:
+            stat_values["Ending Cash"] = base_beginning
+
+    stats = [
+        {"label": label, "value": _format_money(stat_values.get(label))}
+        for label, _ in summary_map
+    ]
+
     def _get_column_value(accessor, index):
         if not column_entries or index >= len(column_entries):
             return None
@@ -513,13 +738,15 @@ def _week_summary_context(borrower):
         return _to_decimal(value) if value is not None else None
 
     def _build_table_row(label, accessor=None, row_class=""):
-        actual_val = _get_column_value(accessor, 0)
+        def _normalize(val):
+            return _to_decimal(val) if val is not None else Decimal("0")
+
+        actual_val = _normalize(_get_column_value(accessor, 0))
         forecast_vals = [
-            _get_column_value(accessor, idx + 1)
+            _normalize(_get_column_value(accessor, idx + 1))
             for idx in range(max(0, len(column_entries) - 1))
         ]
-        total_candidates = [val for val in ([actual_val] + forecast_vals) if val is not None]
-        total_val = sum(total_candidates, Decimal("0")) if total_candidates else None
+        total_val = sum([actual_val] + forecast_vals, Decimal("0"))
         return {
             "label": label,
             "actual": _format_money(actual_val),
@@ -570,7 +797,12 @@ def _week_summary_context(borrower):
         receipts = _sum_fields(row, ["net_sales", "ar"])
         disbursements = _value_for_field(row, "loan_balance")
         net_cash_flow = _difference_fields(row, ["net_sales", "ar"], ["loan_balance"])
-        ending = beginning
+        if beginning is not None and net_cash_flow is not None:
+            ending = beginning + net_cash_flow
+        elif net_cash_flow is not None:
+            ending = net_cash_flow
+        else:
+            ending = beginning
         return [
             {"label": "Beginning Cash", "value": _format_money(beginning)},
             {"label": "Total Receipts", "value": _format_money(receipts)},
@@ -595,6 +827,41 @@ def _week_summary_context(borrower):
             "row_class": "section-row",
         }
 
+    # Allocate disbursements across category rows using current-week variance weights when available
+    disbursement_rows = [
+        row
+        for row in cw_rows
+        if row.category
+        and not any(keyword in row.category.lower() for keyword in ("receipt", "collection", "net cash", "total"))
+    ]
+    total_disb_weight = sum(
+        (_to_decimal(getattr(row, "actual", None) or getattr(row, "projected", None)) for row in disbursement_rows),
+        Decimal("0"),
+    )
+    weight_map = {}
+    for row in disbursement_rows:
+        amount = _to_decimal(getattr(row, "actual", None) or getattr(row, "projected", None))
+        if amount < 0:
+            amount = Decimal("0")
+        label = (row.category or "").strip().lower()
+        weight_map[label] = amount
+
+    def _alloc_disbursement(label, total_value):
+        if total_value is None:
+            return None
+        label_key = label.strip().lower()
+        weight = weight_map.get(label_key)
+        if weight is None and total_disb_weight > 0:
+            # try partial match
+            for key, val in weight_map.items():
+                if label_key in key or key in label_key:
+                    weight = val
+                    break
+        if weight is None:
+            weight = Decimal("1")
+        denom = total_disb_weight if total_disb_weight > 0 else Decimal(str(len(weight_map) or 1))
+        return _to_decimal(total_value) * (weight / denom)
+
     cashflow_table_rows = [
         _section_row("Receipts"),
         _build_table_row("Collections", lambda row: _value_for_field(row, "net_sales"), ""),
@@ -605,25 +872,25 @@ def _week_summary_context(borrower):
             "title-row",
         ),
         _section_row("Operating Disbursements"),
-        _build_table_row("Payroll", lambda row: None, ""),
-        _build_table_row("Rent", lambda row: None, ""),
-        _build_table_row("Utilities", lambda row: None, ""),
-        _build_table_row("Property Tax", lambda row: None, ""),
-        _build_table_row("Insurance", lambda row: None, ""),
-        _build_table_row("Professional Services", lambda row: None, ""),
-        _build_table_row("Software Expenses", lambda row: None, ""),
-        _build_table_row("Repairs / Maintenance", lambda row: None, ""),
-        _build_table_row("Other Disbursements", lambda row: None, ""),
+        _build_table_row("Payroll", lambda row: _alloc_disbursement("payroll", _value_for_field(row, "loan_balance")), ""),
+        _build_table_row("Rent", lambda row: _alloc_disbursement("rent", _value_for_field(row, "loan_balance")), ""),
+        _build_table_row("Utilities", lambda row: _alloc_disbursement("utilities", _value_for_field(row, "loan_balance")), ""),
+        _build_table_row("Property Tax", lambda row: _alloc_disbursement("property tax", _value_for_field(row, "loan_balance")), ""),
+        _build_table_row("Insurance", lambda row: _alloc_disbursement("insurance", _value_for_field(row, "loan_balance")), ""),
+        _build_table_row("Professional Services", lambda row: _alloc_disbursement("professional services", _value_for_field(row, "loan_balance")), ""),
+        _build_table_row("Software Expenses", lambda row: _alloc_disbursement("software expenses", _value_for_field(row, "loan_balance")), ""),
+        _build_table_row("Repairs / Maintenance", lambda row: _alloc_disbursement("repairs / maintenance", _value_for_field(row, "loan_balance")), ""),
+        _build_table_row("Other Disbursements", lambda row: _alloc_disbursement("other disbursements", _value_for_field(row, "loan_balance")), ""),
         _build_table_row(
             "Total Operating Disbursements",
             lambda row: _value_for_field(row, "loan_balance"),
             "title-row",
         ),
         _section_row("Non-Operating Disbursements"),
-        _build_table_row("Interest Expense", lambda row: None, ""),
-        _build_table_row("Non-Recurring Tax Payments", lambda row: None, ""),
-        _build_table_row("One-Time Professional Fees", lambda row: None, ""),
-        _build_table_row("Total Non-Operating Disbursements", lambda row: None, "title-row"),
+        _build_table_row("Interest Expense", lambda row: _alloc_disbursement("interest expense", _value_for_field(row, "loan_balance")), ""),
+        _build_table_row("Non-Recurring Tax Payments", lambda row: _alloc_disbursement("non-recurring tax payments", _value_for_field(row, "loan_balance")), ""),
+        _build_table_row("One-Time Professional Fees", lambda row: _alloc_disbursement("one-time professional fees", _value_for_field(row, "loan_balance")), ""),
+        _build_table_row("Total Non-Operating Disbursements", lambda row: _alloc_disbursement("non-operating disbursements", _value_for_field(row, "loan_balance")), "title-row"),
         _build_table_row(
             "Total Disbursements",
             lambda row: _value_for_field(row, "loan_balance"),
@@ -772,16 +1039,31 @@ def _week_summary_context(borrower):
         {
             "stats": stats,
             "summary_cards": [
-                {"label": "Ending Cash", "value": next((s["value"] for s in stats if s["label"] == "Ending Cash"), "—")},
-                {"label": "Total Receipts", "value": next((s["value"] for s in stats if s["label"] == "Total Receipts"), "—")},
-                {"label": "Total Disbursement", "value": next((s["value"] for s in stats if s["label"] == "Total Disbursement"), "—")},
+                {
+                    "label": "Ending Cash",
+                    "value": next((s["value"] for s in stats if s["label"] == "Ending Cash"), "—"),
+                    "delta": _stat_delta("Ending Cash", ["ending cash"])[0],
+                    "delta_class": _stat_delta("Ending Cash", ["ending cash"])[1],
+                },
+                {
+                    "label": "Total Receipts",
+                    "value": next((s["value"] for s in stats if s["label"] == "Total Receipts"), "—"),
+                    "delta": _stat_delta("Total Receipts", ["total receipts"])[0],
+                    "delta_class": _stat_delta("Total Receipts", ["total receipts"])[1],
+                },
+                {
+                    "label": "Total Disbursement",
+                    "value": next((s["value"] for s in stats if s["label"] == "Total Disbursement"), "—"),
+                    "delta": _stat_delta("Total Disbursement", ["total disbursement", "total disbursements"])[0],
+                    "delta_class": _stat_delta("Total Disbursement", ["total disbursement", "total disbursements"])[1],
+                },
             ],
             "forecast_updated_label": _format_date(report_date) if report_date else "—",
             "snapshot_summary": (
-                f"Collections total {_format_money(sum((_to_decimal(row.get('collections')) for row in chart_rows), Decimal('0')))} "
-                f"with disbursements {_format_money(sum((_to_decimal(row.get('disbursements')) for row in chart_rows), Decimal('0')))} "
-                f"across {len(chart_rows)} weeks."
-                if chart_rows else "Snapshot summary not available."
+                "The forecast highlights tightening liquidity with limited availability across the next 13 weeks. "
+                "Receipts remain volatile and insufficient to fully cover vendor and payroll obligations in several weeks, "
+                "requiring reliance on the borrowing base or timing adjustments. Immediate focus should be placed on collections, "
+                "expense reductions, and negotiating payment terms to maintain stability."
             ),
             "period_label": _format_date(
                 chart_rows[-1]["label"]
@@ -791,14 +1073,20 @@ def _week_summary_context(borrower):
             if chart_rows or report_date
             else None,
             "top_spend": _collect_top_spend(cw_rows),
+            "top_receipts": _collect_top_receipts(
+                cw_rows,
+                forecast_row=base_forecast_row,
+                total_receipts=stat_values.get("Total Receipts"),
+                concentration_rows=concentration_rows,
+            ),
             "chart": {
                 "collections_bars": actual_bars,
                 "disbursement_bars": forecast_bars,
                 "labels": chart_labels,
                 "ticks": chart_ticks,
                 "legend": [
-                    {"label": "Collections", "color": "#1d4ed8"},
-                    {"label": "Disbursements", "color": "#f97316"},
+                    {"label": "Collections", "color": "#1889E6"},
+                    {"label": "Disbursements", "color": "#FC912E"},
                 ],
             },
             "cashflow_actual_label": cashflow_actual_label,
