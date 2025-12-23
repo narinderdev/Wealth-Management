@@ -290,6 +290,12 @@
       letter-spacing:.02em;
       white-space:nowrap;
     }
+    .global-borrower__stack{
+      display:flex;
+      flex-direction:column;
+      align-items:flex-end;
+      gap:4px;
+    }
     .global-borrower__label{
       text-transform:uppercase;
       opacity:.8;
@@ -298,6 +304,7 @@
       display:flex;
       align-items:center;
       justify-content:flex-end;
+      gap:8px;
       max-width:340px;
       width:100%;
     }
@@ -319,12 +326,28 @@
       background-repeat:no-repeat;
       background-position:calc(100% - 10px) 50%;
     }
+    .global-borrower__select:disabled{
+      cursor:not-allowed;
+      opacity:.7;
+    }
     .global-borrower__select option{
       color:#0f172a;
     }
     .global-borrower__select:focus{
       outline:2px solid rgba(255,255,255,.6);
       outline-offset:1px;
+    }
+    .global-borrower__link{
+      color:#fff;
+      font-size:10px;
+      font-weight:700;
+      text-decoration:underline;
+    }
+    .global-borrower__note{
+      font-size:10px;
+      font-weight:600;
+      color:#dbe6ff;
+      text-align:right;
     }
 
     .content{
@@ -539,6 +562,13 @@
       color:#7f1d1d;
       font-weight:600;
       margin-bottom:16px;
+    }
+    .global-borrower-warning__link{
+      display:inline-block;
+      margin-top:6px;
+      color:#1f55c7;
+      font-weight:700;
+      text-decoration:underline;
     }
     .component-help{
       font-size:11px;
@@ -1225,6 +1255,11 @@
       </header>
 
       <div class="content">
+        {% if has_borrowers is not None and not has_borrowers %}
+          <div class="component-alert">
+            No borrowers exist yet. Create a borrower to begin.
+          </div>
+        {% endif %}
         {% block top_section %}{% endblock %}
         <section class="panel">
           {% block admin_screens %}{% endblock %}

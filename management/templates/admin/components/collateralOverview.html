@@ -17,6 +17,7 @@
             <th>Borrower</th>
             <th>Main Type</th>
             <th>Sub Type</th>
+            <th>Snapshot Summary</th>
             <th>Beginning Collateral</th>
             <th>Ineligibles</th>
             <th>Eligible Collateral</th>
@@ -38,6 +39,9 @@
               <td>{{ row.borrower|default:"—" }}</td>
               <td>{{ row.main_type|default:"—" }}</td>
               <td>{{ row.sub_type|default:"—" }}</td>
+              <td title="{{ row.snapshot_summary|default:'' }}">
+                {{ row.snapshot_summary|default:"—"|truncatechars:80 }}
+              </td>
               <td>{{ row.beginning_collateral|default:"—" }}</td>
               <td>{{ row.ineligibles|default:"—" }}</td>
               <td>{{ row.eligible_collateral|default:"—" }}</td>
@@ -61,7 +65,7 @@
               </td>
             </tr>
           {% empty %}
-            <tr><td colspan="16">No collateral overview entries recorded.</td></tr>
+            <tr><td colspan="17">No collateral overview entries recorded.</td></tr>
           {% endfor %}
         </tbody>
       </table>

@@ -9,6 +9,7 @@ from django.shortcuts import render
 from management.models import ForecastRow
 from management.views.summary import (
     _build_borrower_summary,
+    get_borrower_status_context,
     get_preferred_borrower,
     _to_decimal,
 )
@@ -258,11 +259,14 @@ def _borrower_context(request):
 @login_required(login_url="login")
 def forecast_view(request):
     borrower = get_preferred_borrower(request)
-    rows = (
-        ForecastRow.objects.filter(borrower=borrower)
-        .order_by("as_of_date", "period", "created_at", "id")
-    )
+    rows = []
+    if borrower:
+        rows = (
+            ForecastRow.objects.filter(borrower=borrower)
+            .order_by("as_of_date", "period", "created_at", "id")
+        )
     context = _borrower_context(request)
+    context.update(get_borrower_status_context(request))
     context["forecast_charts"] = _build_chart_data(rows)
     context["active_tab"] = "forecast"
     context["forecast_charts_json"] = json.dumps(context["forecast_charts"])

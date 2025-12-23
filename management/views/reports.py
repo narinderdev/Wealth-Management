@@ -15,7 +15,11 @@ from management.models import (
     BorrowerOverviewRow,
     CollateralOverviewRow,
 )
-from management.views.summary import _build_borrower_summary, get_preferred_borrower
+from management.views.summary import (
+    _build_borrower_summary,
+    get_borrower_status_context,
+    get_preferred_borrower,
+)
 
 REPORT_MENU = [
     {"key": "borrowing_base", "label": "Borrowing Base Report", "icon": "document"},
@@ -186,4 +190,5 @@ def reports_view(request):
         "active_report": requested_report,
         "report_section": report_section,
     })
+    context.update(get_borrower_status_context(request))
     return render(request, "reports/borrowing_base.html", context)

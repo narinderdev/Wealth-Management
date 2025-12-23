@@ -1,17 +1,28 @@
 {# Global borrower selector shown in the admin header #}
-<div class="global-borrower" data-global-borrower-shell>
+<div class="global-borrower" data-global-borrower-shell data-borrower-create-url="{% url 'admin_component' 'borrowers' %}">
   <div class="global-borrower__label">Borrower</div>
-  <div class="global-borrower__controls">
-    <select
-      id="global-borrower-select"
-      class="global-borrower__select"
-      data-global-borrower-select
-      aria-label="Select borrower"
-    >
-      <option value="">Select Borrower</option>
-      {% for borrower in borrower_options %}
-        <option value="{{ borrower.id }}">{{ borrower }}</option>
-      {% endfor %}
-    </select>
+  <div class="global-borrower__stack">
+    <div class="global-borrower__controls">
+      <select
+        id="global-borrower-select"
+        class="global-borrower__select"
+        data-global-borrower-select
+        aria-label="Select borrower"
+        {% if not borrower_options %}disabled{% endif %}
+      >
+        {% if borrower_options %}
+          <option value="">Select Borrower</option>
+          {% for borrower in borrower_options %}
+            <option value="{{ borrower.id }}">{{ borrower }}</option>
+          {% endfor %}
+        {% else %}
+          <option value="">No borrowers available</option>
+        {% endif %}
+      </select>
+      {% if not borrower_options %}
+        <a class="global-borrower__link" href="{% url 'admin_component' 'borrowers' %}">Create Borrower</a>
+      {% endif %}
+    </div>
+    <div class="global-borrower__note" data-global-borrower-message hidden></div>
   </div>
 </div>

@@ -55,7 +55,25 @@
 }
 .back-link{
   margin-top: 16px;
+}.borrower-empty-state{
+  margin: 12px 0 18px;
+  padding: 12px 16px;
+  border-radius: 12px;
+  background: rgba(15, 76, 231, 0.08);
+  border: 1px solid rgba(15, 76, 231, 0.18);
+  color: #17336b;
+  display: flex;
+  gap: 12px;
+  align-items: center;
+  justify-content: space-between;
+  font-size: 13px;
 }
+.borrower-empty-state__link{
+  color: #0c4de7;
+  font-weight: 700;
+  text-decoration: underline;
+}
+
 
 </style>
 <body class="{% block body_class %}{% endblock %}">
@@ -159,6 +177,15 @@
               {% endwith %}
             {% endif %}
           </div>
+
+          {% if borrower_message %}
+          <div class="borrower-empty-state">
+            <div class="borrower-empty-state__text">{{ borrower_message }}</div>
+            {% if borrower_action_url %}
+              <a class="borrower-empty-state__link" href="{{ borrower_action_url }}">{{ borrower_action_label }}</a>
+            {% endif %}
+          </div>
+          {% endif %}
 
           {% block tabs_shell %}
           

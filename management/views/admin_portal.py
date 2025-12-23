@@ -781,6 +781,7 @@ def admin_component_view(request, component_slug: str):
     component_meta = _resolve_component(component_slug)
     handler = HANDLERS.get(component_slug)
     component_data = {}
+    has_borrowers = Borrower.objects.exists()
     if handler:
         handler_data = handler.handle(request)
         if isinstance(handler_data, HttpResponse):
@@ -791,6 +792,7 @@ def admin_component_view(request, component_slug: str):
         "active_nav": component_meta.get("nav_key", "company"),
         "component_data": component_data,
         "borrower_options": Borrower.objects.select_related("company").order_by("company__company", "primary_contact"),
+        "has_borrowers": has_borrowers,
     }
     return render(request, "admin/component_base.html", context)
 

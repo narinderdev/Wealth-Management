@@ -7,6 +7,7 @@ from decimal import Decimal, InvalidOperation, ROUND_HALF_UP
 from django.contrib.auth.decorators import login_required
 from django.shortcuts import redirect, render
 from django.utils import timezone
+from django.urls import reverse
 from django.utils.text import slugify
 
 from django.db.models import Max, Q
@@ -103,14 +104,37 @@ def _to_decimal(value):
             return Decimal("0")
 
 
+def get_active_borrower_id(request):
+    return request.GET.get("borrower_id") or request.session.get("selected_borrower_id")
+
+
 def get_preferred_borrower(request):
-    borrower_id = request.session.get("selected_borrower_id")
+    borrower_id = get_active_borrower_id(request)
     if borrower_id:
         borrower = Borrower.objects.filter(pk=borrower_id).first()
         if borrower:
             return borrower
+        request.session.pop("selected_borrower_id", None)
     borrower_profile = getattr(request.user, "borrower_profile", None)
     return borrower_profile.borrower if borrower_profile else None
+
+
+def get_borrower_status_context(request):
+    has_borrowers = Borrower.objects.exists()
+    borrower = get_preferred_borrower(request)
+    if not has_borrowers:
+        return {
+            "borrower_message": "No borrowers exist yet. Create a borrower to begin.",
+            "borrower_action_url": reverse("admin_component", args=["borrowers"]),
+            "borrower_action_label": "Create Borrower",
+        }
+    if not borrower:
+        return {
+            "borrower_message": "Please select a borrower to view data.",
+            "borrower_action_url": reverse("borrower_portfolio"),
+            "borrower_action_label": "Select Borrower",
+        }
+    return {}
 
 
 def get_active_company(request):
@@ -386,6 +410,7 @@ def _collateral_row_payload(row, limit_map=None):
         "pre_reserve_collateral": _format_currency(row.pre_reserve_collateral),
         "reserves": _format_currency(row.reserves),
         "net_collateral": _format_currency(row.net_collateral),
+        "snapshot_summary": _safe_str(row.snapshot_summary, default=""),
     }
 
 

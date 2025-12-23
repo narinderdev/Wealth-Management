@@ -42,15 +42,6 @@
 {% endblock %}
 
 {% block admin_screens %}
-  {% if component_data.db_error %}
-    <div class="component-shell">
-      <div class="component-shell-body">
-        <div class="component-alert">
-          Data for “{{ component_meta.title }}” is not available. {{ component_data.db_error }}
-        </div>
-      </div>
-    </div>
-  {% endif %}
   {% if component_data.filters %}
     <form method="get" class="component-filter">
       {% for filter in component_data.filters %}
