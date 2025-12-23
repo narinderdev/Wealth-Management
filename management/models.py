@@ -149,6 +149,7 @@ class CollateralOverviewRow(TimeStampedModel):
     pre_reserve_collateral = MoneyField()  # Pre-Reserve Collateral
     reserves = models.DecimalField(max_digits=20, decimal_places=6, null=True, blank=True)  # Reserves
     net_collateral = MoneyField()  # Net Collateral
+    snapshot_summary = models.TextField(null=True, blank=True, verbose_name="Snapshot Summary")
 
     class Meta:
         db_table = 'collateral_overview'

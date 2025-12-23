@@ -16,6 +16,7 @@ from management.views.summary import (
     _format_pct,
     _normalize_pct,
     _to_decimal,
+    get_borrower_status_context,
     get_preferred_borrower,
 )
 
@@ -25,6 +26,7 @@ def _borrower_context(request):
     return {
         "borrower": borrower,
         "borrower_summary": _build_borrower_summary(borrower),
+        **get_borrower_status_context(request),
     }
 
 

@@ -16,6 +16,10 @@
     var storageKey = "cora-global-borrower";
     var placeholder = "Select Borrower";
     var warningText = "Please select a Borrower from the top bar before creating this record.";
+    var noBorrowersText = "No borrowers exist yet. Create a borrower first.";
+    var missingSelectionText = "Selected borrower is no longer available.";
+    var message = shell.querySelector("[data-global-borrower-message]");
+    var createUrl = shell.getAttribute("data-borrower-create-url");
     var currentSelection = null;
     var supportsStorage = (function () {
       try {
@@ -27,6 +31,34 @@
         return false;
       }
     })();
+
+    function hasBorrowerOptions() {
+      return Array.prototype.some.call(select.options, function (opt) {
+        return opt.value;
+      });
+    }
+
+    function setHeaderMessage(text) {
+      if (!message) return;
+      if (text) {
+        message.textContent = text;
+        message.hidden = false;
+      } else {
+        message.textContent = "";
+        message.hidden = true;
+      }
+    }
+
+    function updateBorrowerAvailability() {
+      var available = hasBorrowerOptions();
+      if (!available) {
+        select.setAttribute("disabled", "disabled");
+      } else {
+        select.removeAttribute("disabled");
+      }
+      shell.setAttribute("data-has-borrowers", available ? "true" : "false");
+      return available;
+    }
 
     function findOption(value) {
       if (!value) return null;
@@ -96,9 +128,25 @@
       if (!warning) {
         warning = document.createElement("div");
         warning.className = "component-alert global-borrower-warning";
-        warning.textContent = warningText;
         var body = form.querySelector(".component-modal-body") || form;
         body.insertBefore(warning, body.firstChild);
+      }
+      return warning;
+    }
+
+    function renderWarning(form, text, linkHref, linkText) {
+      var warning = ensureWarning(form);
+      if (!warning) return null;
+      warning.innerHTML = "";
+      var messageNode = document.createElement("div");
+      messageNode.textContent = text || "";
+      warning.appendChild(messageNode);
+      if (linkHref && linkText) {
+        var link = document.createElement("a");
+        link.href = linkHref;
+        link.textContent = linkText;
+        link.className = "global-borrower-warning__link";
+        warning.appendChild(link);
       }
       return warning;
     }
@@ -145,9 +193,13 @@
       field.title = hasSelection ? selection.label || optionLabel(selection.id) || "Borrower selected" : "Select Borrower from header";
 
       if (isCreate) {
-        ensureWarning(form);
-        toggleWarning(form, !hasSelection);
-        toggleSubmit(form, !hasSelection);
+        var borrowersAvailable = hasBorrowerOptions();
+        var warningMessage = borrowersAvailable ? warningText : noBorrowersText;
+        var warningLink = borrowersAvailable ? null : createUrl;
+        var warningLabel = borrowersAvailable ? null : "Go to Borrowers";
+        renderWarning(form, warningMessage, warningLink, warningLabel);
+        toggleWarning(form, !hasSelection || !borrowersAvailable);
+        toggleSubmit(form, !hasSelection || !borrowersAvailable);
       } else {
         toggleWarning(form, false);
         toggleSubmit(form, false);
@@ -172,34 +224,32 @@
       }
       updateBadge(currentSelection);
       applyToForms(currentSelection);
-    }
-
-    function autoSelectIfSingle() {
-      var options = Array.prototype.filter.call(select.options, function (opt) {
-        return opt.value;
-      });
-      if (options.length === 1) {
-        var only = options[0];
-        return { id: only.value, label: optionLabel(only.value) || only.textContent.trim() };
+      if (currentSelection) {
+        setHeaderMessage("");
       }
-      return null;
     }
 
     function initialize() {
+      updateBorrowerAvailability();
       var stored = readSelection();
+      var missingStored = false;
       if (stored && !optionLabel(stored.id)) {
         stored = null;
+        persistSelection(null);
+        missingStored = true;
       }
-      var single = stored ? null : autoSelectIfSingle();
-      var initialSelection = stored || single;
-      if (initialSelection && optionLabel(initialSelection.id)) {
-        syncSelection({ id: String(initialSelection.id), label: initialSelection.label || optionLabel(initialSelection.id) });
+      if (stored && optionLabel(stored.id)) {
+        syncSelection({ id: String(stored.id), label: stored.label || optionLabel(stored.id) });
       } else {
         syncSelection(null);
+      }
+      if (missingStored) {
+        setHeaderMessage(missingSelectionText);
       }
     }
 
     select.addEventListener("change", function () {
+      setHeaderMessage("");
       var value = select.value;
       var selection = value ? { id: value, label: optionLabel(value) || value } : null;
       syncSelection(selection);

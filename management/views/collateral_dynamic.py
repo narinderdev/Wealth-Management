@@ -37,6 +37,7 @@ from management.views.summary import (
     _format_date,
     _safe_str,
     _to_decimal,
+    get_borrower_status_context,
     get_preferred_borrower,
 )
 
@@ -79,6 +80,7 @@ def collateral_dynamic_view(request):
         "active_section": section,
         "inventory_tab": inventory_tab,
         "active_tab": "collateral_dynamic",
+        **get_borrower_status_context(request),
         **_inventory_context(borrower),
         **_accounts_receivable_context(borrower, ar_range, ar_division),
         **_finished_goals_context(borrower, finished_goals_range, finished_goals_division),
@@ -95,6 +97,7 @@ def collateral_static_view(request):
     borrower = get_preferred_borrower(request)
     context = {
         "active_tab": "collateral_static",
+        **get_borrower_status_context(request),
         "week_summary": _week_summary_context(borrower),
     }
     return render(request, "week_summary.html", context)

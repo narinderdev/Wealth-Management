@@ -309,9 +309,18 @@
     }
 
     if (type === "email" || name.indexOf("email") !== -1) {
-      var emailPattern = /^[^\\s@]+@[^\\s@]+\\.[^\\s@]+$/;
-      if (!emailPattern.test(String(rawValue).trim())) {
-        return { field: field, label: label, message: "Enter a valid email address." };
+      var trimmedEmail = String(rawValue).trim();
+      if (type === "email" && field.validity) {
+        if (!field.validity.valid) {
+          return { field: field, label: label, message: "Enter a valid email address." };
+        }
+      } else {
+        // Sanity: pass abc@xyz.com, john.doe+1@company.co.uk, a@b.com
+        // Fail abc@, @xyz.com, narinder xyz.com, abc@xyz
+        var emailPattern = /^[^\\s@]+@[^\\s@]+\\.[^\\s@]+$/;
+        if (!emailPattern.test(trimmedEmail)) {
+          return { field: field, label: label, message: "Enter a valid email address." };
+        }
       }
     }
 
