@@ -1,6 +1,11 @@
 {% for field in form %}
   <div class="component-field">
-    <label for="{{ field.id_for_label }}">{{ field.label }}</label>
+    <label for="{{ field.id_for_label }}">
+      {{ field.label }}
+      {% if field.field.required %}
+        <span class="required-asterisk" aria-hidden="true">*</span>
+      {% endif %}
+    </label>
     {% with field.field.widget.input_type as input_type %}
       {% if input_type == "password" %}
         <div class="password-input">

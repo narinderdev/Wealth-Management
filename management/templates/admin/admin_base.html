@@ -460,6 +460,11 @@
       font-weight:700;
       color:#13213d;
     }
+    .required-asterisk{
+      color:#b91c1c;
+      margin-left:4px;
+      font-weight:700;
+    }
     .password-input{
       position:relative;
       display:flex;
@@ -498,6 +503,11 @@
       box-shadow:0 0 0 2px rgba(31,85,199,.2);
       outline:none;
     }
+    .component-field.has-error .component-input,
+    .component-input.is-invalid{
+      border-color:#b91c1c;
+      box-shadow:0 0 0 1px rgba(185,28,28,.4);
+    }
     .component-form-actions{
       display:flex;
       gap:12px;
@@ -506,6 +516,20 @@
     .component-error{
       color:#b91c1c;
       font-size:12px;
+    }
+    .modal-validation-summary{
+      margin-bottom:10px;
+      padding:10px 12px;
+      background:rgba(185,28,28,.08);
+      border:1px solid rgba(185,28,28,.25);
+      border-radius:10px;
+    }
+    .modal-validation-summary ul{
+      margin:6px 0 0;
+      padding-left:18px;
+    }
+    .modal-validation-summary li{
+      margin:2px 0;
     }
     .component-alert{
       border-radius:12px;
@@ -1212,6 +1236,7 @@
   <div id="cora-confirm-root" class="cora-confirm-root" aria-hidden="true"></div>
 
   <script src="{% static 'js/global_borrower.js' %}" defer></script>
+  <script src="{% static 'js/modal_validation.js' %}" defer></script>
   <script>
     document.addEventListener("DOMContentLoaded", function(){
       document.querySelectorAll("[data-collapsible]").forEach(function(section){
