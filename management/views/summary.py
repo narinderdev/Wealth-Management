@@ -634,7 +634,9 @@ def summary_view(request):
     if normalized_division != "all":
         ar_qs = ar_qs.filter(division__iexact=normalized_division)
     ar_qs = _apply_date_filter(ar_qs, "as_of_date", range_start, range_end)
-    ar_row = ar_qs.order_by("-as_of_date", "-created_at").first()
+    ar_recent = list(ar_qs.order_by("-as_of_date", "-created_at", "-id")[:2])
+    ar_row = ar_recent[0] if ar_recent else None
+    ar_prev_row = ar_recent[1] if len(ar_recent) > 1 else None
     risk_ar_row = (
         ARMetricsRow.objects.filter(borrower=borrower)
         .order_by("-as_of_date", "-created_at")
@@ -663,6 +665,35 @@ def summary_view(request):
             "detail": f"{len(collateral_rows)} collateral entries",
         },
     }
+
+    previous_collateral_rows = []
+    if latest_collateral_time:
+        previous_collateral_time = (
+            collateral_range_qs.filter(created_at__lt=latest_collateral_time)
+            .order_by("-created_at")
+            .values_list("created_at", flat=True)
+            .first()
+        )
+        if previous_collateral_time:
+            previous_collateral_rows = list(
+                collateral_range_qs.filter(created_at=previous_collateral_time)
+            )
+
+    previous_net_total = sum(
+        (_to_decimal(row.net_collateral) for row in previous_collateral_rows),
+        Decimal("0"),
+    )
+    previous_eligible_total = sum(
+        (_to_decimal(row.eligible_collateral) for row in previous_collateral_rows),
+        Decimal("0"),
+    )
+    previous_ineligibles_total = sum(
+        (_to_decimal(row.ineligibles) for row in previous_collateral_rows),
+        Decimal("0"),
+    )
+    previous_available_total = previous_eligible_total - previous_ineligibles_total
+    if previous_available_total < Decimal("0"):
+        previous_available_total = Decimal("0")
 
     chart_points = 5
     collateral_history = list(
@@ -716,6 +747,31 @@ def summary_view(request):
         outstanding_series,
         chart_points,
         ar_row.balance if ar_row and ar_row.balance is not None else Decimal("0"),
+    )
+
+    def _delta_payload(current, previous):
+        if current is None or previous is None:
+            return None
+        curr = _to_decimal(current)
+        prev = _to_decimal(previous)
+        if prev == 0:
+            return None
+        diff = (curr - prev) / prev * Decimal("100")
+        is_positive = diff >= 0
+        return {
+            "symbol": "▲" if is_positive else "▼",
+            "value": f"{abs(diff):.2f}%",
+            "class": "up" if is_positive else "down",
+        }
+
+    insights["net"]["delta"] = _delta_payload(net_total, previous_net_total if previous_collateral_rows else None)
+    insights["outstanding"]["delta"] = _delta_payload(
+        ar_row.balance if ar_row else None,
+        ar_prev_row.balance if ar_prev_row else None,
+    )
+    insights["availability"]["delta"] = _delta_payload(
+        available_total if collateral_rows else None,
+        previous_available_total if previous_collateral_rows else None,
     )
 
     net_chart = _build_line_series(

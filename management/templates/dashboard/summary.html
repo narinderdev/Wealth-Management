@@ -169,7 +169,11 @@
             <div>
               <div class="meta-label">Net Collateral</div>
               <div class="meta-value">{{ insights.net.amount }}</div>
-              <div class="meta-delta down">-8.09%</div>
+              {% if insights.net.delta %}
+                <div class="meta-delta {{ insights.net.delta.class }}">{{ insights.net.delta.symbol }} {{ insights.net.delta.value }}</div>
+              {% else %}
+                <div class="meta-delta">—</div>
+              {% endif %}
             </div>
             <img src="{% static 'images/net_collateral_icon.svg' %}" 
             alt="Net Collateral Icon"
@@ -180,7 +184,11 @@
             <div>
               <div class="meta-label">Outstanding Balance</div>
               <div class="meta-value">{{ insights.outstanding.amount }}</div>
-              <div class="meta-delta down">-5.09%</div>
+              {% if insights.outstanding.delta %}
+                <div class="meta-delta {{ insights.outstanding.delta.class }}">{{ insights.outstanding.delta.symbol }} {{ insights.outstanding.delta.value }}</div>
+              {% else %}
+                <div class="meta-delta">—</div>
+              {% endif %}
             </div>
             <img src="{% static 'images/outstanding_balance_icon.svg' %}" 
             alt="Outstanding Balance Icon"
@@ -190,7 +198,11 @@
             <div>
               <div class="meta-label">Availability</div>
               <div class="meta-value">{{ insights.availability.amount }}</div>
-              <div class="meta-delta up">+8.09%</div>
+              {% if insights.availability.delta %}
+                <div class="meta-delta {{ insights.availability.delta.class }}">{{ insights.availability.delta.symbol }} {{ insights.availability.delta.value }}</div>
+              {% else %}
+                <div class="meta-delta">—</div>
+              {% endif %}
             </div>
             <img src="{% static 'images/availability_icon.svg' %}" 
             alt="Availability Icon"

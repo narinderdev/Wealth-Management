@@ -1957,7 +1957,7 @@ def _accounts_receivable_context(borrower, range_key="today", division="all"):
             "label_y": round(baseline_y + 16, 1),
         }
 
-    def _delta_payload(current, previous, improvement_on_increase=True):
+    def _delta_payload(current, previous):
         if previous is None or previous == 0:
             return None
         curr = _to_decimal(current)
@@ -1967,8 +1967,6 @@ def _accounts_receivable_context(borrower, range_key="today", division="all"):
         diff = (curr - prev) / prev * Decimal("100")
         is_positive = diff >= 0
         value = f"{abs(diff):.1f}%"
-        if not improvement_on_increase:
-            is_positive = not is_positive
         symbol = "▲" if is_positive else "▼"
         return {
             "symbol": symbol,
@@ -2028,7 +2026,6 @@ def _accounts_receivable_context(borrower, range_key="today", division="all"):
         delta = _delta_payload(
             current_snapshot[spec["key"]],
             previous_snapshot[spec["key"]] if previous_snapshot else None,
-            improvement_on_increase=spec["improvement_on_increase"],
         )
         kpis.append(
             {
@@ -2192,14 +2189,37 @@ def _accounts_receivable_context(borrower, range_key="today", division="all"):
         (latest_pct / Decimal("100")) if latest_pct is not None else Decimal("0")
     )
 
-    concentration_rows = list(
-        _apply_date_filter(
-            _apply_division_filter(ConcentrationADODSORow.objects.filter(borrower=borrower)),
-            "as_of_date",
-        )
+    concentration_qs = _apply_division_filter(
+        ConcentrationADODSORow.objects.filter(borrower=borrower)
     )
+    concentration_rows = list(
+        _apply_date_filter(concentration_qs, "as_of_date")
+        .order_by("-as_of_date", "-created_at", "-id")
+    )
+
+    def _latest_snapshot_rows(rows):
+        if not rows:
+            return []
+        latest_date = next((row.as_of_date for row in rows if row.as_of_date), None)
+        if latest_date:
+            return [row for row in rows if row.as_of_date == latest_date]
+        return rows
+
+    def _rows_with_values(rows, fields):
+        return [
+            row for row in rows
+            if any(getattr(row, field, None) is not None for field in fields)
+        ]
+
+    latest_concentration_rows = _latest_snapshot_rows(concentration_rows)
+
+    concentration_source = [
+        row for row in latest_concentration_rows if row.current_concentration_pct is not None
+    ]
+    if not concentration_source:
+        concentration_source = latest_concentration_rows
     top_customers = sorted(
-        concentration_rows,
+        concentration_source,
         key=lambda r: _to_decimal(r.current_concentration_pct),
         reverse=True,
     )[:20]
@@ -2305,9 +2325,9 @@ def _accounts_receivable_context(borrower, range_key="today", division="all"):
     trend_chart = _build_trend_points(
         trend_points,
         trend_texts,
-        height=230,
+        height=260,
         top=40,
-        bottom=30,
+        bottom=40,
         left=60,
     )
     formatted_labels = []
@@ -2341,48 +2361,106 @@ def _accounts_receivable_context(borrower, range_key="today", division="all"):
         )
     trend_chart["dots"] = trend_dots
 
+    def _pct_to_points(value):
+        if value is None:
+            return None
+        pct = _to_decimal(value)
+        if pct <= Decimal("1"):
+            pct *= Decimal("100")
+        return pct
+
     concentration_entries = []
     for row in sorted(
-        concentration_rows,
+        concentration_source,
         key=lambda r: _to_decimal(r.current_concentration_pct),
         reverse=True,
     )[:10]:
+        variance_pp = row.variance_concentration_pp
+        if variance_pp is None:
+            current_pp = _pct_to_points(row.current_concentration_pct)
+            avg_pp = _pct_to_points(row.avg_ttm_concentration_pct)
+            if current_pp is not None and avg_pp is not None:
+                variance_pp = current_pp - avg_pp
         concentration_entries.append(
             {
                 "customer": _safe_str(row.customer),
                 "current": _format_pct(row.current_concentration_pct),
                 "average": _format_pct(row.avg_ttm_concentration_pct),
-                "variance": _format_variance(row.variance_concentration_pp, suffix="pp"),
+                "variance": _format_variance(variance_pp, suffix="pp"),
             }
         )
 
+    ado_source = _rows_with_values(
+        latest_concentration_rows,
+        ["current_ado_days", "avg_ttm_ado_days", "variance_ado_days"],
+    )
+    if not ado_source:
+        concentration_rows_all = list(
+            concentration_qs.order_by("-as_of_date", "-created_at", "-id")
+        )
+        latest_all = _latest_snapshot_rows(concentration_rows_all)
+        ado_source = _rows_with_values(
+            latest_all,
+            ["current_ado_days", "avg_ttm_ado_days", "variance_ado_days"],
+        ) or latest_all
     ado_entries = []
     for row in sorted(
-        concentration_rows,
+        ado_source,
         key=lambda r: _to_decimal(r.current_ado_days),
         reverse=True,
     )[:10]:
+        current_ado = _to_decimal(row.current_ado_days) if row.current_ado_days is not None else None
+        avg_ado = _to_decimal(row.avg_ttm_ado_days) if row.avg_ttm_ado_days is not None else None
+        variance_ado = _to_decimal(row.variance_ado_days) if row.variance_ado_days is not None else None
+        if variance_ado is None and current_ado is not None and avg_ado is not None:
+            variance_ado = current_ado - avg_ado
+        if avg_ado is None and current_ado is not None and variance_ado is not None:
+            avg_ado = current_ado - variance_ado
+        if current_ado is None and avg_ado is not None and variance_ado is not None:
+            current_ado = avg_ado + variance_ado
         ado_entries.append(
             {
                 "customer": _safe_str(row.customer),
-                "current": _format_days(row.current_ado_days),
-                "average": _format_days(row.avg_ttm_ado_days),
-                "variance": _format_variance(row.variance_ado_days, suffix="d"),
+                "current": _format_days(current_ado),
+                "average": _format_days(avg_ado),
+                "variance": _format_variance(variance_ado, suffix="d"),
             }
         )
 
+    dso_source = _rows_with_values(
+        latest_concentration_rows,
+        ["current_dso_days", "avg_ttm_dso_days", "variance_dso_days"],
+    )
+    if not dso_source:
+        concentration_rows_all = list(
+            concentration_qs.order_by("-as_of_date", "-created_at", "-id")
+        )
+        latest_all = _latest_snapshot_rows(concentration_rows_all)
+        dso_source = _rows_with_values(
+            latest_all,
+            ["current_dso_days", "avg_ttm_dso_days", "variance_dso_days"],
+        ) or latest_all
     dso_entries = []
     for row in sorted(
-        concentration_rows,
+        dso_source,
         key=lambda r: _to_decimal(r.current_dso_days),
         reverse=True,
     )[:10]:
+        current_dso = _to_decimal(row.current_dso_days) if row.current_dso_days is not None else None
+        avg_dso = _to_decimal(row.avg_ttm_dso_days) if row.avg_ttm_dso_days is not None else None
+        variance_dso = _to_decimal(row.variance_dso_days) if row.variance_dso_days is not None else None
+        if variance_dso is None and current_dso is not None and avg_dso is not None:
+            variance_dso = current_dso - avg_dso
+        if avg_dso is None and current_dso is not None and variance_dso is not None:
+            avg_dso = current_dso - variance_dso
+        if current_dso is None and avg_dso is not None and variance_dso is not None:
+            current_dso = avg_dso + variance_dso
         dso_entries.append(
             {
                 "customer": _safe_str(row.customer),
-                "current": _format_days(row.current_dso_days),
-                "average": _format_days(row.avg_ttm_dso_days),
-                "variance": _format_variance(row.variance_dso_days, suffix="d"),
+                "current": _format_days(current_dso),
+                "average": _format_days(avg_dso),
+                "variance": _format_variance(variance_dso, suffix="d"),
             }
         )
 

@@ -48,6 +48,9 @@
       gap:20px;
     }
     .collateral-dynamic .menu-card{
+
+    width: 255px;
+    height: 382px;
       background:#fff;
       border-radius:18px;
       padding:16px;
@@ -1174,7 +1177,7 @@
                             <div>
                               <div class="kpi-label">Balance</div>
                               <div class="kpi-value">—</div>
-                              <div class="kpi-delta down">▼ <span>0.0%</span></div>
+                              <div class="kpi-delta">—</div>
                             </div>
                               <img src="{% static 'images/balance.svg' %}" alt="Balance icon" />
                             
@@ -1425,23 +1428,23 @@
                       </div>
 
                       <div class="chart-wrap ar-chart">
-                        <svg viewBox="0 0 520 230" width="100%" height="230" aria-label="Ineligible AR trend line chart">
-                          <text x="-10" y="190" transform="rotate(-90 0 190)" fill="rgba(15,23,42,.55)" font-size="12">
+                        <svg viewBox="0 0 520 260" width="100%" height="290" aria-label="Ineligible AR trend line chart">
+                          <text x="-10" y="100" transform="rotate(-90 0 200)" fill="rgba(15,23,42,.55)" font-size="12">
                             % of Accounts Receivable
                           </text>
                           <g stroke="rgba(15,23,42,.08)" stroke-width="1">
-                            <path d="M60 200H500"/>
-                            <path d="M60 160H500"/>
-                            <path d="M60 120H500"/>
-                            <path d="M60 80H500"/>
+                            <path d="M60 220H500"/>
+                            <path d="M60 175H500"/>
+                            <path d="M60 130H500"/>
+                            <path d="M60 85H500"/>
                             <path d="M60 40H500"/>
                           </g>
 
                           <g fill="rgba(15,23,42,.45)" font-size="10">
-                            <text x="28" y="204">10%</text>
-                            <text x="28" y="164">30%</text>
-                            <text x="28" y="124">50%</text>
-                            <text x="28" y="84">70%</text>
+                            <text x="28" y="224">10%</text>
+                            <text x="28" y="179">30%</text>
+                            <text x="28" y="134">50%</text>
+                            <text x="28" y="89">70%</text>
                             <text x="28" y="44">90%</text>
                           </g>
 
@@ -1456,7 +1459,7 @@
                             </g>
                             <g fill="rgba(15,23,42,.45)" font-size="9">
                               {% for label in ar_ineligible_trend.labels %}
-                                <text x="{{ label.x }}" y="214" text-anchor="start">
+                                <text x="{{ label.x }}" y="234" text-anchor="start">
                                   <tspan x="{{ label.x }}" dy="0">{{ label.month }}</tspan>
                                   {% if label.year %}
                                     <tspan x="{{ label.x }}" dy="12">{{ label.year }}</tspan>
