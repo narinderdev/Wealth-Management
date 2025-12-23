@@ -281,18 +281,15 @@ def _build_line_series(values, labels, series_label=None, width=220, height=140)
 
 def _range_dates(range_key):
     today = timezone.localdate()
-    if range_key == "yesterday":
-        day = today - timedelta(days=1)
-        return day, day
-    if range_key == "last_7_days":
-        return today - timedelta(days=6), today
-    if range_key == "last_14_days":
-        return today - timedelta(days=13), today
-    if range_key == "last_30_days":
-        return today - timedelta(days=29), today
-    if range_key == "last_90_days":
+    if range_key == "last_12_months":
+        return today - timedelta(days=364), today
+    if range_key == "last_6_months":
+        return today - timedelta(days=182), today
+    if range_key == "last_3_months":
         return today - timedelta(days=89), today
-    return today, today
+    if range_key == "last_1_month":
+        return today - timedelta(days=29), today
+    return today - timedelta(days=364), today
 
 
 def _apply_date_filter(qs, field_name, start_date, end_date):
@@ -630,32 +627,32 @@ def summary_view(request):
     borrower_summary = _build_borrower_summary(borrower)
 
     range_options = [
-        {"value": "today", "label": "Today"},
-        {"value": "yesterday", "label": "Yesterday"},
-        {"value": "last_7_days", "label": "Last 7 Days"},
-        {"value": "last_14_days", "label": "Last 14 Days"},
-        {"value": "last_30_days", "label": "Last 30 Days"},
-        {"value": "last_90_days", "label": "Last 90 Days"},
+        {"value": "last_12_months", "label": "12 Months"},
+        {"value": "last_6_months", "label": "6 Months"},
+        {"value": "last_3_months", "label": "3 Months"},
+        {"value": "last_1_month", "label": "1 Month"},
     ]
     range_aliases = {
-        "today": "today",
-        "yesterday": "yesterday",
-        "last_7_days": "last_7_days",
-        "last_14_days": "last_14_days",
-        "last_30_days": "last_30_days",
-        "last_90_days": "last_90_days",
-        "last7days": "last_7_days",
-        "last14days": "last_14_days",
-        "last30days": "last_30_days",
-        "last90days": "last_90_days",
-        "last 7 days": "last_7_days",
-        "last 14 days": "last_14_days",
-        "last 30 days": "last_30_days",
-        "last 90 days": "last_90_days",
+        "last_12_months": "last_12_months",
+        "last12months": "last_12_months",
+        "last 12 months": "last_12_months",
+        "12 months": "last_12_months",
+        "last_6_months": "last_6_months",
+        "last6months": "last_6_months",
+        "last 6 months": "last_6_months",
+        "6 months": "last_6_months",
+        "last_3_months": "last_3_months",
+        "last3months": "last_3_months",
+        "last 3 months": "last_3_months",
+        "3 months": "last_3_months",
+        "last_1_month": "last_1_month",
+        "last1month": "last_1_month",
+        "last 1 month": "last_1_month",
+        "1 month": "last_1_month",
     }
 
-    summary_range = request.GET.get("summary_range", "last_30_days")
-    normalized_range = range_aliases.get(str(summary_range).strip().lower(), "last_30_days")
+    summary_range = request.GET.get("summary_range", "last_12_months")
+    normalized_range = range_aliases.get(str(summary_range).strip().lower(), "last_12_months")
     summary_division = request.GET.get("summary_division", "all")
     normalized_division = str(summary_division).strip()
     if normalized_division.lower() in {"all", "all divisions", "all_divisions"}:
