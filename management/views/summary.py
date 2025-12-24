@@ -1,5 +1,5 @@
 import math
-from collections import defaultdict
+from collections import OrderedDict, defaultdict
 from datetime import timedelta
 
 from decimal import Decimal, InvalidOperation, ROUND_HALF_UP
@@ -504,13 +504,21 @@ def _build_collateral_child_payload(row, limit_map=None, detail_override=None):
 
 
 def _build_collateral_tree(collateral_rows, limit_map=None):
-    grouped = {}
+    grouped = OrderedDict()
     for row in collateral_rows:
-        label = _safe_str(row.main_type, default="Collateral")
-        grouped.setdefault(label, []).append(row)
+        raw_label = _safe_str(row.main_type, default="Collateral").strip()
+        normalized_label = " ".join(raw_label.split()).lower()
+        if normalized_label not in grouped:
+            grouped[normalized_label] = {
+                "label": raw_label or "Collateral",
+                "rows": [],
+            }
+        grouped[normalized_label]["rows"].append(row)
 
     tree = []
-    for label, rows in grouped.items():
+    for entry in grouped.values():
+        label = entry["label"]
+        rows = entry["rows"]
         node = {
             "id": slugify(label),
             "row": _build_collateral_parent_payload(label, rows, limit_map=limit_map),

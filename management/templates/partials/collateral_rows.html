@@ -1,6 +1,6 @@
 {% for node in nodes %}
 <tr
-  class="cc-row level-{{ level }} {% if level > 0 %}is-hidden{% endif %}"
+  class="cc-row level-{{ level }} {% if level > 0 and parent_label and "inventory" in parent_label|lower %}is-hidden{% endif %}"
   data-id="{{ node.id }}"
   data-level="{{ level }}"
   {% if parent_id %}data-parent="{{ parent_id }}"{% endif %}
@@ -26,19 +26,20 @@
   <td>{{ node.row.net_collateral }}</td>
 
   <td class="cc-ctl">
-    <button
-      class="cc-toggle{% if not node.children %} cc-toggle--empty{% endif %}"
-      type="button"
-      data-row="{{ node.id }}"
-      aria-expanded="false"
-      {% if not node.children %}aria-disabled="true"{% endif %}
-    >
-      <span class="cc-chevron" aria-hidden="true"></span>
-    </button>
+    {% if node.children and level == 0 and "inventory" in node.row.label|lower %}
+      <button
+        class="cc-toggle"
+        type="button"
+        data-row="{{ node.id }}"
+        aria-expanded="false"
+      >
+        <span class="cc-chevron" aria-hidden="true"></span>
+      </button>
+    {% endif %}
   </td>
 </tr>
 
 {% if node.children %}
-  {% include "partials/collateral_rows.html" with nodes=node.children level=level|add:1 parent_id=node.id %}
+  {% include "partials/collateral_rows.html" with nodes=node.children level=level|add:1 parent_id=node.id parent_label=node.row.label %}
 {% endif %}
 {% endfor %}
