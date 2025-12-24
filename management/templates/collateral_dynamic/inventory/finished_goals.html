@@ -20,11 +20,11 @@
   }
   .finished-goals{font-family:ui-sans-serif,system-ui,-apple-system,Segoe UI,Roboto,Helvetica,Arial,"Apple Color Emoji","Segoe UI Emoji";}
   .finished-goals .wrap{max-width:1120px;margin:0 auto;padding:0 18px 30px;background:none;}
-  .finished-goals .grid-2{display:grid;grid-template-columns:1fr 1fr;gap:12px;}
+  .finished-goals .grid-2{display:grid;grid-template-columns:1fr 2fr;}
   @media (max-width:920px){.finished-goals .grid-2{grid-template-columns:1fr;}}
-  .finished-goals .card{background:var(--card);border:1px solid var(--border);border-radius:var(--r);box-shadow:var(--shadow);overflow:hidden;}
+  .finished-goals .card{background:var(--card);border:1px solid var(--border);border-radius:var(--r);box-shadow:var(--shadow);overflow:hidden; margin-left: 20px;}
   .finished-goals .card-pad{padding:12px 14px;}
-  .finished-goals .card-head{display:flex;align-items:center;gap:8px;padding:12px 14px 8px;font-size:12px;font-weight:800;color:#344054;}
+  .finished-goals .card-head{display:flex;align-items:center;gap:8px;padding:12px 14px 8px;font-size:22px;font-weight:800;color:#585858;}
   .finished-goals .ico{width:16px;height:16px;border-radius:6px;background:rgba(23,92,211,.10);border:1px solid rgba(23,92,211,.18);display:grid;place-items:center;flex:0 0 auto;}
   .finished-goals .ico svg{width:10px;height:10px;fill:var(--blue);opacity:.9;}
   .finished-goals .divider{height:1px;background:var(--border);}
@@ -45,8 +45,7 @@
   }
   .finished-goals .sales-grid{
     display:grid;
-    grid-template-columns:280px 1fr;
-    gap:12px;
+    grid-template-columns:522px 1fr;
   }
   @media (max-width:980px){
     .finished-goals .sales-grid{grid-template-columns:1fr;}
@@ -116,23 +115,23 @@
     min-height:90px;
     display:flex;
     flex-direction:column;
-    gap:6px;
+    gap:10px;
     box-shadow:0 1px 2px rgba(16,24,40,.05);
   }
   .finished-goals .stat-top{
     display:flex;
-    align-items:flex-start;
+    align-items:center;
     justify-content:space-between;
     gap:12px;
   }
   .finished-goals .stat-main{
     display:flex;
     flex-direction:column;
-    gap:2px;
+    gap:10px;
   }
   .finished-goals .stat-icon{
-    width:34px;
-    height:34px;
+    width:38px;
+    height:38px;
     border-radius:50%;
     background:rgba(46,144,250,.14);
     border:1px solid rgba(46,144,250,.25);
@@ -156,9 +155,9 @@
     font-weight:600;
   }
   .finished-goals .stat-card .value{
-    font-size:20px;
+    font-size:22px;
     font-weight:700;
-    color:#0f172a;
+    color:#344256;
   }
   .finished-goals .stat-card .delta{
     font-size:12px;
@@ -234,8 +233,8 @@
   .finished-goals .seg{display:flex;justify-content:center;gap:18px;font-size:11px;color:var(--muted2);margin:2px 0 6px;user-select:none;}
   .finished-goals .seg span:first-child{color:#344054;font-weight:800;}
   .finished-goals svg{width:100%;height:auto;display:block;}
-  .finished-goals .axis text{fill:var(--muted2);font-size:10px;}
-  .finished-goals .axis-label{fill:var(--muted2);font-size:10px;}
+  .finished-goals .axis text{fill:var(--muted2);font-size:6px;}
+  .finished-goals .axis-label{fill:var(--muted2);font-size:7px;}
   .finished-goals .gridline{stroke:var(--grid);stroke-width:1;}
   .finished-goals .borderline{stroke:var(--border);stroke-width:1;fill:none;}
   .finished-goals .line{stroke:var(--blue);stroke-width:2.5;fill:none;stroke-linecap:round;stroke-linejoin:round;}
@@ -247,26 +246,26 @@
   .finished-goals .stack .sub + .sub{border-top:1px solid var(--border);padding-top:6px;}
   .finished-goals .table-card .card-head{padding-bottom:10px;}
   .finished-goals .table-scroll{overflow:auto;}
-  .finished-goals table.data{width:100%;border-collapse:collapse;font-size:10.5px;min-width:860px;}
+  .finished-goals table.data{width:100%;border-collapse:collapse;font-size:12px;min-width:860px;}
   .finished-goals table.data thead th{position:sticky;top:0;background:#FBFCFE;color:#475467;font-weight:900;text-align:left;padding:10px 12px;border-bottom:1px solid var(--border);white-space:nowrap;}
-  .finished-goals table.data tbody td{padding:10px 12px;border-bottom:1px solid rgba(230,234,242,.65);color:#344054;white-space:nowrap;}
+  .finished-goals table.data tbody td{padding:10px 12px;border-bottom:1px solid rgba(230,234,242,.65);color:#344054;white-space:nowrap; color:#65758B}
   .finished-goals table.data tbody tr:last-child td{border-bottom:none;}
   .finished-goals .numR{text-align:right;}
   .finished-goals .numC{text-align:center;}
-  .finished-goals table.category{width:100%;border-collapse:collapse;font-size:10px;min-width:980px;color:#344054;}
+  .finished-goals table.category{width:100%;border-collapse:collapse;font-size:12px;min-width:980px;color:#344054;}
   .finished-goals table.category thead th{padding:8px 10px;border-bottom:1px solid var(--border);white-space:nowrap;}
   .finished-goals table.category thead tr:first-child th{background:#F7F9FC;color:#475467;font-weight:800;text-align:center;}
   .finished-goals table.category thead tr:last-child th{background:#FBFCFE;color:#667085;font-weight:700;text-align:center;}
   .finished-goals table.category thead th.rowhead{text-align:left;}
-  .finished-goals table.category tbody td{padding:8px 10px;border-bottom:1px solid rgba(230,234,242,.65);white-space:nowrap;}
+  .finished-goals table.category tbody td{padding:8px 10px;border-bottom:1px solid rgba(230,234,242,.65);white-space:nowrap; color:#65758B}
   .finished-goals table.category tbody tr:last-child td{border-bottom:none;}
   .finished-goals table.category tfoot td{padding:8px 10px;font-weight:800;background:#FBFCFE;border-top:1px solid var(--border);}
-  .finished-goals table.sku{width:100%;border-collapse:collapse;font-size:10px;min-width:880px;color:#344054;}
+  .finished-goals table.sku{width:100%;border-collapse:collapse;font-size:12px;min-width:880px;color:#344054;}
   .finished-goals table.sku thead th{padding:8px 10px;border-bottom:1px solid var(--border);white-space:nowrap;}
   .finished-goals table.sku thead tr:first-child th{background:#F7F9FC;color:#475467;font-weight:800;text-align:center;}
   .finished-goals table.sku thead tr:last-child th{background:#FBFCFE;color:#667085;font-weight:700;text-align:left;}
   .finished-goals table.sku thead th.center{text-align:center;}
-  .finished-goals table.sku tbody td{padding:8px 10px;border-bottom:1px solid rgba(230,234,242,.65);white-space:nowrap;color:#344054;}
+  .finished-goals table.sku tbody td{padding:8px 10px;border-bottom:1px solid rgba(230,234,242,.65);white-space:nowrap;color:#65758B;}
   .finished-goals table.sku tbody tr:last-child td{border-bottom:none;}
   .finished-goals .pill{display:inline-flex;padding:3px 8px;border-radius:999px;font-size:10px;font-weight:900;border:1px solid rgba(230,234,242,.9);background:#F8FAFD;color:#475467;}
 </style>
@@ -303,7 +302,7 @@
   </form>
 
   <div class="grid-2">
-   <div class="card">
+   <div class="card" >
   <div class="card-head">
     <img
       src="{% static 'images/borrowing_icon.svg' %}"
@@ -346,10 +345,14 @@
 </div>
 
 
-    <div class="card">
-          <img src="{% static 'images/borrowing_icon.svg' %}" 
+    <div class="card" >
+    <diV class="card-head" style="display: flex; gap: 5px; align-items: center; margin-bottom: 10px; ">
+    <img src="{% static 'images/borrowing_icon.svg' %}" 
           alt="Current Update Icon"
           class="current-update-icon" />
+          <span >Ineligible Details</span>
+    </diV>
+          
       <div class="table-wrap">
         <table>
           <thead>
@@ -375,13 +378,16 @@
     </div>
   </div>
 
-  <div class="card" style="margin-top:12px" data-chart="inventoryTrend"></div>
+  <div class="card" style="margin-top:25px" data-chart="inventoryTrend"></div>
 
-  <div class="card section-card" style="margin-top:12px">
-    <img src="{% static 'images/borrowing_icon.svg' %}" 
+  <div class="card section-card" style="margin-top:25px">
+   <div class="card-head" style="padding-left: 35px;">
+     <img src="{% static 'images/borrowing_icon.svg' %}" 
           alt="Current Update Icon"
           class="current-update-icon" />
       Sales and Gross Margin
+   </div>
+   
     <div class="section-body sales-grid">
       <div class="card insights-card">
         <div class="card-head">
@@ -442,12 +448,14 @@
     </div>
   </div>
 
-  <div class="card section-card" style="margin-top:12px">
-    
-      <img src="{% static 'images/borrowing_icon.svg' %}" 
+  <div class="card section-card" style="margin-top:25px">
+      <div class="card-head" style="padding-left: 35px">
+       <img src="{% static 'images/borrowing_icon.svg' %}" 
           alt="Current Update Icon"
           class="current-update-icon" />
       In-line vs Excess Analysis
+      </div>
+      
     <div class="section-body">
       <div class="grid-2">
         <div class="card" data-chart="inlineExcess"></div>
@@ -456,7 +464,7 @@
     </div>
   </div>
 
-  <div class="card table-card" style="margin-top:12px">
+  <div class="card table-card" style="margin-top:25px">
     <div class="card-head">
       <img src="{% static 'images/borrowing_icon.svg' %}" 
           alt="Current Update Icon"
@@ -535,7 +543,7 @@
     </div>
   </div>
 
-  <div class="card table-card" style="margin-top:12px">
+  <div class="card table-card" style="margin-top:25px">
     <div class="card-head">
       <img src="{% static 'images/borrowing_icon.svg' %}" 
           alt="Current Update Icon"
@@ -581,7 +589,7 @@
     </div>
   </div>
 
-  <div class="card table-card" style="margin-top:12px">
+  <div class="card table-card" style="margin-top:25px">
     <div class="card-head">
       <img src="{% static 'images/borrowing_icon.svg' %}" 
           alt="Current Update Icon"
