@@ -1833,7 +1833,7 @@ def _inventory_context(borrower):
     plot_height = chart_height - top - bottom
     baseline_y = top + plot_height
     step_x = plot_width / max(1, len(series_labels) - 1) if series_labels else plot_width
-    bar_width = 12
+    bar_width = 8
 
     y_ticks = []
     for idx in range(tick_count):

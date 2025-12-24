@@ -48,6 +48,12 @@
     font-weight:600;
     color:#585858;
   }
+  .other-collateral .value-trend-head{
+    justify-content:space-between;
+  }
+  .other-collateral .value-trend-head .legend{
+    margin-left:auto;
+  }
   .other-collateral .ico{
     width:16px;
     height:16px;
@@ -338,13 +344,13 @@
       {% endfor %}
     </div>
     <div style="margin-top: 20px; margin-bottom: 10px;" class="divider"></div>
-    <div class="card-head" style="padding-bottom:0">
-<img src="{% static 'images/borrowing_icon.svg' %}"
+    <div class="card-head value-trend-head" style="padding-bottom:0">
+      <div style="display:flex;align-items:center;gap:8px;">
+        <img src="{% static 'images/borrowing_icon.svg' %}"
           alt="Current Update Icon"
           class="current-update-icon" />
-      Value Trend
-    </div>
-    <div class="chart-head">
+        Value Trend
+      </div>
       <div class="legend">
         <div class="litem"><span class="sw"></span>Estimated OLV</div>
         <div class="litem"><span class="sw ind"></span>Appraisal OLV</div>
