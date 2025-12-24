@@ -244,9 +244,10 @@
       width:100%;
       min-height:370px;
     }
-    .pill {
+.pill {
     width: 320px;
 margin-top: 5px;
+    margin-bottom: 8px;
     background: var(--blue);
     color: #fff;
     border-radius: 8px;
@@ -456,7 +457,7 @@ margin-top: 5px;
     flex-direction: column;
     gap: 18px;
     height: auto;
-    margin-top: -41px;
+    margin-top: -48px;
 }
     .insight-card__header{
       display:flex;
