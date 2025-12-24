@@ -20,7 +20,9 @@
   }
   .finished-goals{font-family:ui-sans-serif,system-ui,-apple-system,Segoe UI,Roboto,Helvetica,Arial,"Apple Color Emoji","Segoe UI Emoji";}
   .finished-goals .wrap{max-width:1120px;margin:0 auto;padding:0 18px 30px;background:none;}
-  .finished-goals .grid-2{display:grid;grid-template-columns:1fr 2fr;}
+  .finished-goals .grid-2{
+    margin-top: 10px;
+    display:grid;grid-template-columns:1fr 2fr;}
   @media (max-width:920px){.finished-goals .grid-2{grid-template-columns:1fr;}}
   .finished-goals .card{background:var(--card);border:1px solid var(--border);border-radius:var(--r);box-shadow:var(--shadow);overflow:hidden; margin-left: 20px;}
   .finished-goals .card-pad{padding:12px 14px;}
@@ -264,8 +266,10 @@
   .finished-goals table.sku{width:100%;border-collapse:collapse;font-size:12px;min-width:880px;color:#344054;}
   .finished-goals table.sku thead th{padding:8px 10px;border-bottom:1px solid var(--border);white-space:nowrap;}
   .finished-goals table.sku thead tr:first-child th{background:#F7F9FC;color:#475467;font-weight:800;text-align:start;}
+  .finished-goals table.sku thead tr:first-child th.center{text-align:center;}
   .finished-goals table.sku thead tr:last-child th{background:#FBFCFE;color:#667085;font-weight:700;text-align:left;}
-  .finished-goals table.sku thead th.center{text-align:start;}
+  .finished-goals table.sku thead th.center{text-align:center;}
+  .finished-goals table.sku .sep-left{border-left:1px solid var(--border);}
   .finished-goals table.sku tbody td{padding:8px 10px;border-bottom:1px solid rgba(230,234,242,.65);white-space:nowrap;color:#65758B;}
   .finished-goals table.sku tbody tr:last-child td{border-bottom:none;}
   .finished-goals .pill{display:inline-flex;padding:3px 8px;border-radius:999px;font-size:10px;font-weight:900;border:1px solid rgba(230,234,242,.9);background:#F8FAFD;color:#475467;}
@@ -611,7 +615,7 @@
           <tr>
             <th>Cost</th>
             <th>% of Total</th>
-            <th>COGS</th>
+            <th class="sep-left">COGS</th>
             <th>GM</th>
             <th>GM%</th>
             <th>WOS</th>
@@ -625,7 +629,7 @@
               <td>{{ row.description }}</td>
               <td class="numC">{{ row.cost }}</td>
               <td class="numC">{{ row.pct_of_total }}</td>
-              <td class="numC">{{ row.cogs }}</td>
+              <td class="numC sep-left">{{ row.cogs }}</td>
               <td class="numC">{{ row.gm }}</td>
               <td class="numC">{{ row.gm_pct }}</td>
               <td class="numC">{{ row.wos }}</td>
