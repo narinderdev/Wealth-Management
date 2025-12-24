@@ -33,7 +33,9 @@ from management.models import (
     RMIneligibleOverviewRow,
     RiskSubfactorsRow,
     SalesGMTrendRow,
+    WIPCategoryHistoryRow,
     WIPIneligibleOverviewRow,
+    WIPTop20HistoryRow,
 )
 from management.views.summary import (
     _build_borrower_summary,
@@ -4283,139 +4285,210 @@ def _work_in_progress_context(borrower, range_key="today", division="all"):
                 }
             )
 
-    category_groups = {}
-    for row in wip_rows:
-        key = (row.sub_type or row.main_type or "Other").strip() or "Other"
-        label = key.title()
-        if label not in category_groups:
-            category_groups[label] = {"total": Decimal("0"), "available": Decimal("0")}
-        beginning = _to_decimal(row.beginning_collateral)
-        eligible = _to_decimal(row.eligible_collateral)
-        category_groups[label]["total"] += beginning
-        category_groups[label]["available"] += eligible
-
     category_rows = []
-    for label, metrics in category_groups.items():
-        total = metrics["total"]
-        available = metrics["available"]
-        ineligible = max(total - available, Decimal("0"))
-        pct_available = available / total if total else Decimal("0")
-        category_rows.append(
-            {
-                "label": label,
-                "total": _format_currency(total),
-                "ineligible": _format_currency(ineligible),
-                "available": _format_currency(available),
-                "pct_available": _format_pct(pct_available),
-                "_total_value": total,
-                "_available_value": available,
-            }
+    top10_row = _empty_summary_entry("Top 10 Total")
+    category_base_qs = WIPCategoryHistoryRow.objects.filter(borrower=borrower)
+    if normalized_division != "all":
+        category_base_qs = category_base_qs.filter(division__iexact=normalized_division)
+    category_qs = category_base_qs
+    if start_date and end_date:
+        range_qs = category_base_qs.filter(date__range=(start_date, end_date))
+        if range_qs.exists():
+            category_qs = range_qs
+    latest_category = category_qs.order_by("-date", "-created_at", "-id").first()
+    if latest_category and latest_category.date:
+        category_qs = category_qs.filter(date=latest_category.date)
+
+    if category_qs.exists():
+        for row in category_qs:
+            total = _to_decimal(row.total_inventory)
+            available = _to_decimal(row.available_inventory)
+            ineligible = _to_decimal(row.ineligible_inventory)
+            if ineligible <= 0 and total:
+                ineligible = max(total - available, Decimal("0"))
+            pct_value = _to_decimal(row.pct_available)
+            if pct_value <= 0 and total:
+                pct_value = available / total
+            pct_ratio = pct_value / Decimal("100") if pct_value > 1 else pct_value
+            category_rows.append(
+                {
+                    "label": row.category or "—",
+                    "total": _format_currency(total),
+                    "ineligible": _format_currency(ineligible),
+                    "available": _format_currency(available),
+                    "pct_available": _format_pct(pct_ratio),
+                    "_total_value": total,
+                    "_available_value": available,
+                }
+            )
+        category_rows.sort(
+            key=lambda item: item.get("_total_value", Decimal("0")), reverse=True
         )
+        top10_slice = category_rows[:10]
+        top10_total = sum(item.get("_total_value", Decimal("0")) for item in top10_slice)
+        top10_available = sum(
+            item.get("_available_value", Decimal("0")) for item in top10_slice
+        )
+        top10_row = {
+            "label": "Top 10 Total",
+            "total": _format_currency(top10_total),
+            "ineligible": _format_currency(max(top10_total - top10_available, Decimal("0"))),
+            "available": _format_currency(top10_available),
+            "pct_available": _format_pct(
+                (top10_available / top10_total) if top10_total else Decimal("0")
+            ),
+        }
+        for item in category_rows:
+            item.pop("_total_value", None)
+            item.pop("_available_value", None)
+    else:
+        category_groups = {}
+        for row in wip_rows:
+            key = (row.sub_type or row.main_type or "Other").strip() or "Other"
+            label = key.title()
+            if label not in category_groups:
+                category_groups[label] = {"total": Decimal("0"), "available": Decimal("0")}
+            beginning = _to_decimal(row.beginning_collateral)
+            eligible = _to_decimal(row.eligible_collateral)
+            category_groups[label]["total"] += beginning
+            category_groups[label]["available"] += eligible
 
-    category_rows.sort(key=lambda item: item.get("_total_value", Decimal("0")), reverse=True)
+        for label, metrics in category_groups.items():
+            total = metrics["total"]
+            available = metrics["available"]
+            ineligible = max(total - available, Decimal("0"))
+            pct_available = available / total if total else Decimal("0")
+            category_rows.append(
+                {
+                    "label": label,
+                    "total": _format_currency(total),
+                    "ineligible": _format_currency(ineligible),
+                    "available": _format_currency(available),
+                    "pct_available": _format_pct(pct_available),
+                    "_total_value": total,
+                    "_available_value": available,
+                }
+            )
+        category_rows.sort(
+            key=lambda item: item.get("_total_value", Decimal("0")), reverse=True
+        )
+        top10_slice = category_rows[:10]
+        top10_total = sum(item.get("_total_value", Decimal("0")) for item in top10_slice)
+        top10_available = sum(
+            item.get("_available_value", Decimal("0")) for item in top10_slice
+        )
+        top10_row = {
+            "label": "Top 10 Total",
+            "total": _format_currency(top10_total),
+            "ineligible": _format_currency(max(top10_total - top10_available, Decimal("0"))),
+            "available": _format_currency(top10_available),
+            "pct_available": _format_pct(
+                (top10_available / top10_total) if top10_total else Decimal("0")
+            ),
+        }
+        for item in category_rows:
+            item.pop("_total_value", None)
+            item.pop("_available_value", None)
 
-    top10_slice = category_rows[:10]
-    top10_total = sum(item.get("_total_value", Decimal("0")) for item in top10_slice)
-    top10_available = sum(item.get("_available_value", Decimal("0")) for item in top10_slice)
-    top10_row = {
-        "label": "Top 10 Total",
-        "total": _format_currency(top10_total),
-        "ineligible": _format_currency(max(top10_total - top10_available, Decimal("0"))),
-        "available": _format_currency(top10_available),
-        "pct_available": _format_pct(
-            (top10_available / top10_total) if top10_total else Decimal("0")
-        ),
-    }
-
-    other_total = sum(item.get("_total_value", Decimal("0")) for item in category_rows[10:])
-    other_available = sum(item.get("_available_value", Decimal("0")) for item in category_rows[10:])
-    category_other = {
-        "label": "Other items",
-        "total": _format_currency(other_total),
-        "ineligible": _format_currency(max(other_total - other_available, Decimal("0"))),
-        "available": _format_currency(other_available),
-        "pct_available": _format_pct(
-            (other_available / other_total) if other_total else Decimal("0")
-        ),
-    }
-
-    footer = {
-        "total": _format_currency(total_beginning),
-        "ineligible": _format_currency(total_ineligible),
-        "available": _format_currency(total_available),
-        "pct_available": _format_pct(
-            total_available / total_beginning if total_beginning else Decimal("0")
-        ),
-    }
-
-    sku_rows = sorted(
-        wip_rows,
-        key=lambda row: _to_decimal(row.eligible_collateral),
-        reverse=True,
-    )
-    top20_rows = sku_rows[:20]
     raw_skus = []
-    top20_amount = Decimal("0")
-    top20_available = Decimal("0")
-    sku_total_amount = Decimal("0")
-    sku_total_available = Decimal("0")
-    for row in sku_rows:
-        sku_total_amount += _to_decimal(row.beginning_collateral)
-        sku_total_available += _to_decimal(row.eligible_collateral)
-    for row in top20_rows:
-        eligible = _to_decimal(row.eligible_collateral)
-        beginning = _to_decimal(row.beginning_collateral)
-        pct_available = (eligible / beginning) if beginning else Decimal("0")
-        units = max(int(eligible), 0)
-        value_per_unit = eligible / units if units else Decimal("0")
-        raw_skus.append(
-            {
-                "sku": f"RM-{row.id}",
-                "category": row.main_type or "Inventory",
-                "description": row.sub_type or row.main_type or "Work-in-Progress",
-                "amount": _format_currency(beginning),
-                "units": f"{units:,}" if units else "—",
-                "per_unit": f"${value_per_unit:.2f}" if units else "—",
-                "pct_available": _format_pct(pct_available),
-                "status": "Current" if _to_decimal(row.net_collateral) >= 0 else "At Risk",
-            }
+    top20_total = _empty_summary_entry("Top 20 Total")
+    sku_base_qs = WIPTop20HistoryRow.objects.filter(borrower=borrower)
+    if normalized_division != "all":
+        sku_base_qs = sku_base_qs.filter(division__iexact=normalized_division)
+    sku_qs = sku_base_qs
+    if start_date and end_date:
+        range_qs = sku_base_qs.filter(as_of_date__range=(start_date, end_date))
+        if range_qs.exists():
+            sku_qs = range_qs
+    latest_sku = sku_qs.order_by("-as_of_date", "-created_at", "-id").first()
+    if latest_sku and latest_sku.as_of_date:
+        sku_qs = sku_qs.filter(as_of_date=latest_sku.as_of_date)
+    sku_rows = list(sku_qs.order_by("-amount", "-id")[:20])
+
+    if sku_rows:
+        total_amount = Decimal("0")
+        top20_available_amount = Decimal("0")
+        for row in sku_rows:
+            amount = _to_decimal(row.amount)
+            pct_value = _to_decimal(row.pct_available)
+            pct_ratio = pct_value / Decimal("100") if pct_value > 1 else pct_value
+            available_amount = amount * pct_ratio
+            total_amount += amount
+            top20_available_amount += available_amount
+
+            units_display = "—"
+            if row.units is not None:
+                units_value = _to_decimal(row.units)
+                if units_value == units_value.to_integral_value():
+                    units_display = f"{units_value:,.0f}"
+                else:
+                    units_display = f"{units_value:,.2f}"
+
+            raw_skus.append(
+                {
+                    "sku": _safe_str(row.sku),
+                    "category": row.category or "—",
+                    "description": row.description or "—",
+                    "amount": _format_currency(amount),
+                    "units": units_display,
+                    "per_unit": _format_currency(row.usd_unit),
+                    "pct_available": _format_pct(pct_ratio),
+                    "status": "Current",
+                }
+            )
+
+        total_pct = top20_available_amount / total_amount if total_amount else Decimal("0")
+        top20_total = {
+            "label": "Top 20 Total",
+            "total": _format_currency(total_amount),
+            "ineligible": "—",
+            "available": _format_currency(top20_available_amount),
+            "pct_available": _format_pct(total_pct),
+        }
+    else:
+        sku_rows = sorted(
+            wip_rows,
+            key=lambda row: _to_decimal(row.eligible_collateral),
+            reverse=True,
         )
-        top20_amount += beginning
-        top20_available += eligible
+        top20_rows = sku_rows[:20]
+        top20_amount = Decimal("0")
+        top20_available = Decimal("0")
+        for row in top20_rows:
+            eligible = _to_decimal(row.eligible_collateral)
+            beginning = _to_decimal(row.beginning_collateral)
+            pct_available = (eligible / beginning) if beginning else Decimal("0")
+            units = max(int(eligible), 0)
+            value_per_unit = eligible / units if units else Decimal("0")
+            raw_skus.append(
+                {
+                    "sku": f"RM-{row.id}",
+                    "category": row.main_type or "Inventory",
+                    "description": row.sub_type or row.main_type or "Work-in-Progress",
+                    "amount": _format_currency(beginning),
+                    "units": f"{units:,}" if units else "—",
+                    "per_unit": f"${value_per_unit:.2f}" if units else "—",
+                    "pct_available": _format_pct(pct_available),
+                    "status": "Current" if _to_decimal(row.net_collateral) >= 0 else "At Risk",
+                }
+            )
+            top20_amount += beginning
+            top20_available += eligible
 
-    top20_total = {
-        "label": "Top 20 Total",
-        "total": _format_currency(top20_amount),
-        "ineligible": _format_currency(max(top20_amount - top20_available, Decimal("0"))),
-        "available": _format_currency(top20_available),
-        "pct_available": _format_pct(
-            (top20_available / top20_amount) if top20_amount else Decimal("0")
-        ),
-    }
+        top20_total = {
+            "label": "Top 20 Total",
+            "total": _format_currency(top20_amount),
+            "ineligible": _format_currency(max(top20_amount - top20_available, Decimal("0"))),
+            "available": _format_currency(top20_available),
+            "pct_available": _format_pct(
+                (top20_available / top20_amount) if top20_amount else Decimal("0")
+            ),
+        }
 
-    sku_other_row = {
-        "label": "Other items",
-        "total": _format_currency(max(sku_total_amount - top20_amount, Decimal("0"))),
-        "ineligible": _format_currency(
-            max(max(sku_total_amount - top20_amount, Decimal("0")) - (sku_total_available - top20_available), Decimal("0"))
-        ),
-        "available": _format_currency(max(sku_total_available - top20_available, Decimal("0"))),
-        "pct_available": _format_pct(
-            ((sku_total_available - top20_available) / max(sku_total_amount - top20_amount, Decimal("1")))
-            if (sku_total_amount - top20_amount)
-            else Decimal("0")
-        ),
-    }
-
-    sku_grand_total = {
-        "label": "Total",
-        "total": _format_currency(sku_total_amount),
-        "ineligible": _format_currency(max(sku_total_amount - sku_total_available, Decimal("0"))),
-        "available": _format_currency(sku_total_available),
-        "pct_available": _format_pct(
-            (sku_total_available / sku_total_amount) if sku_total_amount else Decimal("0")
-        ),
-    }
+    category_other = base_context["work_in_progress_category_other"]
+    footer = base_context["work_in_progress_category_footer"]
+    sku_other_row = base_context["work_in_progress_top_skus_other"]
+    sku_grand_total = base_context["work_in_progress_top_skus_total"]
 
     def _line_values(base, length=13):
         values = []
