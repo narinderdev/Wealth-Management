@@ -35,6 +35,8 @@
     border-radius:var(--r);
     box-shadow:var(--shadow);
     overflow:hidden;
+    margin-top:12px;
+    margin-left:10px
   }
   .other-collateral .section{margin-top:12px;}
   .other-collateral .card-head{
@@ -89,8 +91,8 @@
     display:flex;
     flex-direction: column;
     justify-content:space-between;
-    gap:5px;
-    font-size:18px;
+    gap:10px;
+    font-size:16px;
     color:#475467;
     margin-top:36px;
     width:100%;
@@ -106,7 +108,7 @@
   .other-collateral .kpi-change .pair-left{
     display:flex;
     flex-direction:column;
-    gap:4px;
+    gap:10px
   }
   .other-collateral .kpi-change .pair b{display:block;}
   .other-collateral .kpi-change .pair .delta{font-size:12px;}
@@ -145,12 +147,12 @@
   .other-collateral .delta.good{color:var(--success);}
   .other-collateral .arrow{font-size:12px;line-height:1;}
 
-  .other-collateral .divider{height:1px;background:var(--border);}
+  .other-collateral .divider{height:1px;background:var(--border); margin-left: 10px; margin-right: 10px;}
   .other-collateral .chart-head{padding:14px 14px 0;display:flex;justify-content:flex-end;align-items:center;gap:12px;width:100%;}
   .other-collateral .legend{display:flex;gap:12px;align-items:center;font-size:11px;color:var(--muted);flex-wrap:wrap;}
   .other-collateral .chart-head .legend{margin-left:auto;}
-  .other-collateral .litem{display:flex;align-items:center;gap:6px;}
-    .other-collateral .sw{width:10px;height:10px;border-radius:3px;background:var(--purple);}
+  .other-collateral .litem{display:flex;align-items:center;gap:6px ; font-size: 16px}
+    .other-collateral .sw{width:15px;height:15px;border-radius:3px;background:var(--purple);}
     .other-collateral .sw.ind{background:var(--blue);}
   .other-collateral .toggle{display:inline-flex;gap:2px;padding:2px;border:1px solid var(--border);border-radius:10px;background:#fff;user-select:none;}
   .other-collateral .toggle span{padding:6px 10px;border-radius:8px;font-size:11px;font-weight:950;color:var(--muted);}
@@ -191,7 +193,7 @@
     overflow:auto;
     max-height:420px;
   }
-  .other-collateral table.data{width:100%;border-collapse:collapse;font-size:10.5px;min-width: 980px;}
+  .other-collateral table.data{width:100%;border-collapse:collapse;font-size:12px  ;min-width: 980px;}
   .other-collateral table.data.value-analysis-table{table-layout:fixed;}
   .other-collateral table.data.value-analysis-table col.col-id{width:6%;}
   .other-collateral table.data.value-analysis-table col.col-equipment{width:22%;}
@@ -205,7 +207,7 @@
   .other-collateral table.data.asset-register-table col.col-year{width:7%;}
   .other-collateral table.data.asset-register-table col.col-condition{width:12%;}
   .other-collateral table.data.asset-register-table col.col-num{width:12%;}
-  .other-collateral table.data thead th{position:sticky;top:0;background:#FBFCFE;color:#475467;font-weight:950;text-align:left;padding:10px 12px;border-bottom:1px solid var(--border);white-space:nowrap;}
+  .other-collateral table.data thead th{position:sticky;top:0;background:#FBFCFE;color:#65758b;font-weight:950;text-align:left;padding:10px 12px;border-bottom:1px solid var(--border);white-space:nowrap;}
   .other-collateral table.data.value-analysis-table thead tr:first-child th{
     text-align:center;
     vertical-align:bottom;
@@ -253,13 +255,15 @@
     padding:6px 10px;
     border:1px solid #d6dde8;
     border-radius:6px;
-    font-size:11px;
+    font-size:14px;
+    margin-left:10px;
+    height: 35px;
   }
   .other-collateral .pager{
     display:flex;
     align-items:center;
     gap:8px;
-    font-size:11px;
+    font-size:15px;
     color:#4b5563;
   }
   .other-collateral .pager button{
@@ -293,9 +297,9 @@
             {% for row in card.rows %}
               {% if card.row_deltas %}
                 <div class="pair">
-                  <div class="pair-left">
+                  <div style="margin-bottom: 10px;" class="pair-left">
                     <span>{{ row.label }}</span>
-                    <b>{{ row.value }}</b>
+                    <b style="font-size: 20px;">{{ row.value }}</b>
                   </div>
                   {% if row.delta %}
                     <div class="delta {{ row.delta_class }}">
@@ -305,7 +309,7 @@
                   {% endif %}
                 </div>
               {% else %}
-                <div class="pair"><span>{{ row.label }}</span><b>{{ row.value }}</b></div>
+                <div class="pair"><span>{{ row.label }}</span><b style="font-size: 20px;">{{ row.value }}</b></div>
               {% endif %}
             {% endfor %}
           </div>
@@ -333,7 +337,7 @@
         </div>
       {% endfor %}
     </div>
-    <div class="divider"></div>
+    <div style="margin-top: 20px; margin-bottom: 10px;" class="divider"></div>
     <div class="card-head" style="padding-bottom:0">
 <img src="{% static 'images/borrowing_icon.svg' %}"
           alt="Current Update Icon"
@@ -356,7 +360,7 @@
           class="current-update-icon" />
   Value Analysis
     </div>
-    <div class="divider"></div>
+    <div style="margin-bottom: 10px;" class="divider"></div>
     <div class="table-controls">
       <input type="search" class="table-search" data-table="value-analysis-table" placeholder="Search value analysis...">
       <div class="pager table-pager" data-table="value-analysis-table">
