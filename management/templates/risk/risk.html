@@ -40,7 +40,7 @@
 color: #585858;
 
 
-font-size: 24px;
+font-size: 22px;
 font-style: normal;
 font-weight: 600;
 line-height: 24px; /* 100% */
@@ -112,7 +112,7 @@ letter-spacing: -0.6px;
      color: #737791;
 
 margin: 0px;
-font-size: 18px;
+font-size: 16px;
 font-style: normal;
 font-weight: 400;
 line-height: 27px; /* 150% */
@@ -189,15 +189,15 @@ line-height: 27px; /* 150% */
       display:flex;
       align-items:center;
       justify-content:center;
-      font-size:11px;
+      font-size:12px;
       font-weight:700;
       border:1px solid #dbe7f6;
       text-transform:capitalize;
     }
-    .risk-page .pill2.blue{ background:#116BFD; color:#fff; border-color:#116BFD; }
-    .risk-page .pill2.navy{ background:#083a8a; color:#fff; border-color:#083a8a; }
-    .risk-page .pill2.lt{ background:#cfe4f7; color:#0f172a; }
-    .risk-page .pill2.wt{ background:#f8fbff; color:#0f172a; }
+    .risk-page .pill2.blue{ background:#116BFD; color:#fff; border-color:#116BFD; height: 35px; }
+    .risk-page .pill2.navy{ background:#083a8a; color:#fff; border-color:#083a8a; height: 35px;}
+    .risk-page .pill2.lt{ background:#cfe4f7; color:#0f172a;height: 35px; }
+    .risk-page .pill2.wt{ background:#f8fbff; color:#0f172a; height: 35px;}
 
     /* Trend chart */
     .risk-page .chartbox{
@@ -484,7 +484,7 @@ line-height: normal;
                 <circle cx="21" cy="21" r="15.915" fill="transparent" stroke="{{ risk.rating_color }}" stroke-width="4"
                         stroke-linecap="round" stroke-dasharray="{{ risk.rating_dasharray }}"
                         transform="rotate(-90 21 21)"></circle>
-                <text x="21" y="22" text-anchor="middle">{{ risk.rating_score }}/5</text>
+                <text x="21" y="25" text-anchor="middle">{{ risk.rating_score }}/5</text>
               </svg>
             </div>
 
@@ -595,7 +595,7 @@ line-height: normal;
               <circle cx="21" cy="21" r="15.915" fill="transparent" stroke="{{ metric.donut_bg }}" stroke-width="4"></circle>
               <circle cx="21" cy="21" r="15.915" fill="transparent" stroke="{{ metric.donut_color }}" stroke-width="4"
                       stroke-linecap="round" stroke-dasharray="{{ metric.donut_dash }}" transform="rotate(-90 21 21)"></circle>
-              <text x="21" y="22" text-anchor="middle">{{ metric.score_display }}</text>
+              <text x="21" y="25" text-anchor="middle">{{ metric.score_display }}</text>
             </svg>
 
             <div class="bars">
