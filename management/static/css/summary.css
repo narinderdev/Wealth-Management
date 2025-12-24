@@ -257,18 +257,18 @@ margin-top: 5px;
     text-align: center;
 }
     .kv{
-      display:grid;
-      grid-template-columns: 14px 1fr auto;
-      gap:8px;
-      align-items:center;
-      padding:5px 2px;
-      font-size:12px;
-      color:#64748b;
+    display: grid;
+    grid-template-columns: 14px 1fr auto;
+    gap: 8px;
+    align-items: center;
+    padding: 8px 2px;
+    font-size: 12px;
+    color: #64748b;
     }
     .kv .v{
       color:#111827;
       font-weight:500;
-      font-size:14px;
+      font-size:12px;
     }
     .kv .link{
       color:#007AF5;
@@ -569,10 +569,12 @@ margin-top: 5px;
       align-items:center;
       box-shadow:0 4px 12px rgba(15,23,42,.06);
     }
-    .meta-label{
-      font-size:11px;
-      font-weight:600;
-      color:#65758B;
+    .meta-label{    
+padding: 4px;
+font-size: 14px;
+font-weight: 600;
+color: #65758B;
+      
     }
     .meta-value{
       margin-top: 8px;
@@ -585,8 +587,8 @@ margin-top: 5px;
       font-weight:600;
       margin-top:6px;
     }
-    .meta-delta.up{color:#059669}
-    .meta-delta.down{color:#dc2626}
+    .meta-delta.up{color:#059669;margin-top: 20px;}
+    .meta-delta.down{color:#dc2626; margin-top: 20px;}
     .meta-icon{
       border:none;
       background:#eaf1ff;
@@ -799,6 +801,7 @@ margin-top: 5px;
       font-size:11px;
       color:#334155;
       min-width:900px;
+      font-size: 12px;
     }
     .cc-table thead th {
       position: sticky;
@@ -891,16 +894,17 @@ margin-top: 5px;
     }
     .cc-table tbody tr:first-child td{
       padding-top:16px;
+      font-size: 12px;
     }
     .cc-label{
       font-weight:600;
       color:#0f172a;
       padding-left:calc(10px + (var(--lvl,0) * 14px));
     }
-    .cc-row.level-0 td{background:#fff}
-    .cc-row.level-1 td{background:#fff}
-    .cc-row.level-2 td{background:#fff}
-    .cc-row.level-3 td{background:#fff}
+    .cc-row.level-0 td{background:#fff;font-size: 12px;}
+    .cc-row.level-1 td{background:#fff;font-size: 12px;}
+    .cc-row.level-2 td{background:#fff;font-size: 12px;}
+    .cc-row.level-3 td{background:#fff;font-size: 12px;}
     .cc-ctl{
       width:34px;
       text-align:right;

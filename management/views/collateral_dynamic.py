@@ -29,6 +29,7 @@ from management.models import (
     IneligibleOverviewRow,
     IneligibleTrendRow,
     MachineryEquipmentRow,
+    RMCategoryHistoryRow,
     NOLVTableRow,
     RMIneligibleOverviewRow,
     RiskSubfactorsRow,
@@ -3925,84 +3926,181 @@ def _raw_materials_context(borrower, range_key="today", division="all"):
                 }
             )
 
-    category_metrics = {label: {"eligible": Decimal("0"), "beginning": Decimal("0")} for label, _ in RAW_CATEGORY_DEFINITIONS}
-    OTHER_LABEL = "Other items"
-    category_metrics[OTHER_LABEL] = {"eligible": Decimal("0"), "beginning": Decimal("0")}
+    category_rows = []
+    top10_row = _empty_summary_entry("Top 10 Total")
+    category_other_row = _empty_summary_entry("Other items")
+    footer = _empty_summary_entry("Total")
 
-    total_beginning = Decimal("0")
-    total_available = Decimal("0")
-    total_ineligible_calc = Decimal("0")
+    category_base_qs = RMCategoryHistoryRow.objects.filter(borrower=borrower)
+    if normalized_division != "all":
+        category_base_qs = category_base_qs.filter(division__iexact=normalized_division)
+    category_qs = category_base_qs
+    if start_date and end_date:
+        range_qs = category_base_qs.filter(date__range=(start_date, end_date))
+        if range_qs.exists():
+            category_qs = range_qs
+    latest_category = category_qs.order_by("-date", "-created_at", "-id").first()
+    if latest_category and latest_category.date:
+        category_qs = category_qs.filter(date=latest_category.date)
 
-    for row in inventory_rows:
-        beginning = _to_decimal(row.beginning_collateral)
-        available = _to_decimal(row.eligible_collateral)
-        total_beginning += beginning
-        total_available += available
-        text = " ".join(filter(None, [(row.sub_type or ""), (row.main_type or "")])).lower()
-        matched_label = None
-        for label, keywords in RAW_CATEGORY_DEFINITIONS:
-            if any(keyword in text for keyword in keywords):
-                matched_label = label
-                break
-        if not matched_label:
-            matched_label = OTHER_LABEL
-        metrics = category_metrics.setdefault(matched_label, {"eligible": Decimal("0"), "beginning": Decimal("0")})
-        metrics["eligible"] += available
-        metrics["beginning"] += beginning
+    if category_qs.exists():
+        for row in category_qs:
+            total = _to_decimal(row.total_inventory)
+            available = _to_decimal(row.available_inventory)
+            ineligible = _to_decimal(row.ineligible_inventory)
+            if ineligible <= 0 and total:
+                ineligible = max(total - available, Decimal("0"))
+            pct_value = _to_decimal(row.pct_available)
+            if pct_value <= 0 and total:
+                pct_value = available / total
+            pct_ratio = pct_value / Decimal("100") if pct_value > 1 else pct_value
+            category_rows.append(
+                {
+                    "label": row.category or "—",
+                    "total": _format_currency(total),
+                    "ineligible": _format_currency(ineligible),
+                    "available": _format_currency(available),
+                    "pct_available": _format_pct(pct_ratio),
+                    "_total_value": total,
+                    "_available_value": available,
+                    "_ineligible_value": ineligible,
+                }
+            )
 
-    cat_rows = []
-    for label, _ in RAW_CATEGORY_DEFINITIONS:
-        metrics = category_metrics.get(label, {"eligible": Decimal("0"), "beginning": Decimal("0")})
-        beginning = metrics["beginning"]
-        available = metrics["eligible"]
-        ineligible = max(beginning - available, Decimal("0"))
-        total_ineligible_calc += ineligible
-        pct_available = available / beginning if beginning else Decimal("0")
-        cat_rows.append(
-            {
-                "label": label,
-                "total": _format_currency(beginning),
-                "ineligible": _format_currency(ineligible),
-                "available": _format_currency(available),
-                "pct_available": _format_pct(pct_available),
-            }
+        category_rows.sort(
+            key=lambda item: item.get("_total_value", Decimal("0")), reverse=True
         )
 
-    other_metrics = category_metrics.get(OTHER_LABEL, {"eligible": Decimal("0"), "beginning": Decimal("0")})
-    other_beginning = other_metrics["beginning"]
-    other_available = other_metrics["eligible"]
-    other_ineligible = max(other_beginning - other_available, Decimal("0"))
-    total_ineligible_calc += other_ineligible
-    other_pct_available = other_available / other_beginning if other_beginning else Decimal("0")
+        top10_slice = category_rows[:10]
+        top10_total = sum(item.get("_total_value", Decimal("0")) for item in top10_slice)
+        top10_available = sum(item.get("_available_value", Decimal("0")) for item in top10_slice)
+        top10_row = {
+            "label": "Top 10 Total",
+            "total": _format_currency(top10_total),
+            "ineligible": _format_currency(max(top10_total - top10_available, Decimal("0"))),
+            "available": _format_currency(top10_available),
+            "pct_available": _format_pct(
+                (top10_available / top10_total) if top10_total else Decimal("0")
+            ),
+        }
 
-    category_other_row = {
-        "label": OTHER_LABEL.title(),
-        "total": _format_currency(other_beginning),
-        "ineligible": _format_currency(other_ineligible),
-        "available": _format_currency(other_available),
-        "pct_available": _format_pct(other_pct_available),
-    }
+        other_total = sum(item.get("_total_value", Decimal("0")) for item in category_rows[10:])
+        other_available = sum(
+            item.get("_available_value", Decimal("0")) for item in category_rows[10:]
+        )
+        category_other_row = {
+            "label": "Other items",
+            "total": _format_currency(other_total),
+            "ineligible": _format_currency(max(other_total - other_available, Decimal("0"))),
+            "available": _format_currency(other_available),
+            "pct_available": _format_pct(
+                (other_available / other_total) if other_total else Decimal("0")
+            ),
+        }
 
-    footer = {
-        "total": _format_currency(total_beginning),
-        "ineligible": _format_currency(total_ineligible_calc),
-        "available": _format_currency(total_available),
-        "pct_available": _format_pct(
-            total_available / total_beginning if total_beginning else Decimal("0")
-        ),
-    }
+        total_beginning = sum(item.get("_total_value", Decimal("0")) for item in category_rows)
+        total_available = sum(item.get("_available_value", Decimal("0")) for item in category_rows)
+        total_ineligible_calc = sum(item.get("_ineligible_value", Decimal("0")) for item in category_rows)
+        footer = {
+            "total": _format_currency(total_beginning),
+            "ineligible": _format_currency(total_ineligible_calc),
+            "available": _format_currency(total_available),
+            "pct_available": _format_pct(
+                total_available / total_beginning if total_beginning else Decimal("0")
+            ),
+        }
 
-    top10_beginning = sum(category_metrics[label]["beginning"] for label, _ in RAW_CATEGORY_DEFINITIONS)
-    top10_available = sum(category_metrics[label]["eligible"] for label, _ in RAW_CATEGORY_DEFINITIONS)
-    top10_row = {
-        "label": "Top 10 Total",
-        "total": _format_currency(top10_beginning),
-        "ineligible": _format_currency(max(top10_beginning - top10_available, Decimal("0"))),
-        "available": _format_currency(top10_available),
-        "pct_available": _format_pct(
-            (top10_available / top10_beginning) if top10_beginning else Decimal("0")
-        ),
-    }
+        for item in category_rows:
+            item.pop("_total_value", None)
+            item.pop("_available_value", None)
+            item.pop("_ineligible_value", None)
+    else:
+        category_metrics = {
+            label: {"eligible": Decimal("0"), "beginning": Decimal("0")}
+            for label, _ in RAW_CATEGORY_DEFINITIONS
+        }
+        OTHER_LABEL = "Other items"
+        category_metrics[OTHER_LABEL] = {"eligible": Decimal("0"), "beginning": Decimal("0")}
+
+        total_beginning = Decimal("0")
+        total_available = Decimal("0")
+        total_ineligible_calc = Decimal("0")
+
+        for row in inventory_rows:
+            beginning = _to_decimal(row.beginning_collateral)
+            available = _to_decimal(row.eligible_collateral)
+            total_beginning += beginning
+            total_available += available
+            text = " ".join(filter(None, [(row.sub_type or ""), (row.main_type or "")])).lower()
+            matched_label = None
+            for label, keywords in RAW_CATEGORY_DEFINITIONS:
+                if any(keyword in text for keyword in keywords):
+                    matched_label = label
+                    break
+            if not matched_label:
+                matched_label = OTHER_LABEL
+            metrics = category_metrics.setdefault(
+                matched_label, {"eligible": Decimal("0"), "beginning": Decimal("0")}
+            )
+            metrics["eligible"] += available
+            metrics["beginning"] += beginning
+
+        for label, _ in RAW_CATEGORY_DEFINITIONS:
+            metrics = category_metrics.get(label, {"eligible": Decimal("0"), "beginning": Decimal("0")})
+            beginning = metrics["beginning"]
+            available = metrics["eligible"]
+            ineligible = max(beginning - available, Decimal("0"))
+            total_ineligible_calc += ineligible
+            pct_available = available / beginning if beginning else Decimal("0")
+            category_rows.append(
+                {
+                    "label": label,
+                    "total": _format_currency(beginning),
+                    "ineligible": _format_currency(ineligible),
+                    "available": _format_currency(available),
+                    "pct_available": _format_pct(pct_available),
+                }
+            )
+
+        other_metrics = category_metrics.get(OTHER_LABEL, {"eligible": Decimal("0"), "beginning": Decimal("0")})
+        other_beginning = other_metrics["beginning"]
+        other_available = other_metrics["eligible"]
+        other_ineligible = max(other_beginning - other_available, Decimal("0"))
+        total_ineligible_calc += other_ineligible
+        other_pct_available = other_available / other_beginning if other_beginning else Decimal("0")
+
+        category_other_row = {
+            "label": OTHER_LABEL.title(),
+            "total": _format_currency(other_beginning),
+            "ineligible": _format_currency(other_ineligible),
+            "available": _format_currency(other_available),
+            "pct_available": _format_pct(other_pct_available),
+        }
+
+        footer = {
+            "total": _format_currency(total_beginning),
+            "ineligible": _format_currency(total_ineligible_calc),
+            "available": _format_currency(total_available),
+            "pct_available": _format_pct(
+                total_available / total_beginning if total_beginning else Decimal("0")
+            ),
+        }
+
+        top10_beginning = sum(
+            category_metrics[label]["beginning"] for label, _ in RAW_CATEGORY_DEFINITIONS
+        )
+        top10_available = sum(
+            category_metrics[label]["eligible"] for label, _ in RAW_CATEGORY_DEFINITIONS
+        )
+        top10_row = {
+            "label": "Top 10 Total",
+            "total": _format_currency(top10_beginning),
+            "ineligible": _format_currency(max(top10_beginning - top10_available, Decimal("0"))),
+            "available": _format_currency(top10_available),
+            "pct_available": _format_pct(
+                (top10_available / top10_beginning) if top10_beginning else Decimal("0")
+            ),
+        }
 
     sku_rows = sorted(
         inventory_rows,
@@ -4115,7 +4213,7 @@ def _raw_materials_context(borrower, range_key="today", division="all"):
         "raw_materials_ineligible_detail": ineligible_detail,
         "raw_materials_chart_config": chart_config,
         "raw_materials_chart_config_json": json.dumps(chart_config),
-        "raw_materials_category_rows": cat_rows,
+        "raw_materials_category_rows": category_rows,
         "raw_materials_category_top10": top10_row,
         "raw_materials_category_other": category_other_row,
         "raw_materials_category_footer": footer,
