@@ -21,7 +21,7 @@
       background:var(--rk-panel);
       border:1px solid var(--rk-line);
       border-radius:10px;
-      box-shadow:var(--rk-shadow);
+      /* box-shadow:var(--rk-shadow); */
       margin-bottom:14px;
       overflow:hidden;
     }
@@ -37,11 +37,14 @@
       align-items:center;
       gap:8px;
       padding:12px 14px;
-      font-size:20px;
-      font-weight:600;
-      color:#585858;
-      /* border-bottom:1px solid var(--rk-line); */
-      background:#fff;
+color: #585858;
+
+
+font-size: 24px;
+font-style: normal;
+font-weight: 600;
+line-height: 24px; /* 100% */
+letter-spacing: -0.6px;
     }
 
     .risk-page .panel-body{
@@ -95,7 +98,7 @@
       top:calc(100% + 8px);
       left:var(--risk-pos,50%);
       transform:translate(-50%,0);
-      font-size:15px;
+      font-size:18px;
       color:#344256;
       font-weight:700;
       z-index:1;
@@ -106,10 +109,13 @@
        Snapshot Summary (top card)
     =============================== */
     .risk-page .snapshot-text{
-      font-size:16px;
-      color:#737791;
-      line-height:1.5;
-      margin:0;
+     color: #737791;
+
+margin: 0px;
+font-size: 18px;
+font-style: normal;
+font-weight: 400;
+line-height: 27px; /* 150% */
     }
 
     /* ===============================
@@ -201,7 +207,7 @@
     .risk-page .chart{
       width:100%;
       height:250px;
-      border-top:1px solid #eef4fb;
+      /* border-top:1px solid #eef4fb; */
       padding-top:10px;
     }
 
@@ -258,6 +264,7 @@
       border-bottom:1px solid var(--rk-line);
       text-align:left;
       white-space:nowrap;
+      background-color: #FAFAFA;
     }
 
     .risk-page .impact-table td{
@@ -313,7 +320,7 @@
       border-radius:14px;
       background:#fff;
       border:1px solid #e4ecf7;
-      box-shadow:0 12px 24px rgba(15, 23, 42, .08);
+      /* box-shadow:0 12px 24px rgba(15, 23, 42, .08); */
     }
 
     .risk-page .metric-title{
@@ -326,7 +333,7 @@
       display:grid;
       grid-template-columns:var(--metric-donut) 1fr;
       gap:var(--metric-gap);
-      margin-top:6px;
+      margin-top:20px;
       align-items:start;
     }
 
@@ -339,6 +346,13 @@
     }
 
     .risk-page .bars > .scale{
+      color: #585858;
+
+text-align: right;
+font-size: 16px;
+font-style: normal;
+font-weight: 700;
+line-height: normal;
       position:absolute;
       top:0;
       left:calc(var(--metric-label) + var(--metric-label-gap));
@@ -346,8 +360,7 @@
       display:flex;
       justify-content:space-between;
       gap:18px;
-      font-size:12px;
-      font-weight:700;
+
       color:#6b7280;
     }
 
@@ -360,7 +373,15 @@
     }
 
     .risk-page .barrow .lbl{
-      font-size:12px;
+      color: #404040;
+
+text-align: right;
+
+font-size: 16px;
+font-style: normal;
+font-weight: 400;
+line-height: normal;
+ 
       color:#475467;
       overflow:hidden;
       text-overflow:ellipsis;
@@ -368,7 +389,7 @@
     }
 
     .risk-page .track{
-      height:7px;
+      height:9px;
       /* background:#eaf0fb; */
       border-radius:999px;
       overflow:hidden;
@@ -562,7 +583,7 @@
       <img src="{% static 'images/borrowing_icon.svg' %}" alt="Snapshot Icon" class="snapshot-icon" />
       Risk Metrics
     </div>
-    <div class="divider"></div>
+    <!-- <div class="divider"></div> -->
 
     <div class="grid2">
       {% for metric in risk.metrics %}

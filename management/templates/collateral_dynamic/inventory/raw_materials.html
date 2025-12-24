@@ -24,26 +24,30 @@
     background:var(--card);
     border:1px solid var(--line);
     border-radius:var(--radius);
-    box-shadow:var(--shadow);
+    /* box-shadow:var(--shadow); */
   }
   .raw-materials .section{
     padding:16px 18px;
-    margin-bottom:14px;
+    /* margin-bottom:14px; */
   }
   .raw-materials .title{
     display:flex;
     align-items:center;
-    gap:10px;
-    font-weight:700;
-    letter-spacing:0.1px;
-    margin:2px 0 12px;
-    color:#0b1220;
+ color: #585858;
+
+font-size: 24px;
+font-style: normal;
+font-weight: 600;
+line-height: 24px; /* 100% */
+letter-spacing: -0.6px;
+gap: 9px;
   }
   .raw-materials .title .icon{
     width:18px;height:18px;display:grid;place-items:center;
     color:var(--primary);
   }
   .raw-materials .top-grid{
+    margin-top: 20px;
     display:grid;
     grid-template-columns:360px 1fr;
     gap:14px;
@@ -65,16 +69,22 @@
     background:#fff;
   }
   .raw-materials .metric .label{
-    font-size:12px;
-    color:var(--muted);
-    font-weight:600;
-    margin-bottom:4px;
+   color: #65758B;
+
+
+font-size: 14px;
+font-style: normal;
+font-weight: 400;
+line-height: 21px; /* 132.296% */
   }
   .raw-materials .metric .value{
-    font-size:22px;
-    font-weight:800;
-    letter-spacing:0.2px;
-    margin-bottom:6px;
+  color: #344256;
+
+
+font-size: 24.078px;
+font-style: normal;
+font-weight: 700;
+line-height: 50px;
   }
   .raw-materials .metric .delta{
     display:flex;
@@ -96,21 +106,21 @@
     color:var(--primary);
   }
   .raw-materials .table-wrap{
-    border:1px solid var(--line);
-    border-radius:12px;
+
     overflow:hidden;
     background:#fff;
     height:100%;
   }
   .raw-materials table{
+    margin-top: 20px;
     width:100%;
     border-collapse:collapse;
     font-size:13px;
   }
   .raw-materials thead th{
-    background:#f4f7fc;
+    background:#FAFAFA;
     color:#475569;
-    font-weight:800;
+    font-weight:600;
     font-size:12px;
     text-align:left;
     padding:10px 12px;
@@ -125,13 +135,14 @@
   .raw-materials tbody tr:last-child td{border-bottom:none;}
   .raw-materials td.num,.raw-materials th.num{text-align:right;font-variant-numeric:tabular-nums;}
   .raw-materials .chart-area{
-    border:1px solid var(--line);
-    border-radius:12px;
+    /* border:1px solid var(--line);
+    border-radius:12px; */
     padding:12px 12px 8px;
     background:#fff;
   }
   .raw-materials .chart-wrap{
     position:relative;
+    margin-top: 20px;
   }
   .raw-materials .chart-tooltip{
     position:absolute;
@@ -163,7 +174,7 @@
     opacity:1;
   }
   .raw-materials .chart-note{
-    font-size:12px;
+    font-size:16px;
     color:var(--muted);
     margin-top:6px;
   }
@@ -171,8 +182,8 @@
   .raw-materials .table-card .head{padding:16px 18px 10px;}
   .raw-materials .table-card .body{padding:0 18px 16px;}
   .raw-materials .footer-row td{
-    background:#fbfdff;
-    font-weight:800;
+    background:#FAFAFA;
+    font-weight:600;
     color:#0b1220;
     border-top:1px solid var(--line);
   }
@@ -222,6 +233,22 @@
     stroke-linecap:round;
     stroke-linejoin:round;
   }
+  .collateral-dynamic .page {
+    padding: 0px 9px;
+    gap: 0;
+    margin-top: -7px;
+
+}
+.badge svg{width: 24px;
+height: 24px;}
+
+
+.table-border{
+
+
+  border: 1px solid var(--line);
+    border-radius: 12px;
+}
 </style>
 
 <div class="page raw-materials">
@@ -291,7 +318,7 @@
         {% endfor %}
       </div>
 
-      <div class="table-wrap">
+      <div class="table-wrap table-border">
         <div style="padding:14px 14px 6px;">
           <div class="title" style="margin:0;">
             <span class="icon" aria-hidden="true">
@@ -508,17 +535,17 @@
           </defs>
           ${yTicks.map(t=>`
             <line x1="${pad.l}" y1="${t.yy}" x2="${W-pad.r}" y2="${t.yy}" stroke="#e7eef7" stroke-width="1"></line>
-            <text x="55" y="${t.yy+4}" fill="#94a3b8" font-size="12" font-weight="700" text-anchor="end">${fmtY(t.val,c)}</text>
+            <text x="55" y="${t.yy+4}" fill="#94a3b8" font-size="12" font-weight="400" text-anchor="end">${fmtY(t.val,c)}</text>
           `).join("")}
-          <path d="${pathFrom(points)}" fill="none" stroke="${c.color||'#1e6fe0'}" stroke-width="4" stroke-linecap="round" stroke-linejoin="round" clip-path="url(#clip)"></path>
-          ${points.map((p,i)=>`<circle cx="${p[0]}" cy="${p[1]}" r="6" fill="${c.color||'#1e6fe0'}"
+          <path d="${pathFrom(points)}" fill="none" stroke="${c.color||'#1e6fe0'}" stroke-width="3" stroke-linecap="round" stroke-linejoin="round" clip-path="url(#clip)"></path>
+          ${points.map((p,i)=>`<circle cx="${p[0]}" cy="${p[1]}" r="4" fill="${c.color||'#1e6fe0'}"
             data-label="${c.labels[i]}" data-value="${fmtY(c.values[i],c)}"
             class="raw-trend-point"></circle>`).join("")}
-          <g fill="#94a3b8" font-size="12" font-weight="700">
+          <g fill="#94a3b8" font-size="12" font-weight="400">
             ${c.labels.map((lab,i)=>`<text x="${x(i)}" y="${H-20}" text-anchor="middle">${lab}</text>`).join("")}
           </g>
         </svg>
-        <div class="chart-tooltip" aria-hidden="true"></div>
+        
       </div>
     `;
     attachTrendTooltips(el);

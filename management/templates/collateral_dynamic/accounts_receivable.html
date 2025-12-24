@@ -5,6 +5,10 @@
 {% block extra_head %}
   {{ block.super }}
   <style>
+    .ar-graph {
+    height: 366px;
+    margin-top: -53px;
+}
     .collateral-dynamic{
       --cd-panel:#ffffff;
       --cd-muted:#6b7280;
@@ -60,7 +64,7 @@
     .collateral-dynamic .menu-card .menu-title{
       font-size:12px;
       font-weight:600;
-      color:#4b5563;
+      color:#737791;
       margin-bottom:16px;
       letter-spacing:.2px;
     }
@@ -259,7 +263,7 @@
     .collateral-dynamic .smallTitle{
       font-size:10px;
       font-weight:600;
-      color:#4b5563;
+      color:#737791;
       padding-bottom:8px;
     }
     .collateral-dynamic .donutWrap{
@@ -626,23 +630,21 @@
       background:#fff;
       border:1px solid #dfe4f2;
       border-radius: 11px;
-      box-shadow:0 20px 40px rgba(15,23,42,.08);
-      padding:18px 20px;
-      margin-top: 12px;
+      margin-top: 17px;
     }
     .collateral-dynamic .ar-section .h2{
       font-size:1.5em;
       font-weight:700;
-      margin:0 0 8px;
+      margin:0 0 18px;
       display:flex;
       align-items:center;
       gap:8px;
-      color:#0f172a;
+      color:#585858;
     }
     .collateral-dynamic .ar-section .p{
       margin:0;
       font-size:12px;
-      color:#4b5563;
+      color:#737791;
       line-height:1.6;
     }
     .collateral-dynamic .ar-section .filters{
@@ -735,8 +737,8 @@
       align-items:center;
       gap:6px;
     }
-    .collateral-dynamic .borrowing-base-kpi .kpi-delta.up{margin-top: 20px;color:var(--teal);}
-    .collateral-dynamic .borrowing-base-kpi .kpi-delta.down{margin-top: 20px;color:#e05555;}
+    .collateral-dynamic .borrowing-base-kpi .kpi-delta.up{margin-top: 20px;color:var(--teal);font-size: 13px;}
+    .collateral-dynamic .borrowing-base-kpi .kpi-delta.down{margin-top: 20px;color:#e05555;font-size: 13px;}
     .collateral-dynamic .borrowing-base-kpi .kpi-icon{
       width:36px;
       height:36px;
@@ -772,17 +774,12 @@
     .collateral-dynamic .borrowing-base-kpi:hover .kpi-tooltip{
       opacity:1;
     }
-    .collateral-dynamic .borrowing-base-chart{
-      height: 234px;
-    width: 488px;
-    padding: 43px 8px 8px;
-     position: relative;
-    background: #f8fafc;
-    }
+    
     .collateral-dynamic .borrowing-base-chart svg{
-      width:100%;
-      height:140px;
+      width:66%;
+      height:249px;
       display:block;
+          margin-top: -30px;
     }
     .collateral-dynamic .bb-bg{
       fill:#f8fafc;
@@ -834,7 +831,7 @@
     .collateral-dynamic .borrowing-base-card .kpi-value{
       font-size:26px;
       font-weight:800;
-      color:#0f172a;
+      color:#585858;
     }
     .collateral-dynamic .borrowing-base-card .kpi-delta{
       font-size:12px;
@@ -879,7 +876,7 @@
     .collateral-dynamic .ar-section .subcard{
       border:1px solid #e2e8f8;
       border-radius:14px;
-      padding:14px;
+      padding:20px;
       background:#fff;
     }
     .collateral-dynamic .ar-section .ineligible-detail .two-col{
@@ -898,6 +895,68 @@
       margin-bottom:8px;
       gap:12px;
     }
+    .collateral-dynamic .ar-section .ineligible-overview .chart-wrap,
+    .collateral-dynamic .ar-section .ineligible-trend .chart-wrap{
+      background:transparent;
+      border:0;
+      border-radius:0;
+      padding:0;
+          height: 201px;
+    }
+    .collateral-dynamic .aging-composition-chart{
+      --aging-grid:#edf2f7;
+      --aging-axis:#9aa7b8;
+      --aging-label:#6b7280;
+      --aging-percent:#6b7280;
+    }
+    .collateral-dynamic .aging-composition-chart .aging-grid-line{
+      display:none;
+    }
+    .collateral-dynamic .aging-composition-chart .aging-axis-line{
+      stroke:var(--aging-grid);
+      stroke-width:1;
+    }
+    .collateral-dynamic .aging-composition-chart .aging-axis-line-x{
+      stroke:var(--aging-grid);
+      stroke-width:1;
+    }
+    .collateral-dynamic .ar-trend-chart .trend-grid{
+      display:none;
+    }
+    .collateral-dynamic .ar-trend-chart .trend-x-axis{
+      stroke:#e6edf7;
+      stroke-width:1;
+    }
+    .collateral-dynamic .aging-composition-chart .aging-axis-label{
+      fill:var(--aging-axis);
+      font-size:10px;
+    }
+    .collateral-dynamic .aging-composition-chart .aging-percent{
+      fill:var(--aging-percent);
+      font-size:10px;
+    }
+    .collateral-dynamic .aging-composition-chart .aging-label{
+      fill:var(--aging-label);
+      font-size:9px;
+    }
+    .collateral-dynamic .aging-composition-chart .aging-bar{
+      fill:var(--aging-bar-color, #1b2a55);
+      width:var(--aging-bar-width, var(--aging-bar-base, 20px));
+      transform-box:fill-box;
+      transform-origin:center;
+      transform:translateX(calc((var(--aging-bar-width, var(--aging-bar-base, 20px)) - var(--aging-bar-base, 20px)) * -0.5));
+    }
+    .collateral-dynamic .aging-composition-chart .aging-bar-current{
+      --aging-bar-width:40px;
+    }
+    .collateral-dynamic .aging-composition-chart .aging-bar-past{
+      --aging-bar-width:40px;
+    }
+    .collateral-dynamic .ar-section .ineligible-overview svg,
+    .collateral-dynamic .ar-section .ineligible-trend svg{
+      display:block;
+      width: 642px;
+    }
     .collateral-dynamic .ar-section .h3{
       font-size:1.5em;
       font-weight:700;
@@ -905,14 +964,14 @@
       display:flex;
       align-items:center;
       gap:6px;
-      color:#0f172a;
+      color:#585858;
     }
     .collateral-dynamic .ar-section .pct-label{
-      font-size:10px;
+      font-size:14px;
       color:rgba(15,23,42,.6);
     }
     .collateral-dynamic .ar-section .legend{
-      font-size:10px;
+      font-size:14px;
       color:rgba(15,23,42,.65);
       display:flex;
       gap:12px;
@@ -924,6 +983,7 @@
       display:inline-block;
       margin-right:6px;
     }
+    .no-border{border: none,!important;}
     .collateral-dynamic .ar-section .swatch.past{background:#1b2a55;}
     .collateral-dynamic .ar-section .swatch.current{background:var(--blue-2);}
     .collateral-dynamic .ar-section .swatch.current{background:#6d82ff;}
@@ -979,10 +1039,87 @@
       border-bottom:1px solid #e3eaf7;
     }
     .collateral-dynamic .ar-section .table-title{
-      font-size:11px;
+      font-size:14px;
       font-weight:700;
       color:#111827;
       margin-bottom:10px;
+    }
+    .collateral-dynamic .ar-section .tables-row{
+      border:1px solid #e6edf7;
+      border-radius:12px;
+      background:#fff;
+      overflow:hidden;
+      gap:0;
+      padding:0;
+      position:relative;
+    }
+    .collateral-dynamic .ar-section .tables-row::after{
+      content:"";
+      position:absolute;
+      top:16px;
+      bottom:16px;
+      left:50%;
+      width:1px;
+      background:#e6edf7;
+      transform:translateX(-0.5px);
+      pointer-events:none;
+    }
+    .collateral-dynamic .ar-section .tables-row .subcard{
+      border:0;
+      border-radius:0;
+      padding:12px 14px;
+      background:transparent;
+    }
+    .collateral-dynamic .ar-section .tables-row .table-title{
+      display:flex;
+      align-items:center;
+      gap:10px;
+      justify-content:center;
+      font-size:14px;
+      font-weight:700;
+      color:#1f2b5b;
+      margin-bottom:12px;
+    }
+    .collateral-dynamic .ar-section .tables-row .table-title::before,
+    .collateral-dynamic .ar-section .tables-row .table-title::after{
+      content:"";
+      flex:1;
+      height:1px;
+      background:#e4eaf4;
+    }
+    .collateral-dynamic .ar-section .tables-row table{
+      border-collapse:collapse;
+      width:100%;
+      font-size:11px;
+      color:#475569;
+    }
+    .collateral-dynamic .ar-section .tables-row thead th{
+      background:#f7f9fc;
+      color:#64748b;
+      font-weight:600;
+      font-size:12px;
+      padding:8px 10px;
+      border-bottom:1px solid #e7edf6;
+      border-top:1px solid #e7edf6;
+      text-align:center;
+    }
+    .collateral-dynamic .ar-section .tables-row thead th:first-child{
+      text-align:left;
+      border-left:1px solid #e7edf6;
+    }
+    .collateral-dynamic .ar-section .tables-row thead th:last-child{
+      border-right:1px solid #e7edf6;
+    }
+    .collateral-dynamic .ar-section .tables-row tbody td{
+      padding:8px 10px;
+      border-bottom:1px solid #eef2f7;
+      text-align:center;
+    }
+    .collateral-dynamic .ar-section .tables-row tbody td:first-child{
+      text-align:left;
+    }
+    .collateral-dynamic .ar-section .tables-row .aging-table .align-right{
+      text-align:center;
     }
     .collateral-dynamic .ar-section .align-right{text-align:right;}
     .collateral-dynamic .ar-section .align-center{text-align:center;}
@@ -1089,13 +1226,39 @@
       align-items:center;
     }
     .chart-wrap.ar-chart{
-  height: 320px;
-}
-.chart-wrap.ar-chart svg{
-  height: 100%;
+      width: 720px;
+    margin-top: 29px;
 }
 .content-inner{
   margin-top: -51px;
+}
+.chart-wrap.ar-chart{
+  height: 291px;        /* apni need ke hisaab se */
+}
+/* 
+.chart-wrap.ar-chart svg{
+    width: 66%;
+    height: 111%;   
+    margin-top: -28px;
+} */
+
+.tables-row{
+      border:1px solid #e6edf7;
+      border-radius:12px;
+}
+.side-line{after {
+    content: "";
+    flex: 1;
+    height: 1px;
+    background: #e4eaf4;
+}}
+.aging-composition-chart{
+      width: 590px;
+      height: 190px;
+}
+.chart-wrap ar-chart ar-trend-chart{
+  width: 590px;
+  height: 216px;
 }
   </style>
 {% endblock %}
@@ -1197,7 +1360,6 @@
                           </div>
                         </div>
                         <div class="borrowing-base-chart chart-wrap ar-chart">
-                          <div class="chart-tooltip" aria-hidden="true"></div>
                           <svg viewBox="0 0 260 140" preserveAspectRatio="none" aria-label="{{ kpi.label }} trend">
                             <rect class="bb-bg" x="0" y="0" width="260" height="140" rx="10"></rect>
                             <g class="bb-grid">
@@ -1275,33 +1437,37 @@
           class="current-update-icon" />
                           Aging Composition
                         </div>
-                        <div style="font-size:10px;color:rgba(15,23,42,.45)">%</div>
+                        <div style="font-size:14px;color:rgba(15,23,42,.45)">%</div>
                       </div>
 
-                      <div class="chart-wrap ar-chart">
-                        <svg viewBox="0 0 520 170" width="100%" height="170" aria-label="Aging composition bar chart">
-                          <g stroke="rgba(15,23,42,.08)" stroke-width="1">
-                            <path d="M40 140H500"/>
-                            <path d="M40 110H500"/>
-                            <path d="M40 80H500"/>
-                            <path d="M40 50H500"/>
+                     
+                        <svg class="aging-composition-chart" viewBox="0 0 520 170"  aria-label="Aging composition bar chart">
+                          <g>
+                            <path class="aging-axis-line" d="M40 50V140"/>
+                            <path class="aging-axis-line-x" d="M40 140H500"/>
+                            <path class="aging-grid-line" d="M40 140H500"/>
+                            <path class="aging-grid-line" d="M40 110H500"/>
+                            <path class="aging-grid-line" d="M40 80H500"/>
+                            <path class="aging-grid-line" d="M40 50H500"/>
                           </g>
 
-                          <g fill="rgba(15,23,42,.45)" font-size="10">
-                            <text x="10" y="143">$20</text>
-                            <text x="10" y="113">$40</text>
-                            <text x="10" y="83">$60</text>
-                            <text x="10" y="53">$80</text>
+                          <g>
+                            <text class="aging-axis-label" x="10" y="143">$20</text>
+                            <text class="aging-axis-label" x="10" y="113">$40</text>
+                            <text class="aging-axis-label" x="10" y="83">$60</text>
+                            <text class="aging-axis-label" x="10" y="53">$80</text>
                           </g>
 
                           <g>
                             {% for bucket in ar_aging_chart_buckets %}
-                              <rect x="{{ bucket.x }}" y="{{ bucket.y }}" width="{{ bucket.width }}" height="{{ bucket.height }}" rx="3" fill="{{ bucket.color }}"
-                                class="ar-tip" data-label="{{ bucket.label }}" data-value="{{ bucket.percent_display }}" data-extra="{{ bucket.amount_display }}"/>
-                              <text x="{{ bucket.text_x }}" y="{{ bucket.percent_y }}" text-anchor="middle" font-size="10" fill="rgba(15,23,42,.55)">{{ bucket.percent_display }}</text>
-                              <text x="{{ bucket.text_x }}" y="{{ bucket.label_y }}" text-anchor="middle" font-size="9" fill="rgba(15,23,42,.55)">{{ bucket.label_primary }}</text>
+                              <rect x="{{ bucket.x }}" y="{{ bucket.y }}" width="{{ bucket.width }}" height="{{ bucket.height }}" rx="3"
+                                class="aging-bar ar-tip {% if bucket.key == 'current' %}aging-bar-current{% else %}aging-bar-past{% endif %}"
+                                style="--aging-bar-color: {{ bucket.color }}; --aging-bar-base: {{ bucket.width }}px;"
+                                data-label="{{ bucket.label }}" data-value="{{ bucket.percent_display }}" data-extra="{{ bucket.amount_display }}"/>
+                              <text class="aging-percent" x="{{ bucket.text_x }}" y="{{ bucket.percent_y }}" text-anchor="middle">{{ bucket.percent_display }}</text>
+                              <text class="aging-label" x="{{ bucket.text_x }}" y="{{ bucket.label_y }}" text-anchor="middle">{{ bucket.label_primary }}</text>
                               {% if bucket.label_secondary %}
-                                <text x="{{ bucket.text_x }}" y="{{ bucket.label_secondary_y }}" text-anchor="middle" font-size="9" fill="rgba(15,23,42,.55)">{{ bucket.label_secondary }}</text>
+                                <text class="aging-label" x="{{ bucket.text_x }}" y="{{ bucket.label_secondary_y }}" text-anchor="middle">{{ bucket.label_secondary }}</text>
                               {% endif %}
                             {% empty %}
                               <text x="260" y="96" text-anchor="middle" font-size="12" fill="rgba(15,23,42,.45)">No aging data</text>
@@ -1309,7 +1475,7 @@
                           </g>
                         </svg>
                         <div class="chart-tooltip" aria-hidden="true"></div>
-                      </div>
+                     
                     </div>
 
                     <!-- Current vs Past Due Trend -->
@@ -1327,9 +1493,9 @@
                         </div>
                       </div>
 
-                      <div class="chart-wrap ar-chart">
-                        <svg viewBox="0 0 520 190" width="100%" height="190" aria-label="Current vs Past Due stacked bar chart">
-                          <g stroke="rgba(15,23,42,.08)" stroke-width="1">
+                      <div class="chart-wrap ar-chart ar-trend-chart">
+                        <svg viewBox="0 0 520 190" width="100%" height="220" aria-label="Current vs Past Due stacked bar chart">
+                          <g class="trend-grid">
                             {% for tick in ar_current_vs_past_due_trend.ticks %}
                               <path d="M40 {{ tick.y|floatformat:1 }}H500"/>
                             {% endfor %}
@@ -1352,6 +1518,7 @@
                               <text x="260" y="120" fill="rgba(15,23,42,.45)" font-size="12" text-anchor="middle">No trend data</text>
                             {% endif %}
                           </g>
+                          <path class="trend-x-axis" d="M40 140H500"/>
 
                           <g fill="rgba(15,23,42,.55)" font-size="9">
                             {% for label in ar_current_vs_past_due_trend.labels %}
@@ -1359,13 +1526,14 @@
                             {% endfor %}
                           </g>
                         </svg>
-                        <div class="chart-tooltip" aria-hidden="true"></div>
+                      
                       </div>
                     </div>
                   </div>
 
                   <div class="tables-row">
-                    <div class="subcard">
+                    <div class="subcard no-border side-line">
+                      
                       <div class="table-title">Customer Aging Composition by Total Balance</div>
                       <table class="aging-table">
                         <thead>
@@ -1397,7 +1565,7 @@
                       </table>
                     </div>
 
-                    <div class="subcard">
+                    <div class="subcard no-border"> 
                       <div class="table-title">Customer Aging Composition by Past Due Balance</div>
                       <table class="aging-table">
                         <thead>
@@ -1441,7 +1609,7 @@
                   </div>
 
                   <div class="two-col">
-                    <div class="subcard">
+                    <div class="subcard IO">
                       <div class="h3" style="margin-bottom:8px">
                         <img src="{% static 'images/borrowing_icon.svg' %}" 
           alt="Current Update Icon"
@@ -1490,54 +1658,53 @@
                         </div>
                       </div>
 
-                      <div class="chart-wrap ar-chart">
-                        <svg viewBox="0 0 520 260" width="100%" height="290" aria-label="Ineligible AR trend line chart">
-                          <text x="-10" y="100" transform="rotate(-90 0 200)" fill="rgba(15,23,42,.55)" font-size="12">
-                            % of Accounts Receivable
-                          </text>
-                          <g stroke="rgba(15,23,42,.08)" stroke-width="1">
-                            <path d="M60 220H500"/>
-                            <path d="M60 175H500"/>
-                            <path d="M60 130H500"/>
-                            <path d="M60 85H500"/>
-                            <path d="M60 40H500"/>
-                          </g>
+                      <div class="ar-graph">
+                        <svg viewBox="0 0 520 260" width="100%" height="385" aria-label="Ineligible AR trend line chart">
+                              <g stroke="rgba(15,23,42,.08)" stroke-width="1">
+                                <path d="M60 220H500"/>
+                                <path d="M60 175H500"/>
+                                <path d="M60 130H500"/>
+                                <path d="M60 85H500"/>
+                                <path d="M60 40H500"/>
+                              </g>
 
-                          <g fill="rgba(15,23,42,.45)" font-size="10">
-                            <text x="28" y="224">10%</text>
-                            <text x="28" y="179">30%</text>
-                            <text x="28" y="134">50%</text>
-                            <text x="28" y="89">70%</text>
-                            <text x="28" y="44">90%</text>
-                          </g>
+                              <g fill="rgba(15,23,42,.45)" font-size="10">
+                                <text x="28" y="224">10%</text>
+                                <text x="28" y="179">30%</text>
+                                <text x="28" y="134">50%</text>
+                                <text x="28" y="89">70%</text>
+                                <text x="28" y="44">90%</text>
+                              </g>
 
-                          {% if ar_ineligible_trend.points %}
-                            <polyline fill="none" stroke="var(--blue-3)" stroke-width="2.5"
-                              points="{{ ar_ineligible_trend.points }}"/>
-                            <g fill="#fff" stroke="var(--blue-3)" stroke-width="2">
-                              {% for dot in ar_ineligible_trend.dots %}
-                                <circle cx="{{ dot.cx }}" cy="{{ dot.cy }}" r="3.2"
-                                  class="ar-tip" data-label="{{ dot.label }}" data-value="{{ dot.value }}"/>
-                              {% endfor %}
-                            </g>
-                            <g fill="rgba(15,23,42,.45)" font-size="9">
-                              {% for label in ar_ineligible_trend.labels %}
-                                <text x="{{ label.x }}" y="234" text-anchor="start">
-                                  <tspan x="{{ label.x }}" dy="0">{{ label.month }}</tspan>
-                                  {% if label.year %}
-                                    <tspan x="{{ label.x }}" dy="12">{{ label.year }}</tspan>
-                                  {% endif %}
+                              {% if ar_ineligible_trend.points %}
+                                <polyline fill="none" stroke="var(--blue-3)" stroke-width="2.5"
+                                  points="{{ ar_ineligible_trend.points }}"/>
+                                <g fill="#fff" stroke="var(--blue-3)" stroke-width="2">
+                                  {% for dot in ar_ineligible_trend.dots %}
+                                    <circle cx="{{ dot.cx }}" cy="{{ dot.cy }}" r="3.2"
+                                      class="ar-tip" data-label="{{ dot.label }}" data-value="{{ dot.value }}"/>
+                                  {% endfor %}
+                                </g>
+                                <g fill="rgba(15,23,42,.45)" font-size="9">
+                                  {% for label in ar_ineligible_trend.labels %}
+                                    <text x="{{ label.x }}" y="234" text-anchor="start">
+                                      <tspan x="{{ label.x }}" dy="0">{{ label.month }}</tspan>
+                                      {% if label.year %}
+                                        <tspan x="{{ label.x }}" dy="12">{{ label.year }}</tspan>
+                                      {% endif %}
+                                    </text>
+                                  {% endfor %}
+                                </g>
+                              {% else %}
+                                <text x="260" y="110" text-anchor="middle" fill="rgba(15,23,42,.45)" font-size="12">
+                                  No ineligible trend data
                                 </text>
-                              {% endfor %}
-                            </g>
-                          {% else %}
-                            <text x="260" y="110" text-anchor="middle" fill="rgba(15,23,42,.45)" font-size="12">
-                              No ineligible trend data
-                            </text>
-                          {% endif %}
-                        </svg>
-                        <div class="chart-tooltip" aria-hidden="true"></div>
-                      </div>
+                              {% endif %}
+                              <text x="510" y="90" transform="rotate(90 510 90)" fill="rgba(15,23,42,.55)" font-size="12" text-anchor="middle">
+                                % of Accounts Receivable
+                              </text>
+                            </svg>
+                          </div>
 
                     </div>
                   </div>

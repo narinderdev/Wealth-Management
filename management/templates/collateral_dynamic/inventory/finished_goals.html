@@ -242,6 +242,7 @@
   .finished-goals .bar-strong{fill:var(--bar);rx:3;}
   .finished-goals .bar-soft{fill:var(--barSoft);rx:3;}
   .finished-goals .bar-label{fill:var(--muted);font-size:10px;font-weight:700;}
+  .finished-goals .axisline{stroke:var(--grid);stroke-width:1;}
   .finished-goals .stack .sub{padding-bottom:6px;}
   .finished-goals .stack .sub + .sub{border-top:1px solid var(--border);padding-top:6px;}
   .finished-goals .table-card .card-head{padding-bottom:10px;}
@@ -729,6 +730,7 @@
       <div class="chart-wrap">
         <svg viewBox="0 0 ${W} ${H}" role="img" aria-label="${c.title} chart">
           <rect x="${pad.l}" y="${pad.t}" width="${plotW}" height="${plotH}" class="borderline"></rect>
+          <line x1="${pad.l}" y1="${pad.t}" x2="${pad.l}" y2="${pad.t + plotH}" class="axisline"></line>
           ${c.yLabel ? `<text class="axis-label" transform="translate(16 ${pad.t + plotH/2}) rotate(-90)" text-anchor="middle">${c.yLabel}</text>` : ""}
           ${yTicks.map(t=>`
             <line x1="${pad.l}" y1="${t.yy}" x2="${W-pad.r}" y2="${t.yy}" class="gridline"></line>

@@ -24,26 +24,31 @@
     background:var(--card);
     border:1px solid var(--line);
     border-radius:var(--radius);
-    box-shadow:var(--shadow);
+    /* box-shadow:var(--shadow); */
   }
   .work-in-progress .section{
     padding:16px 18px;
-    margin-bottom:14px;
+    
+   
   }
   .work-in-progress .title{
-    display:flex;
+       display:flex;
     align-items:center;
-    gap:10px;
-    font-weight:700;
-    letter-spacing:0.1px;
-    margin:2px 0 12px;
-    color:#0b1220;
+ color: #585858;
+
+font-size: 24px;
+font-style: normal;
+font-weight: 600;
+line-height: 24px; /* 100% */
+letter-spacing: -0.6px;
+gap: 9px;
   }
   .work-in-progress .title .icon{
     width:18px;height:18px;display:grid;place-items:center;
     color:var(--primary);
   }
   .work-in-progress .top-grid{
+      margin-top: 20px;
     display:grid;
     grid-template-columns:360px 1fr;
     gap:14px;
@@ -65,16 +70,22 @@
     background:#fff;
   }
   .work-in-progress .metric .label{
-    font-size:12px;
-    color:var(--muted);
-    font-weight:600;
-    margin-bottom:4px;
+     color: #65758B;
+
+
+font-size: 14px;
+font-style: normal;
+font-weight: 400;
+line-height: 21px; /* 132.296% */
   }
   .work-in-progress .metric .value{
-    font-size:22px;
-    font-weight:800;
-    letter-spacing:0.2px;
-    margin-bottom:6px;
+ color: #344256;
+
+
+font-size: 24.078px;
+font-style: normal;
+font-weight: 700;
+line-height: 50px;
   }
   .work-in-progress .metric .delta{
     display:flex;
@@ -96,26 +107,26 @@
     color:var(--primary);
   }
   .work-in-progress .table-wrap{
-    border:1px solid var(--line);
-    border-radius:12px;
+
     overflow:hidden;
     background:#fff;
     height:100%;
   }
   .work-in-progress table{
+   margin-top: 20px;
     width:100%;
     border-collapse:collapse;
     font-size:13px;
   }
   .work-in-progress thead th{
-    background:#f4f7fc;
-    color:#475569;
-    font-weight:800;
-    font-size:12px;
-    text-align:left;
-    padding:10px 12px;
-    border-bottom:1px solid var(--line);
-    white-space:nowrap;
+    background:#FAFAFA;
+    color: #475569;
+    font-weight: 600;
+    font-size: 12px;
+    text-align: left;
+    padding: 10px 12px;
+    border-bottom: 1px solid var(--line);
+    white-space: nowrap;
   }
   .work-in-progress tbody td{
     padding:10px 12px;
@@ -125,12 +136,13 @@
   .work-in-progress tbody tr:last-child td{border-bottom:none;}
   .work-in-progress td.num,.work-in-progress th.num{text-align:right;font-variant-numeric:tabular-nums;}
   .work-in-progress .chart-area{
-    border:1px solid var(--line);
-    border-radius:12px;
+    /* border:1px solid var(--line);
+    border-radius:12px; */
     padding:12px 12px 8px;
     background:#fff;
   }
-  .work-in-progress .chart-wrap{position:relative;}
+  .work-in-progress .chart-wrap{   position:relative;
+    margin-top: 20px;}
   .work-in-progress .chart-tooltip{
     position:absolute;
     padding:6px 10px;
@@ -152,16 +164,16 @@
   .work-in-progress .chart-tooltip span{font-size:12px;}
   .work-in-progress .chart-tooltip.is-visible{opacity:1;}
   .work-in-progress .chart-note{
-    font-size:12px;
-    color:var(--muted);
-    margin-top:6px;
+    font-size: 16px;
+    color: var(--muted);
+    margin-top: 6px;
   }
   .work-in-progress .table-card{padding:0;}
   .work-in-progress .table-card .head{padding:16px 18px 10px;}
   .work-in-progress .table-card .body{padding:0 18px 16px;}
   .work-in-progress .footer-row td{
-    background:#fbfdff;
-    font-weight:800;
+    background:#FAFAFA;
+    font-weight:600;
     color:#0b1220;
     border-top:1px solid var(--line);
   }
@@ -216,6 +228,16 @@
     .work-in-progress .top-grid{grid-template-columns:1fr;}
     .work-in-progress .metric-stack{flex-direction:column;}
   }
+  .collateral-dynamic .page{padding: 0px 9px;
+    gap: 0;    margin-top: -15px;}
+    .badge svg {
+    width: 24px;
+    height: 24px;
+}
+.table-border {
+    border: 1px solid var(--line);
+    border-radius: 12px;
+}
 </style>
 
 <div class="page work-in-progress">
@@ -282,7 +304,7 @@
           </div>
         {% endfor %}
       </div>
-      <div class="table-wrap">
+      <div class="table-wrap table-border">
         <div style="padding:14px 14px 6px;">
           <div class="title" style="margin:0;">
             <span class="icon" aria-hidden="true">
@@ -496,11 +518,11 @@
           </defs>
           ${yTicks.map(t=>`
             <line x1="${pad.l}" y1="${t.yy}" x2="${W-pad.r}" y2="${t.yy}" stroke="#e7eef7" stroke-width="1"></line>
-            <text x="55" y="${t.yy+4}" fill="#94a3b8" font-size="12" font-weight="700" text-anchor="end">${fmtY(t.val,c)}</text>
+            <text x="55" y="${t.yy+4}" fill="#94a3b8" font-size="12" font-weight="400" text-anchor="end">${fmtY(t.val,c)}</text>
           `).join("")}
-          <path d="${pathFrom(points)}" fill="none" stroke="${c.color||'#1e6fe0'}" stroke-width="4" stroke-linecap="round" stroke-linejoin="round" clip-path="url(#clip-wip)"></path>
-          ${points.map((p,i)=>`<circle cx="${p[0]}" cy="${p[1]}" r="6" fill="${c.color||'#1e6fe0'}" class="wip-point" data-label="${c.labels[i]}" data-value="${fmtY(c.values[i],c)}"></circle>`).join("")}
-          <g fill="#94a3b8" font-size="12" font-weight="700">
+          <path d="${pathFrom(points)}" fill="none" stroke="${c.color||'#1e6fe0'}" stroke-width="3" stroke-linecap="round" stroke-linejoin="round" clip-path="url(#clip-wip)"></path>
+          ${points.map((p,i)=>`<circle cx="${p[0]}" cy="${p[1]}" r="4" fill="${c.color||'#1e6fe0'}" class="wip-point" data-label="${c.labels[i]}" data-value="${fmtY(c.values[i],c)}"></circle>`).join("")}
+          <g fill="#94a3b8" font-size="12" font-weight="400">
             ${c.labels.map((lab,i)=>`<text x="${x(i)}" y="${H-20}" text-anchor="middle">${lab}</text>`).join("")}
           </g>
         </svg>

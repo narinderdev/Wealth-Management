@@ -2334,7 +2334,7 @@ def _accounts_receivable_context(borrower, range_key="today", division="all"):
             bucket_pct_overrides[key] = _to_decimal(row.pct_of_total)
 
     total_amount = sum(bucket_amounts.values())
-    bucket_positions = [70, 170, 270, 370, 470]
+    bucket_positions = [80, 150, 230, 300, 350]
     aging_buckets = []
     for idx, bucket in enumerate(AGING_BUCKET_DEFS):
         amount = bucket_amounts[bucket["key"]]
@@ -2346,16 +2346,17 @@ def _accounts_receivable_context(borrower, range_key="today", division="all"):
         if percent_ratio > Decimal("1"):
             percent_ratio /= Decimal("100")
         ratio_float = float(percent_ratio) if percent_ratio else 0.0
-        height_value = max(8.0, min(110.0, ratio_float * 110))
+        height_value = max(8.0, min(90.0, ratio_float * 90))
         y_position = 140 - height_value
         label_primary = bucket["label"]
         label_secondary = ""
         if bucket["key"] != "current":
             label_primary = "91+" if bucket["key"] == "90+" else bucket["label"]
             label_secondary = "Past Due"
-        bar_width = 30
+        bar_width = 20
         aging_buckets.append(
             {
+                "key": bucket["key"],
                 "x": bucket_positions[idx],
                 "y": y_position,
                 "height": height_value,
@@ -2377,8 +2378,8 @@ def _accounts_receivable_context(borrower, range_key="today", division="all"):
     trend_labels = []
     baseline_y = Decimal("140")
     plot_height = Decimal("120")
-    bar_width = Decimal("12")
-    spacing = Decimal("32")
+    bar_width = Decimal("8")
+    spacing = Decimal("36")
     stack_gap = Decimal("4")
     max_amount = max(
         (
