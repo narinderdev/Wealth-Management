@@ -9,8 +9,8 @@
     --line2:#f0f5fb;
     --primary:#1e6fe0;
     --primary-2:#2c7be5;
-    --success:#16a34a;
-    --danger:#ef4444;
+    --success:#12B76A;
+    --danger:#F04438;
     --shadow: 0 6px 18px rgba(15, 23, 42, 0.06);
     --radius:14px;
   }
@@ -46,70 +46,115 @@ gap: 9px;
     width:18px;height:18px;display:grid;place-items:center;
     color:var(--primary);
   }
-  .raw-materials .top-grid{
+  .raw-materials .grid-2{
     margin-top: 20px;
     display:grid;
-    grid-template-columns:360px 1fr;
-    gap:14px;
+    grid-template-columns:1fr 2fr;
+    gap:20px;
     align-items:stretch;
   }
-  .raw-materials .metric-stack{
+  .raw-materials .summary-card{
+    border:1px solid #E6EAF2;
+    border-radius:12px;
+    box-shadow:0 1px 2px rgba(16,24,40,.06);
+    overflow:hidden;
+    background:#fff;
+    height:100%;
+  }
+  .raw-materials .card-head{
+    display:flex;
+    align-items:center;
+    gap:8px;
+    padding:12px 14px 8px;
+    font-size:22px;
+    font-weight:800;
+    color:#585858;
+  }
+  .raw-materials .ineligible-card .card-head{
+    margin-bottom:10px;
+  }
+  .raw-materials .stat-grid{
+    display:grid;
+    grid-template-columns:1fr;
+    gap:10px;
+    padding:10px 14px 14px;
+  }
+  .raw-materials .stat-card{
+    border:1px solid #E6EAF2;
+    border-radius:12px;
+    padding:12px 14px;
+    background:#fff;
+    min-height:90px;
+    display:flex;
+    flex-direction:column;
+    gap:10px;
+    box-shadow:0 1px 2px rgba(16,24,40,.05);
+  }
+  .raw-materials .stat-top{
+    display:flex;
+    align-items:center;
+    justify-content:space-between;
+    gap:12px;
+  }
+  .raw-materials .stat-main{
     display:flex;
     flex-direction:column;
     gap:10px;
   }
-  .raw-materials .metric{
-    border:1px solid var(--line);
-    border-radius:12px;
-    padding:14px;
-    display:flex;
-    align-items:center;
-    justify-content:space-between;
-    min-height:86px;
-    background:#fff;
-  }
-  .raw-materials .metric .label{
-   color: #65758B;
-
-
-font-size: 14px;
-font-style: normal;
-font-weight: 400;
-line-height: 21px; /* 132.296% */
-  }
-  .raw-materials .metric .value{
-  color: #344256;
-
-
-font-size: 24.078px;
-font-style: normal;
-font-weight: 700;
-line-height: 50px;
-  }
-  .raw-materials .metric .delta{
-    display:flex;
-    align-items:center;
-    gap:6px;
-    font-size:12px;
-    font-weight:700;
-  }
-  .raw-materials .delta.danger{color:var(--danger);}
-  .raw-materials .delta.success{color:var(--success);}
-  .raw-materials .metric .badge{
-    width:40px;height:40px;
-    border-radius:999px;
-    background:#eaf3ff;
-    border:1px solid #d6e8ff;
+  .raw-materials .stat-icon{
+    width:38px;
+    height:38px;
+    border-radius:50%;
+    background:rgba(46,144,250,.14);
+    border:1px solid rgba(46,144,250,.25);
+    color:#2E90FA;
     display:grid;
     place-items:center;
     flex:0 0 auto;
-    color:var(--primary);
+  }
+  .raw-materials .stat-icon svg{
+    width:16px;
+    height:16px;
+    stroke:currentColor;
+    fill:none;
+    stroke-width:1.8;
+    stroke-linecap:round;
+    stroke-linejoin:round;
+  }
+  .raw-materials .stat-card .label{
+    font-size:12px;
+    color:#667085;
+    font-weight:600;
+  }
+  .raw-materials .stat-card .value{
+    font-size:22px;
+    font-weight:700;
+    color:#344256;
+  }
+  .raw-materials .stat-card .delta{
+    font-size:12px;
+    font-weight:700;
+    display:flex;
+    align-items:center;
+    gap:6px;
+  }
+  .raw-materials .stat-card .delta.danger{color:var(--danger);}
+  .raw-materials .stat-card .delta.success{color:var(--success);}
+  @media (max-width:920px){
+    .raw-materials .grid-2{grid-template-columns:1fr;}
   }
   .raw-materials .table-wrap{
 
     overflow:hidden;
     background:#fff;
     height:100%;
+  }
+  .raw-materials .summary-card .table-wrap{
+    overflow:auto;
+    height:auto;
+  }
+  .raw-materials .summary-card table{
+    margin-top:0;
   }
   .raw-materials table{
     margin-top: 20px;
@@ -281,54 +326,53 @@ height: 24px;}
     </label>
   </form>
 
-  <div class="card section">
-    <div class="title">
-      <img src="{% static 'images/borrowing_icon.svg' %}" 
+  <div class="grid-2">
+    <div class="card summary-card">
+      <div class="card-head">
+        <img src="{% static 'images/borrowing_icon.svg' %}" 
           alt="Current Update Icon"
           class="current-update-icon" />
-      <span>Available Inventory Breakdown</span>
-    </div>
-
-    <div class="top-grid">
-      <div class="metric-stack">
+        <span>Available Inventory Breakdown</span>
+      </div>
+      <div class="stat-grid">
         {% for metric in raw_materials_metrics %}
-          <div class="metric">
-            <div>
-              <div class="label">{{ metric.label }}</div>
-              <div class="value">{{ metric.value }}</div>
-              {% if metric.delta %}
-                <div class="delta {{ metric.delta_class }}">
-                  <span aria-hidden="true">{{ metric.symbol }}</span>
-                  <span>{{ metric.delta }}</span>
-                </div>
-              {% endif %}
+          <div class="stat-card">
+            <div class="stat-top">
+              <div class="stat-main">
+                <div class="label">{{ metric.label }}</div>
+                <div class="value">{{ metric.value }}</div>
+              </div>
+              <div class="stat-icon" aria-hidden="true">
+                {{ metric.icon|safe }}
+              </div>
             </div>
-            <div class="badge" aria-hidden="true" title="{{ metric.label }}">
-              {{ metric.icon|safe }}
-            </div>
+            {% if metric.delta %}
+              <div class="delta {{ metric.delta_class }}">
+                <span>{{ metric.delta }}</span>
+              </div>
+            {% endif %}
           </div>
         {% empty %}
-          <div class="metric">
-            <div>
-              <div class="label">Awaiting data</div>
-              <div class="value">—</div>
+          <div class="stat-card">
+            <div class="stat-top">
+              <div class="stat-main">
+                <div class="label">Awaiting data</div>
+                <div class="value">—</div>
+              </div>
             </div>
-            <div class="badge"></div>
           </div>
         {% endfor %}
       </div>
+    </div>
 
-      <div class="table-wrap table-border">
-        <div style="padding:14px 14px 6px;">
-          <div class="title" style="margin:0;">
-            <span class="icon" aria-hidden="true">
-              <img src="{% static 'images/borrowing_icon.svg' %}" 
+    <div class="card summary-card ineligible-card">
+      <div class="card-head">
+        <img src="{% static 'images/borrowing_icon.svg' %}" 
           alt="Current Update Icon"
           class="current-update-icon" />
-            </span>
-            <span>Ineligible Detail</span>
-          </div>
-        </div>
+        <span>Ineligible Details</span>
+      </div>
+      <div class="table-wrap">
         <table>
           <thead>
             <tr>
