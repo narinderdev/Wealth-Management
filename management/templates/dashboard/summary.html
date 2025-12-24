@@ -9,9 +9,10 @@
     <link rel="stylesheet" href="{% static 'css/summary.css' %}">
 </head>
 <div class="pill">Borrower Overview</div>  
-  <div class="grid">
-    <!-- Left: Borrower -->
-     <div class="card borrower">      
+  <div class="grid summary-grid">
+    <div class="summary-left">
+      <!-- Left: Borrower -->
+      <div class="card borrower">      
             <div class="kv">
               <img src="{% static 'images/company_logo.svg' %}" 
               alt="Company Logo"
@@ -121,217 +122,8 @@
               <div>Next Update</div>
               <div class="v">{{ borrower_summary.next_update }}</div>
             </div>
-      </div>        
-      
-    <div style=margin:10px;>
-      
-      <div>
-        <!-- Right: Borrowing base insight -->
-    <div class="insight-card">
-      <div class="insight-card__header">
-        <div class="insight-head-left">
-          <img src="{% static 'images/borrowing_icon.svg' %}" 
-            alt="Current Update Icon"
-            class="current-update-icon" />
-          <h2>Borrowing Base Insight</h2>
-        </div>
-        
       </div>
 
-      <div class="insight-grid-wrap">
-        <div class="insight-meta-grid">
-          <div class="meta-card meta-card--blue">
-            <div>
-              <div class="meta-label">Net Collateral</div>
-              <div class="meta-value">{{ insights.net.amount }}</div>
-              {% if insights.net.delta %}
-                <div class="meta-delta {{ insights.net.delta.class }}">{{ insights.net.delta.symbol }} {{ insights.net.delta.value }}</div>
-              {% else %}
-                <div class="meta-delta">—</div>
-              {% endif %}
-            </div>
-            <img src="{% static 'images/net_collateral_icon.svg' %}" 
-            alt="Net Collateral Icon"
-            class="net-collateral-icon" />
-          
-          </div>
-          <div class="meta-card meta-card--purple">
-            <div>
-              <div class="meta-label">Outstanding Balance</div>
-              <div class="meta-value">{{ insights.outstanding.amount }}</div>
-              {% if insights.outstanding.delta %}
-                <div class="meta-delta {{ insights.outstanding.delta.class }}">{{ insights.outstanding.delta.symbol }} {{ insights.outstanding.delta.value }}</div>
-              {% else %}
-                <div class="meta-delta">—</div>
-              {% endif %}
-            </div>
-            <img src="{% static 'images/outstanding_balance_icon.svg' %}" 
-            alt="Outstanding Balance Icon"
-            class="outstanding-balance-icon" />
-          </div>
-          <div class="meta-card meta-card--green">
-            <div>
-              <div class="meta-label">Availability</div>
-              <div class="meta-value">{{ insights.availability.amount }}</div>
-              {% if insights.availability.delta %}
-                <div class="meta-delta {{ insights.availability.delta.class }}">{{ insights.availability.delta.symbol }} {{ insights.availability.delta.value }}</div>
-              {% else %}
-                <div class="meta-delta">—</div>
-              {% endif %}
-            </div>
-            <img src="{% static 'images/availability_icon.svg' %}" 
-            alt="Availability Icon"
-            class="availability-icon" />
-          </div>
-        </div>
-
-        <div class="insight-chart-grid">
-          <div class="chart-card chart-card--blue">
-          
-          <div class="panel-chart">
-            <div class="chart-tooltip" aria-hidden="true"></div>
-            <svg viewBox="0 0 220 140" preserveAspectRatio="none">
-              <rect class="panel-bg" x="0" y="0" width="220" height="140" rx="0"></rect>
-              <g class="panel-grid">
-                {% for tick in net_chart.y_ticks %}
-                  <line x1="{{ net_chart.grid.left }}" y1="{{ tick.y }}" x2="{{ net_chart.grid.right }}" y2="{{ tick.y }}"></line>
-                {% endfor %}
-                {% for x in net_chart.x_grid %}
-                  <line x1="{{ x }}" y1="{{ net_chart.grid.top }}" x2="{{ x }}" y2="{{ net_chart.grid.bottom }}"></line>
-                {% endfor %}
-              </g>
-              <polyline class="panel-line panel-line--blue" points="{{ net_chart.points }}"/>
-              <g class="panel-dots">
-                {% for point in net_chart.points_list %}
-                <circle cx="{{ point.x }}" cy="{{ point.y }}" r="2.2"
-                  data-label="{{ point.label }}"
-                  data-value="{{ point.value }}"/>
-                {% endfor %}
-              </g>
-            <g class="panel-axis">
-              {% for tick in net_chart.y_ticks %}
-                <text x="{{ net_chart.label_x }}" y="{{ tick.y|add:3 }}" text-anchor="start">{{ tick.label }}</text>
-              {% endfor %}
-              {% for label in net_chart.x_labels %}
-                <text x="{{ label.x }}" y="{{ net_chart.label_y }}" text-anchor="middle">{{ label.text }}</text>
-              {% endfor %}
-              </g>
-            </svg>
-          </div>
-          </div>
-
-          <div class="chart-card chart-card--purple">
-          <div class="panel-chart">
-            <div class="chart-tooltip" aria-hidden="true"></div>
-            <svg viewBox="0 0 220 140" preserveAspectRatio="none">
-              <rect class="panel-bg" x="0" y="0" width="220" height="140" rx="0"></rect>
-              <g class="panel-grid">
-                {% for tick in outstanding_chart.y_ticks %}
-                  <line x1="{{ outstanding_chart.grid.left }}" y1="{{ tick.y }}" x2="{{ outstanding_chart.grid.right }}" y2="{{ tick.y }}"></line>
-                {% endfor %}
-                {% for x in outstanding_chart.x_grid %}
-                  <line x1="{{ x }}" y1="{{ outstanding_chart.grid.top }}" x2="{{ x }}" y2="{{ outstanding_chart.grid.bottom }}"></line>
-                {% endfor %}
-              </g>
-              <polyline class="panel-line panel-line--purple" points="{{ outstanding_chart.points }}"/>
-              <g class="panel-dots">
-                {% for point in outstanding_chart.points_list %}
-                <circle cx="{{ point.x }}" cy="{{ point.y }}" r="2.2"
-                  data-label="{{ point.label }}"
-                  data-value="{{ point.value }}"/>
-                {% endfor %}
-              </g>
-            <g class="panel-axis">
-              {% for tick in outstanding_chart.y_ticks %}
-                <text x="{{ outstanding_chart.label_x }}" y="{{ tick.y|add:3 }}" text-anchor="start">{{ tick.label }}</text>
-              {% endfor %}
-              {% for label in outstanding_chart.x_labels %}
-                <text x="{{ label.x }}" y="{{ outstanding_chart.label_y }}" text-anchor="middle">{{ label.text }}</text>
-              {% endfor %}
-              </g>
-            </svg>
-          </div>
-          </div>
-
-          <div class="chart-card chart-card--green">
-          <div class="panel-chart">
-            <div class="chart-tooltip" aria-hidden="true"></div>
-            <svg viewBox="0 0 220 140" preserveAspectRatio="none">
-              <rect class="panel-bg" x="0" y="0" width="220" height="140" rx="0"></rect>
-              <g class="panel-grid">
-                {% for tick in availability_chart.y_ticks %}
-                  <line x1="{{ availability_chart.grid.left }}" y1="{{ tick.y }}" x2="{{ availability_chart.grid.right }}" y2="{{ tick.y }}"></line>
-                {% endfor %}
-                {% for x in availability_chart.x_grid %}
-                  <line x1="{{ x }}" y1="{{ availability_chart.grid.top }}" x2="{{ x }}" y2="{{ availability_chart.grid.bottom }}"></line>
-                {% endfor %}
-              </g>
-              <polyline class="panel-line panel-line--green" points="{{ availability_chart.points }}"/>
-              <g class="panel-dots">
-                {% for point in availability_chart.points_list %}
-                <circle cx="{{ point.x }}" cy="{{ point.y }}" r="2.2"
-                  data-label="{{ point.label }}"
-                  data-value="{{ point.value }}"/>
-                {% endfor %}
-              </g>
-              <g class="panel-axis">
-                {% for tick in availability_chart.y_ticks %}
-                  <text x="{{ availability_chart.label_x }}" y="{{ tick.y|add:3 }}" text-anchor="start">{{ tick.label }}</text>
-                {% endfor %}
-                {% for label in availability_chart.x_labels %}
-                  <text x="{{ label.x }}" y="{{ availability_chart.label_y }}" text-anchor="middle">{{ label.text }}</text>
-                {% endfor %}
-              </g>
-            </svg>
-          </div>
-          </div>
-        </div>
-      </div>
-    </div>
-  </div>
-  <div class="table-card table-card--collateral2">
-        <div class="cc-head">
-          <div class="cc-head-left">
-             <img src="{% static 'images/borrowing_icon.svg' %}" 
-          alt="Current Update Icon"
-          class="current-update-icon" />
-            <span>Collateral Composition</span>
-          </div>
-        </div>
-
-        <div class="cc-wrap">
-          <table class="cc-table">
-            <thead>
-              <tr>
-                <th></th>
-                <th>Beginning Collateral</th>
-                <th>Ineligibles</th>
-                <th>Eligible Collateral</th>
-                <th>NOLV %</th>
-                <th>Dilution Rate</th>
-                <th>Advanced Rate</th>
-                <th>Rate Limit</th>
-                <th>Utilized Rate</th>
-                <th>Pre-Reserve Collateral</th>
-                <th>Reserves</th>
-                <th>Net Collateral</th>
-                <th class="cc-ctl"></th>
-              </tr>
-            </thead>
-
-            <tbody>
-              {% if collateral_tree %}
-                {% include "partials/collateral_rows.html" with nodes=collateral_tree level=0 parent_id="" %}
-              {% else %}
-                <tr><td colspan="13" class="cc-empty">Collateral data unavailable</td></tr>
-              {% endif %}
-            </tbody>
-          </table>
-        </div>
-  </div>
-  
-           
-      </div>
       <div class="risk">
         <div class="risk-title">Risk Profile</div>
         <div class="risk-score">
@@ -372,7 +164,215 @@
           {% endfor %}
         </div>
       </div>
+    </div>
+
+    <div class="summary-right">
+      <!-- Right: Borrowing base insight -->
+      <div class="insight-card">
+      <div class="insight-card__header">
+        <div class="insight-head-left">
+          <img src="{% static 'images/borrowing_icon.svg' %}" 
+            alt="Current Update Icon"
+            class="current-update-icon" />
+          <h2>Borrowing Base Insight</h2>
+        </div>
+        
       </div>
+
+      <div class="insight-grid-wrap">
+        <div class="insight-column">
+          <div class="meta-card meta-card--blue">
+            <div>
+              <div class="meta-label">Net Collateral</div>
+              <div class="meta-value">{{ insights.net.amount }}</div>
+              {% if insights.net.delta %}
+                <div class="meta-delta {{ insights.net.delta.class }}">{{ insights.net.delta.symbol }} {{ insights.net.delta.value }}</div>
+              {% else %}
+                <div class="meta-delta">—</div>
+              {% endif %}
+            </div>
+            <img src="{% static 'images/net_collateral_icon.svg' %}" 
+            alt="Net Collateral Icon"
+            class="net-collateral-icon" />
+          </div>
+
+          <div class="chart-card chart-card--blue">
+            <div class="panel-chart">
+              <div class="chart-tooltip" aria-hidden="true"></div>
+              <svg viewBox="0 0 220 140" preserveAspectRatio="none">
+                <rect class="panel-bg" x="0" y="0" width="220" height="140" rx="0"></rect>
+                <g class="panel-grid">
+                  {% for tick in net_chart.y_ticks %}
+                    <line x1="{{ net_chart.grid.left }}" y1="{{ tick.y }}" x2="{{ net_chart.grid.right }}" y2="{{ tick.y }}"></line>
+                  {% endfor %}
+                  {% for x in net_chart.x_grid %}
+                    <line x1="{{ x }}" y1="{{ net_chart.grid.top }}" x2="{{ x }}" y2="{{ net_chart.grid.bottom }}"></line>
+                  {% endfor %}
+                </g>
+                <polyline class="panel-line panel-line--blue" points="{{ net_chart.points }}"/>
+                <g class="panel-dots">
+                  {% for point in net_chart.points_list %}
+                  <circle cx="{{ point.x }}" cy="{{ point.y }}" r="2.2"
+                    data-label="{{ point.label }}"
+                    data-value="{{ point.value }}"/>
+                  {% endfor %}
+                </g>
+              <g class="panel-axis">
+                {% for tick in net_chart.y_ticks %}
+                  <text x="{{ net_chart.label_x }}" y="{{ tick.y|add:3 }}" text-anchor="start">{{ tick.label }}</text>
+                {% endfor %}
+                {% for label in net_chart.x_labels %}
+                  <text x="{{ label.x }}" y="{{ net_chart.label_y }}" text-anchor="middle">{{ label.text }}</text>
+                {% endfor %}
+                </g>
+              </svg>
+            </div>
+          </div>
+        </div>
+
+        <div class="insight-column">
+          <div class="meta-card meta-card--purple">
+            <div>
+              <div class="meta-label">Outstanding Balance</div>
+              <div class="meta-value">{{ insights.outstanding.amount }}</div>
+              {% if insights.outstanding.delta %}
+                <div class="meta-delta {{ insights.outstanding.delta.class }}">{{ insights.outstanding.delta.symbol }} {{ insights.outstanding.delta.value }}</div>
+              {% else %}
+                <div class="meta-delta">—</div>
+              {% endif %}
+            </div>
+            <img src="{% static 'images/outstanding_balance_icon.svg' %}" 
+            alt="Outstanding Balance Icon"
+            class="outstanding-balance-icon" />
+          </div>
+
+          <div class="chart-card chart-card--purple">
+            <div class="panel-chart">
+              <div class="chart-tooltip" aria-hidden="true"></div>
+              <svg viewBox="0 0 220 140" preserveAspectRatio="none">
+                <rect class="panel-bg" x="0" y="0" width="220" height="140" rx="0"></rect>
+                <g class="panel-grid">
+                  {% for tick in outstanding_chart.y_ticks %}
+                    <line x1="{{ outstanding_chart.grid.left }}" y1="{{ tick.y }}" x2="{{ outstanding_chart.grid.right }}" y2="{{ tick.y }}"></line>
+                  {% endfor %}
+                  {% for x in outstanding_chart.x_grid %}
+                    <line x1="{{ x }}" y1="{{ outstanding_chart.grid.top }}" x2="{{ x }}" y2="{{ outstanding_chart.grid.bottom }}"></line>
+                  {% endfor %}
+                </g>
+                <polyline class="panel-line panel-line--purple" points="{{ outstanding_chart.points }}"/>
+                <g class="panel-dots">
+                  {% for point in outstanding_chart.points_list %}
+                  <circle cx="{{ point.x }}" cy="{{ point.y }}" r="2.2"
+                    data-label="{{ point.label }}"
+                    data-value="{{ point.value }}"/>
+                  {% endfor %}
+                </g>
+              <g class="panel-axis">
+                {% for tick in outstanding_chart.y_ticks %}
+                  <text x="{{ outstanding_chart.label_x }}" y="{{ tick.y|add:3 }}" text-anchor="start">{{ tick.label }}</text>
+                {% endfor %}
+                {% for label in outstanding_chart.x_labels %}
+                  <text x="{{ label.x }}" y="{{ outstanding_chart.label_y }}" text-anchor="middle">{{ label.text }}</text>
+                {% endfor %}
+                </g>
+              </svg>
+            </div>
+          </div>
+        </div>
+
+        <div class="insight-column">
+          <div class="meta-card meta-card--green">
+            <div>
+              <div class="meta-label">Availability</div>
+              <div class="meta-value">{{ insights.availability.amount }}</div>
+              {% if insights.availability.delta %}
+                <div class="meta-delta {{ insights.availability.delta.class }}">{{ insights.availability.delta.symbol }} {{ insights.availability.delta.value }}</div>
+              {% else %}
+                <div class="meta-delta">—</div>
+              {% endif %}
+            </div>
+            <img src="{% static 'images/availability_icon.svg' %}" 
+            alt="Availability Icon"
+            class="availability-icon" />
+          </div>
+
+          <div class="chart-card chart-card--green">
+            <div class="panel-chart">
+              <div class="chart-tooltip" aria-hidden="true"></div>
+              <svg viewBox="0 0 220 140" preserveAspectRatio="none">
+                <rect class="panel-bg" x="0" y="0" width="220" height="140" rx="0"></rect>
+                <g class="panel-grid">
+                  {% for tick in availability_chart.y_ticks %}
+                    <line x1="{{ availability_chart.grid.left }}" y1="{{ tick.y }}" x2="{{ availability_chart.grid.right }}" y2="{{ tick.y }}"></line>
+                  {% endfor %}
+                  {% for x in availability_chart.x_grid %}
+                    <line x1="{{ x }}" y1="{{ availability_chart.grid.top }}" x2="{{ x }}" y2="{{ availability_chart.grid.bottom }}"></line>
+                  {% endfor %}
+                </g>
+                <polyline class="panel-line panel-line--green" points="{{ availability_chart.points }}"/>
+                <g class="panel-dots">
+                  {% for point in availability_chart.points_list %}
+                  <circle cx="{{ point.x }}" cy="{{ point.y }}" r="2.2"
+                    data-label="{{ point.label }}"
+                    data-value="{{ point.value }}"/>
+                  {% endfor %}
+                </g>
+                <g class="panel-axis">
+                  {% for tick in availability_chart.y_ticks %}
+                    <text x="{{ availability_chart.label_x }}" y="{{ tick.y|add:3 }}" text-anchor="start">{{ tick.label }}</text>
+                  {% endfor %}
+                  {% for label in availability_chart.x_labels %}
+                    <text x="{{ label.x }}" y="{{ availability_chart.label_y }}" text-anchor="middle">{{ label.text }}</text>
+                  {% endfor %}
+                </g>
+              </svg>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+      <div class="table-card table-card--collateral2">
+        <div class="cc-head">
+          <div class="cc-head-left">
+             <img src="{% static 'images/borrowing_icon.svg' %}" 
+          alt="Current Update Icon"
+          class="current-update-icon" />
+            <span>Collateral Composition</span>
+          </div>
+        </div>
+
+        <div class="cc-wrap">
+          <table class="cc-table">
+            <thead>
+              <tr>
+                <th></th>
+                <th>Beginning Collateral</th>
+                <th>Ineligibles</th>
+                <th>Eligible Collateral</th>
+                <th>NOLV %</th>
+                <th>Dilution Rate</th>
+                <th>Advanced Rate</th>
+                <th>Rate Limit</th>
+                <th>Utilized Rate</th>
+                <th>Pre-Reserve Collateral</th>
+                <th>Reserves</th>
+                <th>Net Collateral</th>
+                <th class="cc-ctl"></th>
+              </tr>
+            </thead>
+
+            <tbody>
+              {% if collateral_tree %}
+                {% include "partials/collateral_rows.html" with nodes=collateral_tree level=0 parent_id="" inventory_branch=False %}
+              {% else %}
+                <tr><td colspan="13" class="cc-empty">Collateral data unavailable</td></tr>
+              {% endif %}
+            </tbody>
+          </table>
+        </div>
+      </div>
+    </div>
+  </div>
 
     
 {% endblock %}

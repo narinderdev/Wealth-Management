@@ -1,6 +1,6 @@
 {% for node in nodes %}
 <tr
-  class="cc-row level-{{ level }} {% if level > 0 and parent_label and "inventory" in parent_label|lower %}is-hidden{% endif %}"
+  class="cc-row level-{{ level }} {% if level > 0 %}is-hidden{% endif %}"
   data-id="{{ node.id }}"
   data-level="{{ level }}"
   {% if parent_id %}data-parent="{{ parent_id }}"{% endif %}
@@ -26,7 +26,7 @@
   <td>{{ node.row.net_collateral }}</td>
 
   <td class="cc-ctl">
-    {% if node.children and level == 0 and "inventory" in node.row.label|lower %}
+    {% if node.children and node.row.label|lower != "accounts receivable" and node.row.label|lower != "other collateral" %}
       <button
         class="cc-toggle"
         type="button"
