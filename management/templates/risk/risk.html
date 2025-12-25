@@ -384,9 +384,11 @@ font-weight: 400;
 line-height: normal;
  
       color:#475467;
-      overflow:hidden;
-      text-overflow:ellipsis;
-      white-space:nowrap;
+      overflow:visible;
+      text-overflow:clip;
+      white-space:normal;
+      word-break:break-word;
+      line-height:1.2;
     }
 
     .risk-page .track{
@@ -606,7 +608,7 @@ line-height: normal;
 
               {% for bar in metric.bars %}
                 <div class="barrow" style="--bar-left: {{ bar.width }};">
-                  <div class="lbl">{{ bar.label }}</div>
+                  <div class="lbl" title="{{ bar.label }}">{{ bar.label }}</div>
                   <div class="track">
                     <div class="fill" style="width:{{ bar.width }}; background:{{ metric.fill_color }}"></div>
                   </div>
