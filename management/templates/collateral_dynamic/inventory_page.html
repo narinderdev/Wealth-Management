@@ -251,6 +251,14 @@
       font-size:9px;
       letter-spacing:.3px;
     }
+    .collateral-dynamic .legend-link{
+      color:inherit;
+      text-decoration:none;
+    }
+    .collateral-dynamic .legend-link:hover,
+    .collateral-dynamic .legend-link:focus{
+      text-decoration:underline;
+    }
     .collateral-dynamic .sw{
       width:10px;
       height:10px;
@@ -263,6 +271,101 @@
     .collateral-dynamic .chartPad{
       padding:12px 6px 4px 6px;
       position:relative;
+    }
+    .collateral-dynamic .chart-box{
+      position:relative;
+      width:100%;
+      aspect-ratio:var(--chart-width) / var(--chart-height);
+      background:#fff;
+      border-radius:10px;
+      overflow:hidden;
+    }
+    .collateral-dynamic .chart-layer{
+      position:absolute;
+      inset:0;
+    }
+    .collateral-dynamic .chart-layer.is-static{
+      pointer-events:none;
+    }
+    .collateral-dynamic .chart-layer.label-layer{
+      z-index:4;
+    }
+    .collateral-dynamic .chart-canvas{
+      position:absolute;
+      inset:0;
+      width:100%;
+      height:100%;
+      z-index:2;
+    }
+    .collateral-dynamic .chart-grid-line{
+      position:absolute;
+      height:1px;
+      background:#eef2f7;
+      left:calc(var(--axis-left) * 100% / var(--chart-width));
+      width:calc((var(--axis-right) - var(--axis-left)) * 100% / var(--chart-width));
+      top:calc(var(--y) * 100% / var(--chart-height));
+    }
+    .collateral-dynamic .chart-axis-label{
+      position:absolute;
+      font-size:8px;
+      color:#9aa7b8;
+      white-space:nowrap;
+      left:calc(var(--x) * 100% / var(--chart-width));
+      top:calc(var(--y) * 100% / var(--chart-height));
+      pointer-events:none;
+    }
+    .collateral-dynamic .chart-axis-label.y{
+      transform:translate(-100%, -50%);
+    }
+    .collateral-dynamic .chart-axis-label.x{
+      transform:translate(-50%, 0);
+    }
+    .collateral-dynamic .chart-axis-title{
+      position:absolute;
+      left:8px;
+      top:calc(109 * 100% / var(--chart-height));
+      transform:rotate(-90deg);
+      transform-origin:left top;
+      font-size:8px;
+      color:#9aa7b8;
+      pointer-events:none;
+    }
+    .collateral-dynamic .net-recovery-chart{
+      --chart-width:760;
+      --chart-height:250;
+      --axis-left:60;
+      --axis-right:730;
+      --axis-top:22;
+      --axis-bottom:192;
+    }
+    .collateral-dynamic .net-recovery-chart .chart-frame{
+      position:absolute;
+      left:calc(var(--axis-left) * 100% / var(--chart-width));
+      top:calc(var(--axis-top) * 100% / var(--chart-height));
+      width:calc((var(--axis-right) - var(--axis-left)) * 100% / var(--chart-width));
+      height:calc((var(--axis-bottom) - var(--axis-top)) * 100% / var(--chart-height));
+      border:1px solid #eef2f7;
+    }
+    .collateral-dynamic .net-recovery-dot{
+      position:absolute;
+      width:6px;
+      height:6px;
+      border-radius:50%;
+      background:var(--dot-color);
+      left:calc(var(--x) * 100% / var(--chart-width));
+      top:calc(var(--y) * 100% / var(--chart-height));
+      transform:translate(-50%, -50%);
+      z-index:5;
+    }
+    .collateral-dynamic .net-recovery-hit{
+      position:absolute;
+      width:18px;
+      height:18px;
+      left:calc(var(--x) * 100% / var(--chart-width));
+      top:calc(var(--y) * 100% / var(--chart-height));
+      transform:translate(-50%, -50%);
+      z-index:6;
+      background:transparent;
     }
     .collateral-dynamic .chart-tooltip{
       position:absolute;
@@ -360,11 +463,12 @@
       text-align:center;
     }
     .collateral-dynamic .recovery-table thead tr.tblSub th{
-      font-size:10px;
-      color:#94a3b8;
-      font-weight:600;
-      letter-spacing:.2px;
-      padding-top:2px;
+     
+    font-size: 12px;
+    color: #94a3b8;
+    font-weight: 700;
+    letter-spacing: .2px;
+    padding-top: 2px;
     }
     .collateral-dynamic .mt12{
       margin-top:12px;

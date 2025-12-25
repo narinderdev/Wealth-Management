@@ -181,6 +181,12 @@ gap: 9px;
   }
   .raw-materials tbody tr:last-child td{border-bottom:none;}
   .raw-materials td.num,.raw-materials th.num{text-align:left;font-variant-numeric:tabular-nums;}
+  .raw-materials .ineligible-card td.num,
+  .raw-materials .ineligible-card th.num{
+    text-align:center;
+    padding-left:12px;
+    padding-right:12px;
+  }
   .raw-materials .chart-area{
     /* border:1px solid var(--line);
     border-radius:12px; */
@@ -477,7 +483,7 @@ height: 24px;}
         <table>
           <thead>
             <tr>
-              <th>SKU</th>
+              <th>Item Number</th>
               <th>Category</th>
               <th>Description</th>
               <th class="num">Amount</th>
@@ -489,7 +495,7 @@ height: 24px;}
           <tbody>
             {% for sku in raw_materials_top_skus %}
               <tr>
-                <td>{{ sku.sku }}</td>
+                <td>{{ sku.item_number }}</td>
                 <td>{{ sku.category }}</td>
                 <td>{{ sku.description }}</td>
                 <td class="num">{{ sku.amount }}</td>

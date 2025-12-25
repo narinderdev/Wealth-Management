@@ -11,6 +11,7 @@ from django.urls import reverse
 from django.utils.text import slugify
 
 from django.db.models import Max, Q
+from django.db.utils import OperationalError, ProgrammingError
 
 from management.models import (
     ARMetricsRow,
@@ -151,14 +152,17 @@ def get_snapshot_summary_map(
         _normalize_section(section): section for section in sections
     }
     summary_map = {}
-    summaries = SnapshotSummaryRow.objects.filter(borrower=borrower).order_by("-updated_at", "-id")
-    for row in summaries:
-        normalized_section = _normalize_section(row.section)
-        section_key = normalized_map.get(normalized_section)
-        if not section_key or section_key in summary_map:
-            continue
-        text = (row.summary_text or "").strip()
-        summary_map[section_key] = text
+    try:
+        summaries = SnapshotSummaryRow.objects.filter(borrower=borrower).order_by("-updated_at", "-id")
+        for row in summaries:
+            normalized_section = _normalize_section(row.section)
+            section_key = normalized_map.get(normalized_section)
+            if not section_key or section_key in summary_map:
+                continue
+            text = (row.summary_text or "").strip()
+            summary_map[section_key] = text
+    except (ProgrammingError, OperationalError):
+        return {section: empty_message for section in sections}
     return {
         section: (summary_map.get(section) or empty_message)
         for section in sections

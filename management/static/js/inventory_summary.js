@@ -36,5 +36,56 @@ document.addEventListener("DOMContentLoaded", () => {
     });
   };
 
+  const parseLinePoints = (raw) => {
+    if (!raw) return [];
+    return raw.trim().split(/\s+/).map(pair => {
+      const parts = pair.split(",");
+      const x = parseFloat(parts[0]);
+      const y = parseFloat(parts[1]);
+      if (Number.isNaN(x) || Number.isNaN(y)) {
+        return null;
+      }
+      return { x, y };
+    }).filter(Boolean);
+  };
+
+  const drawLineCharts = () => {
+    document.querySelectorAll(".chart-canvas[data-line-points]").forEach(canvas => {
+      const points = parseLinePoints(canvas.dataset.linePoints);
+      if (!points.length) return;
+      const width = parseFloat(canvas.dataset.chartWidth || "0");
+      const height = parseFloat(canvas.dataset.chartHeight || "0");
+      if (!width || !height) return;
+      const dpr = window.devicePixelRatio || 1;
+      canvas.width = width * dpr;
+      canvas.height = height * dpr;
+      const ctx = canvas.getContext("2d");
+      if (!ctx) return;
+      ctx.setTransform(1, 0, 0, 1, 0, 0);
+      ctx.clearRect(0, 0, canvas.width, canvas.height);
+      ctx.setTransform(dpr, 0, 0, dpr, 0, 0);
+      ctx.strokeStyle = canvas.dataset.lineColor || "#0b5bd3";
+      ctx.lineWidth = 2;
+      ctx.lineJoin = "round";
+      ctx.lineCap = "round";
+      ctx.beginPath();
+      points.forEach((point, idx) => {
+        if (idx === 0) {
+          ctx.moveTo(point.x, point.y);
+        } else {
+          ctx.lineTo(point.x, point.y);
+        }
+      });
+      ctx.stroke();
+    });
+  };
+
   initInventoryChartTooltips();
+  drawLineCharts();
+
+  let resizeTimer;
+  window.addEventListener("resize", () => {
+    window.clearTimeout(resizeTimer);
+    resizeTimer = window.setTimeout(drawLineCharts, 120);
+  });
 });

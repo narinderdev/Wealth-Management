@@ -245,11 +245,42 @@ line-height: 33.339px; /* 138.462% */
   .liquidation-model .n-table thead tr.columns th:first-child{
     text-align:left;
   }
+  .liquidation-model .n-table tbody td{
+    text-align:center;
+  }
+  .liquidation-model .n-table tbody td:first-child{
+    text-align:left;
+  }
+  .liquidation-model .n-table .subtotal-row td{
+    background:#fafafa;
+    color:#475569;
+    font-weight:600;
+  }
+  .liquidation-model .n-table .total-row td{
+    background:#f5f7fb;
+    color:#334155;
+    font-weight:800;
+  }
   .liquidation-model thead tr.group th{
     background:#FAFAFA;
     text-align:left;
     font-weight:900;
     border-bottom:1px solid var(--line);
+  }
+  .liquidation-model .n-table thead tr.group th{
+    text-align:center;
+  }
+  .liquidation-model .n-table thead tr.group th:first-child{
+    text-align:left;
+  }
+  .liquidation-model .n-table table{
+    table-layout:fixed;
+  }
+  .liquidation-model .n-table .col-label{
+    width:18%;
+  }
+  .liquidation-model .n-table .col-num{
+    width:11.7%;
   }
   .n-table .columns{
 background:#FAFAFA;
@@ -266,21 +297,44 @@ background:#FAFAFA;
   .liquidation-model .subtle{ color:#64748b; font-weight:700; }
   .liquidation-model .tfoot td{ background:#fbfdff; font-weight:900; border-top:1px solid var(--line); }
   .liquidation-model .acc{  overflow:hidden; background:#fff; padding-top: 20px; }
-  .liquidation-model summary,
-  .liquidation-model .acc-header {
-    list-style: none;
-    cursor: pointer;
-    padding: 10px 12px;
-    background: linear-gradient(0deg, var(--blue), var(--blue));
-    color: #fff;
-    font-weight: 900;
-    display: flex;
-    align-items: center;
-    justify-content: space-between;
-    gap: 12px;
-    user-select: none;
-    margin-bottom: 10px; /* Adds space between each summary section */
-}
+  .liquidation-model summary{
+    list-style:none;
+    cursor:pointer;
+    padding:0;
+    background:none;
+    color:#fff;
+    user-select:none;
+    margin-bottom:10px;
+  }
+  .liquidation-model .summary-header,
+  .liquidation-model .acc-header{
+    padding:10px 12px;
+    background: linear-gradient(0deg, #1d4089, #1d4089);
+    color:#fff;
+    font-weight:900;
+    display:flex;
+    align-items:center;
+    justify-content:space-between;
+    gap:12px;
+  }
+  .liquidation-model .summary-total{
+    display:flex;
+    align-items:center;
+    justify-content:space-between;
+    gap:12px;
+    padding:8px 12px;
+    background:#fff;
+    color:#334155;
+    font-weight:800;
+    border:1px solid var(--line);
+    border-top:none;
+  }
+  .liquidation-model .summary-total .num{
+    font-variant-numeric:tabular-nums;
+  }
+  .liquidation-model details[open] .summary-total{
+    display:none;
+  }
   .liquidation-model .acc-header{
     cursor: default;
   }
@@ -369,7 +423,7 @@ gap: 0px;
     height: 24px;
 }
 .center-alighment{
-  text-align: left!important;
+  text-align: center!important;
 }
 </style>
 
@@ -420,199 +474,135 @@ gap: 0px;
         <span class="n-title">Liquidation Expenses</span>
       </div>
       <div class="acc">
-        {% for group in liquidation_expense_groups %}
-          {% if group.title == "Payroll Expenses" and liquidation_payroll_rows %}
-            <details open>
-              <summary>
-                <span class="sum-left">
-                  <span>{{ group.title }}</span>
-                </span>
-                <span class="caret" aria-hidden="true">
-                  <svg viewBox="0 0 24 24" width="18" height="18" fill="none">
-                    <path d="M6 9l6 6 6-6" stroke="#fff" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"/>
-                  </svg>
-                </span>
-              </summary>
-              <div class="acc-body">
-                <div class="table-wrap">
-                  <table>
-                    <thead class="table-header">
-                      <tr>
-                        <th>Category</th>
-                        <th class="num">Cost Amount</th>
-                      </tr>
-                    </thead>
-                    <tbody>
-                      {% for item in liquidation_payroll_rows %}
-                        <tr>
-                          <td class="row-label">{{ item.label }}</td>
-                          <td class="num">{{ item.total }}</td>
-                        </tr>
-                      {% endfor %}
-                    </tbody>
-                    <tfoot>
-                      <tr class="tfoot">
-                        <td>Total Payroll Costs</td>
-                        <td class="num">{{ liquidation_payroll_totals.total }}</td>
-                      </tr>
-                    </tfoot>
-                  </table>
-                </div>
-              </div>
-            </details>
-          {% elif group.title == "Operating Costs" and liquidation_operating_rows %}
-            <details>
-              <summary>
-                <span class="sum-left">
-                  <span>{{ group.title }}</span>
-                </span>
-                <span class="caret" aria-hidden="true">
-                  <svg viewBox="0 0 24 24" width="18" height="18" fill="none">
-                    <path d="M6 9l6 6 6-6" stroke="#fff" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"/>
-                  </svg>
-                </span>
-              </summary>
-              <div class="acc-body">
-                <div class="table-wrap">
-                  <table>
-                    <thead>
-                      <tr>
-                        <th>Category</th>
-                        <th class="num">Gross Amount</th>
-                      </tr>
-                    </thead>
-                    <tbody>
-                      {% for item in liquidation_operating_rows %}
-                        <tr>
-                          <td class="row-label">{{ item.label }}</td>
-                          <td class="num">{{ item.total }}</td>
-                        </tr>
-                      {% endfor %}
-                    </tbody>
-                    <tfoot>
-                      <tr class="tfoot">
-                        <td>Total Operating Costs</td>
-                        <td class="num">{{ liquidation_operating_totals.total }}</td>
-                      </tr>
-                    </tfoot>
-                  </table>
-                </div>
-              </div>
-            </details>
-          {% elif group.title == "Liquidation Expenses" and liquidation_liquidation_rows %}
-            <details>
-              <summary>
-                <span class="sum-left">
-                  <span>{{ group.title }}</span>
-                </span>
-                <span class="caret" aria-hidden="true">
-                  <svg viewBox="0 0 24 24" width="18" height="18" fill="none">
-                    <path d="M6 9l6 6 6-6" stroke="#fff" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"/>
-                  </svg>
-                </span>
-              </summary>
-              <div class="acc-body">
-                <div class="table-wrap">
-                  <table>
-                    <thead>
-                      <tr>
-                        <th>Category</th>
-                        <th class="num">Gross Amount</th>
-                      </tr>
-                    </thead>
-                    <tbody>
-                      {% for item in liquidation_liquidation_rows %}
-                        <tr>
-                          <td class="row-label">{{ item.label }}</td>
-                          <td class="num">{{ item.total }}</td>
-                        </tr>
-                      {% endfor %}
-                    </tbody>
-                    <tfoot>
-                      <tr class="tfoot">
-                        <td>Total Liquidation Expenses</td>
-                        <td class="num">{{ liquidation_liquidation_totals.total }}</td>
-                      </tr>
-                    </tfoot>
-                  </table>
-                </div>
-              </div>
-            </details>
-          {% elif group.dropdown %}
-            <details>
-              <summary>
-                <span class="sum-left">
-                  <span>{{ group.title }}</span>
-                </span>
-                <span class="caret" aria-hidden="true">
-                  <svg viewBox="0 0 24 24" width="18" height="18" fill="none">
-                    <path d="M6 9l6 6 6-6" stroke="#fff" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"/>
-                  </svg>
-                </span>
-              </summary>
-              <div class="acc-body">
-                <div class="table-wrap">
-                  <table>
-                    <thead>
-                      <tr>
-                        <th>Category</th>
-                        <th class="num">Gross Amount</th>
-                      </tr>
-                    </thead>
-                    <tbody>
-                      {% for item in group.items %}
-                        <tr>
-                          <td>{{ item.label }}</td>
-                          <td class="num">{{ item.amount }}</td>
-                        </tr>
-                      {% endfor %}
-                      <tr class="tfoot">
-                        <td>Total {{ group.title }}</td>
-                        <td class="num">{{ group.total }}</td>
-                      </tr>
-                    </tbody>
-                  </table>
-                </div>
-              </div>
-            </details>
-          {% else %}
-            <div class="acc-fixed">
-              <div class="acc-header">
-                <span class="sum-left">
-                  <span>{{ group.title }}</span>
-                </span>
-              </div>
-              <div class="acc-body">
-                <div class="table-wrap">
-                  <table>
-                    <thead>
-                      <tr>
-                        <th>Category</th>
-                        <th class="num">Gross Amount</th>
-                      </tr>
-                    </thead>
-                    <tbody>
-                      {% for item in group.items %}
-                        <tr>
-                          <td>{{ item.label }}</td>
-                          <td class="num">{{ item.amount }}</td>
-                        </tr>
-                      {% endfor %}
-                      <tr class="tfoot">
-                        <td>Total {{ group.title }}</td>
-                        <td class="num">{{ group.total }}</td>
-                      </tr>
-                    </tbody>
-                  </table>
-                </div>
-              </div>
+        <details>
+          <summary>
+            <div class="summary-header">
+              <span class="sum-left">
+                <span>Payroll Expenses</span>
+              </span>
+              <span class="caret" aria-hidden="true">
+                <svg viewBox="0 0 24 24" width="18" height="18" fill="none">
+                  <path d="M6 9l6 6 6-6" stroke="#fff" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"/>
+                </svg>
+              </span>
             </div>
-          {% endif %}
-        {% empty %}
+            <div class="summary-total">
+              <span>Total Payroll Expense</span>
+              <span class="num">{{ liquidation_payroll_totals.total }}</span>
+            </div>
+          </summary>
           <div class="acc-body">
-            <div class="mini-note">Liquidation expense detail unavailable.</div>
+            <div class="table-wrap">
+              <table>
+                <thead class="table-header">
+                  <tr>
+                    <th>Category</th>
+                    <th class="num">Cost Amount</th>
+                  </tr>
+                </thead>
+                <tbody>
+                  {% for item in liquidation_payroll_rows %}
+                    <tr>
+                      <td class="row-label">{{ item.label }}</td>
+                      <td class="num">{{ item.total }}</td>
+                    </tr>
+                  {% empty %}
+                    <tr><td colspan="2">No payroll expense detail.</td></tr>
+                  {% endfor %}
+                </tbody>
+                <tfoot>
+                  <tr class="tfoot">
+                    <td>Total Payroll Expense</td>
+                    <td class="num">{{ liquidation_payroll_totals.total }}</td>
+                  </tr>
+                </tfoot>
+              </table>
+            </div>
           </div>
-        {% endfor %}
+        </details>
+
+        <details>
+          <summary>
+            <div class="summary-header">
+              <span class="sum-left">
+                <span>Operating Costs</span>
+              </span>
+              <span class="caret" aria-hidden="true">
+                <svg viewBox="0 0 24 24" width="18" height="18" fill="none">
+                  <path d="M6 9l6 6 6-6" stroke="#fff" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"/>
+                </svg>
+              </span>
+            </div>
+            <div class="summary-total">
+              <span>Total Operating Cost</span>
+              <span class="num">{{ liquidation_operating_totals.total }}</span>
+            </div>
+          </summary>
+          <div class="acc-body">
+            <div class="table-wrap">
+              <table>
+                <thead>
+                  <tr>
+                    <th>Category</th>
+                    <th class="num">Cost Amount</th>
+                  </tr>
+                </thead>
+                <tbody>
+                  {% for item in liquidation_operating_rows %}
+                    <tr>
+                      <td class="row-label">{{ item.label }}</td>
+                      <td class="num">{{ item.total }}</td>
+                    </tr>
+                  {% empty %}
+                    <tr><td colspan="2">No operating cost detail.</td></tr>
+                  {% endfor %}
+                </tbody>
+                <tfoot>
+                  <tr class="tfoot">
+                    <td>Total Operating Cost</td>
+                    <td class="num">{{ liquidation_operating_totals.total }}</td>
+                  </tr>
+                </tfoot>
+              </table>
+            </div>
+          </div>
+        </details>
+
+        <div class="acc-fixed">
+          <div class="acc-header">
+            <span class="sum-left">
+              <span>Liquidation Expenses</span>
+            </span>
+          </div>
+          <div class="acc-body">
+            <div class="table-wrap">
+              <table>
+                <thead>
+                  <tr>
+                    <th>Category</th>
+                    <th class="num">Cost Amount</th>
+                  </tr>
+                </thead>
+                <tbody>
+                  {% for item in liquidation_liquidation_rows %}
+                    <tr>
+                      <td class="row-label">{{ item.label }}</td>
+                      <td class="num">{{ item.total }}</td>
+                    </tr>
+                  {% empty %}
+                    <tr><td colspan="2">No liquidation expense detail.</td></tr>
+                  {% endfor %}
+                </tbody>
+                <tfoot>
+                  <tr class="tfoot">
+                    <td>Total Liquidation Expenses</td>
+                    <td class="num">{{ liquidation_total_expenses }}</td>
+                  </tr>
+                </tfoot>
+              </table>
+            </div>
+          </div>
+        </div>
       </div>
     </div>
   </div>
@@ -627,11 +617,21 @@ gap: 0px;
 
   <div class="table-wrap">
     <table>
+      <colgroup>
+        <col class="col-label" />
+        <col class="col-num" />
+        <col class="col-num" />
+        <col class="col-num" />
+        <col class="col-num" />
+        <col class="col-num" />
+        <col class="col-num" />
+        <col class="col-num" />
+      </colgroup>
       <thead>
         <tr class="group">
           <th class="left no-bg"></th>
           <th colspan="2">Inventory</th>
-          <th colspan="3">Recovery</th>
+          <th colspan="3">Gross Recovery</th>
           <th colspan="2">Primary Factors</th>
         </tr>
 
@@ -649,18 +649,8 @@ gap: 0px;
 
       <tbody>
         {% for row in fg_gross_recovery_history_rows %}
-          <tr>
-            <td class="left">
-              {% if row.category %}
-                {{ row.category }}
-              {% elif row.type %}
-                {{ row.type }}
-              {% elif row.division %}
-                {{ row.division }}
-              {% else %}
-                {{ row.date }}
-              {% endif %}
-            </td>
+          <tr{% if row.category == "Total" %} class="total-row"{% elif row.category == "Total In-Line" or row.category == "Excess" %} class="subtotal-row"{% endif %}>
+            <td class="left">{{ row.category|default:"—" }}</td>
             <td class="center">{{ row.cost }}</td>
             <td class="center">{{ row.selling }}</td>
             <td class="center">{{ row.gross }}</td>
@@ -672,18 +662,6 @@ gap: 0px;
         {% empty %}
           <tr><td colspan="8" class="center">Finished goods gross recovery history not available.</td></tr>
         {% endfor %}
-        {% if fg_gross_recovery_history_rows %}
-          <tr class="total">
-            <td class="left">Total</td>
-            <td class="center">{{ fg_gross_recovery_history_totals.cost }}</td>
-            <td class="center">{{ fg_gross_recovery_history_totals.selling }}</td>
-            <td class="center">{{ fg_gross_recovery_history_totals.gross }}</td>
-            <td class="center">{{ fg_gross_recovery_history_totals.pct_cost }}</td>
-            <td class="center">{{ fg_gross_recovery_history_totals.pct_sp }}</td>
-            <td class="center">{{ fg_gross_recovery_history_totals.wos }}</td>
-            <td class="center">{{ fg_gross_recovery_history_totals.gr_pct }}</td>
-          </tr>
-        {% endif %}
       </tbody>
     </table>
   </div>
@@ -775,7 +753,7 @@ gap: 0px;
               </tr>
 
               <tr class="columns">
-                <th class="left">Item</th>
+                <th class="left">Category</th>
                 <th class="center center-alighment">$</th>
                 <th class="center center-alighment">$</th>
                 <th class="center center-alighment">% of Cost</th>
@@ -829,7 +807,7 @@ gap: 0px;
     {% endfor %}
   </div>
 
-  <div class="card section">
+  <div class="card section" id="nolv-analysis">
     <div class="title">
       <span class="icon" aria-hidden="true">
         <svg viewBox="0 0 24 24"><path d="M4 16.5l6-6 4 4 6-7" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"/><path d="M20 7h-5" stroke="currentColor" stroke-width="2.2" stroke-linecap="round"/></svg>
@@ -843,9 +821,9 @@ gap: 0px;
           <thead>
             <tr class="group">
               <th rowspan="2">Line Item</th>
-              <th colspan="2">Finished Goods</th>
-              <th colspan="2">Raw Materials</th>
-              <th colspan="2">Work-In-Process</th>
+              <th colspan="2" id="nolv-finished-goods">Finished Goods</th>
+              <th colspan="2" id="nolv-raw-materials">Raw Materials</th>
+              <th colspan="2" id="nolv-work-in-progress">Work-In-Process</th>
               <th colspan="2">Total</th>
             </tr>
             <tr class="columns">

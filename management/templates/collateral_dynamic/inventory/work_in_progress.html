@@ -238,6 +238,10 @@ line-height: 50px;
     border: 1px solid var(--line);
     border-radius: 12px;
 }
+.work-in-progress .table-border th.num,
+.work-in-progress .table-border td.num{
+  text-align:center;
+}
 </style>
 
 <div class="page work-in-progress">
@@ -413,7 +417,7 @@ line-height: 50px;
         <table>
           <thead>
             <tr>
-              <th>SKU</th>
+              <th>Item Number</th>
               <th>Category</th>
               <th>Description</th>
               <th class="num">Amount</th>
@@ -425,7 +429,7 @@ line-height: 50px;
           <tbody>
             {% for sku in work_in_progress_top_skus %}
               <tr>
-                <td>{{ sku.sku }}</td>
+                <td>{{ sku.item_number }}</td>
                 <td>{{ sku.category }}</td>
                 <td>{{ sku.description }}</td>
                 <td class="num">{{ sku.amount }}</td>

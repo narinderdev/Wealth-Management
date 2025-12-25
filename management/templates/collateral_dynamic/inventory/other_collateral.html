@@ -49,10 +49,20 @@
     color:#585858;
   }
   .other-collateral .value-trend-head{
+    display:flex;
+    align-items:center;
     justify-content:space-between;
+    width:100%;
+  }
+  .other-collateral .value-trend-title{
+    display:flex;
+    align-items:center;
+    gap:8px;
+    flex:1;
   }
   .other-collateral .value-trend-head .legend{
     margin-left:auto;
+    justify-content:flex-end;
   }
   .other-collateral .ico{
     width:16px;
@@ -345,7 +355,7 @@
     </div>
     <div style="margin-top: 20px; margin-bottom: 10px;" class="divider"></div>
     <div class="card-head value-trend-head" style="padding-bottom:0">
-      <div style="display:flex;align-items:center;gap:8px;">
+      <div class="value-trend-title">
         <img src="{% static 'images/borrowing_icon.svg' %}"
           alt="Current Update Icon"
           class="current-update-icon" />
