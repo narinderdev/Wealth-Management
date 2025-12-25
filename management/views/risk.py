@@ -9,6 +9,7 @@ from management.models import (
     CollateralOverviewRow,
     CompositeIndexRow,
     RiskSubfactorsRow,
+    SnapshotSummaryRow,
 )
 from management.views.summary import (
     _build_borrower_summary,
@@ -18,6 +19,7 @@ from management.views.summary import (
     _to_decimal,
     get_borrower_status_context,
     get_preferred_borrower,
+    get_snapshot_summary_map,
 )
 
 
@@ -68,10 +70,11 @@ def risk_view(request):
     ineligibles_sum = sum(
         (_to_decimal(row.ineligibles) for row in CollateralOverviewRow.objects.filter(borrower=borrower))
     )
-    snapshot_text = (
-        f"Risk levels remain manageable, though shifts in AR timing and a buildup of slower-moving inventory warrant closer monitoring. Core operations and liquidity are stable, and industry demand remains in line with recent trends. Continued focus on collections and inventory reduction will help maintain a balanced risk profile.· "
-        
+    snapshot_map = get_snapshot_summary_map(
+        borrower,
+        [SnapshotSummaryRow.SECTION_RISK],
     )
+    snapshot_text = snapshot_map.get(SnapshotSummaryRow.SECTION_RISK)
 
     trend_points = []
     trend_axis = []

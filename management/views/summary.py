@@ -20,6 +20,7 @@ from management.models import (
     Company,
     CompositeIndexRow,
     RiskSubfactorsRow,
+    SnapshotSummaryRow,
 )
 
 
@@ -117,6 +118,51 @@ def get_preferred_borrower(request):
         request.session.pop("selected_borrower_id", None)
     borrower_profile = getattr(request.user, "borrower_profile", None)
     return borrower_profile.borrower if borrower_profile else None
+
+
+SNAPSHOT_EMPTY_MESSAGE = "No snapshot summary available."
+SNAPSHOT_NO_BORROWER_MESSAGE = "No snapshot summary available."
+
+
+def get_snapshot_summary_map(
+    borrower,
+    sections,
+    *,
+    empty_message=SNAPSHOT_EMPTY_MESSAGE,
+    no_borrower_message=SNAPSHOT_NO_BORROWER_MESSAGE,
+):
+    if not sections:
+        return {}
+    if not borrower:
+        return {section: no_borrower_message for section in sections}
+    def _normalize_section(value):
+        if not value:
+            return ""
+        cleaned = []
+        for char in str(value).lower():
+            if char.isalnum():
+                cleaned.append(char)
+            else:
+                cleaned.append("_")
+        normalized = "_".join(part for part in "".join(cleaned).split("_") if part)
+        return normalized
+
+    normalized_map = {
+        _normalize_section(section): section for section in sections
+    }
+    summary_map = {}
+    summaries = SnapshotSummaryRow.objects.filter(borrower=borrower).order_by("-updated_at", "-id")
+    for row in summaries:
+        normalized_section = _normalize_section(row.section)
+        section_key = normalized_map.get(normalized_section)
+        if not section_key or section_key in summary_map:
+            continue
+        text = (row.summary_text or "").strip()
+        summary_map[section_key] = text
+    return {
+        section: (summary_map.get(section) or empty_message)
+        for section in sections
+    }
 
 
 def get_borrower_status_context(request):

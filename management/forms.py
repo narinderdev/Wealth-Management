@@ -5,6 +5,7 @@ from .models import (
     AgingCompositionRow,
     Borrower,
     CollateralOverviewRow,
+    SnapshotSummaryRow,
     Company,
     ConcentrationADODSORow,
     FGCompositionRow,
@@ -182,6 +183,29 @@ class CollateralOverviewForm(BorrowerModelForm):
             "reserves",
             "net_collateral",
         ]
+
+
+class SnapshotSummaryForm(BorrowerModelForm):
+    required_fields = ("borrower", "section")
+
+    class Meta:
+        model = SnapshotSummaryRow
+        fields = ["borrower", "section", "summary_text"]
+        widgets = {
+            "summary_text": forms.Textarea(
+                attrs={
+                    "rows": 4,
+                    "placeholder": "Add snapshot summary text for this section...",
+                }
+            ),
+        }
+
+    def clean_summary_text(self):
+        value = self.cleaned_data.get("summary_text")
+        if value is None:
+            return value
+        trimmed = value.strip()
+        return trimmed or None
 
 
 class MachineryEquipmentForm(BorrowerModelForm):

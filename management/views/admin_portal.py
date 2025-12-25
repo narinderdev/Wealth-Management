@@ -9,6 +9,7 @@ from management.forms import (
     AgingCompositionForm,
     BorrowerForm,
     CollateralOverviewForm,
+    SnapshotSummaryForm,
     CompanyForm,
     ConcentrationADODSOForm,
     FGCompositionForm,
@@ -44,6 +45,7 @@ from management.models import (
     AgingCompositionRow,
     Borrower,
     CollateralOverviewRow,
+    SnapshotSummaryRow,
     Company,
     ConcentrationADODSORow,
     FGCompositionRow,
@@ -99,6 +101,12 @@ COMPONENT_REGISTRY = {
         "title": "Collateral Overview",
         "template": "admin/components/collateralOverview.html",
         "nav_key": "collateral_overview",
+    },
+    "snapshotSummaries": {
+        "title": "Snapshot Summaries",
+        "template": "admin/components/snapshotSummaries.html",
+        "nav_key": "accounts_snapshot_summaries",
+        "description": "Manage borrower snapshot summaries displayed across dashboards.",
     },
     "machineryEquipment": {
         "title": "Machinery & Equipment",
@@ -388,6 +396,13 @@ HANDLERS = {
         model=CollateralOverviewRow,
         form_class=CollateralOverviewForm,
         ordering=["id"],
+        select_related=["borrower", "borrower__company"],
+    ),
+    "snapshotSummaries": ModelComponentHandler(
+        slug="snapshotSummaries",
+        model=SnapshotSummaryRow,
+        form_class=SnapshotSummaryForm,
+        ordering=["borrower__company__company", "borrower__primary_contact", "section"],
         select_related=["borrower", "borrower__company"],
     ),
     "machineryEquipment": ModelComponentHandler(

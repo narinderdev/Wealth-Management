@@ -166,6 +166,47 @@ class CollateralOverviewRow(TimeStampedModel):
 
 
 # -------------------------
+# Snapshot Summaries
+# -------------------------
+class SnapshotSummaryRow(TimeStampedModel):
+    SECTION_ACCOUNTS_RECEIVABLE = "accounts_receivable"
+    SECTION_INVENTORY_SUMMARY = "inventory_summary"
+    SECTION_RISK = "risk"
+    SECTION_FORECAST_LIQUIDITY = "forecast_liquidity"
+    SECTION_FORECAST_SALES_GM = "forecast_sales_gm"
+    SECTION_FORECAST_AR = "forecast_ar"
+    SECTION_FORECAST_INVENTORY = "forecast_inventory"
+    SECTION_WEEK_SUMMARY = "week_summary"
+
+    SECTION_CHOICES = [
+        (SECTION_ACCOUNTS_RECEIVABLE, "Accounts Receivable"),
+        (SECTION_INVENTORY_SUMMARY, "Inventory Summary"),
+        (SECTION_RISK, "Risk"),
+        (SECTION_FORECAST_LIQUIDITY, "Forecast - Liquidity"),
+        (SECTION_FORECAST_SALES_GM, "Forecast - Sales & Gross Margin"),
+        (SECTION_FORECAST_AR, "Forecast - Accounts Receivable"),
+        (SECTION_FORECAST_INVENTORY, "Forecast - Inventory"),
+        (SECTION_WEEK_SUMMARY, "Weekly Summary"),
+    ]
+
+    borrower = models.ForeignKey(
+        "Borrower",
+        on_delete=models.CASCADE,
+        related_name="snapshot_summaries",
+    )
+    section = models.CharField(max_length=64, choices=SECTION_CHOICES)
+    summary_text = models.TextField(null=True, blank=True, verbose_name="Snapshot Summary")
+
+    class Meta:
+        db_table = "snapshot_summaries"
+        unique_together = ("borrower", "section")
+
+    def __str__(self):
+        borrower_label = str(self.borrower) if self.borrower_id else "Unknown borrower"
+        return f"{borrower_label} - {self.get_section_display()}"
+
+
+# -------------------------
 # Sheet: Machinery & Equipment 
 # -------------------------
 class MachineryEquipmentRow(TimeStampedModel):

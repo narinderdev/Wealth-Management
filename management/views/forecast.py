@@ -6,12 +6,13 @@ import json
 from django.contrib.auth.decorators import login_required
 from django.shortcuts import render
 
-from management.models import ForecastRow
+from management.models import ForecastRow, SnapshotSummaryRow
 from management.views.summary import (
     _build_borrower_summary,
     get_borrower_status_context,
     get_preferred_borrower,
     _to_decimal,
+    get_snapshot_summary_map,
 )
 
 
@@ -265,10 +266,23 @@ def forecast_view(request):
             ForecastRow.objects.filter(borrower=borrower)
             .order_by("as_of_date", "period", "created_at", "id")
         )
+    snapshot_sections = [
+        SnapshotSummaryRow.SECTION_FORECAST_LIQUIDITY,
+        SnapshotSummaryRow.SECTION_FORECAST_SALES_GM,
+        SnapshotSummaryRow.SECTION_FORECAST_AR,
+        SnapshotSummaryRow.SECTION_FORECAST_INVENTORY,
+    ]
+    snapshot_map = get_snapshot_summary_map(borrower, snapshot_sections)
     context = _borrower_context(request)
     context.update(get_borrower_status_context(request))
     context["forecast_charts"] = _build_chart_data(rows)
     context["active_tab"] = "forecast"
     context["forecast_charts_json"] = json.dumps(context["forecast_charts"])
     context["price_target"] = _price_target_snapshot()
+    context["forecast_snapshots"] = {
+        "liquidity": snapshot_map.get(SnapshotSummaryRow.SECTION_FORECAST_LIQUIDITY),
+        "sales_gm": snapshot_map.get(SnapshotSummaryRow.SECTION_FORECAST_SALES_GM),
+        "ar": snapshot_map.get(SnapshotSummaryRow.SECTION_FORECAST_AR),
+        "inventory": snapshot_map.get(SnapshotSummaryRow.SECTION_FORECAST_INVENTORY),
+    }
     return render(request, "forecast/forecast.html", context)

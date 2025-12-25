@@ -34,6 +34,7 @@ from management.models import (
     RMIneligibleOverviewRow,
     RiskSubfactorsRow,
     SalesGMTrendRow,
+    SnapshotSummaryRow,
     WIPCategoryHistoryRow,
     WIPIneligibleOverviewRow,
     WIPTop20HistoryRow,
@@ -45,6 +46,7 @@ from management.views.summary import (
     _format_date,
     _safe_str,
     _to_decimal,
+    get_snapshot_summary_map,
     get_borrower_status_context,
     get_preferred_borrower,
 )
@@ -83,14 +85,28 @@ def collateral_dynamic_view(request):
     work_in_progress_range = request.GET.get("work_in_progress_range", "last_12_months")
     work_in_progress_division = request.GET.get("work_in_progress_division", "all")
 
+    snapshot_sections = [
+        SnapshotSummaryRow.SECTION_ACCOUNTS_RECEIVABLE,
+        SnapshotSummaryRow.SECTION_INVENTORY_SUMMARY,
+    ]
+    snapshot_map = get_snapshot_summary_map(borrower, snapshot_sections)
+
     context = {
         "borrower_summary": _build_borrower_summary(borrower),
         "active_section": section,
         "inventory_tab": inventory_tab,
         "active_tab": "collateral_dynamic",
         **get_borrower_status_context(request),
-        **_inventory_context(borrower),
-        **_accounts_receivable_context(borrower, ar_range, ar_division),
+        **_inventory_context(
+            borrower,
+            snapshot_text=snapshot_map.get(SnapshotSummaryRow.SECTION_INVENTORY_SUMMARY),
+        ),
+        **_accounts_receivable_context(
+            borrower,
+            ar_range,
+            ar_division,
+            snapshot_summary=snapshot_map.get(SnapshotSummaryRow.SECTION_ACCOUNTS_RECEIVABLE),
+        ),
         **_finished_goals_context(borrower, finished_goals_range, finished_goals_division),
         **_raw_materials_context(borrower, raw_materials_range, raw_materials_division),
         **_work_in_progress_context(borrower, work_in_progress_range, work_in_progress_division),
@@ -119,6 +135,11 @@ def _week_summary_context(borrower):
         {"label": "Net Cash Flow", "value": "$—"},
         {"label": "Ending Cash", "value": "$—"},
     ]
+    snapshot_map = get_snapshot_summary_map(
+        borrower,
+        [SnapshotSummaryRow.SECTION_WEEK_SUMMARY],
+    )
+    snapshot_summary = snapshot_map.get(SnapshotSummaryRow.SECTION_WEEK_SUMMARY)
 
     def _make_placeholders():
         return {"name": "—", "value": "$—"}
@@ -592,6 +613,7 @@ def _week_summary_context(borrower):
         "liquidity_legend": [],
         "variance_current_rows": [],
         "variance_cumulative_rows": [],
+        "snapshot_summary": snapshot_summary,
     }
 
     if not borrower:
@@ -1279,12 +1301,7 @@ def _week_summary_context(borrower):
                 },
             ],
             "forecast_updated_label": _format_date(report_date) if report_date else "—",
-            "snapshot_summary": (
-                "The forecast highlights tightening liquidity with limited availability across the next 13 weeks. "
-                "Receipts remain volatile and insufficient to fully cover vendor and payroll obligations in several weeks, "
-                "requiring reliance on the borrowing base or timing adjustments. Immediate focus should be placed on collections, "
-                "expense reductions, and negotiating payment terms to maintain stability."
-            ),
+            "snapshot_summary": snapshot_summary,
             "period_label": _format_date(
                 chart_rows[-1]["label"]
                 if chart_rows and chart_rows[-1]["label"]
@@ -1591,7 +1608,7 @@ def _format_compact_currency(value):
     return _format_currency(val)
 
 
-def _inventory_context(borrower):
+def _inventory_context(borrower, snapshot_text=None):
     empty_mix = [
         {"label": item["label"], "percentage_display": "0%", "bar_class": item["bar_class"]}
         for item in CATEGORY_CONFIG
@@ -1608,8 +1625,9 @@ def _inventory_context(borrower):
         for item in CATEGORY_CONFIG
     ]
 
+    resolved_snapshot = snapshot_text or "No snapshot summary available."
     context = {
-        "snapshot_text": "Inventory snapshots will populate here once the latest collateral data arrives.",
+        "snapshot_text": resolved_snapshot,
         "inventory_available_display": "—",
         "inventory_mix": empty_mix,
         "inventory_breakdown": empty_breakdown,
@@ -1641,9 +1659,6 @@ def _inventory_context(borrower):
 
     inventory_available_display = _format_compact_currency(inventory_available_total)
     ineligible_display = _format_currency(inventory_ineligible)
-    snapshot_text = (
-        f"Inventory levels increased this period, primarily in finished goods, while turns softened due to slower sales velocity. Excess and obsolete inventory ticked up, raising the risk profile and influencing NOLV recovery expectations. Raw materials and WIP remained steady with no significant swings"
-    )
 
     mix_total = inventory_total if inventory_total > 0 else Decimal("0")
 
@@ -1938,7 +1953,7 @@ def _inventory_context(borrower):
         )
 
     return {
-        "snapshot_text": snapshot_text,
+        "snapshot_text": resolved_snapshot,
         "inventory_available_display": inventory_available_display,
         "inventory_mix": inventory_mix,
         "inventory_breakdown": inventory_breakdown,
@@ -1947,9 +1962,10 @@ def _inventory_context(borrower):
         "inventory_trend_series": inventory_trend_series,
     }
 
-def _accounts_receivable_context(borrower, range_key="today", division="all"):
+def _accounts_receivable_context(borrower, range_key="today", division="all", snapshot_summary=None):
     normalized_range = _normalize_range(range_key)
     normalized_division = _normalize_division(division)
+    resolved_snapshot = snapshot_summary or "No snapshot summary available."
     base_context = {
         "ar_borrowing_base_kpis": [],
         "ar_aging_chart_buckets": [],
@@ -1964,6 +1980,7 @@ def _accounts_receivable_context(borrower, range_key="today", division="all"):
         "ar_selected_range": normalized_range,
         "ar_division_options": [{"value": "all", "label": "All Divisions"}],
         "ar_selected_division": normalized_division,
+        "accounts_receivable_snapshot_summary": resolved_snapshot,
     }
 
     if not borrower:
@@ -2747,6 +2764,7 @@ def _accounts_receivable_context(borrower, range_key="today", division="all"):
         "ar_selected_range": base_context["ar_selected_range"],
         "ar_division_options": base_context["ar_division_options"],
         "ar_selected_division": base_context["ar_selected_division"],
+        "accounts_receivable_snapshot_summary": base_context["accounts_receivable_snapshot_summary"],
     }
 
 

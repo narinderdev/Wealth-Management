@@ -540,11 +540,7 @@
           </div>
 
           <p class="snapshot-text">
-            Based on {{ price_target.analyst_count }} Wall Street analysts offering {{ price_target.months }} month price
-            targets for {{ price_target.company }} in the last {{ price_target.window_months }} months. The average price
-            target is {{ price_target.avg_target_display }} with a high forecast of {{ price_target.high_target_display }}
-            and a low forecast of {{ price_target.low_target_display }}. The average price target represents a
-            {{ price_target.change_pct_display }} change from the last price of {{ price_target.last_price_display }}.
+            {{ forecast_snapshots.liquidity|linebreaksbr }}
           </p>
         </div>
     
@@ -568,9 +564,7 @@
         <div class="snapshot">
           <div class="label"><span><img src="{% static 'images/borrowing_icon.svg' %}" alt="Snapshot Icon" class="snapshot-icon" /></span>Snapshot Overview</div>
           <p>
-            Sales and gross margin are modeled using recent trailing performance and expected demand patterns. The
-            forecast
-            highlights likely near-term fluctuations followed by a gradual normalization.
+            {{ forecast_snapshots.sales_gm|linebreaksbr }}
           </p>
         </div>
 
@@ -590,8 +584,7 @@
         <div class="snapshot">
           <div class="label"><img src="{% static 'images/borrowing_icon.svg' %}" alt="Snapshot Icon" class="snapshot-icon" />Snapshot Overview</div>
           <p>
-            Accounts receivable is projected from historical collections behavior and recent invoicing trends.
-            Forecast values assume steady DSO with modest seasonality.
+            {{ forecast_snapshots.ar|linebreaksbr }}
           </p>
         </div>
 
@@ -608,8 +601,7 @@
         <div class="snapshot">
           <div class="label"><img src="{% static 'images/borrowing_icon.svg' %}" alt="" class="snapshot-icon" />Snapshot Overview</div>
           <p>
-            Inventory components are forecast using recent turns, production assumptions, and a 12‑month demand outlook.
-            The model anticipates a mild buildup before leveling toward target ranges.
+            {{ forecast_snapshots.inventory|linebreaksbr }}
           </p>
         </div>
 
