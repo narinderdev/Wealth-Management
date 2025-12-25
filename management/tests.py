@@ -7,7 +7,6 @@ from .forms import (
     CompanyForm,
 )
 from .models import Borrower, Company
-from .views.summary import _collateral_row_payload
 
 
 class FormValidationTests(TestCase):
@@ -91,20 +90,3 @@ class FormValidationTests(TestCase):
         self.assertFalse(form.is_valid())
         self.assertIn("main_type", form.errors)
         self.assertIn("sub_type", form.errors)
-
-    def test_collateral_overview_snapshot_summary_saved(self):
-        borrower = Borrower.objects.create(company=self.company, primary_contact="Owner", update_interval="Monthly")
-        form = CollateralOverviewForm(
-            data={
-                "borrower": borrower.pk,
-                "main_type": "Inventory",
-                "sub_type": "Finished Goods",
-                "snapshot_summary": "Quarter-end snapshot.",
-            }
-        )
-        self.assertTrue(form.is_valid())
-        instance = form.save()
-        self.assertEqual(instance.snapshot_summary, "Quarter-end snapshot.")
-
-        payload = _collateral_row_payload(instance)
-        self.assertEqual(payload.get("snapshot_summary"), "Quarter-end snapshot.")

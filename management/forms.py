@@ -170,7 +170,6 @@ class CollateralOverviewForm(BorrowerModelForm):
             "borrower",
             "main_type",
             "sub_type",
-            "snapshot_summary",
             "beginning_collateral",
             "ineligibles",
             "eligible_collateral",
@@ -183,14 +182,6 @@ class CollateralOverviewForm(BorrowerModelForm):
             "reserves",
             "net_collateral",
         ]
-        widgets = {
-            "snapshot_summary": forms.Textarea(
-                attrs={
-                    "rows": 3,
-                    "placeholder": "Add a short summary of this snapshot...",
-                }
-            ),
-        }
 
 
 class MachineryEquipmentForm(BorrowerModelForm):

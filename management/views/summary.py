@@ -410,7 +410,6 @@ def _collateral_row_payload(row, limit_map=None):
         "pre_reserve_collateral": _format_currency(row.pre_reserve_collateral),
         "reserves": _format_currency(row.reserves),
         "net_collateral": _format_currency(row.net_collateral),
-        "snapshot_summary": _safe_str(row.snapshot_summary, default=""),
     }
 
 
