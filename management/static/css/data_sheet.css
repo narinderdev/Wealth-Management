@@ -199,7 +199,7 @@
 }
 .ds-confirm{
   width:min(420px, 100%);
-  background:#0f172a;
+  background:#fff;
   color:#fff;
   border-radius:18px;
   box-shadow:0 45px 80px rgba(15,23,42,.5);
