@@ -52,8 +52,9 @@ def limits_view(request):
         ineligibles = []
     limits_page_number = request.GET.get("limits_page", 1)
     ineligibles_page_number = request.GET.get("ineligibles_page", 1)
-    limits_paginator = Paginator(limits, 20)
-    ineligibles_paginator = Paginator(ineligibles, 20)
+    page_size = 20
+    limits_paginator = Paginator(limits, page_size)
+    ineligibles_paginator = Paginator(ineligibles, page_size)
     context["limit_page"] = limits_paginator.get_page(limits_page_number)
     context["ineligible_page"] = ineligibles_paginator.get_page(ineligibles_page_number)
     return render(request, "limits/limits.html", context)

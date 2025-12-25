@@ -282,8 +282,8 @@
       left: 0;
       transform: translate(-50%, -100%);
       pointer-events: none;
-      background: rgba(15, 23, 42, .95);
-      color: #fff;
+      background: #F8FAFC;
+      color: #0f172a;
       padding: 6px 10px;
       border-radius: 6px;
       font-size: 11px;
@@ -292,6 +292,7 @@
       transition: opacity .2s ease;
       white-space: nowrap;
       z-index: 5;
+      box-shadow: 0 10px 20px rgba(15, 23, 42, .18);
     }
 
     .chart-tooltip strong {
@@ -470,11 +471,15 @@
     }
 
     .point {
-      fill: var(--blue);
+      fill: #fff;
+      stroke: var(--blue);
+      stroke-width: 2;
     }
 
     .point.fore {
-      fill:#FC912E;;
+      fill: #fff;
+      stroke: #FC912E;
+      stroke-width: 2;
     }
 .graph {
       margin-top: 18px;

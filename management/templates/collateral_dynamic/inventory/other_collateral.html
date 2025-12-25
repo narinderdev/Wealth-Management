@@ -209,6 +209,14 @@
     overflow:auto;
     max-height:420px;
   }
+  .other-collateral .table-scroll.value-analysis-scroll{
+    overflow:visible;
+    max-height:none;
+  }
+  .other-collateral .table-scroll.asset-register-scroll{
+    overflow:visible;
+    max-height:none;
+  }
   .other-collateral table.data{width:100%;border-collapse:collapse;font-size:12px  ;min-width: 980px;}
   .other-collateral table.data.value-analysis-table{table-layout:fixed;}
   .other-collateral table.data.value-analysis-table col.col-id{width:6%;}
@@ -237,6 +245,9 @@
     vertical-align:bottom;
     padding-bottom:8px;
     font-size:9px;
+  }
+  .other-collateral table.data.value-analysis-table thead tr:first-child th.group-center{
+    text-align:center;
   }
   .other-collateral table.data.value-analysis-table thead tr.grouphead th{
     padding-top:2px;
@@ -385,7 +396,7 @@
         <button type="button" data-action="next">Next</button>
       </div>
     </div>
-    <div class="table-scroll">
+    <div class="table-scroll value-analysis-scroll">
       <table class="data" aria-label="Value Analysis Table" id="value-analysis-table" data-empty="Value analysis data not available.">
         <thead>
           <tr>
@@ -394,7 +405,7 @@
             <th rowspan="2">Manufacturer</th>
             <th class="numR" colspan="2">Appraised Values</th>
             <th class="numR" colspan="2">Estimated</th>
-            <th class="numR" colspan="4">Variance</th>
+            <th class="group-center" colspan="4">Variance</th>
           </tr>
           <tr class="grouphead">
             <th class="numR">FMV</th><th class="numR">OLV</th>
@@ -406,7 +417,7 @@
         <tbody>
           {% for row in other_collateral_value_analysis_rows %}
             <tr>
-              <td>{{ row.id }}</td>
+              <td>{{ row.db_id }}</td>
               <td>{{ row.equipment_type }}</td>
               <td>{{ row.manufacturer }}</td>
               <td class="numR">{{ row.fmv }}</td>
@@ -443,7 +454,7 @@
         <button type="button" data-action="next">Next</button>
       </div>
     </div>
-    <div class="table-scroll">
+    <div class="table-scroll asset-register-scroll">
       <table class="data" aria-label="Appraisal Asset Register" id="asset-register-table" data-empty="Asset register data not available.">
         <thead>
           <tr>
@@ -460,7 +471,7 @@
         <tbody>
           {% for row in other_collateral_asset_rows %}
             <tr>
-              <td>{{ row.id }}</td>
+              <td>{{ row.item_id }}</td>
               <td>{{ row.equipment_type }}</td>
               <td>{{ row.manufacturer }}</td>
               <td>{{ row.serial_number }}</td>

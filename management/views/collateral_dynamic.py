@@ -5027,7 +5027,7 @@ def _other_collateral_context(borrower):
         )
         value_analysis_rows.append(
             {
-                "id": row.id,
+                "db_id": row.pk,
                 "equipment_type": row.equipment_type or "—",
                 "manufacturer": row.manufacturer or "—",
                 "fmv": _format_currency(fmv),
@@ -5042,7 +5042,7 @@ def _other_collateral_context(borrower):
         )
         asset_rows.append(
             {
-                "id": row.id,
+                "item_id": row.pk,
                 "equipment_type": row.equipment_type or "—",
                 "manufacturer": row.manufacturer or "—",
                 "serial_number": _safe_str(row.serial_number),
