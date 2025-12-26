@@ -914,7 +914,18 @@
       return points.map((p, i) => (i === 0 ? `M ${p[0]} ${p[1]}` : `L ${p[0]} ${p[1]}`)).join(" ");
     }
 
-    const LEVEL_KEYS = new Set(["availableLiquidity", "accountsReceivable"]);
+    const LEVEL_KEYS = new Set([
+      "availableCollateral",
+      "revolverBalance",
+      "availableLiquidity",
+      "sales",
+      "grossMargin",
+      "accountsReceivable",
+      "finishedGoods",
+      "weeksOfSupply",
+      "rawMaterials",
+      "workInProcess",
+    ]);
 
     function renderLevelCard(el, key) {
       const cfg = CHARTS[key];
