@@ -14,6 +14,9 @@
       --rk-muted:#6b7280;
       --rk-accent:#0b57d0;
       --rk-shadow:0 1px 0 rgba(17,24,39,.02), 0 8px 24px rgba(17,24,39,.06);
+      max-width: 1120px;
+      width: 100%;
+      margin: 0 auto;
       padding: 12px;
     }
 
@@ -129,6 +132,10 @@ line-height: 27px; /* 150% */
       margin-bottom:14px;
     }
 
+    .risk-page .risk-main-grid > .panel{
+      min-width: 0;
+    }
+
     /* Composite inside layout: Score | Trend */
     .risk-page .composite-inner{
       display:grid;
@@ -203,32 +210,33 @@ line-height: 27px; /* 150% */
     /* Trend chart */
     .risk-page .chartbox{
       position:relative;
+      padding:0 6px 0 28px;
     }
 
     .risk-page .chart{
       width:100%;
-      height:250px;
+      height:210px;
       /* border-top:1px solid #eef4fb; */
-      padding-top:10px;
+      padding-top:6px;
     }
 
     .risk-page .trend-axis{
       display:flex;
       justify-content:space-between;
-      margin-top:8px;
-      font-size:10px;
+      margin-top:6px;
+      font-size:9px;
       color:#94a3b8;
     }
 
     .risk-page .y-axis{
       position:absolute;
-      left:6px;
-      top:52px;
-      bottom:48px;
+      left:0;
+      top:38px;
+      bottom:40px;
       display:flex;
       flex-direction:column;
       justify-content:space-between;
-      font-size:10px;
+      font-size:9px;
       color:#94a3b8;
       pointer-events:none;
     }
@@ -255,24 +263,45 @@ line-height: 27px; /* 150% */
       width:100%;
       border-collapse:collapse;
       font-size:12px;
+      table-layout: fixed;
+    }
+
+    .risk-page .impact-table{
+      overflow: visible;
     }
 
     .risk-page .impact-table th{
       font-size:11px;
       color:#64748b;
       font-weight:700;
-      padding:10px 8px;
+      padding:8px 6px;
       border-bottom:1px solid var(--rk-line);
       text-align:left;
-      white-space:nowrap;
+      white-space:normal;
+      word-break:break-word;
       background-color: #FAFAFA;
     }
 
     .risk-page .impact-table td{
-      padding:10px 8px;
+      padding:8px 6px;
       border-bottom:1px solid #f1f5f9;
       color:#0f172a;
-      white-space:nowrap;
+      white-space:normal;
+      word-break:break-word;
+    }
+
+    .risk-page .impact-table th:nth-child(1),
+    .risk-page .impact-table td:nth-child(1){
+      width:40%;
+    }
+
+    .risk-page .impact-table th:nth-child(2),
+    .risk-page .impact-table td:nth-child(2),
+    .risk-page .impact-table th:nth-child(3),
+    .risk-page .impact-table td:nth-child(3),
+    .risk-page .impact-table th:nth-child(4),
+    .risk-page .impact-table td:nth-child(4){
+      width:20%;
     }
 
     .risk-page .impact-table td:last-child,
@@ -307,25 +336,26 @@ line-height: 27px; /* 150% */
 
     .risk-page .grid2{
       display:grid;
-      grid-template-columns:1fr 1fr;
+      grid-template-columns:repeat(2, minmax(0, 1fr));
       gap:16px;
       margin-top:12px;
     }
 
     .risk-page .metric{
-      --metric-donut:82px;
-      --metric-gap:14px;
-      --metric-label:156px;
-      --metric-label-gap:14px;
-      padding:18px 20px;
+      --metric-donut:74px;
+      --metric-gap:12px;
+      --metric-label:140px;
+      --metric-label-gap:12px;
+      padding:14px 16px;
       border-radius:14px;
       background:#fff;
       border:1px solid #e4ecf7;
       /* box-shadow:0 12px 24px rgba(15, 23, 42, .08); */
+      min-width: 0;
     }
 
     .risk-page .metric-title{
-      font-size:22px;
+      font-size:20px;
       font-weight:700;
       color:#404040;
     }
@@ -334,35 +364,34 @@ line-height: 27px; /* 150% */
       display:grid;
       grid-template-columns:var(--metric-donut) 1fr;
       gap:var(--metric-gap);
-      margin-top:20px;
+      margin-top:16px;
       align-items:start;
+      min-width: 0;
     }
 
     .risk-page .bars{
       position:relative;
       display:flex;
       flex-direction:column;
-      gap:14px;
-      padding:26px 6px 4px 0;
+      gap:12px;
+      padding:22px 4px 4px 0;
+      min-width: 0;
     }
 
     .risk-page .bars > .scale{
-      color: #585858;
-
-text-align: right;
-font-size: 16px;
-font-style: normal;
-font-weight: 700;
-line-height: normal;
+      color:#6b7280;
+      text-align:right;
+      font-size:12px;
+      font-style:normal;
+      font-weight:700;
+      line-height:normal;
       position:absolute;
       top:0;
       left:calc(var(--metric-label) + var(--metric-label-gap));
       right:0;
       display:flex;
       justify-content:space-between;
-      gap:18px;
-
-      color:#6b7280;
+      gap:10px;
     }
 
     .risk-page .barrow{
@@ -374,25 +403,20 @@ line-height: normal;
     }
 
     .risk-page .barrow .lbl{
-      color: #404040;
-
-text-align: right;
-
-font-size: 16px;
-font-style: normal;
-font-weight: 400;
-line-height: normal;
- 
+      text-align:right;
+      font-size:13px;
+      font-style:normal;
+      font-weight:400;
+      line-height:1.2;
       color:#475467;
       overflow:visible;
       text-overflow:clip;
       white-space:normal;
       word-break:break-word;
-      line-height:1.2;
     }
 
     .risk-page .track{
-      height:9px;
+      height:8px;
       /* background:#eaf0fb; */
       border-radius:999px;
       overflow:hidden;
@@ -421,6 +445,10 @@ line-height: normal;
       pointer-events:none;
     }
     .risk-page .barrow:hover .bar-tooltip{opacity:1;}
+
+    .risk-page .metric .donut text{
+      font-size:10px;
+    }
 
     @media (max-width:980px){
       .risk-page .risk-main-grid{ grid-template-columns:1fr; }
@@ -494,7 +522,7 @@ line-height: normal;
             <div class="pill-list">
               {% for pill in risk.pills %}
                 <div class="pill2 {{ pill.class }}">
-                 <p style="font-size: 16px; font-weight: 600 ; margin-right: 8px;">{{ pill.value }}</p>  <p style="font-weight: 400;">{{ pill.label }}</p>
+                 <p style="font-size: 14px; font-weight: 600; margin-right: 8px;">{{ pill.value }}</p>  <p style="font-size: 14px; font-weight: 400;">{{ pill.label }}</p>
                 </div>
               {% endfor %}
             </div>
@@ -551,15 +579,15 @@ line-height: normal;
 
       <div class="panel-body impact-table">
         <table aria-label="High impact factors">
-          <thead style="background-color: #f9fcff; font-size: 14px !important;">
+          <thead>
             <tr>
-              <th style="font-size: 14px">Risk</th>
-              <th style="font-size: 14px">Current Risk</th>
-              <th style="font-size: 14px">Prior Risk</th>
-              <th style="font-size: 14px">Change</th>
+              <th>Risk</th>
+              <th>Current Risk</th>
+              <th>Prior Risk</th>
+              <th>Change</th>
             </tr>
           </thead>
-          <tbody style="font-size: 14px ; color: #344256;">
+          <tbody style="color: #344256;">
             {% for factor in risk.high_impact %}
               <tr>
                 <td >{{ factor.risk }}</td>
