@@ -171,6 +171,7 @@ class CollateralOverviewRow(TimeStampedModel):
 class SnapshotSummaryRow(TimeStampedModel):
     SECTION_ACCOUNTS_RECEIVABLE = "accounts_receivable"
     SECTION_INVENTORY_SUMMARY = "inventory_summary"
+    SECTION_OTHER_COLLATERAL = "other_collateral"
     SECTION_RISK = "risk"
     SECTION_FORECAST_LIQUIDITY = "forecast_liquidity"
     SECTION_FORECAST_SALES_GM = "forecast_sales_gm"
@@ -181,6 +182,7 @@ class SnapshotSummaryRow(TimeStampedModel):
     SECTION_CHOICES = [
         (SECTION_ACCOUNTS_RECEIVABLE, "Accounts Receivable"),
         (SECTION_INVENTORY_SUMMARY, "Inventory Summary"),
+        (SECTION_OTHER_COLLATERAL, "Other Collateral"),
         (SECTION_RISK, "Risk"),
         (SECTION_FORECAST_LIQUIDITY, "Forecast - Liquidity"),
         (SECTION_FORECAST_SALES_GM, "Forecast - Sales & Gross Margin"),

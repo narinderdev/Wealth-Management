@@ -90,6 +90,7 @@ def collateral_dynamic_view(request):
     snapshot_sections = [
         SnapshotSummaryRow.SECTION_ACCOUNTS_RECEIVABLE,
         SnapshotSummaryRow.SECTION_INVENTORY_SUMMARY,
+        SnapshotSummaryRow.SECTION_OTHER_COLLATERAL,
     ]
     snapshot_map = get_snapshot_summary_map(borrower, snapshot_sections)
 
@@ -114,7 +115,7 @@ def collateral_dynamic_view(request):
         **_work_in_progress_context(borrower, work_in_progress_range, work_in_progress_division),
         **_other_collateral_context(
             borrower,
-            snapshot_summary=snapshot_map.get(SnapshotSummaryRow.SECTION_INVENTORY_SUMMARY),
+            snapshot_summary=snapshot_map.get(SnapshotSummaryRow.SECTION_OTHER_COLLATERAL),
         ),
         **_liquidation_model_context(borrower),
     }
@@ -5132,8 +5133,12 @@ DEFAULT_OTHER_COLLATERAL_CHART = {
 
 
 def _other_collateral_context(borrower, snapshot_summary=None):
+    if not borrower:
+        resolved_snapshot = "Select a borrower to view snapshot summary."
+    else:
+        resolved_snapshot = snapshot_summary or "No snapshot summary available."
     base_context = {
-        "other_collateral_snapshot_summary": snapshot_summary or "No snapshot summary available.",
+        "other_collateral_snapshot_summary": resolved_snapshot,
         "other_collateral_value_monitor": [],
         "other_collateral_value_trend_config": {
             "title": "Value Trend",
@@ -5144,6 +5149,9 @@ def _other_collateral_context(borrower, snapshot_summary=None):
         "other_collateral_value_analysis_rows": [],
         "other_collateral_asset_rows": [],
     }
+
+    if not borrower:
+        return base_context
 
     equipment_rows = list(
         MachineryEquipmentRow.objects.filter(borrower=borrower).order_by("created_at", "id")
@@ -5362,6 +5370,7 @@ def _other_collateral_context(borrower, snapshot_summary=None):
     } if labels else base_context["other_collateral_value_trend_config"]
 
     return {
+        **base_context,
         "other_collateral_value_monitor": value_monitor_cards,
         "other_collateral_value_trend_config": chart_config,
         "other_collateral_value_analysis_rows": value_analysis_rows,
