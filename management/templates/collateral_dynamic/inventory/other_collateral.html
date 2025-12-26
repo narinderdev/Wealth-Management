@@ -38,6 +38,8 @@
     margin-top:12px;
     margin-left:10px
   }
+  .other-collateral .snapshot-card{margin-top:6px;}
+  .other-collateral .snapshot-card + .card{margin-top:8px;}
   .other-collateral .section{margin-top:12px;}
   .other-collateral .card-head{
     display:flex;
@@ -241,6 +243,11 @@
     font-size:9px;
     border-bottom:none;
   }
+  .other-collateral table.data.value-analysis-table thead tr:first-child th[colspan]{
+    padding-left:0;
+    padding-right:0;
+    text-align:center;
+  }
   .other-collateral table.data.value-analysis-table thead tr:first-child th[rowspan]{
     text-align:left;
     vertical-align:bottom;
@@ -306,9 +313,26 @@
     opacity:.4;
     cursor:not-allowed;
   }
+  .other-collateral .snapshot-text{
+    padding:10px 14px 14px;
+    color:#667085;
+    font-size:14px;
+    line-height:1.6;
+  }
 </style>
 
 <div class="page other-collateral">
+  <div class="card snapshot-card">
+    <div class="card-head">
+      <img src="{% static 'images/borrowing_icon.svg' %}"
+          alt="Current Update Icon"
+          class="current-update-icon" />
+      Snapshot Summary
+    </div>
+    <div class="divider"></div>
+    <div class="snapshot-text">{{ other_collateral_snapshot_summary|linebreaksbr }}</div>
+  </div>
+
   <div class="card">
     <div class="card-head">
       <img src="{% static 'images/borrowing_icon.svg' %}"

@@ -112,7 +112,10 @@ def collateral_dynamic_view(request):
         **_finished_goals_context(borrower, finished_goals_range, finished_goals_division),
         **_raw_materials_context(borrower, raw_materials_range, raw_materials_division),
         **_work_in_progress_context(borrower, work_in_progress_range, work_in_progress_division),
-        **_other_collateral_context(borrower),
+        **_other_collateral_context(
+            borrower,
+            snapshot_summary=snapshot_map.get(SnapshotSummaryRow.SECTION_INVENTORY_SUMMARY),
+        ),
         **_liquidation_model_context(borrower),
     }
     return render(request, "collateral_dynamic/accounts_receivable.html", context)
@@ -5128,8 +5131,9 @@ DEFAULT_OTHER_COLLATERAL_CHART = {
 }
 
 
-def _other_collateral_context(borrower):
+def _other_collateral_context(borrower, snapshot_summary=None):
     base_context = {
+        "other_collateral_snapshot_summary": snapshot_summary or "No snapshot summary available.",
         "other_collateral_value_monitor": [],
         "other_collateral_value_trend_config": {
             "title": "Value Trend",
