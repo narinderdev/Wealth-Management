@@ -1,16 +1,14 @@
 {% for node in nodes %}
+{% with row_text=node.row.detail|default:node.row.label %}
+{% with row_text_lower=row_text|lower %}
 <tr
-  class="cc-row level-{{ level }} {% if level > 0 %}is-hidden{% endif %}"
+  class="cc-row level-{{ level }} {% if level > 0 %}is-hidden{% endif %}{% if 'finished goods' in row_text_lower or 'raw material' in row_text_lower or 'work in process' in row_text_lower or 'work-in-process' in row_text_lower %} cc-row--sub{% endif %}"
   data-id="{{ node.id }}"
   data-level="{{ level }}"
   {% if parent_id %}data-parent="{{ parent_id }}"{% endif %}
 >
-  <td class="cc-label" style="--lvl:{{ level }};">
-    {% if level > 0 %}
-      {{ node.row.detail|default:node.row.label }}
-    {% else %}
-      {{ node.row.label }}
-    {% endif %}
+  <td class="cc-label{% if 'finished goods' in row_text_lower or 'raw material' in row_text_lower or 'work in process' in row_text_lower or 'work-in-process' in row_text_lower %} cc-label--sub{% endif %}" style="--lvl:{{ level }};">
+    {{ row_text }}
   </td>
 
   <td>{{ node.row.beginning_collateral }}</td>
@@ -38,6 +36,8 @@
     {% endif %}
   </td>
 </tr>
+{% endwith %}
+{% endwith %}
 
 {% if node.children %}
   {% include "partials/collateral_rows.html" with nodes=node.children level=level|add:1 parent_id=node.id parent_label=node.row.label %}

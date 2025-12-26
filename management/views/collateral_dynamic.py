@@ -6729,7 +6729,10 @@ def _liquidation_model_context(borrower):
         for row in liquidation_net_orderly_rows
         if row.get("label")
     }
-    payroll_totals_row = _build_nolv_row_from_amounts("Total", _sum_nolv_rows(payroll_rows))
+    payroll_totals_row = _build_nolv_row_from_amounts(
+        "Total Payroll Costs",
+        _sum_nolv_rows(payroll_rows),
+    )
     operating_totals_row = _build_nolv_row_from_amounts(
         "Total Operating Costs", _sum_nolv_rows(operating_rows)
     )
@@ -6800,6 +6803,31 @@ def _liquidation_model_context(borrower):
     total_cost = Decimal("0")
     total_selling = Decimal("0")
     total_gross = Decimal("0")
+    def _pick_fg_history_label(history_row):
+        category = _safe_str(history_row.category)
+        type_label = _safe_str(history_row.type)
+        generic = {
+            "in-line",
+            "inline",
+            "in line",
+            "total in-line",
+            "total inline",
+            "total in line",
+            "excess",
+            "total",
+        }
+        category_lower = category.lower()
+        type_lower = type_label.lower()
+        if category:
+            if category_lower in generic and type_label:
+                return type_label
+            return category
+        if type_label:
+            return type_label
+        if history_row.division:
+            return _safe_str(history_row.division)
+        return _format_date(history_row.as_of_date)
+
     for history_row in FGGrossRecoveryHistoryRow.objects.filter(borrower=borrower).order_by("id"):
         cost_value = _decimal_or_none(history_row.cost)
         selling_value = _decimal_or_none(history_row.selling_price)
@@ -6836,11 +6864,12 @@ def _liquidation_model_context(borrower):
             wos_display = f"{wos_value:,.1f}"
         else:
             wos_display = "0"
+        label = _pick_fg_history_label(history_row)
         history_rows.append(
             {
                 "date": _format_date(history_row.as_of_date),
                 "division": _safe_str(history_row.division),
-                "category": _safe_str(history_row.category),
+                "category": label,
                 "type": _safe_str(history_row.type),
                 "cost": _format_currency(cost_value),
                 "selling": _format_currency(selling_value),
@@ -6854,10 +6883,7 @@ def _liquidation_model_context(borrower):
                     history_row.created_at or datetime.min,
                     history_row.id or 0,
                 ),
-                "_label": _safe_str(history_row.category)
-                or _safe_str(history_row.type)
-                or _safe_str(history_row.division)
-                or _format_date(history_row.as_of_date),
+                "_label": label,
             }
         )
     if history_rows:
@@ -6923,26 +6949,32 @@ def _liquidation_model_context(borrower):
                 if not existing or row.get("_row_key") > existing.get("_row_key", (date.min, datetime.min, 0)):
                     row_lookup[matched_key] = row
 
-        ordered_rows = []
-        for label in display_order:
-            match = row_lookup.get(label)
-            if match:
-                match["category"] = label
-                ordered_rows.append(match)
-            else:
-                ordered_rows.append(
-                    {
-                        "category": label,
-                        "cost": _format_currency(Decimal("0")),
-                        "selling": _format_currency(Decimal("0")),
-                        "gross": _format_currency(Decimal("0")),
-                        "pct_cost": _format_pct(Decimal("0")),
-                        "pct_sp": _format_pct(Decimal("0")),
-                        "wos": "0",
-                        "gr_pct": _format_pct(Decimal("0")),
-                    }
-                )
-        history_rows = ordered_rows
+        if row_lookup:
+            ordered_rows = []
+            for label in display_order:
+                match = row_lookup.get(label)
+                if match:
+                    match["category"] = label
+                    ordered_rows.append(match)
+                else:
+                    ordered_rows.append(
+                        {
+                            "category": label,
+                            "cost": _format_currency(Decimal("0")),
+                            "selling": _format_currency(Decimal("0")),
+                            "gross": _format_currency(Decimal("0")),
+                            "pct_cost": _format_pct(Decimal("0")),
+                            "pct_sp": _format_pct(Decimal("0")),
+                            "wos": "0",
+                            "gr_pct": _format_pct(Decimal("0")),
+                        }
+                    )
+            history_rows = ordered_rows
+        else:
+            history_rows.sort(key=lambda row: row.get("_row_key", (date.min, datetime.min, 0)))
+            for row in history_rows:
+                row.pop("_row_key", None)
+                row.pop("_label", None)
     history_totals = {
         "cost": "—",
         "selling": "—",

@@ -932,7 +932,7 @@ gap: 0px;
                   <td colspan="9">{{ item.label }}</td>
                 </tr>
               {% else %}
-                <tr{% if item.row.label == "Total" or item.row.label == "Total Operating Costs" or item.row.label == "Total Liquidation Costs" or item.row.label == "Net Recovery" %} class="nolv-total"{% endif %}>
+                <tr{% if item.row.label == "Total Payroll Costs" or item.row.label == "Total Operating Costs" or item.row.label == "Total Liquidation Costs" or item.row.label == "Net Recovery" %} class="nolv-total"{% endif %}>
                   <td class="row-label">{{ item.row.label }}</td>
                   <td class="num">{{ item.row.fg }}</td>
                   <td class="num">{% if item.row.fg_pct != "—" %}{{ item.row.fg_pct }}{% endif %}</td>

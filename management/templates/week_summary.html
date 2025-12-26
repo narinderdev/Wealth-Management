@@ -577,7 +577,7 @@
                 {% for forecast_label in week_summary.cashflow_forecast_labels %}
                   <th>{{ forecast_label|safe }}</th>
                 {% endfor %}
-                <th>13-Week<br/>Total</th>
+                <!-- <th>13-Week<br/>Total</th> -->
               </tr>
             </thead>
             <tbody>
@@ -589,7 +589,7 @@
                     {% for forecast in row.forecasts %}
                       <td>{{ forecast }}</td>
                     {% endfor %}
-                    <td>{{ row.total }}</td>
+                    <!-- <td>{{ row.total }}</td> -->
                   </tr>
                 {% endfor %}
               {% else %}
@@ -620,7 +620,7 @@
                 {% for forecast_label in week_summary.cashflow_forecast_labels %}
                   <th>{{ forecast_label|safe }}</th>
                 {% endfor %}
-                <th>13-Week<br/>Total</th>
+                <!-- <th>13-Week<br/>Total</th> -->
               </tr>
             </thead>
             <tbody>
@@ -632,7 +632,7 @@
                     {% for forecast in row.forecasts %}
                       <td>{{ forecast }}</td>
                     {% endfor %}
-                    <td>{{ row.total }}</td>
+                    <!-- <td>{{ row.total }}</td> -->
                   </tr>
                 {% endfor %}
               {% else %}
@@ -663,7 +663,7 @@
             {% for label in week_summary.availability_week_labels %}
               <th>{{ label }}</th>
             {% endfor %}
-            <th>13-Week<br/>Total</th>
+            <!-- <th>13-Week<br/>Total</th> -->
           </tr>
         </thead>
         <tbody>
@@ -675,7 +675,7 @@
                 {% for value in row.weeks %}
                   <td>{{ value }}</td>
                 {% endfor %}
-                <td>{{ row.total }}</td>
+                <!-- <td>{{ row.total }}</td> -->
               </tr>
             {% endfor %}
             {% else %}
