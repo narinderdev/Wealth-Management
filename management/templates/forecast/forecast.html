@@ -413,6 +413,126 @@
       margin: 14px auto;
     }
 
+    .level-wrap {
+      padding: 6px 10px 12px;
+    }
+
+    .level-chart {
+      position: relative;
+      width: 100%;
+      height: 200px;
+    }
+
+    .level-chart.big {
+      height: 230px;
+    }
+
+    .level-plot {
+      position: relative;
+      width: 100%;
+      height: 100%;
+    }
+
+    .level-border {
+      position: absolute;
+      left: calc(var(--l) * 1%);
+      top: calc(var(--t) * 1%);
+      width: calc(var(--w) * 1%);
+      height: calc(var(--h) * 1%);
+      border: 1px solid var(--border);
+      border-radius: 4px;
+      box-sizing: border-box;
+      background: #fff;
+    }
+
+    .level-grid-line {
+      position: absolute;
+      left: calc(var(--l) * 1%);
+      width: calc(var(--w) * 1%);
+      height: 1px;
+      top: calc(var(--y) * 1%);
+      background: var(--grid);
+    }
+
+    .level-axis-label {
+      position: absolute;
+      color: #9CA3AF;
+      font-size: 11px;
+      white-space: nowrap;
+      z-index: 6;
+    }
+
+    .level-axis-label.y {
+      left: calc(var(--x) * 1%);
+      top: calc(var(--y) * 1%);
+      transform: translate(-100%, -50%);
+      text-align: right;
+    }
+
+    .level-axis-label.x {
+      left: calc(var(--x) * 1%);
+      top: calc(var(--y) * 1%);
+      transform: translate(-50%, 0);
+      text-align: center;
+      line-height: 1.15;
+    }
+
+    .level-axis-label.x span {
+      display: block;
+    }
+
+    .level-area {
+      position: absolute;
+      inset: 0;
+      background: linear-gradient(180deg, rgba(129, 90, 245, 0.35) 0%, rgba(129, 90, 245, 0.06) 70%);
+      pointer-events: none;
+      z-index: 2;
+    }
+
+    .level-area.forecast {
+      background: linear-gradient(180deg, rgba(252, 145, 46, 0.35) 0%, rgba(252, 145, 46, 0.08) 70%);
+    }
+
+    .level-line-layer {
+      position: absolute;
+      inset: 0;
+      pointer-events: none;
+      z-index: 3;
+    }
+
+    .level-line-segment {
+      position: absolute;
+      height: 2px;
+      background: var(--line-color, #7e5bf6);
+      border-radius: 999px;
+      transform-origin: 0 50%;
+    }
+
+    .level-point {
+      position: absolute;
+      width: 6px;
+      height: 6px;
+      border-radius: 50%;
+      background: #fff;
+      border: 2px solid var(--line-color, #7e5bf6);
+      transform: translate(-50%, -50%);
+      left: calc(var(--x) * 1%);
+      top: calc(var(--y) * 1%);
+      z-index: 4;
+    }
+
+    .level-hit {
+      position: absolute;
+      width: 14px;
+      height: 14px;
+      transform: translate(-50%, -50%);
+      left: calc(var(--x) * 1%);
+      top: calc(var(--y) * 1%);
+      border-radius: 50%;
+      cursor: pointer;
+      z-index: 5;
+    }
+
     @media (max-width: 880px) {
       .chart-card.chart-big {
         width: 100%;
@@ -794,6 +914,252 @@
       return points.map((p, i) => (i === 0 ? `M ${p[0]} ${p[1]}` : `L ${p[0]} ${p[1]}`)).join(" ");
     }
 
+    const LEVEL_KEYS = new Set(["availableLiquidity", "accountsReceivable"]);
+
+    function renderLevelCard(el, key) {
+      const cfg = CHARTS[key];
+      const isBig = el.classList.contains("chart-big");
+
+      if (!cfg || !cfg.labels?.length) {
+        el.innerHTML = `<div class="card-pad"><p class="card-title">Awaiting forecast data.</p></div>`;
+        return;
+      }
+
+      const actual = Array.isArray(cfg.actual) ? cfg.actual : [];
+      const forecast = Array.isArray(cfg.forecast) ? cfg.forecast : [];
+      const total = cfg.labels.length || actual.length + forecast.length;
+      const series = Array.from({ length: total }, (_, i) => {
+        if (i < actual.length) return actual[i];
+        const idx = i - actual.length;
+        return idx < forecast.length ? forecast[idx] : null;
+      });
+      const values = series.filter(v => v !== null && v !== undefined);
+      if (!values.length) {
+        el.innerHTML = `<div class="card-pad"><p class="card-title">Awaiting forecast data.</p></div>`;
+        return;
+      }
+
+      let min = Math.min(...values);
+      let max = Math.max(...values);
+      const range = (max - min) || 1;
+      min -= range * 0.12;
+      max += range * 0.12;
+
+      el.innerHTML = `
+        <div class="card-pad">
+          <div class="card-top">
+            <div class="card-title">
+             <img src="{% static 'images/borrowing_icon.svg' %}"
+          alt="Current Update Icon"
+          class="current-update-icon" />
+              ${cfg.title}
+            </div>
+            <div class="legend" aria-label="legend">
+              <div class="litem"><span class="swatch"></span>${cfg.pastLabel || "Actual"}</div>
+              <div class="litem"><span class="swatch orange"></span>${cfg.forecastLabel || "Forecast"}</div>
+            </div>
+          </div>
+          <div class="seg"><span>${cfg.pastLabel || "Actual"}</span><span>${cfg.forecastLabel || "Forecast"}</span></div>
+        </div>
+        <div class="level-wrap">
+          <div class="level-chart ${isBig ? "big" : ""}">
+            <div class="level-plot"></div>
+          </div>
+        </div>
+      `;
+
+      const plot = el.querySelector(".level-plot");
+      const tooltip = document.createElement("div");
+      tooltip.className = "chart-tooltip";
+      el.appendChild(tooltip);
+
+      const buildMarkup = () => {
+        const rect = plot.getBoundingClientRect();
+        const width = rect.width;
+        const height = rect.height;
+        if (!width || !height) return;
+
+        const pad = {
+          l: Math.max(40, Math.round(width * 0.09)),
+          r: Math.max(16, Math.round(width * 0.04)),
+          t: Math.max(14, Math.round(height * 0.06)),
+          b: Math.max(34, Math.round(height * 0.2)),
+        };
+        const plotW = Math.max(1, width - pad.l - pad.r);
+        const plotH = Math.max(1, height - pad.t - pad.b);
+        const plotLeftPct = (pad.l / width) * 100;
+        const plotTopPct = (pad.t / height) * 100;
+        const plotWPct = (plotW / width) * 100;
+        const plotHPct = (plotH / height) * 100;
+
+        const denom = Math.max(1, total - 1);
+        const xPx = (i) => pad.l + (i / denom) * plotW;
+        const yPx = (v) => pad.t + (1 - (v - min) / (max - min)) * plotH;
+        const xPct = (i) => (xPx(i) / width) * 100;
+        const yPct = (v) => (yPx(v) / height) * 100;
+
+        const points = series.map((v, i) => {
+          if (v === null || v === undefined) return null;
+          return {
+            index: i,
+            value: v,
+            label: cfg.labels[i] || "",
+            x: xPx(i),
+            y: yPx(v),
+            xp: xPct(i),
+            yp: yPct(v),
+          };
+        });
+
+        const forecastPoints = Array.from({ length: total }, (_, i) => {
+          if (i < actual.length) return null;
+          const idx = i - actual.length;
+          if (idx < forecast.length) {
+            const v = forecast[idx];
+            return {
+              x: xPx(i),
+              y: yPx(v),
+            };
+          }
+          return null;
+        });
+
+        const ticks = cfg.yTicks || 5;
+        const yTicks = Array.from({ length: ticks }, (_, i) => {
+          const t = i / (ticks - 1);
+          const val = max - t * (max - min);
+          return { val, yp: yPct(val) };
+        });
+
+        let xLabelStep = 1;
+        if (total > 12) xLabelStep = 2;
+        if (total > 24) xLabelStep = 3;
+        const xTickIndices = cfg.labels.map((_, i) => i).filter(i => i % xLabelStep === 0);
+
+        const xLabelTopPx = pad.t + plotH + Math.max(12, height * 0.05);
+        const xLabelTopPct = (xLabelTopPx / height) * 100;
+
+        const grid = yTicks.map(t => `
+          <div class="level-grid-line" style="--l:${plotLeftPct}; --w:${plotWPct}; --y:${t.yp};"></div>
+          <div class="level-axis-label y" style="left:${plotLeftPct - 1}%; top:${t.yp}%;">${formatY(t.val, cfg)}</div>
+        `).join("");
+
+        const verticalGrid = xTickIndices.map(i => `
+          <div class="level-grid-line" style="left:${xPct(i)}%; top:${plotTopPct}%; width:1px; height:${plotHPct}%;"></div>
+        `).join("");
+
+        const xLabels = xTickIndices.map(i => {
+          const shortLab = (cfg.labelsShort && cfg.labelsShort[i]) || cfg.labels[i] || "";
+          const parts = shortLab.split(" ");
+          const line1 = parts.slice(0, parts.length - 1).join(" ") || shortLab;
+          const line2 = parts[parts.length - 1] || "";
+          return `
+            <div class="level-axis-label x" style="left:${xPct(i)}%; top:${xLabelTopPct}%;">
+              <span>${line1}</span>
+              <span>${line2}</span>
+            </div>
+          `;
+        }).join("");
+
+        const areaPoints = points.filter(Boolean);
+        const actualArea = areaPoints.filter(p => p.index < actual.length);
+        const forecastArea = areaPoints.filter(p => p.index >= actual.length);
+        const areaBottomPct = (pad.t + plotH) / height * 100;
+        const buildAreaClip = (pts) => {
+          if (!pts.length) return "none";
+          return `polygon(${pts.map(p => `${p.xp}% ${p.yp}%`).join(", ")}, ${pts[pts.length - 1].xp}% ${areaBottomPct}%, ${pts[0].xp}% ${areaBottomPct}%)`;
+        };
+        const actualClip = buildAreaClip(actualArea);
+        let forecastAreaPoints = forecastArea;
+        if (forecastArea.length && actualArea.length) {
+          forecastAreaPoints = [actualArea[actualArea.length - 1], ...forecastArea];
+        }
+        const forecastClip = buildAreaClip(forecastAreaPoints);
+
+        const buildSegments = (pts, color) => {
+          let html = "";
+          for (let i = 1; i < pts.length; i++) {
+            const prev = pts[i - 1];
+            const curr = pts[i];
+            if (!prev || !curr) continue;
+            const dx = curr.x - prev.x;
+            const dy = curr.y - prev.y;
+            const length = Math.sqrt(dx * dx + dy * dy);
+            const angle = Math.atan2(dy, dx);
+            html += `
+              <div class="level-line-segment" style="left:${prev.x}px; top:${prev.y}px; width:${length}px; transform:rotate(${angle}rad); --line-color:${color};"></div>
+            `;
+          }
+          return html;
+        };
+
+        const mainSegments = buildSegments(points, "#7e5bf6");
+        const forecastSegments = buildSegments(forecastPoints, "#FC912E");
+
+        const pointDots = points.map(point => {
+          if (!point) return "";
+          return `<div class="level-point" style="left:${point.xp}%; top:${point.yp}%; --line-color:#7e5bf6;"></div>`;
+        }).join("");
+
+        const hits = points.map(point => {
+          if (!point) return "";
+          return `<div class="level-hit" data-index="${point.index}" style="left:${point.xp}%; top:${point.yp}%;"></div>`;
+        }).join("");
+
+        plot.innerHTML = `
+          <div class="level-border" style="--l:${plotLeftPct}; --t:${plotTopPct}; --w:${plotWPct}; --h:${plotHPct};"></div>
+          ${grid}
+          ${verticalGrid}
+          ${xLabels}
+          <div class="level-area actual" style="clip-path:${actualClip};"></div>
+          <div class="level-area forecast" style="clip-path:${forecastClip};"></div>
+          <div class="level-line-layer level-main">${mainSegments}</div>
+          <div class="level-line-layer level-comp">${forecastSegments}</div>
+          ${pointDots}
+          ${hits}
+        `;
+      };
+
+      buildMarkup();
+
+      plot.addEventListener("mousemove", (event) => {
+        const hit = event.target.closest(".level-hit");
+        if (!hit) {
+          tooltip.style.opacity = "0";
+          return;
+        }
+        const index = parseInt(hit.dataset.index, 10);
+        if (Number.isNaN(index)) return;
+        const label = cfg.labels[index] || "Point";
+        const actualValue = index < actual.length ? actual[index] : null;
+        const forecastIndex = index - actual.length;
+        const forecastValue =
+          forecastIndex >= 0 && forecastIndex < forecast.length ? forecast[forecastIndex] : null;
+        const parts = [`<strong>${label}</strong>`];
+        if (actualValue !== null && actualValue !== undefined) {
+          parts.push(`<span>${cfg.pastLabel || "Actual"}: ${formatY(actualValue, cfg)}</span>`);
+        }
+        if (forecastValue !== null && forecastValue !== undefined) {
+          parts.push(`<span>${cfg.forecastLabel || "Forecast"}: ${formatY(forecastValue, cfg)}</span>`);
+        }
+        tooltip.innerHTML = parts.join("");
+        const cardRect = el.getBoundingClientRect();
+        tooltip.style.left = `${event.clientX - cardRect.left}px`;
+        tooltip.style.top = `${event.clientY - cardRect.top - 10}px`;
+        tooltip.style.opacity = "1";
+      });
+
+      plot.addEventListener("mouseleave", () => {
+        tooltip.style.opacity = "0";
+      });
+
+      if (el._levelObserver) {
+        el._levelObserver.disconnect();
+      }
+      el._levelObserver = new ResizeObserver(() => buildMarkup());
+      el._levelObserver.observe(plot);
+    }
+
     function renderCard(el, key) {
       const cfg = CHARTS[key];
       const isBig = el.classList.contains("chart-big");
@@ -956,7 +1322,11 @@
       document.querySelectorAll("[data-chart]").forEach(el => {
         const key = el.getAttribute("data-chart");
         if (!CHARTS[key]) return;
-        renderCard(el, key);
+        if (LEVEL_KEYS.has(key)) {
+          renderLevelCard(el, key);
+        } else {
+          renderCard(el, key);
+        }
       });
     }
 
