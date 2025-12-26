@@ -60,10 +60,21 @@
   }
   .finished-goals .insights-card .stat-grid{
     padding:10px 12px 12px;
+    grid-template-columns:repeat(4, minmax(160px, 1fr));
   }
   .finished-goals .insights-card .stat-card{
-    min-height:78px;
+    min-height:72px;
     padding:10px 12px;
+  }
+  @media (max-width:1100px){
+    .finished-goals .insights-card .stat-grid{
+      grid-template-columns:repeat(2, minmax(160px, 1fr));
+    }
+  }
+  @media (max-width:680px){
+    .finished-goals .insights-card .stat-grid{
+      grid-template-columns:1fr;
+    }
   }
   .finished-goals .charts-card .chart-block + .chart-block{
     border-top:1px solid var(--border);

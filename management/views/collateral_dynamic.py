@@ -368,6 +368,45 @@ def _week_summary_context(borrower):
             )
         return values[-max_points:]
 
+    def _build_cashflow_chart_rows(rows, week_fields):
+        if not week_fields:
+            week_fields = [f"week_{i}" for i in range(1, 14)]
+
+        def _find_row(keywords):
+            for row in rows:
+                label = (getattr(row, "category", "") or "").strip().lower()
+                if any(keyword in label for keyword in keywords):
+                    return row
+            return None
+
+        def _row_values(row):
+            values = []
+            for field in week_fields:
+                val = getattr(row, field, None) if row else None
+                values.append(_to_decimal(val) if val is not None else Decimal("0"))
+            return values
+
+        collections_row = _find_row(["collections"])
+        disbursement_row = _find_row(
+            ["total disbursements", "total disbursement", "disbursements"]
+        )
+        if not collections_row:
+            collections_row = _find_row(["total receipts", "receipts"])
+        if not disbursement_row:
+            disbursement_row = _find_row(["operating disbursements", "non-operating disbursements"])
+
+        collections_values = _row_values(collections_row)
+        disbursement_values = _row_values(disbursement_row)
+
+        return [
+            {
+                "label": f"Week {idx + 1}",
+                "collections": collections_values[idx] if idx < len(collections_values) else Decimal("0"),
+                "disbursements": disbursement_values[idx] if idx < len(disbursement_values) else Decimal("0"),
+            }
+            for idx in range(len(week_fields))
+        ]
+
     def _format_chart_label(value):
         if isinstance(value, str):
             return value
@@ -811,12 +850,12 @@ def _week_summary_context(borrower):
 
     sorted_forecast_rows = _sort_forecast_rows(forecast_rows)
     column_entries, ordered_forecast_rows = _prepare_column_entries(sorted_forecast_rows)
-    chart_rows = _build_chart_rows(ordered_forecast_rows or sorted_forecast_rows)
-    chart_week_labels = [f"Week {idx + 1}" for idx in range(len(chart_rows))]
-    actual_bars, forecast_bars, chart_labels, chart_ticks = _build_chart_bars(
-        chart_rows,
-        label_texts=chart_week_labels,
-    )
+    chart_rows = []
+    chart_week_labels = []
+    actual_bars = []
+    forecast_bars = []
+    chart_labels = []
+    chart_ticks = []
 
     if column_entries:
         cashflow_actual_label = column_entries[0]["label"]
@@ -1074,7 +1113,7 @@ def _week_summary_context(borrower):
         for label, accessor, row_class in cashflow_cash_defs
     ]
 
-    def _resolve_week_fields(rows, default_weeks=12):
+    def _resolve_week_fields(rows, default_weeks=13):
         week_fields = [f"week_{i}" for i in range(1, 14)]
         max_week = 0
         for idx, field in enumerate(week_fields, 1):
@@ -1138,6 +1177,54 @@ def _week_summary_context(borrower):
     )
     cashflow_cash_rows = _build_cash_rows(cash_rows, week_fields)
 
+    def _normalize_label(value):
+        text = (value or "").strip().lower()
+        cleaned = []
+        last_space = False
+        for char in text:
+            if char.isalnum():
+                cleaned.append(char)
+                last_space = False
+            else:
+                if not last_space:
+                    cleaned.append(" ")
+                    last_space = True
+        return "".join(cleaned).strip()
+
+    variance_order = [
+        _normalize_label(row.get("label"))
+        for row in cashflow_table_rows
+        if row.get("label")
+    ]
+    if not variance_order:
+        variance_order = [
+            _normalize_label(label)
+            for label in [
+                "Receipts",
+                "Collections",
+                "Other Receipts",
+                "Total Receipts",
+                "Operating Disbursements",
+                "Payroll",
+                "Rent",
+                "Utilities",
+                "Property Tax",
+                "Insurance",
+                "Professional Services",
+                "Software Expenses",
+                "Repairs / Maintenance",
+                "Other Disbursements",
+                "Total Operating Disbursements",
+                "Non-Operating Disbursements",
+                "Interest Expense",
+                "Non-Recurring Tax Payments",
+                "One-Time Professional Fees",
+                "Total Non-Operating Disbursements",
+                "Total Disbursements",
+                "Net Cash Flow",
+            ]
+        ]
+
     actual_date = None
     if cashflow_rows:
         actual_date = cashflow_rows[0].date or cashflow_report_date
@@ -1153,6 +1240,14 @@ def _week_summary_context(borrower):
     else:
         cashflow_actual_label = "Actual"
         cashflow_forecast_labels = [f"Forecast<br/>Week {idx}" for idx in range(1, len(week_fields) + 1)]
+
+    chart_week_fields = [f"week_{i}" for i in range(1, 14)]
+    chart_rows = _build_cashflow_chart_rows(cashflow_rows, chart_week_fields)
+    chart_week_labels = [row["label"] for row in chart_rows]
+    actual_bars, forecast_bars, chart_labels, chart_ticks = _build_chart_bars(
+        chart_rows,
+        label_texts=chart_week_labels,
+    )
 
     context["cashflow_table_colspan"] = len(week_fields) + 3
     context["cashflow_cash_colspan"] = len(week_fields) + 3
@@ -1266,6 +1361,22 @@ def _week_summary_context(borrower):
                     "row_class": row_class,
                 }
             )
+        if output and variance_order:
+            order_map = {}
+            for idx, label in enumerate(variance_order):
+                if label and label not in order_map:
+                    order_map[label] = idx
+                if label.endswith("s"):
+                    singular = label[:-1].rstrip()
+                    if singular and singular not in order_map:
+                        order_map[singular] = idx
+            for idx, row in enumerate(output):
+                row["_order_index"] = order_map.get(_normalize_label(row["category"]), len(order_map) + idx)
+                row["_order_seq"] = idx
+            output.sort(key=lambda row: (row["_order_index"], row["_order_seq"]))
+            for row in output:
+                row.pop("_order_index", None)
+                row.pop("_order_seq", None)
         if not output:
             output.append(
                 {
@@ -1307,12 +1418,8 @@ def _week_summary_context(borrower):
             ],
             "forecast_updated_label": _format_date(report_date) if report_date else "—",
             "snapshot_summary": snapshot_summary,
-            "period_label": _format_date(
-                chart_rows[-1]["label"]
-                if chart_rows and chart_rows[-1]["label"]
-                else report_date
-            )
-            if chart_rows or report_date
+            "period_label": _format_date(actual_date or report_date)
+            if actual_date or report_date
             else None,
             "top_spend": _collect_top_spend(cw_rows),
             "top_receipts": _collect_top_receipts(
