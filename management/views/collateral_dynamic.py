@@ -1424,7 +1424,19 @@ def _build_trend_chart(values, width=260, height=120, padding=18):
     return {"points": " ".join(points), "dots": dots}
 
 
-def _build_trend_points(values, labels=None, width=520, height=210, left=50, top=50, bottom=40):
+def _build_trend_points(
+    values,
+    labels=None,
+    width=520,
+    height=210,
+    left=50,
+    top=50,
+    bottom=40,
+    min_value=None,
+    max_value=None,
+    tick_count=5,
+    value_formatter=None,
+):
     if not values:
         return {"points": "", "dots": [], "labels": []}
     float_values = [float(v if v is not None else 0.0) for v in values]
@@ -1432,13 +1444,18 @@ def _build_trend_points(values, labels=None, width=520, height=210, left=50, top
     step = total_width / max(1, len(float_values) - 1)
     baseline_y = height - bottom
     chart_height = baseline_y - top
-    max_value = max(float_values + [100.0]) or 1.0
+    axis_min = min_value if min_value is not None else 0.0
+    axis_max = max_value if max_value is not None else max(float_values + [100.0])
+    if axis_max is None or axis_max <= axis_min:
+        axis_max = axis_min + 1.0
+    axis_range = axis_max - axis_min or 1.0
+    formatter = value_formatter or (lambda v: f"{v:.0f}")
 
     points = []
     dots = []
     label_points = []
     for idx, value in enumerate(float_values):
-        ratio = max(0.0, min(1.0, value / max_value))
+        ratio = max(0.0, min(1.0, (value - axis_min) / axis_range))
         x = left + idx * step
         y = baseline_y - ratio * chart_height
         points.append(f"{x:.1f},{y:.1f}")
@@ -1446,7 +1463,19 @@ def _build_trend_points(values, labels=None, width=520, height=210, left=50, top
         label_text = labels[idx] if labels and idx < len(labels) else ""
         label_points.append({"x": round(x, 1), "text": label_text})
 
-    return {"points": " ".join(points), "dots": dots, "labels": label_points}
+    ticks = []
+    if tick_count > 1:
+        for idx in range(tick_count):
+            ratio = idx / (tick_count - 1)
+            value = axis_max - axis_range * ratio
+            y = top + chart_height * ratio
+            ticks.append({"y": round(y, 1), "label": formatter(value)})
+    return {
+        "points": " ".join(points),
+        "dots": dots,
+        "labels": label_points,
+        "ticks": ticks,
+    }
 
 
 def _format_variance(value, suffix=""):
@@ -2443,7 +2472,21 @@ def _accounts_receivable_context(borrower, range_key="today", division="all", sn
             bucket_pct_overrides[key] = _to_decimal(row.pct_of_total)
 
     total_amount = sum(bucket_amounts.values())
-    bucket_positions = [80, 150, 230, 300, 350]
+    aging_axis_left = Decimal("40")
+    aging_axis_right = Decimal("500")
+    aging_axis_top = Decimal("20")
+    aging_axis_bottom = Decimal("140")
+    aging_plot_height = aging_axis_bottom - aging_axis_top
+    bucket_count = len(AGING_BUCKET_DEFS)
+    bar_width = Decimal("20")
+    plot_width = aging_axis_right - aging_axis_left
+    if bucket_count > 1:
+        gap = (plot_width - (bar_width * bucket_count)) / Decimal(bucket_count - 1)
+        if gap <= 0:
+            gap = Decimal("8")
+            bar_width = max(Decimal("10"), (plot_width - gap * (bucket_count - 1)) / Decimal(bucket_count))
+    else:
+        gap = Decimal("0")
     aging_buckets = []
     for idx, bucket in enumerate(AGING_BUCKET_DEFS):
         amount = bucket_amounts[bucket["key"]]
@@ -2455,31 +2498,36 @@ def _accounts_receivable_context(borrower, range_key="today", division="all", sn
         if percent_ratio > Decimal("1"):
             percent_ratio /= Decimal("100")
         ratio_float = float(percent_ratio) if percent_ratio else 0.0
-        height_value = max(8.0, min(90.0, ratio_float * 90))
-        y_position = 140 - height_value
+        plot_height = float(aging_plot_height)
+        height_value = max(8.0, min(plot_height, ratio_float * plot_height))
+        y_position = float(aging_axis_bottom) - height_value
         label_primary = bucket["label"]
         label_secondary = ""
         if bucket["key"] != "current":
             label_primary = "91+" if bucket["key"] == "90+" else bucket["label"]
             label_secondary = "Past Due"
-        bar_width = 20
+        x_position = aging_axis_left + (bar_width + gap) * idx
+        text_x = x_position + (bar_width / 2)
+        label_y = float(aging_axis_bottom + Decimal("12"))
+        label_secondary_y = float(aging_axis_bottom + Decimal("24"))
+        percent_y = max(float(aging_axis_top) + 4, y_position - 6)
         aging_buckets.append(
             {
                 "key": bucket["key"],
-                "x": bucket_positions[idx],
+                "x": float(x_position),
                 "y": y_position,
                 "height": height_value,
-                "width": bar_width,
+                "width": float(bar_width),
                 "color": bucket["color"],
                 "percent_display": _format_pct(percent_ratio),
                 "amount_display": _format_currency(amount),
                 "label": bucket["label"],
                 "label_primary": label_primary,
                 "label_secondary": label_secondary,
-                "percent_y": max(24, y_position - 6),
-                "label_y": 152,
-                "label_secondary_y": 164,
-                "text_x": bucket_positions[idx] + (bar_width / 2),
+                "percent_y": percent_y,
+                "label_y": label_y,
+                "label_secondary_y": label_secondary_y,
+                "text_x": float(text_x),
             }
         )
 
@@ -2547,6 +2595,8 @@ def _accounts_receivable_context(borrower, range_key="today", division="all", sn
     bucket_columns = ["Current", "0-30", "31-60", "61-90", "91+"]
     bucket_total_rows = []
     bucket_past_due_rows = []
+    total_balance_sum = Decimal("0")
+    total_past_due_sum = Decimal("0")
     latest_pct = current_snapshot.get("past_due_pct") if current_snapshot else None
     past_due_ratio = (
         (latest_pct / Decimal("100")) if latest_pct is not None else Decimal("0")
@@ -2632,6 +2682,7 @@ def _accounts_receivable_context(borrower, range_key="today", division="all", sn
                     "customer": customer_name,
                     "values": values,
                     "total": _format_currency(total_value),
+                    "total_value": total_value,
                 }
             )
             bucket_past_due_rows.append(
@@ -2639,8 +2690,31 @@ def _accounts_receivable_context(borrower, range_key="today", division="all", sn
                     "customer": customer_name,
                     "values": past_values,
                     "total": _format_currency(past_total_value),
+                    "total_value": past_total_value,
                 }
             )
+            total_balance_sum += total_value
+            total_past_due_sum += past_total_value
+
+    if total_balance_sum > 0:
+        for row in bucket_total_rows:
+            ratio = _to_decimal(row.get("total_value")) / total_balance_sum
+            row["percent_total"] = _format_pct(ratio)
+            row.pop("total_value", None)
+    else:
+        for row in bucket_total_rows:
+            row["percent_total"] = "—"
+            row.pop("total_value", None)
+
+    if total_past_due_sum > 0:
+        for row in bucket_past_due_rows:
+            ratio = _to_decimal(row.get("total_value")) / total_past_due_sum
+            row["percent_total"] = _format_pct(ratio)
+            row.pop("total_value", None)
+    else:
+        for row in bucket_past_due_rows:
+            row["percent_total"] = "—"
+            row.pop("total_value", None)
 
     ineligible_overview = (
         _apply_date_filter(
@@ -2699,6 +2773,34 @@ def _accounts_receivable_context(borrower, range_key="today", division="all", sn
     if len(trend_points) > max_trend:
         trend_points = trend_points[-max_trend:]
         trend_texts = trend_texts[-max_trend:]
+    axis_min = 0.0
+    axis_max = 100.0
+    if trend_points:
+        min_val = min(trend_points)
+        max_val = max(trend_points)
+        span = max_val - min_val
+        if span <= 0:
+            span = max(max_val, 1.0)
+        pad = span * 0.2
+        min_val -= pad
+        max_val += pad
+        min_span = 30.0
+        if (max_val - min_val) < min_span:
+            mid = (min_val + max_val) / 2
+            min_val = mid - (min_span / 2)
+            max_val = mid + (min_span / 2)
+        if min_val < 10:
+            min_val = 10.0
+            max_val = min_val + min_span
+        step = _nice_step((max_val - min_val) / 4)
+        if step <= 0:
+            step = 5.0
+        axis_min = math.floor(min_val / step) * step
+        axis_max = math.ceil(max_val / step) * step
+        if axis_min < 0:
+            axis_min = 0.0
+        if axis_max <= axis_min:
+            axis_max = axis_min + step
     trend_chart = _build_trend_points(
         trend_points,
         trend_texts,
@@ -2706,6 +2808,10 @@ def _accounts_receivable_context(borrower, range_key="today", division="all", sn
         top=40,
         bottom=40,
         left=60,
+        min_value=axis_min,
+        max_value=axis_max,
+        tick_count=5,
+        value_formatter=_format_axis_pct,
     )
     formatted_labels = []
     for label in trend_chart["labels"]:
@@ -2835,6 +2941,7 @@ def _accounts_receivable_context(borrower, range_key="today", division="all", sn
             "points": trend_chart["points"],
             "dots": trend_chart["dots"],
             "labels": trend_chart["labels"],
+            "ticks": trend_chart.get("ticks", []),
         },
         "ar_concentration_rows": concentration_entries,
         "ar_ado_rows": ado_entries,

@@ -538,10 +538,11 @@
     .collateral-dynamic .chart-tooltip{
       position:absolute;
       padding:6px 10px;
-      background:#111827;
-      color:#fff;
+      background:#ffffff;
+      color:#111827;
       font-size:12px;
       border-radius:8px;
+      border:1px solid #e5e7eb;
       box-shadow:0 12px 22px rgba(15,23,42,.2);
       pointer-events:none;
       opacity:0;
@@ -1016,10 +1017,10 @@
       --aging-label:#6b7280;
       --aging-percent:#6b7280;
       --chart-width:520;
-      --chart-height:170;
+      --chart-height:190;
       --axis-left:40;
       --axis-right:500;
-      --axis-top:50;
+      --axis-top:20;
       --axis-bottom:140;
       --axis-color:var(--aging-grid);
     }
@@ -1105,9 +1106,10 @@
     }
     .collateral-dynamic .ar-ineligible-chart .chart-axis-title{
       right:auto;
-      left:4px;
+      left: -1px;
       transform:rotate(-90deg);
       transform-origin:left top;
+          margin-top: 127px;
     }
     .collateral-dynamic .ar-section .h3{
       font-size:1.5em;
@@ -1599,6 +1601,7 @@
                             <span class="chart-grid-line h" style="--y: 110"></span>
                             <span class="chart-grid-line h" style="--y: 80"></span>
                             <span class="chart-grid-line h" style="--y: 50"></span>
+                            <span class="chart-grid-line h" style="--y: 20"></span>
                           </div>
                           <div class="chart-layer is-static label-layer">
                             <span class="chart-axis-label y" style="--x: 10; --y: 143">$20</span>
@@ -1696,6 +1699,7 @@
                             <th>61-90</th>
                             <th>91+</th>
                             <th>Total</th>
+                            <th>% of Total</th>
                           </tr>
                         </thead>
                         <tbody>
@@ -1706,10 +1710,11 @@
                                 <td class="align-right">{{ value }}</td>
                               {% endfor %}
                               <td class="align-right">{{ row.total }}</td>
+                              <td class="align-right">{{ row.percent_total }}</td>
                             </tr>
                           {% empty %}
                             <tr>
-                              <td colspan="7" class="align-center">No aging composition data</td>
+                              <td colspan="8" class="align-center">No aging composition data</td>
                             </tr>
                           {% endfor %}
                         </tbody>
@@ -1728,6 +1733,7 @@
                             <th>61-90</th>
                             <th>91+</th>
                             <th>Total</th>
+                            <th>% of Total</th>
                           </tr>
                         </thead>
                           <tbody>
@@ -1738,10 +1744,11 @@
                                 <td class="align-right">{{ value }}</td>
                               {% endfor %}
                               <td class="align-right">{{ row.total }}</td>
+                              <td class="align-right">{{ row.percent_total }}</td>
                             </tr>
                           {% empty %}
                             <tr>
-                              <td colspan="7" class="align-center">No aging composition data</td>
+                              <td colspan="8" class="align-center">No aging composition data</td>
                             </tr>
                           {% endfor %}
                         </tbody>
@@ -1820,18 +1827,14 @@
                             aria-hidden="true"></div>
                           <div class="chart-layer is-static">
                             <span class="chart-grid-line v axis-line" style="--x: 60"></span>
-                            <span class="chart-grid-line h" style="--y: 220"></span>
-                            <span class="chart-grid-line h" style="--y: 175"></span>
-                            <span class="chart-grid-line h" style="--y: 130"></span>
-                            <span class="chart-grid-line h" style="--y: 85"></span>
-                            <span class="chart-grid-line h" style="--y: 40"></span>
+                            {% for tick in ar_ineligible_trend.ticks %}
+                              <span class="chart-grid-line h {% if forloop.last %}axis-line{% endif %}" style="--y: {{ tick.y|floatformat:1 }}"></span>
+                            {% endfor %}
                           </div>
                           <div class="chart-layer is-static label-layer">
-                            <span class="chart-axis-label y" style="--x: 28; --y: 224">10%</span>
-                            <span class="chart-axis-label y" style="--x: 28; --y: 179">30%</span>
-                            <span class="chart-axis-label y" style="--x: 28; --y: 134">50%</span>
-                            <span class="chart-axis-label y" style="--x: 28; --y: 89">70%</span>
-                            <span class="chart-axis-label y" style="--x: 28; --y: 44">90%</span>
+                            {% for tick in ar_ineligible_trend.ticks %}
+                              <span class="chart-axis-label y" style="--x: 28; --y: {{ tick.y|add:'4'|floatformat:1 }}">{{ tick.label }}</span>
+                            {% endfor %}
                           </div>
                           <div class="chart-layer">
                             {% if ar_ineligible_trend.points %}
