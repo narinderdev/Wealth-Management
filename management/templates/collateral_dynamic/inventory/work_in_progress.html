@@ -146,10 +146,11 @@ line-height: 50px;
   .work-in-progress .chart-tooltip{
     position:absolute;
     padding:6px 10px;
-    background:#0f172a;
-    color:#fff;
+    background:#fff;
+    color:#111827;
     font-size:12px;
     border-radius:8px;
+    border:1px solid #e5e7eb;
     box-shadow:0 12px 20px rgba(15,23,42,.18);
     pointer-events:none;
     opacity:0;
@@ -459,8 +460,8 @@ line-height: 50px;
 
 <script>
   const charts = {{ work_in_progress_chart_config_json|safe }};
-  function fmtY(val, cfg){
-    const decimals = Number.isFinite(cfg.yDecimals) ? cfg.yDecimals : 1;
+  function fmtY(val, cfg, decimalsOverride){
+    const decimals = Number.isFinite(decimalsOverride) ? decimalsOverride : (Number.isFinite(cfg.yDecimals) ? cfg.yDecimals : 1);
     const scale = Number.isFinite(cfg.yScale) ? cfg.yScale : 1;
     const value = Number(val);
     const scaled = Number.isFinite(value) ? value / scale : 0;
@@ -470,6 +471,17 @@ line-height: 50px;
     });
     if (cfg.yPrefix || cfg.ySuffix) return `${cfg.yPrefix||""}${formatted}${cfg.ySuffix||""}`;
     return formatted;
+  }
+  function resolveYDecimals(cfg, range, ticks){
+    const base = Number.isFinite(cfg.yDecimals) ? cfg.yDecimals : 1;
+    const scale = Number.isFinite(cfg.yScale) ? cfg.yScale : 1;
+    const step = (range / Math.max(1, (ticks || 6) - 1)) / scale;
+    if (!Number.isFinite(step) || step <= 0) return base;
+    let needed = 0;
+    if (step < 1) {
+      needed = Math.ceil(-Math.log10(step));
+    }
+    return Math.min(3, Math.max(base, needed));
   }
   function pathFrom(pts){
     return pts.map((p,i)=> (i===0?`M ${p[0]} ${p[1]}`:`L ${p[0]} ${p[1]}`)).join(" ");
@@ -493,11 +505,29 @@ line-height: 50px;
     };
     const points = c.values.map((v,i)=>[x(i),y(v)]);
     const ticks = c.yTicks||6;
+    const yDecimals = resolveYDecimals(c, range, ticks);
     const yTicks = Array.from({length:ticks},(_,i)=>{
       const t = i/(ticks-1);
       const val = max - t * range;
       return {val, yy:y(val)};
     });
+    const yTickLines = yTicks.map(t=>`
+      <line x1="${pad.l}" y1="${t.yy}" x2="${W-pad.r}" y2="${t.yy}" stroke="#e7eef7" stroke-width="1"></line>
+    `).join("");
+    const yLabelSet = new Set();
+    const yTickLabels = yTicks.map(t=>{
+      const label = fmtY(t.val,c,yDecimals);
+      if (yLabelSet.has(label)) return "";
+      yLabelSet.add(label);
+      return `<text x="55" y="${t.yy+4}" fill="#94a3b8" font-size="12" font-weight="400" text-anchor="end">${label}</text>`;
+    }).join("");
+    const xLabelSet = new Set();
+    const xLabels = c.labels.map((lab,i)=>{
+      const label = String(lab);
+      if (xLabelSet.has(label)) return "";
+      xLabelSet.add(label);
+      return `<text x="${x(i)}" y="${H-20}" text-anchor="middle">${label}</text>`;
+    }).join("");
     el.innerHTML = `
       <div class="chart-wrap">
         <svg viewBox="0 0 ${W} ${H}" role="img" aria-label="${c.title} chart">
@@ -506,14 +536,12 @@ line-height: 50px;
               <rect x="${pad.l}" y="${pad.t}" width="${plotW}" height="${plotH}" rx="8"></rect>
             </clipPath>
           </defs>
-          ${yTicks.map(t=>`
-            <line x1="${pad.l}" y1="${t.yy}" x2="${W-pad.r}" y2="${t.yy}" stroke="#e7eef7" stroke-width="1"></line>
-            <text x="55" y="${t.yy+4}" fill="#94a3b8" font-size="12" font-weight="400" text-anchor="end">${fmtY(t.val,c)}</text>
-          `).join("")}
+          ${yTickLines}
+          ${yTickLabels}
           <path d="${pathFrom(points)}" fill="none" stroke="${c.color||'#1e6fe0'}" stroke-width="3" stroke-linecap="round" stroke-linejoin="round" clip-path="url(#clip-wip)"></path>
-          ${points.map((p,i)=>`<circle cx="${p[0]}" cy="${p[1]}" r="4" fill="${c.color||'#1e6fe0'}" class="wip-point" data-label="${c.labels[i]}" data-value="${fmtY(c.values[i],c)}"></circle>`).join("")}
+          ${points.map((p,i)=>`<circle cx="${p[0]}" cy="${p[1]}" r="4" fill="${c.color||'#1e6fe0'}" class="wip-point" data-label="${c.labels[i]}" data-value="${fmtY(c.values[i],c,yDecimals)}"></circle>`).join("")}
           <g fill="#94a3b8" font-size="12" font-weight="400">
-            ${c.labels.map((lab,i)=>`<text x="${x(i)}" y="${H-20}" text-anchor="middle">${lab}</text>`).join("")}
+            ${xLabels}
           </g>
         </svg>
         <div class="chart-tooltip" aria-hidden="true"></div>

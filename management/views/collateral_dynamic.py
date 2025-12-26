@@ -3054,6 +3054,42 @@ def _finished_goals_context(borrower, range_key="today", division="all"):
             return qs.filter(division__iexact=normalized_division)
         return qs
 
+    trend_scale = Decimal("1000000")
+
+    def _build_year_series(month_map, year, *, scale=None):
+        if not month_map:
+            return [], []
+        values = []
+        for month in range(1, 13):
+            val = month_map.get((year, month))
+            if val is None:
+                values.append(None)
+                continue
+            if scale is not None:
+                if isinstance(val, Decimal):
+                    if val < 0:
+                        val = Decimal("0")
+                    values.append(float(val / scale))
+                else:
+                    if val < 0:
+                        val = 0.0
+                    values.append(float(val) / float(scale))
+            else:
+                if val < 0:
+                    val = 0.0
+                values.append(float(val))
+        first_idx = next((i for i, v in enumerate(values) if v is not None), None)
+        if first_idx is None:
+            return [], []
+        first_val = values[first_idx]
+        for idx in range(first_idx):
+            values[idx] = first_val
+        for idx in range(first_idx + 1, len(values)):
+            if values[idx] is None:
+                values[idx] = values[idx - 1]
+        labels = [date(year, month, 1).strftime("%b\n%Y") for month in range(1, 13)]
+        return labels, values
+
     division_sources = [
         FGInventoryMetricsRow,
         FGIneligibleDetailRow,
@@ -3466,10 +3502,25 @@ def _finished_goals_context(borrower, range_key="today", division="all"):
         if sales > 0 and wos is not None and wos <= 52:
             inline_trend_map[dt]["inline"] += amount
 
-    for dt, totals in list(inline_trend_map.items())[-10:]:
-        inline_excess_trend_labels.append(dt.strftime("%b\n%Y"))
+    inline_trend_month_map = OrderedDict()
+    for dt, totals in inline_trend_map.items():
+        key = (dt.year, dt.month)
+        if key not in inline_trend_month_map:
+            inline_trend_month_map[key] = {"total": Decimal("0"), "inline": Decimal("0")}
+        inline_trend_month_map[key]["total"] += totals["total"]
+        inline_trend_month_map[key]["inline"] += totals["inline"]
+
+    inline_pct_map = OrderedDict()
+    for key, totals in inline_trend_month_map.items():
         pct = (totals["inline"] / totals["total"] * Decimal("100")) if totals["total"] else Decimal("0")
-        inline_excess_trend_values.append(float(pct))
+        inline_pct_map[key] = float(pct)
+
+    if inline_pct_map:
+        latest_year = max(year for year, _ in inline_pct_map.keys())
+        inline_excess_trend_labels, inline_excess_trend_values = _build_year_series(
+            inline_pct_map,
+            latest_year,
+        )
 
     composition_qs = FGCompositionRow.objects.filter(borrower=borrower)
     composition_qs = _apply_division_filter(composition_qs)
@@ -3523,9 +3574,8 @@ def _finished_goals_context(borrower, range_key="today", division="all"):
             inline_excess_values.append(float(pct))
             inline_excess_value_labels.append(f"{pct:.0f}%")
 
-        composition_labels = []
-        composition_values = []
-        for dt, totals in list(composition_map.items())[-10:]:
+        composition_pct_map = OrderedDict()
+        for dt, totals in composition_map.items():
             total_amount = _composition_total(totals)
             inline_amount = (
                 totals["new"]
@@ -3535,29 +3585,37 @@ def _finished_goals_context(borrower, range_key="today", division="all"):
                 + totals["39 - 52"]
             )
             pct = (inline_amount / total_amount * Decimal("100")) if total_amount else Decimal("0")
-            composition_labels.append(dt.strftime("%b\n%Y"))
-            composition_values.append(float(pct))
+            composition_pct_map[(dt.year, dt.month)] = float(pct)
 
-        if len(composition_values) >= 2 or not inline_excess_trend_values:
-            inline_excess_trend_labels = composition_labels
-            inline_excess_trend_values = composition_values
+        if not inline_excess_trend_values and composition_pct_map:
+            latest_year = max(year for year, _ in composition_pct_map.keys())
+            inline_excess_trend_labels, inline_excess_trend_values = _build_year_series(
+                composition_pct_map,
+                latest_year,
+            )
 
     inventory_trend_labels = []
     inventory_trend_values = []
-    trend_scale = Decimal("1000000")
     metrics_trend_rows = (
         metrics_qs.exclude(as_of_date__isnull=True)
         .order_by("as_of_date", "id")
     )
-    metrics_trend_items = list(metrics_trend_rows)[-11:]
-    if metrics_trend_items:
-        for row in metrics_trend_items:
-            label = row.as_of_date.strftime("%b\n%Y")
-            inventory_trend_labels.append(label)
-            available = _to_decimal(row.available_inventory)
-            if available < 0:
-                available = Decimal("0")
-            inventory_trend_values.append(float(available / trend_scale))
+    metrics_trend_map = OrderedDict()
+    for row in metrics_trend_rows:
+        dt = row.as_of_date
+        if not dt:
+            continue
+        key = (dt.year, dt.month)
+        if key not in metrics_trend_map:
+            metrics_trend_map[key] = Decimal("0")
+        metrics_trend_map[key] += _to_decimal(row.available_inventory)
+    if metrics_trend_map:
+        latest_year = max(year for year, _ in metrics_trend_map.keys())
+        inventory_trend_labels, inventory_trend_values = _build_year_series(
+            metrics_trend_map,
+            latest_year,
+            scale=trend_scale,
+        )
     else:
         inventory_rows_all = CollateralOverviewRow.objects.filter(
             borrower=borrower,
@@ -3568,20 +3626,23 @@ def _finished_goals_context(borrower, range_key="today", division="all"):
         inventory_trend_map = OrderedDict()
         for row in inventory_rows_all:
             dt = row.created_at.date()
-            if dt not in inventory_trend_map:
-                inventory_trend_map[dt] = {"eligible": Decimal("0"), "total": Decimal("0")}
-            inventory_trend_map[dt]["eligible"] += _to_decimal(row.eligible_collateral)
-            inventory_trend_map[dt]["total"] += _to_decimal(row.beginning_collateral)
+            key = (dt.year, dt.month)
+            if key not in inventory_trend_map:
+                inventory_trend_map[key] = {"eligible": Decimal("0"), "total": Decimal("0")}
+            inventory_trend_map[key]["eligible"] += _to_decimal(row.eligible_collateral)
+            inventory_trend_map[key]["total"] += _to_decimal(row.beginning_collateral)
 
-        inventory_trend_items = list(inventory_trend_map.items())[-11:]
-        if inventory_trend_items:
-            for dt, totals in inventory_trend_items:
-                label = dt.strftime("%b\n%Y")
-                inventory_trend_labels.append(label)
-                eligible = totals["eligible"]
-                if eligible < 0:
-                    eligible = Decimal("0")
-                inventory_trend_values.append(float(eligible / trend_scale))
+        if inventory_trend_map:
+            latest_year = max(year for year, _ in inventory_trend_map.keys())
+            series_map = {
+                key: totals["eligible"]
+                for key, totals in inventory_trend_map.items()
+            }
+            inventory_trend_labels, inventory_trend_values = _build_year_series(
+                series_map,
+                latest_year,
+                scale=trend_scale,
+            )
         else:
             def _month_label(idx, total):
                 base = date.today().replace(day=1)
@@ -3594,8 +3655,8 @@ def _finished_goals_context(borrower, range_key="today", division="all"):
                 return date(year, month, 1).strftime("%b\n%Y")
 
             base_value = float(inventory_available_total / trend_scale) if inventory_available_total else 0.0
-            for idx in range(11):
-                inventory_trend_labels.append(_month_label(idx, 11))
+            for idx in range(12):
+                inventory_trend_labels.append(_month_label(idx, 12))
                 variation = math.sin(idx / 2.0) * 0.06
                 value = max(0.0, base_value * (1 + variation))
                 inventory_trend_values.append(value)
@@ -3612,10 +3673,10 @@ def _finished_goals_context(borrower, range_key="today", division="all"):
             return date(year, month, 1).strftime("%b\n%Y")
 
         base_value = float(inventory_available_total / trend_scale) if inventory_available_total else 0.0
-        inventory_trend_labels = [_month_label(idx, 11) for idx in range(11)]
+        inventory_trend_labels = [_month_label(idx, 12) for idx in range(12)]
         inventory_trend_values = [
             max(0.0, base_value * (1 + math.sin(idx / 2.0) * 0.06))
-            for idx in range(11)
+            for idx in range(12)
         ]
 
     trend_min = min(inventory_trend_values) if inventory_trend_values else 0
@@ -3633,13 +3694,42 @@ def _finished_goals_context(borrower, range_key="today", division="all"):
         sales_trend_qs.exclude(as_of_date__isnull=True)
         .order_by("as_of_date", "created_at", "id")
     )
-    sales_rows = [row for row in trend_rows_all if row.net_sales is not None][-9:]
-    gm_rows = [row for row in trend_rows_all if row.gross_margin_pct is not None][-11:]
+    sales_rows = [row for row in trend_rows_all if row.net_sales is not None]
+    gm_rows = [row for row in trend_rows_all if row.gross_margin_pct is not None]
 
-    sales_labels = [row.as_of_date.strftime("%b\n%Y") for row in sales_rows]
-    sales_values = [_to_millions(row.net_sales) for row in sales_rows]
-    gross_labels = [row.as_of_date.strftime("%b\n%Y") for row in gm_rows]
-    gross_values = [_to_pct_value(row.gross_margin_pct) for row in gm_rows]
+    sales_labels = []
+    sales_values = []
+    if sales_rows:
+        sales_month_map = OrderedDict()
+        for row in sales_rows:
+            dt = row.as_of_date
+            if not dt:
+                continue
+            sales_month_map[(dt.year, dt.month)] = _to_millions(row.net_sales)
+        if sales_month_map:
+            latest_year = max(year for year, _ in sales_month_map.keys())
+            sales_labels, sales_values = _build_year_series(sales_month_map, latest_year)
+    if not sales_values:
+        sales_rows = sales_rows[-12:]
+        sales_labels = [row.as_of_date.strftime("%b\n%Y") for row in sales_rows]
+        sales_values = [_to_millions(row.net_sales) for row in sales_rows]
+
+    gross_labels = []
+    gross_values = []
+    if gm_rows:
+        gm_month_map = OrderedDict()
+        for row in gm_rows:
+            dt = row.as_of_date
+            if not dt:
+                continue
+            gm_month_map[(dt.year, dt.month)] = _to_pct_value(row.gross_margin_pct)
+        if gm_month_map:
+            latest_year = max(year for year, _ in gm_month_map.keys())
+            gross_labels, gross_values = _build_year_series(gm_month_map, latest_year)
+    if not gross_values:
+        gm_rows = gm_rows[-12:]
+        gross_labels = [row.as_of_date.strftime("%b\n%Y") for row in gm_rows]
+        gross_values = [_to_pct_value(row.gross_margin_pct) for row in gm_rows]
 
     sales_axis_max = None
     sales_ticks = None
@@ -3694,7 +3784,7 @@ def _finished_goals_context(borrower, range_key="today", division="all"):
             "values": inventory_trend_values,
             "yPrefix": "$",
             "ySuffix": "M",
-            "yLabel": "$ of Inventory",
+            "yLabel": "",
             "yMin": trend_y_min,
             "yMax": trend_y_max,
             "yTicks": 6,
@@ -3702,6 +3792,8 @@ def _finished_goals_context(borrower, range_key="today", division="all"):
             "yDecimals": 1,
             "showAllPoints": True,
             "pointRadius": 3,
+            "xStep": 1,
+            "xLabelDedupe": False,
         },
         "agedStock": {
             "type": "bar",
@@ -3718,6 +3810,8 @@ def _finished_goals_context(borrower, range_key="today", division="all"):
             "yTicks": sales_ticks,
             "yDecimals": 0,
             "yRight": sales_right,
+            "xStep": 1,
+            "xLabelDedupe": False,
         },
         "agedStockTrend": {
             "type": "line",
@@ -3731,6 +3825,8 @@ def _finished_goals_context(borrower, range_key="today", division="all"):
             "yMax": gross_axis_max,
             "yTicks": gross_ticks,
             "yDecimals": 0,
+            "xStep": 1,
+            "xLabelDedupe": False,
         },
         "inlineExcess": {
             "type": "bar",
@@ -3758,6 +3854,8 @@ def _finished_goals_context(borrower, range_key="today", division="all"):
             "yTicks": 6,
             "yDecimals": 0,
             "yLabel": "% Of Inventory",
+            "xStep": 1,
+            "xLabelDedupe": False,
         },
     }
 
@@ -4117,7 +4215,7 @@ def _raw_materials_context(borrower, range_key="today", division="all"):
         },
         {
             "label": "Available Inventory",
-            "value": _format_pct(available_pct),
+            "value": _format_currency(inventory_available_total),
             "delta": available_delta * Decimal("100"),
             "delta_class": "success" if available_delta >= 0 else "danger",
             "symbol": "▲" if available_delta >= 0 else "▼",
@@ -4647,7 +4745,7 @@ def _work_in_progress_context(borrower, range_key="today", division="all"):
         },
         {
             "label": "Available Inventory",
-            "value": _format_pct(available_pct),
+            "value": _format_currency(total_available),
             "delta": available_delta * Decimal("100"),
             "delta_class": "success" if available_delta >= 0 else "danger",
             "symbol": "▲" if available_delta >= 0 else "▼",
@@ -5208,21 +5306,50 @@ def _other_collateral_context(borrower):
             return ts.strftime("%b %y")
         return str(ts)
 
-    max_points = 12
-    values = []
+    month_map = OrderedDict()
     for key in snapshot_keys:
         rows = snapshots[key]
-        fmv, olv = _aggregate(rows)
-        values.append(
-            {
-                "label": _label_from_timestamp(key),
-                "olv": float(olv),
-            }
-        )
-    values = values[-max_points:]
-    labels = [entry["label"] for entry in values]
-    appraisal_series = [entry["olv"] for entry in values]
-    estimated_series = [entry["olv"] * 0.96 for entry in values]
+        _, olv = _aggregate(rows)
+        if hasattr(key, "year") and hasattr(key, "month"):
+            month_map[(key.year, key.month)] = float(olv)
+        else:
+            month_map[key] = float(olv)
+
+    labels = []
+    appraisal_series = []
+    if month_map:
+        latest_year = max(year for year, _ in month_map.keys())
+        values = []
+        for month in range(1, 13):
+            values.append(month_map.get((latest_year, month)))
+        first_idx = next((i for i, v in enumerate(values) if v is not None), None)
+        if first_idx is not None:
+            first_val = values[first_idx]
+            for idx in range(first_idx):
+                values[idx] = first_val
+            for idx in range(first_idx + 1, len(values)):
+                if values[idx] is None:
+                    values[idx] = values[idx - 1]
+            labels = [date(latest_year, month, 1).strftime("%b %Y") for month in range(1, 13)]
+            appraisal_series = [float(v) for v in values]
+
+    if not labels:
+        max_points = 12
+        values = []
+        for key in snapshot_keys:
+            rows = snapshots[key]
+            _, olv = _aggregate(rows)
+            values.append(
+                {
+                    "label": _label_from_timestamp(key),
+                    "olv": float(olv),
+                }
+            )
+        values = values[-max_points:]
+        labels = [entry["label"] for entry in values]
+        appraisal_series = [entry["olv"] for entry in values]
+
+    estimated_series = [val * 0.96 for val in appraisal_series]
     chart_config = {
         "title": "Value Trend",
         "labels": labels,
@@ -5259,6 +5386,20 @@ def _build_liquidation_metrics(current, previous=None):
         return []
 
     metrics = []
+    available_inventory = _to_decimal(current.available_inventory if current else 0)
+    available_prev = _to_decimal(previous.available_inventory if previous else 0)
+    available_delta = _format_delta(available_inventory, available_prev)
+    metrics.append(
+        {
+            "label": "Available Inventory",
+            "value": _format_currency(available_inventory),
+            "delta": available_delta["value"] if available_delta else None,
+            "symbol": available_delta["sign"] if available_delta else "",
+            "delta_class": "success" if available_delta and available_delta["is_positive"] else "danger",
+            "icon": ICON_SVGS["Available Inventory"],
+        }
+    )
+
     gross_recovery = _to_decimal(current.total_inventory)
     gross_previous = _to_decimal(previous.total_inventory if previous else 0)
     gross_delta = _format_delta(gross_recovery, gross_previous)
@@ -5273,30 +5414,21 @@ def _build_liquidation_metrics(current, previous=None):
         }
     )
 
-    units = _to_decimal(current.available_inventory if current else 0)
-    units_prev = _to_decimal(previous.available_inventory if previous else 0)
-    units_delta = _format_delta(units, units_prev)
-    metrics.append(
-        {
-            "label": "Gross Recovery Units",
-            "value": f"{int(units)}" if units else "0",
-            "delta": units_delta["value"] if units_delta else None,
-            "symbol": units_delta["sign"] if units_delta else "",
-            "delta_class": "success" if units_delta and units_delta["is_positive"] else "danger",
-            "icon": ICON_SVGS["Available Inventory"],
+    liquidation_costs = _to_decimal(current.ineligible_inventory if current else 0)
+    liquidation_prev = _to_decimal(previous.ineligible_inventory if previous else 0)
+    liquidation_delta = _format_delta(liquidation_costs, liquidation_prev)
+    if liquidation_delta:
+        liquidation_delta = {
+            **liquidation_delta,
+            "sign": "▲" if not liquidation_delta["is_positive"] else "▼",
         }
-    )
-
-    liquidation_pct = _to_decimal(current.ineligible_pct_of_inventory if current else 0)
-    liquidation_prev = _to_decimal(previous.ineligible_pct_of_inventory if previous else 0)
-    liquidation_delta = _format_delta(liquidation_pct, liquidation_prev)
     metrics.append(
         {
             "label": "Liquidation Costs",
-            "value": _format_pct(liquidation_pct),
+            "value": _format_currency(liquidation_costs),
             "delta": liquidation_delta["value"] if liquidation_delta else None,
             "symbol": liquidation_delta["sign"] if liquidation_delta else "",
-            "delta_class": "success" if liquidation_delta and liquidation_delta["is_positive"] else "danger",
+            "delta_class": "danger" if liquidation_delta and liquidation_delta["is_positive"] else "success",
             "icon": ICON_SVGS["Ineligible Inventory"],
         }
     )
@@ -5661,6 +5793,15 @@ def _liquidation_model_context(borrower):
     raw_rows = _filter_inventory_rows_by_key(state, "raw_materials")
     wip_rows = _filter_inventory_rows_by_key(state, "work_in_progress")
 
+    def _latest_created_rows(rows):
+        dated_rows = [row for row in rows if row.created_at]
+        if not dated_rows:
+            return rows
+        latest_date = max(row.created_at for row in dated_rows).date()
+        return [row for row in rows if row.created_at and row.created_at.date() == latest_date]
+
+    raw_rows_latest = _latest_created_rows(raw_rows)
+
     raw_category_qs = RMCategoryHistoryRow.objects.filter(borrower=borrower)
     wip_category_qs = WIPCategoryHistoryRow.objects.filter(borrower=borrower)
     raw_category_rows = _latest_category_rows(raw_category_qs)
@@ -5671,7 +5812,7 @@ def _liquidation_model_context(borrower):
             raw_category_rows, default_label="Raw Materials"
         )
         if raw_category_rows
-        else _build_liquidation_category_table(raw_rows, default_label="Raw Materials"),
+        else _build_liquidation_category_table(raw_rows_latest, default_label="Raw Materials"),
         "work_in_progress": _build_liquidation_category_history_table(
             wip_category_rows, default_label="Work-In-Process"
         )
@@ -6046,6 +6187,152 @@ def _liquidation_model_context(borrower):
         liquidation_total_expenses = _format_currency(total_expenses_value)
     else:
         liquidation_total_expenses = "—"
+
+    def _blank_nolv_row(label):
+        return {
+            "label": label,
+            "fg": "—",
+            "fg_pct": "—",
+            "rm": "—",
+            "rm_pct": "—",
+            "wip": "—",
+            "wip_pct": "—",
+            "total": "—",
+            "total_pct": "—",
+        }
+
+    def _parse_money(value):
+        if value is None:
+            return None
+        if isinstance(value, Decimal):
+            return value
+        text = str(value).strip()
+        if not text or text == "—":
+            return None
+        cleaned = text.replace("$", "").replace(",", "")
+        try:
+            return Decimal(cleaned)
+        except Exception:
+            return None
+
+    def _sum_nolv_rows(rows):
+        totals = {"fg": Decimal("0"), "rm": Decimal("0"), "wip": Decimal("0"), "total": Decimal("0")}
+        has_values = False
+        for row in rows:
+            for key in ("fg", "rm", "wip", "total"):
+                val = _parse_money(row.get(key))
+                if val is None:
+                    continue
+                totals[key] += val
+                has_values = True
+        return totals if has_values else None
+
+    def _build_nolv_row_from_amounts(label, totals):
+        if not totals:
+            return _blank_nolv_row(label)
+
+        def _pct(val, base):
+            if val is None or base <= 0:
+                return "—"
+            return _format_pct(val / base)
+
+        fg_val = totals.get("fg")
+        rm_val = totals.get("rm")
+        wip_val = totals.get("wip")
+        total_val = totals.get("total")
+        return {
+            "label": label,
+            "fg": _format_currency(fg_val) if fg_val is not None else "—",
+            "fg_pct": _pct(fg_val, finished_totals[0]),
+            "rm": _format_currency(rm_val) if rm_val is not None else "—",
+            "rm_pct": _pct(rm_val, raw_totals[0]),
+            "wip": _format_currency(wip_val) if wip_val is not None else "—",
+            "wip_pct": _pct(wip_val, wip_totals[0]),
+            "total": _format_currency(total_val) if total_val is not None else "—",
+            "total_pct": _pct(total_val, total_available_cost),
+        }
+
+    def _pick_nolv_row(rows_by_label, label, aliases=None):
+        for key in [label] + (aliases or []):
+            match = rows_by_label.get(_normalize_label(key))
+            if match:
+                row = dict(match)
+                row["label"] = label
+                return row
+        return _blank_nolv_row(label)
+
+    nolv_rows_by_label = {
+        _normalize_label(row.get("label")): row
+        for row in liquidation_net_orderly_rows
+        if row.get("label")
+    }
+    payroll_totals_row = _build_nolv_row_from_amounts("Total", _sum_nolv_rows(payroll_rows))
+    operating_totals_row = _build_nolv_row_from_amounts(
+        "Total Operating Costs", _sum_nolv_rows(operating_rows)
+    )
+    liquidation_totals_row = _build_nolv_row_from_amounts(
+        "Total Liquidation Costs", _sum_nolv_rows(liquidation_rows)
+    )
+    liquidation_nolv_sections = [
+        {"type": "row", "row": _pick_nolv_row(
+            nolv_rows_by_label,
+            "Available Inventory at Cost",
+            aliases=["Available Inventory", "Inventory at Cost"],
+        )},
+        {"type": "row", "row": _pick_nolv_row(nolv_rows_by_label, "Gross Recovery")},
+        {"type": "heading", "label": "Liquidation Expenses"},
+        {"type": "subheading", "label": "Payroll Costs"},
+    ]
+    for label, aliases in [
+        ("Distribution Payroll", ["distribution payroll"]),
+        ("Administration Payroll", ["administration payroll"]),
+        ("Selling Payroll", ["selling payroll"]),
+        ("Commissions", ["commissions", "commission"]),
+        (
+            "Employee Incentive & Retention",
+            ["employee incentive and retention", "employee incentive and retention bonus"],
+        ),
+        ("Employee Benefits and Taxes", ["employee benefits and taxes", "employee benefits & taxes"]),
+    ]:
+        liquidation_nolv_sections.append(
+            {"type": "row", "row": _pick_nolv_row(nolv_rows_by_label, label, aliases=aliases)}
+        )
+    liquidation_nolv_sections.append({"type": "row", "row": payroll_totals_row})
+    liquidation_nolv_sections.append(
+        {
+            "type": "row",
+            "row": _pick_nolv_row(
+                nolv_rows_by_label,
+                "Advertising & Promotional Costs",
+                aliases=["advertising & promotional costs", "advertising and promotional costs"],
+            ),
+        }
+    )
+    liquidation_nolv_sections.append({"type": "subheading", "label": "Operating Costs"})
+    for label, aliases in [
+        ("Occupancy and Utilities", ["occupancy and utilities", "occupancy & utilities"]),
+        ("Third Party Warehouse Costs", ["third party warehouse costs", "3rd party warehouse costs"]),
+        ("Independent Inventory Costs", ["independent inventory costs"]),
+        ("Shipping Costs", ["shipping costs", "shipping"]),
+        ("Royalty Costs", ["royalty costs", "royalties"]),
+        ("Miscellaneous Costs", ["miscellaneous costs", "miscellaneous", "misc costs"]),
+    ]:
+        liquidation_nolv_sections.append(
+            {"type": "row", "row": _pick_nolv_row(nolv_rows_by_label, label, aliases=aliases)}
+        )
+    liquidation_nolv_sections.append({"type": "row", "row": operating_totals_row})
+    for label, aliases in [
+        ("On-Site Management", ["on-site management", "on site management"]),
+        ("Agent Commissions", ["agent commission costs", "agent commission cost", "agent commissions"]),
+        ("Net Recovery", ["net recovery", "net orderly liquidated value"]),
+    ]:
+        liquidation_nolv_sections.append(
+            {"type": "row", "row": _pick_nolv_row(nolv_rows_by_label, label, aliases=aliases)}
+        )
+    liquidation_nolv_sections.insert(
+        len(liquidation_nolv_sections) - 1,
+        {"type": "row", "row": liquidation_totals_row},
+    )
     history_rows = []
     total_cost = Decimal("0")
     total_selling = Decimal("0")
@@ -6224,6 +6511,7 @@ def _liquidation_model_context(borrower):
         "liquidation_category_tabs": category_tabs,
         "liquidation_net_orderly_rows": liquidation_net_orderly_rows,
         "liquidation_net_orderly_footer": liquidation_net_orderly_footer,
+        "liquidation_nolv_sections": liquidation_nolv_sections,
         "fg_gross_recovery_history_rows": history_rows,
         "fg_gross_recovery_history_totals": history_totals,
         "liquidation_payroll_rows": payroll_rows,

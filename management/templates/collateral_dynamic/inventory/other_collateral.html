@@ -178,10 +178,11 @@
   .other-collateral .chart-tooltip{
     position:absolute;
     padding:6px 10px;
-    background:#101828;
-    color:#fff;
+    background:#fff;
+    color:#111827;
     font-size:12px;
     border-radius:8px;
+    border:1px solid #e5e7eb;
     box-shadow:0 12px 22px rgba(15,23,42,.2);
     pointer-events:none;
     opacity:0;
@@ -233,7 +234,7 @@
   .other-collateral table.data.asset-register-table col.col-num{width:12%;}
   .other-collateral table.data thead th{position:sticky;top:0;background:#FBFCFE;color:#65758b;font-weight:950;text-align:left;padding:10px 12px;border-bottom:1px solid var(--border);white-space:nowrap;}
   .other-collateral table.data.value-analysis-table thead tr:first-child th{
-    text-align:left;
+    text-align:center;
     vertical-align:bottom;
     padding-top:6px;
     padding-bottom:2px;
@@ -261,7 +262,7 @@
   .other-collateral .numR{text-align:left;}
   .other-collateral table.data.value-analysis-table th.numR,
   .other-collateral table.data.value-analysis-table td.numR{
-    text-align:left;
+    text-align:center;
   }
   .other-collateral table.data.asset-register-table th.numR,
   .other-collateral table.data.asset-register-table td.numR{
@@ -465,7 +466,7 @@
             <th class="numR">Year</th>
             <th>Condition</th>
             <th class="numR">Fair Market Value</th>
-            <!-- <th class="numR">Orderly Liquidation Value</th> -->
+            <th class="numR">Orderly Liquidation Value</th>
           </tr>
         </thead>
         <tbody>
@@ -507,13 +508,15 @@
       return;
     }
     const formatCurrencyLabel = val => `$${Math.round(val).toLocaleString('en-US')}`;
-    let min = Math.min(...all);
-    let max = Math.max(...all);
-    if(min === Infinity) min = 0;
+    let max = Math.max(...all, 0);
     if(max === -Infinity) max = 0;
-    const range = (max-min)||1;
-    min -= range*0.12;
-    max += range*0.12;
+    let min = 0;
+    if (max <= 0) {
+      max = 1;
+    } else {
+      max = max * 1.08;
+    }
+    const range = (max - min) || 1;
     const totalPoints = cfg.labels?.length || Math.max(seriesEstimated.length, seriesAppraisal.length);
     const denominator = totalPoints>1 ? totalPoints-1 : 1;
     const x = i => pad.l + (i/denominator)*plotW;
@@ -526,7 +529,7 @@
       const val=max - t*(max-min);
       return {val, yy:y(val)};
     });
-    const xStep = (cfg.labels?.length || 0) > 10 ? 2 : 1;
+    const xStep = 1;
     const xLabelY = H - 12;
     const yLabelX = pad.l - 12;
     el.innerHTML = `
