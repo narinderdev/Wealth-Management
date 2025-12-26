@@ -2175,6 +2175,14 @@ def _accounts_receivable_context(borrower, range_key="today", division="all", sn
     def _format_axis_pct(value):
         return f"{_trim_axis_value(value)}%"
 
+    def _pct_to_points(value):
+        if value is None:
+            return None
+        pct = _to_decimal(value)
+        if pct <= Decimal("1"):
+            pct *= Decimal("100")
+        return pct
+
     def _nice_step(value):
         if value <= 0:
             return 1.0
@@ -2191,6 +2199,38 @@ def _accounts_receivable_context(borrower, range_key="today", division="all", sn
             nice = 10
         return nice * magnitude
 
+    def _compute_axis(values, tick_count, pad_ratio=0.12, clamp_min=None, clamp_max=None):
+        min_val = min(values)
+        max_val = max(values)
+        if min_val == max_val:
+            pad = max(abs(min_val) * 0.1, 1.0)
+            min_val -= pad
+            max_val += pad
+        else:
+            pad = (max_val - min_val) * pad_ratio
+            min_val -= pad
+            max_val += pad
+        if clamp_min is not None:
+            min_val = max(min_val, clamp_min)
+        if clamp_max is not None:
+            max_val = min(max_val, clamp_max)
+        if max_val <= min_val:
+            max_val = min_val + 1.0
+        step = _nice_step((max_val - min_val) / max(1, tick_count - 1))
+        if step <= 0:
+            step = 1.0
+        axis_min = math.floor(min_val / step) * step
+        axis_max = math.ceil(max_val / step) * step
+        if axis_max - axis_min < step * (tick_count - 1):
+            axis_max = axis_min + step * (tick_count - 1)
+        if clamp_min is not None:
+            axis_min = max(axis_min, clamp_min)
+        if clamp_max is not None:
+            axis_max = min(axis_max, clamp_max)
+        if axis_max <= axis_min:
+            axis_max = axis_min + step
+        return axis_min, axis_max
+
     def _normalize_chart_values(values, labels):
         values = [float(_to_decimal(val)) for val in values if val is not None]
         if not values:
@@ -2206,7 +2246,7 @@ def _accounts_receivable_context(borrower, range_key="today", division="all", sn
             labels = labels[-len(values):]
         return values, labels
 
-    def _build_kpi_chart(values, labels, axis_formatter, value_formatter):
+    def _build_kpi_chart(values, labels, axis_formatter, value_formatter, pad_ratio=0.12, clamp_min=None, clamp_max=None):
         values, labels = _normalize_chart_values(values, labels)
         width = 260
         height = 140
@@ -2216,14 +2256,11 @@ def _accounts_receivable_context(borrower, range_key="today", division="all", sn
         bottom = 26
         plot_width = width - left - right
         plot_height = height - top - bottom
-        max_val = max(values)
-        if max_val <= 0:
-            max_val = 1.0
         tick_count = 4
-        step_value = _nice_step(max_val / max(1, tick_count - 1))
-        axis_max = step_value * (tick_count - 1)
+        axis_min, axis_max = _compute_axis(values, tick_count, pad_ratio, clamp_min, clamp_max)
+        axis_range = axis_max - axis_min if axis_max != axis_min else 1.0
         if axis_max <= 0:
-            axis_max = max_val
+            axis_max = axis_min + axis_range
         step_x = plot_width / max(1, len(values) - 1)
         baseline_y = top + plot_height
         points = []
@@ -2231,7 +2268,7 @@ def _accounts_receivable_context(borrower, range_key="today", division="all", sn
         x_positions = []
         x_labels = []
         for idx, value in enumerate(values):
-            ratio = value / axis_max if axis_max else 0
+            ratio = (value - axis_min) / axis_range if axis_range else 0
             ratio = max(0.0, min(1.0, ratio))
             x = left + idx * step_x
             y = baseline_y - ratio * plot_height
@@ -2249,7 +2286,7 @@ def _accounts_receivable_context(borrower, range_key="today", division="all", sn
         y_ticks = []
         for idx in range(tick_count):
             ratio = idx / (tick_count - 1)
-            value = axis_max * (1 - ratio)
+            value = axis_max - (axis_range * ratio)
             y = top + plot_height * ratio
             y_ticks.append({"y": round(y, 1), "label": axis_formatter(value)})
         return {
@@ -2295,6 +2332,7 @@ def _accounts_receivable_context(borrower, range_key="today", division="all", sn
             "chart_formatter": lambda value: _format_currency_millions(value),
             "scale": Decimal("1000000"),
             "axis_formatter": _format_axis_currency_millions,
+            "pad_ratio": 0.14,
             "color": "var(--blue-3)",
             "icon": "images/balance.svg",
             "improvement_on_increase": True,
@@ -2303,8 +2341,10 @@ def _accounts_receivable_context(borrower, range_key="today", division="all", sn
             "label": "Days Sales Outstanding",
             "key": "avg_dso",
             "formatter": lambda value: _format_days(value),
-            "chart_formatter": lambda value: _format_currency_millions(value),
-            "axis_formatter": _format_axis_currency_millions,
+            "chart_formatter": lambda value: _format_days(value),
+            "axis_formatter": _format_axis_days,
+            "pad_ratio": 0.18,
+            "clamp_min": 0,
             "color": "var(--purple)",
             "icon": "images/sales_outstanding.svg",
             "improvement_on_increase": False,
@@ -2313,8 +2353,10 @@ def _accounts_receivable_context(borrower, range_key="today", division="all", sn
             "label": "% of total past due",
             "key": "past_due_pct",
             "formatter": lambda value: _format_pct_display(value),
-            "chart_formatter": lambda value: _format_currency_millions(value),
-            "axis_formatter": _format_axis_currency_millions,
+            "chart_formatter": lambda value: _format_pct_display(value),
+            "axis_formatter": _format_axis_pct,
+            "pad_ratio": 0.2,
+            "clamp_min": 0,
             "color": "var(--teal)",
             "icon": "images/total_pastdue_icon.svg",
             "improvement_on_increase": False,
@@ -2327,12 +2369,21 @@ def _accounts_receivable_context(borrower, range_key="today", division="all", sn
     for spec in kpi_specs:
         series_values = [_to_decimal(row[spec["key"]]) for row in chart_history]
         scale = spec.get("scale") or Decimal("1")
-        scaled_values = [float(val / scale) for val in series_values]
+        scaled_values = []
+        for value in series_values:
+            if spec["key"] == "past_due_pct":
+                pct_value = _pct_to_points(value)
+                scaled_values.append(float(pct_value) if pct_value is not None else 0.0)
+            else:
+                scaled_values.append(float(value / scale))
         chart = _build_kpi_chart(
             scaled_values,
             chart_labels,
             axis_formatter=spec["axis_formatter"],
             value_formatter=spec.get("chart_formatter") or spec["formatter"],
+            pad_ratio=spec.get("pad_ratio", 0.12),
+            clamp_min=spec.get("clamp_min"),
+            clamp_max=spec.get("clamp_max"),
         )
         delta = _delta_payload(
             current_snapshot[spec["key"]],
@@ -2686,14 +2737,6 @@ def _accounts_receivable_context(borrower, range_key="today", division="all", sn
             }
         )
     trend_chart["dots"] = trend_dots
-
-    def _pct_to_points(value):
-        if value is None:
-            return None
-        pct = _to_decimal(value)
-        if pct <= Decimal("1"):
-            pct *= Decimal("100")
-        return pct
 
     concentration_entries = []
     for row in sorted(

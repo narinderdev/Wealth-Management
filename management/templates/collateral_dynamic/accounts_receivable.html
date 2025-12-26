@@ -811,7 +811,8 @@
       position:absolute;
       inset:0;
       z-index:3;
-    height: 257px;
+      width:100%;
+      height:100%;
     }
     .collateral-dynamic .chart-layer.is-static{
       pointer-events:none;
@@ -819,6 +820,17 @@
     }
     .collateral-dynamic .chart-layer.label-layer{
       z-index:4;
+    }
+    .collateral-dynamic .chart-layer.line-layer{
+      z-index:2;
+      pointer-events:none;
+    }
+    .collateral-dynamic .chart-line-segment{
+      position:absolute;
+      height:2px;
+      background:var(--line-color, #0b5bd3);
+      border-radius:999px;
+      transform-origin:0 50%;
     }
     .collateral-dynamic .chart-grid-line{
       position:absolute;
@@ -1373,9 +1385,6 @@
 .content-inner{
   margin-top: -45px;
 }
-.chart-axis-title{
-      margin-top: 123px;
-}
 /* 
 .chart-wrap.ar-chart svg{
     width: 66%;
@@ -1495,12 +1504,13 @@
                         <div class="borrowing-base-chart chart-wrap ar-chart">
                           <div class="chart-box bb-chart"
                             style="--chart-width:260; --chart-height:140; --axis-left:{{ kpi.chart.grid.left }}; --axis-right:{{ kpi.chart.grid.right }}; --axis-top:{{ kpi.chart.grid.top }}; --axis-bottom:{{ kpi.chart.grid.bottom }};">
-                            <canvas class="chart-canvas"
+                            <div class="chart-layer line-layer"
                               data-chart-width="260"
                               data-chart-height="140"
                               data-line-color="{{ line_color }}"
+                              data-line-source="dots"
                               data-line-points="{{ kpi.chart.points }}"
-                              aria-hidden="true"></canvas>
+                              aria-hidden="true"></div>
                             <div class="chart-layer is-static">
                               {% for tick in kpi.chart.y_ticks %}
                                 <span class="chart-grid-line h" style="--y: {{ tick.y }}"></span>
@@ -1547,10 +1557,11 @@
                         <div class="borrowing-base-chart chart-wrap">
                           <div class="chart-box bb-chart"
                             style="--chart-width:260; --chart-height:140; --axis-left:20; --axis-right:240; --axis-top:20; --axis-bottom:120;">
-                            <canvas class="chart-canvas"
+                            <div class="chart-layer line-layer"
                               data-chart-width="260"
                               data-chart-height="140"
-                              aria-hidden="true"></canvas>
+                              data-line-source="dots"
+                              aria-hidden="true"></div>
                           </div>
                         </div>
                       </div>
@@ -1800,13 +1811,13 @@
 
                       <div class="ar-graph chart-wrap ar-chart">
                         <div class="chart-box ar-ineligible-chart" aria-label="Ineligible AR trend line chart">
-                          <canvas class="chart-canvas"
+                          <div class="chart-layer line-layer"
                             data-chart-width="520"
                             data-chart-height="260"
                             data-line-color="#0b5bd3"
                             data-line-source="dot-layout"
                             data-line-points="{{ ar_ineligible_trend.points }}"
-                            aria-hidden="true"></canvas>
+                            aria-hidden="true"></div>
                           <div class="chart-layer is-static">
                             <span class="chart-grid-line v axis-line" style="--x: 60"></span>
                             <span class="chart-grid-line h" style="--y: 220"></span>
@@ -1972,8 +1983,10 @@
 
   <script>
     (function(){
-      function parseLinePoints(raw){
+      function parseLinePoints(raw, baseWidth, baseHeight, actualWidth, actualHeight){
         if(!raw) return [];
+        const safeBaseWidth = baseWidth || actualWidth || 1;
+        const safeBaseHeight = baseHeight || actualHeight || 1;
         return raw.trim().split(/\s+/).map(pair=>{
           const parts = pair.split(",");
           const x = parseFloat(parts[0]);
@@ -1981,73 +1994,92 @@
           if(Number.isNaN(x) || Number.isNaN(y)){
             return null;
           }
-          return {x,y};
+          return {
+            x: (x / safeBaseWidth) * actualWidth,
+            y: (y / safeBaseHeight) * actualHeight,
+          };
         }).filter(Boolean);
       }
-      function pointsFromDots(canvas, useLayout){
-        const chartBox = canvas.closest(".chart-box");
+      function pointsFromDots(chartBox){
         if(!chartBox) return [];
         const dots = chartBox.querySelectorAll(".chart-dot");
-        if(!useLayout){
-          return Array.from(dots).map(dot=>{
-            const x = parseFloat(dot.style.getPropertyValue("--x"));
-            const y = parseFloat(dot.style.getPropertyValue("--y"));
-            if(Number.isNaN(x) || Number.isNaN(y)){
-              return null;
-            }
-            return {x,y};
-          }).filter(Boolean);
-        }
         const boxRect = chartBox.getBoundingClientRect();
-        const width = parseFloat(canvas.dataset.chartWidth || chartBox.clientWidth || "0");
-        const height = parseFloat(canvas.dataset.chartHeight || chartBox.clientHeight || "0");
-        const scaleX = boxRect.width ? width / boxRect.width : 1;
-        const scaleY = boxRect.height ? height / boxRect.height : 1;
         return Array.from(dots).map(dot=>{
           const rect = dot.getBoundingClientRect();
-          const x = (rect.left + rect.width / 2 - boxRect.left) * scaleX;
-          const y = (rect.top + rect.height / 2 - boxRect.top) * scaleY;
+          const x = (rect.left + rect.width / 2 - boxRect.left);
+          const y = (rect.top + rect.height / 2 - boxRect.top);
           if(Number.isNaN(x) || Number.isNaN(y)){
             return null;
           }
           return {x,y};
         }).filter(Boolean);
       }
-      function drawLineCharts(){
-        document.querySelectorAll(".chart-canvas[data-line-points]").forEach(canvas=>{
-          let points = [];
-          if(canvas.dataset.lineSource === "dot-layout"){
-            points = pointsFromDots(canvas, true);
-          } else if(canvas.dataset.lineSource === "dots") {
-            points = pointsFromDots(canvas, false);
-          } else {
-            points = parseLinePoints(canvas.dataset.linePoints);
-          }
-          if(!points.length) return;
-          const width = parseFloat(canvas.dataset.chartWidth || "0");
-          const height = parseFloat(canvas.dataset.chartHeight || "0");
-          if(!width || !height) return;
-          const dpr = window.devicePixelRatio || 1;
-          canvas.width = width * dpr;
-          canvas.height = height * dpr;
-          const ctx = canvas.getContext("2d");
-          if(!ctx) return;
-          ctx.setTransform(1, 0, 0, 1, 0, 0);
-          ctx.clearRect(0, 0, canvas.width, canvas.height);
-          ctx.setTransform(dpr, 0, 0, dpr, 0, 0);
-          ctx.strokeStyle = canvas.dataset.lineColor || "#0b5bd3";
-          ctx.lineWidth = 2.2;
-          ctx.lineJoin = "round";
-          ctx.lineCap = "round";
-          ctx.beginPath();
-          points.forEach((point, idx)=>{
-            if(idx === 0){
-              ctx.moveTo(point.x, point.y);
-            } else {
-              ctx.lineTo(point.x, point.y);
-            }
+      function getBaseDimension(chartBox, layer, key){
+        const datasetKey = `chart${key.charAt(0).toUpperCase()}${key.slice(1)}`;
+        const datasetValue = layer.dataset[datasetKey] || chartBox.dataset[datasetKey];
+        if(datasetValue) return parseFloat(datasetValue);
+        const computed = getComputedStyle(chartBox).getPropertyValue(`--chart-${key}`);
+        if(computed) return parseFloat(computed);
+        return 0;
+      }
+      function renderLineSegments(layer, points, color){
+        layer.innerHTML = "";
+        if(color){
+          layer.style.setProperty("--line-color", color);
+        }
+        for(let i = 0; i < points.length - 1; i++){
+          const start = points[i];
+          const end = points[i + 1];
+          const dx = end.x - start.x;
+          const dy = end.y - start.y;
+          const length = Math.hypot(dx, dy);
+          if(!length) continue;
+          const angle = Math.atan2(dy, dx) * (180 / Math.PI);
+          const segment = document.createElement("span");
+          segment.className = "chart-line-segment";
+          segment.style.width = `${length}px`;
+          segment.style.left = `${start.x}px`;
+          segment.style.top = `${start.y}px`;
+          segment.style.transform = `translateY(-50%) rotate(${angle}deg)`;
+          layer.appendChild(segment);
+        }
+      }
+      let resizeObserver;
+      let resizeScheduled = false;
+      function observeChartResize(){
+        if(resizeObserver || !("ResizeObserver" in window)) return;
+        resizeObserver = new ResizeObserver(()=>{
+          if(resizeScheduled) return;
+          resizeScheduled = true;
+          window.requestAnimationFrame(()=>{
+            resizeScheduled = false;
+            drawLineCharts();
           });
-          ctx.stroke();
+        });
+        document.querySelectorAll(".chart-box").forEach(box=>{
+          resizeObserver.observe(box);
+        });
+      }
+      function drawLineCharts(){
+        document.querySelectorAll(".chart-layer.line-layer").forEach(layer=>{
+          const chartBox = layer.closest(".chart-box");
+          if(!chartBox) return;
+          const actualWidth = chartBox.clientWidth;
+          const actualHeight = chartBox.clientHeight;
+          if(!actualWidth || !actualHeight) return;
+          const baseWidth = getBaseDimension(chartBox, layer, "width") || actualWidth;
+          const baseHeight = getBaseDimension(chartBox, layer, "height") || actualHeight;
+          let points = [];
+          if(layer.dataset.lineSource === "dot-layout" || layer.dataset.lineSource === "dots"){
+            points = pointsFromDots(chartBox);
+          } else {
+            points = parseLinePoints(layer.dataset.linePoints, baseWidth, baseHeight, actualWidth, actualHeight);
+          }
+          if(!points.length){
+            layer.innerHTML = "";
+            return;
+          }
+          renderLineSegments(layer, points, layer.dataset.lineColor || "#0b5bd3");
         });
       }
       function positionTooltip(wrap, event){
@@ -2088,10 +2120,12 @@
         document.addEventListener("DOMContentLoaded", ()=>{
           attachArTooltips();
           drawLineCharts();
+          observeChartResize();
         });
       } else {
         attachArTooltips();
         drawLineCharts();
+        observeChartResize();
         let resizeTimer;
         window.addEventListener("resize", ()=>{
           window.clearTimeout(resizeTimer);
