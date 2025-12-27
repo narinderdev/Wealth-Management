@@ -20,6 +20,7 @@ from management.models import (
     CollateralOverviewRow,
     Company,
     CompositeIndexRow,
+    ForecastRow,
     RiskSubfactorsRow,
     SnapshotSummaryRow,
 )
@@ -351,6 +352,22 @@ def _build_line_series(values, labels, series_label=None, width=220, height=140)
         },
         "label_x": round(plot_left - 45, 1),
         "label_y": round(baseline_y + 8, 1),
+    }
+
+
+def _delta_payload(current, previous):
+    if current is None or previous is None:
+        return None
+    curr = _to_decimal(current)
+    prev = _to_decimal(previous)
+    if prev == 0:
+        return None
+    diff = (curr - prev) / prev * Decimal("100")
+    is_positive = diff >= 0
+    return {
+        "symbol": "▲" if is_positive else "▼",
+        "value": f"{abs(diff):.2f}%",
+        "class": "up" if is_positive else "down",
     }
 
 
@@ -813,6 +830,76 @@ def summary_view(request):
         },
     }
 
+    chart_points = 5
+
+    # Use most recent forecast rows so Borrowing Base KPIs match the forecast sheet.
+    forecast_limit = max(chart_points, 2)
+    forecast_rows = list(
+        ForecastRow.objects.filter(borrower=borrower)
+        .order_by("-as_of_date", "-period", "-created_at", "-id")[:forecast_limit]
+    )
+    latest_forecast = forecast_rows[0] if forecast_rows else None
+    previous_forecast = forecast_rows[1] if len(forecast_rows) > 1 else None
+
+    forecast_chart_labels = []
+    forecast_net_series = []
+    forecast_outstanding_series = []
+    forecast_availability_series = []
+
+    if latest_forecast:
+        forecast_label = (latest_forecast.actual_forecast or "").strip()
+        forecast_date = latest_forecast.as_of_date or latest_forecast.period
+        date_display = _format_date(forecast_date)
+        detail_parts = []
+        if forecast_label:
+            detail_parts.append(forecast_label.title())
+        if date_display and date_display != "—":
+            detail_parts.append(date_display)
+        forecast_detail = " · ".join(detail_parts) if detail_parts else "Latest forecast entry"
+
+        def _apply_forecast_metric(metric_key, field_name):
+            insights[metric_key]["amount"] = _format_currency(
+                getattr(latest_forecast, field_name, None)
+            )
+            insights[metric_key]["detail"] = forecast_detail
+            previous_value = getattr(previous_forecast, field_name, None) if previous_forecast else None
+            insights[metric_key]["delta"] = _delta_payload(
+                getattr(latest_forecast, field_name, None),
+                previous_value,
+            )
+
+        _apply_forecast_metric("net", "available_collateral")
+        _apply_forecast_metric("outstanding", "loan_balance")
+        _apply_forecast_metric("availability", "revolver_availability")
+
+        chart_history = list(reversed(forecast_rows[:chart_points]))
+
+        def _forecast_label(row, index):
+            label_date = row.as_of_date or row.period
+            if not label_date and getattr(row, "created_at", None):
+                created_dt = row.created_at
+                if timezone.is_aware(created_dt):
+                    created_dt = timezone.localtime(created_dt)
+                label_date = created_dt.date()
+            if hasattr(label_date, "strftime"):
+                return label_date.strftime("%m/%d")
+            if label_date:
+                return str(label_date)
+            fallback = (row.actual_forecast or "").strip()
+            if fallback:
+                return fallback
+            return f"{index + 1:02d}"
+
+        def _forecast_value(row, field_name):
+            value = getattr(row, field_name, None)
+            return _to_decimal(value) if value is not None else None
+
+        for idx, row in enumerate(chart_history):
+            forecast_chart_labels.append(_forecast_label(row, idx))
+            forecast_net_series.append(_forecast_value(row, "available_collateral"))
+            forecast_outstanding_series.append(_forecast_value(row, "loan_balance"))
+            forecast_availability_series.append(_forecast_value(row, "revolver_availability"))
+
     previous_collateral_rows = []
     if latest_collateral_time:
         previous_collateral_time = (
@@ -842,7 +929,6 @@ def summary_view(request):
     if previous_available_total < Decimal("0"):
         previous_available_total = Decimal("0")
 
-    chart_points = 5
     collateral_history = list(
         _apply_date_filter(
             CollateralOverviewRow.objects.filter(borrower=borrower)
@@ -887,39 +973,52 @@ def summary_view(request):
             ar_labels.append(date_value.strftime("%m/%d") if date_value else f"{idx + 1:02d}")
             outstanding_series.append(_to_decimal(row.balance))
 
-    base_labels = _normalize_labels(collateral_labels or ar_labels, chart_points)
-    net_series = _normalize_series(net_series, chart_points, net_total)
-    availability_series = _normalize_series(availability_series, chart_points, available_total)
-    outstanding_series = _normalize_series(
-        outstanding_series,
-        chart_points,
-        ar_row.balance if ar_row and ar_row.balance is not None else Decimal("0"),
-    )
+    label_source = forecast_chart_labels or collateral_labels or ar_labels
+    base_labels = _normalize_labels(label_source, chart_points)
 
-    def _delta_payload(current, previous):
-        if current is None or previous is None:
-            return None
-        curr = _to_decimal(current)
-        prev = _to_decimal(previous)
-        if prev == 0:
-            return None
-        diff = (curr - prev) / prev * Decimal("100")
-        is_positive = diff >= 0
-        return {
-            "symbol": "▲" if is_positive else "▼",
-            "value": f"{abs(diff):.2f}%",
-            "class": "up" if is_positive else "down",
-        }
+    if forecast_chart_labels and latest_forecast:
+        net_fallback = getattr(latest_forecast, "available_collateral", None)
+        if net_fallback is None:
+            net_fallback = net_total
+        outstanding_fallback = getattr(latest_forecast, "loan_balance", None)
+        if outstanding_fallback is None:
+            outstanding_fallback = (
+                ar_row.balance if ar_row and ar_row.balance is not None else Decimal("0")
+            )
+        availability_fallback = getattr(latest_forecast, "revolver_availability", None)
+        if availability_fallback is None:
+            availability_fallback = available_total
 
-    insights["net"]["delta"] = _delta_payload(net_total, previous_net_total if previous_collateral_rows else None)
-    insights["outstanding"]["delta"] = _delta_payload(
-        ar_row.balance if ar_row else None,
-        ar_prev_row.balance if ar_prev_row else None,
-    )
-    insights["availability"]["delta"] = _delta_payload(
-        available_total if collateral_rows else None,
-        previous_available_total if previous_collateral_rows else None,
-    )
+        net_series = _normalize_series(forecast_net_series, chart_points, net_fallback)
+        outstanding_series = _normalize_series(
+            forecast_outstanding_series,
+            chart_points,
+            outstanding_fallback,
+        )
+        availability_series = _normalize_series(
+            forecast_availability_series,
+            chart_points,
+            availability_fallback,
+        )
+    else:
+        net_series = _normalize_series(net_series, chart_points, net_total)
+        availability_series = _normalize_series(availability_series, chart_points, available_total)
+        outstanding_series = _normalize_series(
+            outstanding_series,
+            chart_points,
+            ar_row.balance if ar_row and ar_row.balance is not None else Decimal("0"),
+        )
+
+    if not latest_forecast:
+        insights["net"]["delta"] = _delta_payload(net_total, previous_net_total if previous_collateral_rows else None)
+        insights["outstanding"]["delta"] = _delta_payload(
+            ar_row.balance if ar_row else None,
+            ar_prev_row.balance if ar_prev_row else None,
+        )
+        insights["availability"]["delta"] = _delta_payload(
+            available_total if collateral_rows else None,
+            previous_available_total if previous_collateral_rows else None,
+        )
 
     net_chart = _build_line_series(
         net_series,
