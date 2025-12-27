@@ -4078,22 +4078,37 @@ def _finished_goals_context(borrower, range_key="today", division="all"):
             total_inline += _to_decimal(row.inline_dollars)
             total_excess += _to_decimal(row.excess_dollars)
 
+        raw_entries = []
         for category, totals in category_totals.items():
-            inline_amount = _format_currency(totals["inline"])
-            inline_pct = (
-                _format_pct(totals["inline"] / totals["available"])
-                if totals["available"]
-                else "—"
+            available = totals["available"]
+            inline_value = totals["inline"]
+            excess_value = totals["excess"]
+            inline_pct_value = (inline_value / available) if available else None
+            excess_pct_value = (excess_value / available) if available else None
+            raw_entries.append(
+                {
+                    "category": category,
+                    "inline_amount": inline_value,
+                    "inline_pct": inline_pct_value,
+                    "excess_amount": excess_value,
+                    "excess_pct": excess_pct_value,
+                }
             )
-            excess_amount = _format_currency(totals["excess"])
+
+        raw_entries.sort(key=lambda entry: entry["inline_amount"], reverse=True)
+
+        for entry in raw_entries:
+            inline_amount = _format_currency(entry["inline_amount"])
+            inline_pct = (
+                _format_pct(entry["inline_pct"]) if entry["inline_pct"] is not None else "—"
+            )
+            excess_amount = _format_currency(entry["excess_amount"])
             excess_pct = (
-                _format_pct(totals["excess"] / totals["available"])
-                if totals["available"]
-                else "—"
+                _format_pct(entry["excess_pct"]) if entry["excess_pct"] is not None else "—"
             )
             inline_excess_by_category.append(
                 {
-                    "category": category,
+                    "category": entry["category"],
                     "new_amount": inline_amount,
                     "new_pct": inline_pct,
                     "inline_0_52_amount": inline_amount,
@@ -4235,8 +4250,50 @@ def _finished_goals_context(borrower, range_key="today", division="all"):
             sku_totals.values(),
             key=lambda entry: entry["cost"],
             reverse=True,
-        )[:20]
+        )
+        unique_sorted_skus = []
+        seen_keys = set()
         for entry in sorted_skus:
+            key = (
+                entry["item_number"],
+                entry["description"],
+                entry["category"],
+            )
+            if key in seen_keys:
+                continue
+            seen_keys.add(key)
+            unique_sorted_skus.append(entry)
+        category_totals = OrderedDict()
+        for entry in unique_sorted_skus:
+            category_key = entry["category"] or "—"
+            bucket = category_totals.setdefault(
+                category_key,
+                {
+                    "category": category_key,
+                    "item_number": entry["item_number"],
+                    "description": entry["description"],
+                    "cost": Decimal("0"),
+                    "cogs": Decimal("0"),
+                    "gm": Decimal("0"),
+                    "wos_weighted": Decimal("0"),
+                    "wos_weight": Decimal("0"),
+                },
+            )
+            bucket["cost"] += entry["cost"]
+            bucket["cogs"] += entry["cogs"]
+            bucket["gm"] += entry["gm"]
+            bucket["wos_weighted"] += entry["wos_weighted"]
+            bucket["wos_weight"] += entry["wos_weight"]
+
+        aggregated_categories = list(category_totals.values())
+        aggregated_categories.sort(key=lambda entry: entry["cost"], reverse=True)
+        TOP_CATEGORY_LIMIT = 20
+        top_category_rows = aggregated_categories[:TOP_CATEGORY_LIMIT]
+        total_cost = sum((entry["cost"] for entry in top_category_rows), Decimal("0"))
+        total_cogs = sum((entry["cogs"] for entry in top_category_rows), Decimal("0"))
+        total_gm = sum((entry["gm"] for entry in top_category_rows), Decimal("0"))
+
+        for entry in top_category_rows:
             pct_total = entry["cost"] / total_cost if total_cost else None
             gm_pct = entry["gm"] / entry["cogs"] if entry["cogs"] else None
             wos_value = (
@@ -4257,6 +4314,11 @@ def _finished_goals_context(borrower, range_key="today", division="all"):
                     "wos": _format_wos(wos_value),
                 }
             )
+        finished_goals_top_sku_total = {
+            "cost": _format_currency(total_cost),
+            "cogs": _format_currency(total_cogs),
+            "gm": _format_currency(total_gm),
+        }
     else:
         sample_desc = [
             "Premium Maple W...",
@@ -4294,6 +4356,7 @@ def _finished_goals_context(borrower, range_key="today", division="all"):
                     "wos": "4.2",
                 }
             )
+        finished_goals_top_sku_total = None
 
     share_labels = ["Current","1–30","31–60","61–90","91–120","120+"]
     bucket_bases = [0.45, 0.15, 0.1, 0.09, 0.08, 0.13]
@@ -4366,6 +4429,7 @@ def _finished_goals_context(borrower, range_key="today", division="all"):
         "finished_goals_inline_excess_by_category": inline_excess_by_category,
         "finished_goals_inline_excess_totals": inline_excess_totals,
         "finished_goals_top_skus": top_sku_rows,
+        "finished_goals_top_sku_total": finished_goals_top_sku_total,
         "finished_goals_ar_concentration": ar_concentration,
         "finished_goals_ineligible_detail": ineligible_detail_rows,
         "finished_goals_ar_aging": {
@@ -6820,16 +6884,6 @@ def _liquidation_model_context(borrower):
             {"type": "row", "row": _pick_nolv_row(nolv_rows_by_label, label, aliases=aliases)}
         )
     liquidation_nolv_sections.append({"type": "row", "row": payroll_totals_row})
-    liquidation_nolv_sections.append(
-        {
-            "type": "row",
-            "row": _pick_nolv_row(
-                nolv_rows_by_label,
-                "Advertising & Promotional Costs",
-                aliases=["advertising & promotional costs", "advertising and promotional costs"],
-            ),
-        }
-    )
     liquidation_nolv_sections.append({"type": "subheading", "label": "Operating Costs"})
     for label, aliases in [
         ("Occupancy and Utilities", ["occupancy and utilities", "occupancy & utilities"]),
@@ -6843,6 +6897,16 @@ def _liquidation_model_context(borrower):
             {"type": "row", "row": _pick_nolv_row(nolv_rows_by_label, label, aliases=aliases)}
         )
     liquidation_nolv_sections.append({"type": "row", "row": operating_totals_row})
+    liquidation_nolv_sections.append(
+        {
+            "type": "row",
+            "row": _pick_nolv_row(
+                nolv_rows_by_label,
+                "Advertising & Promotional Costs",
+                aliases=["advertising & promotional costs", "advertising and promotional costs"],
+            ),
+        }
+    )
     for label, aliases in [
         ("On-Site Management", ["on-site management", "on site management"]),
         ("Agent Commissions", ["agent commission costs", "agent commission cost", "agent commissions"]),
@@ -6950,6 +7014,18 @@ def _liquidation_model_context(borrower):
             cleaned["category"] = label_override
         return cleaned
 
+    def _blank_history_row(label):
+        return {
+            "category": label,
+            "cost": "—",
+            "selling": "—",
+            "gross": "—",
+            "pct_cost": "—",
+            "pct_sp": "—",
+            "wos": "—",
+            "gr_pct": "—",
+        }
+
     primary_order = [
         "Cabinets",
         "Doors",
@@ -6976,6 +7052,21 @@ def _liquidation_model_context(borrower):
             cleaned = "".join(ch if ch.isalnum() else " " for ch in (text or "").strip().lower())
             tokens = [token[:-1] if token.endswith("s") and len(token) > 1 else token for token in cleaned.split()]
             return " ".join(tokens).strip()
+
+        def _alias_match(normalized_value, alias_norm):
+            if not normalized_value or not alias_norm:
+                return False
+            if normalized_value == alias_norm or alias_norm in normalized_value:
+                return True
+            value_tokens = normalized_value.split()
+            alias_tokens = alias_norm.split()
+            alias_index = 0
+            for token in value_tokens:
+                if alias_tokens[alias_index] == token:
+                    alias_index += 1
+                    if alias_index == len(alias_tokens):
+                        return True
+            return False
 
         key_aliases = {
             "Cabinets": ["cabinet", "cabinets"],
@@ -7011,7 +7102,7 @@ def _liquidation_model_context(borrower):
                     alias_norm = _normalize_fg_key(alias)
                     if not alias_norm:
                         continue
-                    if normalized == alias_norm or alias_norm in normalized:
+                    if _alias_match(normalized, alias_norm):
                         matched_key = key
                         break
                 if matched_key:
@@ -7049,6 +7140,14 @@ def _liquidation_model_context(borrower):
 
         history_summary_rows.extend(tail_rows)
 
+        def _ensure_tail_row(label):
+            if any(row.get("category") == label for row in history_summary_rows):
+                return
+            history_summary_rows.append(_blank_history_row(label))
+
+        for label in ["Total In-Line", "Excess", "Total"]:
+            _ensure_tail_row(label)
+
     else:
         history_summary_rows = []
     history_totals = {
@@ -7072,6 +7171,17 @@ def _liquidation_model_context(borrower):
             "wos": "—",
             "gr_pct": "—",
         }
+        total_row_found = False
+        for row in history_summary_rows:
+            if row.get("category") == "Total":
+                row.update(history_totals)
+                row["category"] = "Total"
+                total_row_found = True
+                break
+        if not total_row_found:
+            filled_total = dict(history_totals)
+            filled_total["category"] = "Total"
+            history_summary_rows.append(filled_total)
 
     return {
         "liquidation_summary_metrics": summary_metrics,

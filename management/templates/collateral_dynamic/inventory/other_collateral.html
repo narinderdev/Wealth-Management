@@ -38,7 +38,7 @@
     margin-top:12px;
     margin-left:10px
   }
-  .other-collateral .snapshot-card{margin-top:6px;}
+  .other-collateral .snapshot-card{margin-top:16px;}
   .other-collateral .snapshot-card + .card{margin-top:8px;}
   .other-collateral .section{margin-top:12px;}
   .other-collateral .card-head{
@@ -90,7 +90,7 @@
     position:relative;
   }
   .other-collateral .kpi .left .t{
-    font-size:20px;
+    font-size:16pt;
     font-weight:600;
     color:#475467;
     margin-top:-20px;
@@ -110,7 +110,7 @@
     flex-direction: column;
     justify-content:space-between;
     gap:10px;
-    font-size:16px;
+    font-size:16pt;
     color:#475467;
     margin-top:36px;
     width:100%;
@@ -162,7 +162,7 @@
     color:var(--danger);
   }
   
-  .other-collateral .delta.good{color:var(--success);}
+  .other-collateral .delta.good{color:var(--success);font-size: 10pt;}
   .other-collateral .arrow{font-size:12px;line-height:1;}
 
   .other-collateral .divider{height:1px;background:var(--border); margin-left: 10px; margin-right: 10px;}
@@ -198,9 +198,29 @@
   .other-collateral .chart-tooltip strong{font-size:11px;font-weight:700;}
   .other-collateral .chart-tooltip span{font-size:12px;}
   .other-collateral .chart-tooltip.is-visible{opacity:1;}
+  .other-collateral .value-analysis-scroll table{
+    width:100%;
+    table-layout:fixed;
+  }
+  .other-collateral .value-analysis-table .col-id{
+    width:8%;
+  }
+  .other-collateral .value-analysis-table .col-type{
+    width:20%;
+  }
+  .other-collateral .value-analysis-table .col-mfg{
+    width:14%;
+  }
+  .other-collateral .value-analysis-table .col-metric{
+    width:7%;
+  }
+  .other-collateral .value-analysis-table th:first-child,
+  .other-collateral .value-analysis-table td:first-child{
+    text-align:center;
+  }
   .other-collateral .hit{fill:transparent;pointer-events:all;}
   .other-collateral svg{width:100%;height:auto;display:block;}
-  .other-collateral .axis text{fill:var(--muted2);font-size:10px;}
+  .other-collateral .axis text{fill:var(--muted2);font-size:10pt;}
   .other-collateral .gridline{stroke:var(--grid);stroke-width:1;}
   .other-collateral .borderline{stroke:var(--border);stroke-width:1;fill:none;}
     .other-collateral .lineA{stroke:var(--purple);stroke-width:2.6;fill:none;stroke-linecap:round;stroke-linejoin:round;}
@@ -234,13 +254,13 @@
   .other-collateral table.data.asset-register-table col.col-year{width:7%;}
   .other-collateral table.data.asset-register-table col.col-condition{width:12%;}
   .other-collateral table.data.asset-register-table col.col-num{width:12%;}
-  .other-collateral table.data thead th{position:sticky;top:0;background:#FBFCFE;color:#65758b;font-weight:950;text-align:left;padding:10px 12px;border-bottom:1px solid var(--border);white-space:nowrap;}
+  .other-collateral table.data thead th{font-size: 10pt ;position:sticky;top:0;background:#FBFCFE;color:#65758b;font-weight:950;text-align:left;padding:10px 12px;border-bottom:1px solid var(--border);white-space:nowrap;}
   .other-collateral table.data.value-analysis-table thead tr:first-child th{
     text-align:center;
     vertical-align:bottom;
     padding-top:6px;
     padding-bottom:6px;
-    font-size:9px;
+    font-size:10pt;
     line-height:1.2;
     border-bottom:1px solid var(--border);
   }
@@ -254,7 +274,7 @@
     text-align:left;
     vertical-align:bottom;
     padding-bottom:8px;
-    font-size:9px;
+    font-size:10pt;
   }
   .other-collateral table.data.value-analysis-table thead tr:first-child th.group-center{
     text-align:center;
@@ -262,7 +282,7 @@
   .other-collateral table.data.value-analysis-table thead tr.grouphead th{
     padding-top:6px;
     padding-bottom:8px;
-    font-size:9px;
+    font-size:10pt;
     border-bottom:1px solid var(--border);
   }
   .other-collateral table.data tbody td{padding:10px 12px;border-bottom:1px solid rgba(230,234,242,.65);color:#344054;white-space:nowrap;}
@@ -318,7 +338,7 @@
   .other-collateral .snapshot-text{
     padding:10px 14px 14px;
     color:#667085;
-    font-size:14px;
+    font-size:10pt;
     line-height:1.6;
   }
 </style>
@@ -353,7 +373,7 @@
                 <div class="pair">
                   <div style="margin-bottom: 10px;" class="pair-left">
                     <span>{{ row.label }}</span>
-                    <b style="font-size: 20px;">{{ row.value }}</b>
+                    <b style="font-size: 10pt;">{{ row.value }}</b>
                   </div>
                   {% if row.delta %}
                     <div class="delta {{ row.delta_class }}">
@@ -363,7 +383,7 @@
                   {% endif %}
                 </div>
               {% else %}
-                <div class="pair"><span>{{ row.label }}</span><b style="font-size: 20px;">{{ row.value }}</b></div>
+                <div class="pair"><span>{{ row.label }}</span><b style="font-size: 10pt;">{{ row.value }}</b></div>
               {% endif %}
             {% endfor %}
           </div>
@@ -425,6 +445,12 @@
     </div>
     <div class="table-scroll value-analysis-scroll">
       <table class="data value-analysis-table" aria-label="Value Analysis Table" id="value-analysis-table" data-empty="Value analysis data not available.">
+        <colgroup>
+          <col class="col-id">
+          <col class="col-type">
+          <col class="col-mfg">
+          <col span="8" class="col-metric">
+        </colgroup>
         <thead>
           <tr>
             <th rowspan="2">ID</th>
@@ -523,8 +549,8 @@
     return pts.map((p,i)=> (i===0?`M ${p[0]} ${p[1]}`:`L ${p[0]} ${p[1]}`)).join(" ");
   }
   function renderTwoLine(el,cfg){
-    const W=980, H=260;
-    const pad={l:96,r:40,t:14,b:44};
+    const W=980, H=268;
+    const pad={l:96,r:40,t:14,b:60};
     const plotW=W-pad.l-pad.r, plotH=H-pad.t-pad.b;
     const seriesEstimated = (cfg.estimated||[]).map(val => Number(val) || 0);
     const seriesAppraisal = (cfg.appraisal||[]).map(val => Number(val) || 0);
@@ -556,7 +582,8 @@
       return {val, yy:y(val)};
     });
     const xStep = 1;
-    const xLabelY = H - 12;
+    const xLabelMonthY = H - 38;
+    const xLabelYearOffset = 16;
     const yLabelX = pad.l - 12;
     el.innerHTML = `
       <div class="chart-wrap">
@@ -572,7 +599,16 @@
             const isFirst = i === 0;
             const isLast = i === (cfg.labels.length - 1);
             const anchor = isFirst ? "start" : (isLast ? "end" : "middle");
-            return `<text x="${x(i)}" y="${xLabelY}" text-anchor="${anchor}">${lab}</text>`;
+            const parts = (lab || "").split(/\s+/).filter(Boolean);
+            if(parts.length >= 2){
+              const month = parts[0];
+              const year = parts[parts.length - 1];
+              return `<text text-anchor="${anchor}">
+                <tspan x="${x(i)}" y="${xLabelMonthY}">${month}</tspan>
+                <tspan x="${x(i)}" dy="${xLabelYearOffset}">${year}</tspan>
+              </text>`;
+            }
+            return `<text x="${x(i)}" y="${xLabelMonthY + xLabelYearOffset}" text-anchor="${anchor}">${lab}</text>`;
           }).join("")}
         </g>
         <path d="${linePath(ptsEst)}" class="lineA"></path>

@@ -124,12 +124,12 @@ gap: 9px;
     stroke-linejoin:round;
   }
   .raw-materials .stat-card .label{
-    font-size:12px;
+    font-size:16pt;
     color:#667085;
     font-weight:600;
   }
   .raw-materials .stat-card .value{
-    font-size:22px;
+    font-size:16pt;
     font-weight:700;
     color:#344256;
   }
@@ -140,8 +140,8 @@ gap: 9px;
     align-items:center;
     gap:6px;
   }
-  .raw-materials .stat-card .delta.danger{color:var(--danger);}
-  .raw-materials .stat-card .delta.success{color:var(--success);}
+  .raw-materials .stat-card .delta.danger{color:var(--danger);font-size: 10pt;}
+  .raw-materials .stat-card .delta.success{color:var(--success);font-size: 10pt;}
   @media (max-width:920px){
     .raw-materials .grid-2{grid-template-columns:1fr;}
   }
@@ -168,7 +168,7 @@ gap: 9px;
     background:#FAFAFA;
     color:#475569;
     font-weight:600;
-    font-size:12px;
+    font-size:10pt;
     text-align:left;
     padding:10px 12px;
     border-bottom:1px solid var(--line);
@@ -289,7 +289,6 @@ gap: 9px;
   }
   .collateral-dynamic .page {
     padding: 0px 9px;
-    gap: 0;
     margin-top: -15px;
 
 }
@@ -585,7 +584,7 @@ height: 24px;}
       const label = fmtY(t.val,c,yDecimals);
       if (yLabelSet.has(label)) return "";
       yLabelSet.add(label);
-      return `<text x="55" y="${t.yy+4}" fill="#94a3b8" font-size="12" font-weight="400" text-anchor="end">${label}</text>`;
+      return `<text x="55" y="${t.yy+4}" fill="#94a3b8" font-size="10pt" font-weight="400" text-anchor="end">${label}</text>`;
     }).join("");
     const xLabelSet = new Set();
     const xLabels = c.labels.map((lab,i)=>{
@@ -608,7 +607,7 @@ height: 24px;}
           ${points.map((p,i)=>`<circle cx="${p[0]}" cy="${p[1]}" r="4" fill="${c.color||'#1e6fe0'}"
             data-label="${c.labels[i]}" data-value="${fmtY(c.values[i],c,yDecimals)}"
             class="raw-trend-point"></circle>`).join("")}
-          <g fill="#94a3b8" font-size="12" font-weight="400">
+          <g fill="#94a3b8" font-size="10pt" font-weight="400">
             ${xLabels}
           </g>
         </svg>

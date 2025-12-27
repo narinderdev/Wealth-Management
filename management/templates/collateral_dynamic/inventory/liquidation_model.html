@@ -252,9 +252,9 @@ line-height: 33.339px; /* 138.462% */
     text-align:left;
   }
   .liquidation-model .n-table .subtotal-row td{
-    background:#fafafa;
-    color:#475569;
-    font-weight:600;
+    background:#f8fafc;
+    color:#334155;
+    font-weight:700;
   }
   .liquidation-model .n-table .total-row td{
     background:#f5f7fb;
@@ -482,13 +482,17 @@ gap: 0px;
   }
   .liquidation-model #nolv-analysis .nolv-heading td{
     font-weight:700;
-    color:#334155;
-    background:#f8fafc;
+    color:#1e293b;
+    background:#f7f9fc;
+  }
+  .liquidation-model #nolv-analysis .nolv-heading-dark td{
+    background:#334155;
+    color:#ffffff;
   }
   .liquidation-model #nolv-analysis .nolv-subheading td{
     font-weight:700;
-    color:#475569;
-    background:#ffffff;
+    color:#334155;
+    background:#eef2ff;
   }
   .liquidation-model #nolv-analysis .nolv-heading td,
   .liquidation-model #nolv-analysis .nolv-subheading td{
@@ -496,8 +500,19 @@ gap: 0px;
     border-bottom:1px solid var(--line);
   }
   .liquidation-model #nolv-analysis .nolv-total td{
-    background:#FAFAFA;
     font-weight:700;
+    color:#0f172a;
+  }
+  .liquidation-model #nolv-analysis .nolv-total-light td{
+    background:#f5f7fb;
+  }
+  .liquidation-model #nolv-analysis .nolv-total-dark td{
+    background:#d7dce5;
+  }
+  .liquidation-model #nolv-analysis .nolv-gap-row td{
+    padding:12px 0;
+    border:none;
+    background:#ffffff;
   }
 
 /* .n-table-change th{text-align: center!important;} */
@@ -732,7 +747,7 @@ gap: 0px;
 
       <tbody>
         {% for row in fg_gross_recovery_history_rows %}
-          <tr{% if row.category == "Total" %} class="total-row"{% elif row.category == "Total In-Line" or row.category == "Excess" %} class="subtotal-row"{% endif %}>
+          <tr{% if row.category == "Total" %} class="total-row"{% elif row.category == "Total In-Line" %} class="subtotal-row"{% endif %}>
             <td class="left">{{ row.category|default:"—" }}</td>
             <td class="center">{{ row.cost }}</td>
             <td class="center">{{ row.selling }}</td>
@@ -863,7 +878,7 @@ gap: 0px;
           <tbody>
             {% for item in liquidation_nolv_sections %}
               {% if item.type == "heading" %}
-                <tr class="nolv-heading">
+                <tr class="nolv-heading{% if item.label == 'Liquidation Expenses' %} nolv-heading-dark{% endif %}">
                   <td colspan="9">{{ item.label }}</td>
                 </tr>
               {% elif item.type == "subheading" %}
@@ -871,17 +886,58 @@ gap: 0px;
                   <td colspan="9">{{ item.label }}</td>
                 </tr>
               {% else %}
-                <tr{% if item.row.label == "Total Payroll Costs" or item.row.label == "Total Operating Costs" or item.row.label == "Total Liquidation Costs" or item.row.label == "Net Recovery" %} class="nolv-total"{% endif %}>
-                  <td class="row-label">{{ item.row.label }}</td>
-                  <td class="num">{{ item.row.fg }}</td>
-                  <td class="num">{% if item.row.fg_pct != "—" %}{{ item.row.fg_pct }}{% endif %}</td>
-                  <td class="num">{{ item.row.rm }}</td>
-                  <td class="num">{% if item.row.rm_pct != "—" %}{{ item.row.rm_pct }}{% endif %}</td>
-                  <td class="num">{{ item.row.wip }}</td>
-                  <td class="num">{% if item.row.wip_pct != "—" %}{{ item.row.wip_pct }}{% endif %}</td>
-                  <td class="num">{{ item.row.total }}</td>
-                  <td class="num">{% if item.row.total_pct != "—" %}{{ item.row.total_pct }}{% endif %}</td>
-                </tr>
+                {% with row_label=item.row.label %}
+                  {% if row_label == "Total Liquidation Costs" %}
+                    <tr class="nolv-total nolv-total-dark">
+                      <td class="row-label">{{ item.row.label }}</td>
+                      <td class="num">{{ item.row.fg }}</td>
+                      <td class="num">{% if item.row.fg_pct != "—" %}{{ item.row.fg_pct }}{% endif %}</td>
+                      <td class="num">{{ item.row.rm }}</td>
+                      <td class="num">{% if item.row.rm_pct != "—" %}{{ item.row.rm_pct }}{% endif %}</td>
+                      <td class="num">{{ item.row.wip }}</td>
+                      <td class="num">{% if item.row.wip_pct != "—" %}{{ item.row.wip_pct }}{% endif %}</td>
+                      <td class="num">{{ item.row.total }}</td>
+                      <td class="num">{% if item.row.total_pct != "—" %}{{ item.row.total_pct }}{% endif %}</td>
+                    </tr>
+                    <tr class="nolv-gap-row"><td colspan="9"></td></tr>
+                  {% elif row_label == "Net Recovery" %}
+                    <tr class="nolv-total nolv-total-dark">
+                      <td class="row-label">{{ item.row.label }}</td>
+                      <td class="num">{{ item.row.fg }}</td>
+                      <td class="num">{% if item.row.fg_pct != "—" %}{{ item.row.fg_pct }}{% endif %}</td>
+                      <td class="num">{{ item.row.rm }}</td>
+                      <td class="num">{% if item.row.rm_pct != "—" %}{{ item.row.rm_pct }}{% endif %}</td>
+                      <td class="num">{{ item.row.wip }}</td>
+                      <td class="num">{% if item.row.wip_pct != "—" %}{{ item.row.wip_pct }}{% endif %}</td>
+                      <td class="num">{{ item.row.total }}</td>
+                      <td class="num">{% if item.row.total_pct != "—" %}{{ item.row.total_pct }}{% endif %}</td>
+                    </tr>
+                  {% elif row_label == "Total Payroll Costs" or row_label == "Total Operating Costs" %}
+                    <tr class="nolv-total nolv-total-light">
+                      <td class="row-label">{{ item.row.label }}</td>
+                      <td class="num">{{ item.row.fg }}</td>
+                      <td class="num">{% if item.row.fg_pct != "—" %}{{ item.row.fg_pct }}{% endif %}</td>
+                      <td class="num">{{ item.row.rm }}</td>
+                      <td class="num">{% if item.row.rm_pct != "—" %}{{ item.row.rm_pct }}{% endif %}</td>
+                      <td class="num">{{ item.row.wip }}</td>
+                      <td class="num">{% if item.row.wip_pct != "—" %}{{ item.row.wip_pct }}{% endif %}</td>
+                      <td class="num">{{ item.row.total }}</td>
+                      <td class="num">{% if item.row.total_pct != "—" %}{{ item.row.total_pct }}{% endif %}</td>
+                    </tr>
+                  {% else %}
+                    <tr>
+                      <td class="row-label">{{ item.row.label }}</td>
+                      <td class="num">{{ item.row.fg }}</td>
+                      <td class="num">{% if item.row.fg_pct != "—" %}{{ item.row.fg_pct }}{% endif %}</td>
+                      <td class="num">{{ item.row.rm }}</td>
+                      <td class="num">{% if item.row.rm_pct != "—" %}{{ item.row.rm_pct }}{% endif %}</td>
+                      <td class="num">{{ item.row.wip }}</td>
+                      <td class="num">{% if item.row.wip_pct != "—" %}{{ item.row.wip_pct }}{% endif %}</td>
+                      <td class="num">{{ item.row.total }}</td>
+                      <td class="num">{% if item.row.total_pct != "—" %}{{ item.row.total_pct }}{% endif %}</td>
+                    </tr>
+                  {% endif %}
+                {% endwith %}
               {% endif %}
             {% empty %}
               <tr><td colspan="9" class="num">Net orderly liquidation data not available.</td></tr>
