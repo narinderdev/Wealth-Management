@@ -96,13 +96,13 @@
       min-height:110px;
     }
     .stat-card small{
-      font-size:11px;
+      font-size:16pt;
       color:#64748b;
       text-transform:uppercase;
       letter-spacing:.04em;
     }
     .stat-value{
-          margin-top: 17px;
+          margin-top: 16pt;
       font-size:22px;
       font-weight:700;
       color:#0f172a;
@@ -130,7 +130,7 @@
       display:block;
     }
     .stat-delta{
-      font-size:13px;
+      font-size:10pt;
       font-weight:700;
       margin-top:8px;
     }
@@ -182,7 +182,7 @@
       color:#737791;
       font-family:"Poppins", sans-serif;
       font-weight:400;
-      font-size:18px;
+      font-size:10pt;
       line-height:27px;
     }
     body.collateral-static .tabs-shell{
@@ -298,8 +298,8 @@
       color:#334155;
     }
     .cashflow-table tbody tr.section-row td{
-      background:#f5f7fb;
-      font-weight:600;
+      background:#f3f6fb;
+      font-weight:700;
       color:#0f1f44;
     }
     .cashflow-table tbody tr.section-row td:not(:first-child){
@@ -307,6 +307,24 @@
     }
     .cashflow-table tbody tr.title-row td{
       background:#f8fafc;
+    }
+    .cashflow-table tbody tr.detail-row td:first-child{
+      padding-left:28px;
+    }
+    .cashflow-table tbody tr.manual-operating-row td{
+      background:#f3f6fb;
+      font-weight:700;
+      color:#0f1f44;
+    }
+    .cashflow-table tbody tr.manual-operating-row td:first-child{
+      padding-left:10px;
+    }
+    .cashflow-table tbody tr.manual-operating-row td:not(:first-child){
+      color:#94a3b8;
+    }
+    .cashflow-table tbody td.muted-cell{
+      color:#94a3b8;
+      font-weight:500;
     }
     .cash-forecast-table{
       min-width:1200px;
@@ -517,7 +535,7 @@
                 <line x1="80" y1="{{ tick.y }}" x2="1030" y2="{{ tick.y }}"/>
               {% endfor %}
             </g>
-            <g fill="#94a3b8" font-size="11">
+            <g fill="#94a3b8" font-size="10pt">
               {% for tick in week_summary.chart.ticks %}
                 <text x="68" y="{{ tick.y|add:4 }}" text-anchor="end">{{ tick.label }}</text>
               {% endfor %}
@@ -534,13 +552,13 @@
                   class="ws-tip" data-label="{{ bar.label }}" data-series="Disbursements" data-value="{{ bar.value }}"/>
               {% endfor %}
             </g>
-            <g fill="#94a3b8" font-size="11">
+            <g fill="#94a3b8" font-size="10pt">
               {% for label in week_summary.chart.labels %}
                 <text x="{{ label.x }}" y="280" text-anchor="middle">{{ label.text }}</text>
               {% endfor %}
             </g>
             {% comment %} Inline legend aligned near the top-right with padding from edge {% endcomment %}
-            <g font-size="12" font-weight="600" fill="#0f1f44">
+            <g font-size="10pt" font-weight="600" fill="#0f1f44">
               <rect x="760" y="2" width="21" height="21" fill="#1889E6" rx="4"/>
               <text x="790" y="18">Collections</text>
               <rect x="900" y="2" width="21" height="21" fill="#FC912E" rx="4"/>
@@ -577,20 +595,32 @@
                 {% for forecast_label in week_summary.cashflow_forecast_labels %}
                   <th>{{ forecast_label|safe }}</th>
                 {% endfor %}
-                <!-- <th>13-Week<br/>Total</th> -->
+                <th>13-Week<br/>Total</th>
               </tr>
             </thead>
             <tbody>
               {% if week_summary.cashflow_table_rows %}
                 {% for row in week_summary.cashflow_table_rows %}
-                  <tr{% if row.row_class %} class="{{ row.row_class }}"{% endif %}>
-                    <td>{{ row.label }}</td>
-                    <td>{{ row.actual }}</td>
-                    {% for forecast in row.forecasts %}
-                      <td>{{ forecast }}</td>
-                    {% endfor %}
-                    <!-- <td>{{ row.total }}</td> -->
-                  </tr>
+                  {% with row_class=row.row_class|default_if_none:"" %}
+                    <tr class="{% if row_class %}{{ row_class }}{% else %}detail-row{% endif %}">
+                      <td>{{ row.label }}</td>
+                      <td>{{ row.actual }}</td>
+                      {% for forecast in row.forecasts %}
+                        <td>{{ forecast }}</td>
+                      {% endfor %}
+                      <td>{{ row.total }}</td>
+                    </tr>
+                    {% if row.label|lower == "total receipts" %}
+                      <tr class="section-row manual-operating-row">
+                        <td>Operating Disbursements</td>
+                        <td class="muted-cell">—</td>
+                        {% for _ in row.forecasts %}
+                          <td class="muted-cell">—</td>
+                        {% endfor %}
+                        <td class="muted-cell">—</td>
+                      </tr>
+                    {% endif %}
+                  {% endwith %}
                 {% endfor %}
               {% else %}
                 <tr>
@@ -620,20 +650,21 @@
                 {% for forecast_label in week_summary.cashflow_forecast_labels %}
                   <th>{{ forecast_label|safe }}</th>
                 {% endfor %}
-                <!-- <th>13-Week<br/>Total</th> -->
               </tr>
             </thead>
             <tbody>
               {% if week_summary.cashflow_cash_rows %}
                 {% for row in week_summary.cashflow_cash_rows %}
-                  <tr{% if row.row_class %} class="{{ row.row_class }}"{% endif %}>
-                    <td>{{ row.label }}</td>
-                    <td>{{ row.actual }}</td>
-                    {% for forecast in row.forecasts %}
-                      <td>{{ forecast }}</td>
-                    {% endfor %}
-                    <!-- <td>{{ row.total }}</td> -->
-                  </tr>
+                  {% with row_class=row.row_class|default_if_none:"" %}
+                    <tr class="{% if row_class %}{{ row_class }}{% else %}detail-row{% endif %}">
+                      <td>{{ row.label }}</td>
+                      <td>{{ row.actual }}</td>
+                      {% for forecast in row.forecasts %}
+                        <td>{{ forecast }}</td>
+                      {% endfor %}
+                      <!-- <td>{{ row.total }}</td> -->
+                    </tr>
+                  {% endwith %}
                 {% endfor %}
               {% else %}
                 <tr>

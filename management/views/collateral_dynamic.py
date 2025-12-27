@@ -666,11 +666,13 @@ def _week_summary_context(borrower):
         "snapshot_summary": snapshot_summary,
     }
 
+    default_weeks = 13
+
     if not borrower:
         context["cashflow_empty_state"] = "Please select a borrower to view forecast data."
         context["cashforecast_empty_state"] = "Please select a borrower to view forecast data."
-        context["cashflow_table_colspan"] = 15
-        context["cashflow_cash_colspan"] = 15
+        context["cashflow_table_colspan"] = default_weeks + 3
+        context["cashflow_cash_colspan"] = default_weeks + 2
         return context
 
     forecast_qs = ForecastRow.objects.filter(borrower=borrower)
@@ -1256,7 +1258,7 @@ def _week_summary_context(borrower):
     )
 
     context["cashflow_table_colspan"] = len(week_fields) + 3
-    context["cashflow_cash_colspan"] = len(week_fields) + 3
+    context["cashflow_cash_colspan"] = len(week_fields) + 2
 
     if not cashflow_table_rows:
         context["cashflow_empty_state"] = "No forecast data available. Please import the Excel file."
