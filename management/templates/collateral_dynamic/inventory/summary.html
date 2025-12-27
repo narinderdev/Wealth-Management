@@ -70,7 +70,7 @@
                     x2="{{ x }}" y2="{{ inventory_mix_trend_chart.grid.bottom }}"/>
             {% endfor %}
           </g>
-          <g class="axisText">
+          <g class="axisText" style="font-size:10pt; fill:#9aa7b8">
             {% for tick in inventory_mix_trend_chart.y_ticks %}
               <text x="{{ inventory_mix_trend_chart.label_x }}" y="{{ tick.y|add:3 }}" text-anchor="end">{{ tick.label }}</text>
             {% endfor %}
@@ -88,7 +88,7 @@
               {% endfor %}
             {% endfor %}
           </g>
-          <g class="axisText">
+          <g style="font-size:10pt; fill:#9aa7b8" >
             {% for label in inventory_mix_trend_chart.x_labels %}
               <text x="{{ label.x }}" y="{{ inventory_mix_trend_chart.label_y }}" text-anchor="middle">
                 <tspan x="{{ label.x }}" dy="0">{{ label.month }}</tspan>
@@ -195,8 +195,8 @@
           <line class="gridLine" x1="60" y1="56" x2="730" y2="56"/>
           <line class="gridLine" x1="60" y1="22" x2="730" y2="22"/>
         </g>
-        <g class="axisText" style="font-size:12px;font-weight:700;fill:#6b7280;">
-          <text x="8" y="109" transform="rotate(-90 8 109)" text-anchor="middle">NOLV %</text>
+        <g class="axisText" style="font-size:10pt;font: weight 500px;fill:#9aa7b8;">
+          <text x="8" y="109" transform="rotate(-90 8 109)" text-anchor="middle"> </text>
           <text x="26" y="195">0%</text>
           <text x="22" y="161">10%</text>
           <text x="22" y="127">30%</text>
@@ -215,18 +215,51 @@
           {% endfor %}
         </g>
         {% endfor %}
-        <g class="axisText">
-          <text x="70" y="230">May 2019</text>
-          <text x="126" y="230">Jun 2019</text>
-          <text x="184" y="230">Jul 2019</text>
-          <text x="238" y="230">Aug 2019</text>
-          <text x="304" y="230">Sep 2019</text>
-          <text x="360" y="230">Oct 2019</text>
-          <text x="420" y="230">Nov 2019</text>
-          <text x="478" y="230">Dec 2019</text>
-          <text x="536" y="230">Jan 2020</text>
-          <text x="594" y="230">Feb 2020</text>
-          <text x="650" y="230">Mar 2020</text>
+        <g style="font-size:10pt ;fill:#9aa7b8;">
+          <text x="90" y="230">
+            <tspan x="90" dy="0">May</tspan>
+            <tspan x="90" dy="12">2019</tspan>
+          </text>
+          <text x="146" y="230">
+            <tspan x="146" dy="0">Jun</tspan>
+            <tspan x="146" dy="12">2019</tspan>
+          </text>
+          <text x="204" y="230">
+            <tspan x="204" dy="0">Jul</tspan>
+            <tspan x="204" dy="12">2019</tspan>
+          </text>
+          <text x="260" y="230">
+            <tspan x="260" dy="0">Aug</tspan>
+            <tspan x="260" dy="12">2019</tspan>
+          </text>
+          <text x="320" y="230">
+            <tspan x="320" dy="0">Sep</tspan>
+            <tspan x="320" dy="12">2019</tspan>
+          </text>
+          <text x="376" y="230">
+            <tspan x="376" dy="0">Oct</tspan>
+            <tspan x="376" dy="12">2019</tspan>
+          </text>
+          <text x="436" y="230">
+            <tspan x="436" dy="0">Nov</tspan>
+            <tspan x="436" dy="12">2019</tspan>
+          </text>
+          <text x="492" y="230">
+            <tspan x="492" dy="0">Dec</tspan>
+            <tspan x="492" dy="12">2019</tspan>
+          </text>
+          <text x="550" y="230">
+            <tspan x="550" dy="0">Jan</tspan>
+            <tspan x="550" dy="12">2020</tspan>
+          </text>
+          <text x="608" y="230">
+            <tspan x="608" dy="0">Feb</tspan>
+            <tspan x="608" dy="12">2020</tspan>
+          </text>
+          <text x="664" y="230">
+            <tspan x="664" dy="0">Mar</tspan>
+            <tspan x="664" dy="12">2020</tspan>
+          </text>
         </g>
         <rect x="60" y="22" width="670" height="170" fill="none" class="frameLine"/>
       </svg>

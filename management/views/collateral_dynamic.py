@@ -2102,17 +2102,42 @@ def _inventory_context(borrower, snapshot_text=None):
     chart_bottom = Decimal("192")
     chart_top = Decimal("22")
     chart_height = chart_bottom - chart_top
+
+    pct_values = []
+    pct_labels = {}
     for category in CATEGORY_CONFIG:
         metrics = category_metrics[category["key"]]
         eligible = metrics.get("eligible") or Decimal("0")
         pct_ratio = (metrics["net"] / eligible) if eligible else Decimal("0")
-        pct_label = _format_pct(pct_ratio)
-        pct_for_chart = pct_ratio
-        if pct_for_chart < 0:
-            pct_for_chart = Decimal("0")
-        if pct_for_chart > 1:
-            pct_for_chart = Decimal("1")
-        y_value = chart_bottom - (pct_for_chart * chart_height)
+        pct_ratio = max(pct_ratio, Decimal("0"))
+        pct_values.append(pct_ratio)
+        pct_labels[category["key"]] = _format_pct(pct_ratio)
+
+    if pct_values:
+        min_pct = min(pct_values)
+        max_pct = max(pct_values)
+        pct_range = max_pct - min_pct
+        padding = max(pct_range * Decimal("0.05"), Decimal("0.05"))
+        axis_min_pct = max(min_pct - padding, Decimal("0"))
+        axis_max_pct = min(max_pct + padding, Decimal("1"))
+        if axis_max_pct <= axis_min_pct:
+            axis_max_pct = axis_min_pct + Decimal("0.10")
+            axis_max_pct = min(axis_max_pct, Decimal("1"))
+    else:
+        axis_min_pct = Decimal("0")
+        axis_max_pct = Decimal("1")
+
+    axis_range_pct = axis_max_pct - axis_min_pct if axis_max_pct != axis_min_pct else Decimal("1")
+
+    for category in CATEGORY_CONFIG:
+        pct_ratio = Decimal("0")
+        for cat, value in zip(CATEGORY_CONFIG, pct_values):
+            if cat["key"] == category["key"]:
+                pct_ratio = value
+                break
+        pct_ratio = max(min(pct_ratio, axis_max_pct), axis_min_pct)
+        normalized = (pct_ratio - axis_min_pct) / axis_range_pct if axis_range_pct else Decimal("0")
+        y_value = chart_bottom - (normalized * chart_height)
         y_value = max(min(y_value, chart_bottom), chart_top)
         points = []
         points_list = []
@@ -2124,7 +2149,7 @@ def _inventory_context(borrower, snapshot_text=None):
                     "x": x,
                     "y": float(y_value),
                     "label": value_label,
-                    "value": pct_label,
+                    "value": pct_labels.get(category["key"], _format_pct(pct_ratio)),
                 }
             )
         inventory_trend_series.append(
