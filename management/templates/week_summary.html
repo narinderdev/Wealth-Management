@@ -328,18 +328,23 @@
     }
     .cash-forecast-table{
       min-width:1200px;
+      table-layout:fixed;
     }
     .cash-forecast-table thead th{
       text-align:center;
-      font-size:10px;
-      line-height:1.2;
-      font-weight:600;
-      background:#f8fbff;
+      font-size:11px;
+      font-weight:800;
+      color:#1f2d4d;
+      text-transform:uppercase;
+      letter-spacing:.04em;
+      background:#eef2ff;
+      padding:12px 10px;
+      white-space:normal;
     }
     .cash-forecast-table thead th:first-child{
       text-align:left;
       width:200px;
-      background:#fff;
+      background:#eef2ff;
     }
     .cash-forecast-table tbody td{
       text-align:center;
@@ -351,18 +356,23 @@
     }
     .availability-table{
       min-width:1200px;
+      table-layout:fixed;
     }
     .availability-table thead th{
       text-align:center;
-      font-size:10px;
-      line-height:1.2;
-      font-weight:600;
-      background:#f8fbff;
+      font-size:11px;
+      font-weight:800;
+      color:#1f2d4d;
+      text-transform:uppercase;
+      letter-spacing:.04em;
+      background:#eef2ff;
+      padding:12px 10px;
+      white-space:normal;
     }
     .availability-table thead th:first-child{
       text-align:left;
       width:200px;
-      background:#fff;
+      background:#eef2ff;
     }
     .availability-table tbody td{
       text-align:center;
@@ -439,6 +449,24 @@
       font-weight:600;
       color:#0f1f44;
       background:#f8fafc;
+    }
+    .variance-table tbody tr.detail-row td:first-child{
+      padding-left:28px;
+    }
+    .variance-table tbody tr.manual-operating-row td{
+      background:#f3f6fb;
+      font-weight:700;
+      color:#0f1f44;
+    }
+    .variance-table tbody tr.manual-operating-row td:first-child{
+      padding-left:10px;
+    }
+    .variance-table tbody tr.manual-operating-row td:not(:first-child){
+      color:#94a3b8;
+    }
+    .variance-table tbody td.muted-cell{
+      color:#94a3b8;
+      font-weight:500;
     }
     .cd-static .wide{
       grid-column:1/3;
@@ -688,14 +716,16 @@
     <div class="table-wrapper">
         <table class="cash-table availability-table">
         <thead>
+          {% with avail_labels=week_summary.cashflow_forecast_labels|default:week_summary.availability_week_labels %}
           <tr>
             <th></th>
-            <th>{{ week_summary.availability_actual_label|safe }}</th>
-            {% for label in week_summary.availability_week_labels %}
-              <th>{{ label }}</th>
+            <th>{{ week_summary.cashflow_actual_label|safe }}</th>
+            {% for label in avail_labels %}
+              <th>{{ label|safe }}</th>
             {% endfor %}
             <!-- <th>13-Week<br/>Total</th> -->
           </tr>
+          {% endwith %}
         </thead>
         <tbody>
           {% if week_summary.availability_rows %}
@@ -802,13 +832,24 @@
             </thead>
             <tbody>
               {% for row in week_summary.variance_current_rows %}
-                <tr{% if row.row_class %} class="{{ row.row_class }}"{% endif %}>
-                  <td>{{ row.category }}</td>
-                  <td>{{ row.projected }}</td>
-                  <td>{{ row.actual }}</td>
-                  <td>{{ row.variance_amount }}</td>
-                  <td>{{ row.variance_pct }}</td>
-                </tr>
+                {% with row_class=row.row_class|default_if_none:"" %}
+                  <tr class="{% if row_class %}{{ row_class }}{% else %}detail-row{% endif %}">
+                    <td>{{ row.category }}</td>
+                    <td>{{ row.projected }}</td>
+                    <td>{{ row.actual }}</td>
+                    <td>{{ row.variance_amount }}</td>
+                    <td>{{ row.variance_pct }}</td>
+                  </tr>
+                  {% if row.category|lower == "total receipts" %}
+                    <tr class="section-row manual-operating-row">
+                      <td>Operating Disbursements</td>
+                      <td class="muted-cell">—</td>
+                      <td class="muted-cell">—</td>
+                      <td class="muted-cell">—</td>
+                      <td class="muted-cell">—</td>
+                    </tr>
+                  {% endif %}
+                {% endwith %}
               {% endfor %}
             </tbody>
           </table>
@@ -829,13 +870,24 @@
             </thead>
             <tbody>
               {% for row in week_summary.variance_cumulative_rows %}
-                <tr{% if row.row_class %} class="{{ row.row_class }}"{% endif %}>
-                  <td>{{ row.category }}</td>
-                  <td>{{ row.projected }}</td>
-                  <td>{{ row.actual }}</td>
-                  <td>{{ row.variance_amount }}</td>
-                  <td>{{ row.variance_pct }}</td>
-                </tr>
+                {% with row_class=row.row_class|default_if_none:"" %}
+                  <tr class="{% if row_class %}{{ row_class }}{% else %}detail-row{% endif %}">
+                    <td>{{ row.category }}</td>
+                    <td>{{ row.projected }}</td>
+                    <td>{{ row.actual }}</td>
+                    <td>{{ row.variance_amount }}</td>
+                    <td>{{ row.variance_pct }}</td>
+                  </tr>
+                  {% if row.category|lower == "total receipts" %}
+                    <tr class="section-row manual-operating-row">
+                      <td>Operating Disbursements</td>
+                      <td class="muted-cell">—</td>
+                      <td class="muted-cell">—</td>
+                      <td class="muted-cell">—</td>
+                      <td class="muted-cell">—</td>
+                    </tr>
+                  {% endif %}
+                {% endwith %}
               {% endfor %}
             </tbody>
           </table>
