@@ -391,12 +391,16 @@ padding-top: 0px!important;
   .liquidation-model .acc-liquidation thead{display:none;}
   .liquidation-model .acc-liquidation .table-wrap{border:none;padding-top:0;}
   .liquidation-model .acc-liquidation td.num,
-  .liquidation-model .acc-liquidation tfoot td.num{
+  .liquidation-model .acc-liquidation tbody td.num{
     text-align:right;
     font-weight:600;
   }
   .liquidation-model .acc-liquidation tfoot td{
-    font-weight:600;
+    font-weight:900;
+  }
+  .liquidation-model .acc-liquidation tfoot td.num{
+    text-align:right;
+    font-weight:900;
   }
   @media (max-width:980px){
     .liquidation-model .grid-top{ grid-template-columns:1fr; }
@@ -620,7 +624,7 @@ gap: 0px;
           <div class="acc-body">
             <div class="table-wrap">
               <table>
-                <thead>
+                <thead class="table-header">
                   <tr>
                     <th>Category</th>
                     <th class="num">Cost Amount</th>
@@ -656,7 +660,7 @@ gap: 0px;
           <div class="acc-body">
             <div class="table-wrap">
               <table>
-                <thead>
+                <thead class="table-header">
                   <tr>
                     <th>Category</th>
                     <th class="num">Cost Amount</th>
@@ -664,7 +668,7 @@ gap: 0px;
                 </thead>
                 <tbody>
                   {% for item in liquidation_liquidation_rows %}
-                    <tr{% if "Advertising" in item.label or "On-Site Management" in item.label or "Agent Commission" in item.label or "Total Liquidation" in item.label %} class="liquidation-emphasis"{% endif %}>
+                    <tr>
                       <td class="row-label">{{ item.label }}</td>
                       <td class="num">{{ item.total }}</td>
                     </tr>
@@ -744,74 +748,6 @@ gap: 0px;
       </tbody>
     </table>
   </div>
-
-
-   
-
-    <!-- <div class="table-wrap">
-      <div class="fg-scroll">
-        <table>
-          <colgroup>
-            <col style="width:22%;">
-            <col span="8" style="width:9.75%;">
-          </colgroup>
-          <thead>
-            <tr class="group">
-           
-              <th colspan="3">Inventory</th>
-              <th colspan="2">Recovery</th>
-              <th colspan="2">Recovery Factors</th>
-            </tr>
-            <tr>
-                 <th rowspan="2">As Of</th>
-              <th rowspan="2">Division</th>
-              <th rowspan="2">Category</th>
-              <th rowspan="2">Type</th>
-              <th class="num">Cost</th>
-              <th class="num">Selling Price</th>
-              <th class="num">Gross</th>
-              <th class="num">% of Cost</th>
-              <th class="num">% of SP</th>
-              <th class="num">WOS</th>
-              <th class="num">GM%</th>
-            </tr>
-          </thead>
-          <tbody>
-            {% for row in fg_gross_recovery_history_rows %}
-              <tr>
-                <td>{{ row.date }}</td>
-                <td>{{ row.division }}</td>
-                <td>{{ row.category }}</td>
-                <td>{{ row.type }}</td>
-                <td class="num">{{ row.cost }}</td>
-                <td class="num">{{ row.selling }}</td>
-                <td class="num">{{ row.gross }}</td>
-                <td class="num">{{ row.pct_cost }}</td>
-                <td class="num">{{ row.pct_sp }}</td>
-                <td class="num">{{ row.wos }}</td>
-                <td class="num">{{ row.gr_pct }}</td>
-              </tr>
-            {% empty %}
-              <tr><td colspan="11" class="num">Finished goods gross recovery history not available.</td></tr>
-            {% endfor %}
-          </tbody>
-          {% if fg_gross_recovery_history_rows %}
-            <tfoot>
-              <tr class="tfoot">
-                <td colspan="4">Total</td>
-                <td class="num">{{ fg_gross_recovery_history_totals.cost }}</td>
-                <td class="num">{{ fg_gross_recovery_history_totals.selling }}</td>
-                <td class="num">{{ fg_gross_recovery_history_totals.gross }}</td>
-                <td class="num">{{ fg_gross_recovery_history_totals.pct_cost }}</td>
-                <td class="num">{{ fg_gross_recovery_history_totals.pct_sp }}</td>
-                <td class="num">{{ fg_gross_recovery_history_totals.wos }}</td>
-                <td class="num">{{ fg_gross_recovery_history_totals.gr_pct }}</td>
-              </tr>
-            </tfoot>
-          {% endif %}
-        </table>
-      </div>
-    </div> -->
   </div>
 
   <div class="grid-2 mb">
@@ -845,13 +781,16 @@ gap: 0px;
             </thead>
 
             <tbody>
-              {% for row in tab.rows %}
-                <tr{% if row.item == "Total" %} class="total"{% endif %}>
-                  <td class="left">{{ row.item }}</td>
-                  <td class="center center-alighment">{{ row.cost }}</td>
-                  <td class="center center-alighment">{{ row.gross }}</td>
-                  <td class="center center-alighment">{{ row.gr_pct }}</td>
-                </tr>
+              {% regroup tab.rows by item as category_groups %}
+              {% for group in category_groups %}
+                {% with row=group.list|last %}
+                  <tr{% if row.item == "Total" %} class="total"{% endif %}>
+                    <td class="left">{{ row.item }}</td>
+                    <td class="center center-alighment">{{ row.cost }}</td>
+                    <td class="center center-alighment">{{ row.gross }}</td>
+                    <td class="center center-alighment">{{ row.gr_pct }}</td>
+                  </tr>
+                {% endwith %}
               {% empty %}
                 <tr><td colspan="4" class="center">Data not available.</td></tr>
               {% endfor %}

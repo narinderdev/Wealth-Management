@@ -6005,15 +6005,33 @@ def _latest_category_rows(qs):
 def _build_liquidation_category_history_table(rows, default_label=None):
     if not rows:
         return []
-    sorted_rows = sorted(rows, key=lambda row: _to_decimal(row.total_inventory), reverse=True)
+    aggregated = {}
+    for row in rows:
+        label = row.category or default_label or "Item"
+        cost = _to_decimal(row.total_inventory)
+        gross = _to_decimal(row.available_inventory)
+        bucket = aggregated.setdefault(
+            label,
+            {
+                "cost": Decimal("0"),
+                "gross": Decimal("0"),
+            },
+        )
+        bucket["cost"] += cost
+        bucket["gross"] += gross
+
+    sorted_rows = sorted(
+        aggregated.items(),
+        key=lambda item: item[1]["cost"],
+        reverse=True,
+    )
     total = Decimal("0")
     total_gross = Decimal("0")
     table = []
-    for row in sorted_rows:
-        cost = _to_decimal(row.total_inventory)
-        gross = _to_decimal(row.available_inventory)
+    for label, values in sorted_rows:
+        cost = values["cost"]
+        gross = values["gross"]
         gr_pct = gross / cost if cost else Decimal("0")
-        label = row.category or default_label or "Item"
         table.append(
             {
                 "rank": None,
@@ -6800,6 +6818,7 @@ def _liquidation_model_context(borrower):
         {"type": "row", "row": liquidation_totals_row},
     )
     history_rows = []
+    history_summary_rows = []
     total_cost = Decimal("0")
     total_selling = Decimal("0")
     total_gross = Decimal("0")
@@ -6886,23 +6905,34 @@ def _liquidation_model_context(borrower):
                 "_label": label,
             }
         )
+
+    def _clean_history_row(row, label_override=None):
+        cleaned = {key: value for key, value in row.items() if not key.startswith("_")}
+        if label_override:
+            cleaned["category"] = label_override
+        return cleaned
+
+    primary_order = [
+        "Cabinets",
+        "Doors",
+        "Flooring Products",
+        "Moulding & Trim",
+        "Decking",
+        "Roofing",
+        "Windows",
+        "Hardware",
+        "Insulation",
+    ]
+    tail_order = [
+        "Tools",
+        "Other",
+        "Total In-Line",
+        "Excess",
+        "Total",
+    ]
+    display_order = primary_order + tail_order
+
     if history_rows:
-        display_order = [
-            "Cabinets",
-            "Doors",
-            "Flooring Product",
-            "Moulding & Trim",
-            "Decking",
-            "Roofing",
-            "Windows",
-            "Hardware",
-            "Insulation",
-            "Tools",
-            "Other",
-            "Total In-Line",
-            "Excess",
-            "Total",
-        ]
 
         def _normalize_fg_key(text):
             cleaned = "".join(ch if ch.isalnum() else " " for ch in (text or "").strip().lower())
@@ -6912,7 +6942,7 @@ def _liquidation_model_context(borrower):
         key_aliases = {
             "Cabinets": ["cabinet", "cabinets"],
             "Doors": ["door", "doors"],
-            "Flooring Product": ["flooring product", "flooring products", "flooring"],
+            "Flooring Products": ["flooring product", "flooring products", "flooring"],
             "Moulding & Trim": ["moulding trim", "molding trim", "moulding and trim", "molding and trim"],
             "Decking": ["decking", "deck"],
             "Roofing": ["roofing", "roof"],
@@ -6927,10 +6957,14 @@ def _liquidation_model_context(borrower):
         }
 
         row_lookup = {}
+        unmatched_lookup = {}
         for row in history_rows:
             label = row.get("_label") or ""
             normalized = _normalize_fg_key(label)
             if not normalized:
+                existing = unmatched_lookup.get(label)
+                if not existing or row.get("_row_key") > existing.get("_row_key", (date.min, datetime.min, 0)):
+                    unmatched_lookup[label] = row
                 continue
             matched_key = None
             for key in display_order:
@@ -6948,33 +6982,37 @@ def _liquidation_model_context(borrower):
                 existing = row_lookup.get(matched_key)
                 if not existing or row.get("_row_key") > existing.get("_row_key", (date.min, datetime.min, 0)):
                     row_lookup[matched_key] = row
+            else:
+                label_key = row.get("_label") or row.get("category") or "—"
+                existing = unmatched_lookup.get(label_key)
+                if not existing or row.get("_row_key") > existing.get("_row_key", (date.min, datetime.min, 0)):
+                    unmatched_lookup[label_key] = row
 
-        if row_lookup:
-            ordered_rows = []
-            for label in display_order:
-                match = row_lookup.get(label)
-                if match:
-                    match["category"] = label
-                    ordered_rows.append(match)
+        primary_rows = []
+        tail_rows = []
+        for label in display_order:
+            match = row_lookup.get(label)
+            if match:
+                cleaned = _clean_history_row(match, label)
+                if label in tail_order:
+                    tail_rows.append(cleaned)
                 else:
-                    ordered_rows.append(
-                        {
-                            "category": label,
-                            "cost": _format_currency(Decimal("0")),
-                            "selling": _format_currency(Decimal("0")),
-                            "gross": _format_currency(Decimal("0")),
-                            "pct_cost": _format_pct(Decimal("0")),
-                            "pct_sp": _format_pct(Decimal("0")),
-                            "wos": "0",
-                            "gr_pct": _format_pct(Decimal("0")),
-                        }
-                    )
-            history_rows = ordered_rows
-        else:
-            history_rows.sort(key=lambda row: row.get("_row_key", (date.min, datetime.min, 0)))
-            for row in history_rows:
-                row.pop("_row_key", None)
-                row.pop("_label", None)
+                    primary_rows.append(cleaned)
+        history_summary_rows = primary_rows
+
+        extra_rows = [
+            row
+            for label, row in unmatched_lookup.items()
+            if label not in row_lookup
+        ]
+        extra_rows.sort(key=lambda row: row.get("_row_key", (date.min, datetime.min, 0)), reverse=True)
+        for row in extra_rows:
+            history_summary_rows.append(_clean_history_row(row))
+
+        history_summary_rows.extend(tail_rows)
+
+    else:
+        history_summary_rows = []
     history_totals = {
         "cost": "—",
         "selling": "—",
@@ -7007,7 +7045,7 @@ def _liquidation_model_context(borrower):
         "liquidation_net_orderly_rows": liquidation_net_orderly_rows,
         "liquidation_net_orderly_footer": liquidation_net_orderly_footer,
         "liquidation_nolv_sections": liquidation_nolv_sections,
-        "fg_gross_recovery_history_rows": history_rows,
+        "fg_gross_recovery_history_rows": history_summary_rows,
         "fg_gross_recovery_history_totals": history_totals,
         "liquidation_payroll_rows": payroll_rows,
         "liquidation_payroll_totals": payroll_totals,
