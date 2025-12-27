@@ -215,9 +215,13 @@ def _format_axis_value(value):
     val = float(value)
     abs_val = abs(val)
     if abs_val >= 1_000_000_000:
-        return f"${val / 1_000_000_000:.0f}B"
+        scaled = val / 1_000_000_000
+        decimals = 0 if abs_val % 1_000_000_000 == 0 else 1
+        return f"${scaled:.{decimals}f}B"
     if abs_val >= 1_000_000:
-        return f"${val / 1_000_000:.0f}M"
+        scaled = val / 1_000_000
+        decimals = 0 if abs_val % 1_000_000 == 0 else 1
+        return f"${scaled:.{decimals}f}M"
     if abs_val >= 1_000:
         return f"${val / 1_000:.0f}k"
     return f"${val:,.0f}"
@@ -290,15 +294,15 @@ def _build_line_series(values, labels, series_label=None, width=220, height=140)
     bottom = 12
     tick_count = 5
     value_range = max_value - min_value
-    step_value = _nice_step(value_range / max(1, tick_count - 1))
+    raw_step = value_range / max(1, tick_count - 1)
+    if raw_step <= 0:
+        raw_step = max(max_value, 1.0) / max(1, tick_count - 1)
+    step_value = _nice_step(raw_step if raw_step > 0 else 1.0)
+    axis_min = 0
     axis_max = math.ceil(max_value / step_value) * step_value
-    axis_min = axis_max - step_value * (tick_count - 1)
-    if axis_min > min_value:
-        axis_min = math.floor(min_value / step_value) * step_value
-        axis_max = axis_min + step_value * (tick_count - 1)
-    if axis_min < 0:
-        axis_min = 0
-        axis_max = axis_min + step_value * (tick_count - 1)
+    axis_max = max(axis_max, step_value * (tick_count - 1))
+    if axis_max <= axis_min:
+        axis_max = axis_min + step_value * (tick_count - 1 or 1)
 
     axis_range = axis_max - axis_min if axis_max != axis_min else 1.0
 
@@ -833,10 +837,9 @@ def summary_view(request):
     chart_points = 5
 
     # Use most recent forecast rows so Borrowing Base KPIs match the forecast sheet.
-    forecast_limit = max(chart_points, 2)
     forecast_rows = list(
         ForecastRow.objects.filter(borrower=borrower)
-        .order_by("-as_of_date", "-period", "-created_at", "-id")[:forecast_limit]
+        .order_by("-as_of_date", "-period", "-created_at", "-id")[:chart_points]
     )
     latest_forecast = forecast_rows[0] if forecast_rows else None
     previous_forecast = forecast_rows[1] if len(forecast_rows) > 1 else None
@@ -872,19 +875,20 @@ def summary_view(request):
         _apply_forecast_metric("outstanding", "loan_balance")
         _apply_forecast_metric("availability", "revolver_availability")
 
-        chart_history = list(reversed(forecast_rows[:chart_points]))
-
-        def _forecast_label(row, index):
+        def _forecast_row_date(row):
             label_date = row.as_of_date or row.period
             if not label_date and getattr(row, "created_at", None):
                 created_dt = row.created_at
                 if timezone.is_aware(created_dt):
                     created_dt = timezone.localtime(created_dt)
                 label_date = created_dt.date()
-            if hasattr(label_date, "strftime"):
-                return label_date.strftime("%m/%d")
-            if label_date:
-                return str(label_date)
+            return label_date
+
+        def _format_label(row, date_value, index):
+            if hasattr(date_value, "strftime"):
+                return date_value.strftime("%m/%y")
+            if date_value:
+                return str(date_value)
             fallback = (row.actual_forecast or "").strip()
             if fallback:
                 return fallback
@@ -894,8 +898,11 @@ def summary_view(request):
             value = getattr(row, field_name, None)
             return _to_decimal(value) if value is not None else None
 
+        chart_history = list(reversed(forecast_rows[:chart_points]))
         for idx, row in enumerate(chart_history):
-            forecast_chart_labels.append(_forecast_label(row, idx))
+            date_value = _forecast_row_date(row)
+            base_label = _format_label(row, date_value, idx)
+            forecast_chart_labels.append(base_label)
             forecast_net_series.append(_forecast_value(row, "available_collateral"))
             forecast_outstanding_series.append(_forecast_value(row, "loan_balance"))
             forecast_availability_series.append(_forecast_value(row, "revolver_availability"))
