@@ -1164,16 +1164,16 @@ margin-left: -15px;
       font-size:12px;
     }
     .collateral-dynamic .ar-section .aging-table col.col-customer{
-      width:30%;
+      width:32%;
     }
     .collateral-dynamic .ar-section .aging-table col.col-age{
-      width:11%;
+      width:10%;
     }
     .collateral-dynamic .ar-section .aging-table col.col-total{
-      width:9%;
+      width:8%;
     }
     .collateral-dynamic .ar-section .aging-table col.col-percent{
-      width:6%;
+      width:8%;
     }
     .collateral-dynamic .ar-section .aging-table thead th,
     .collateral-dynamic .ar-section .aging-table tbody td{
@@ -1191,8 +1191,10 @@ margin-left: -15px;
       background:#f7faff;
     }
     .collateral-dynamic .ar-section .aging-table .align-right{
-      text-align:left;
-      font-size: 12px;
+      text-align:right;
+      font-size:12px;
+      font-variant-numeric:tabular-nums;
+      white-space:nowrap;
     }
     .collateral-dynamic .ar-section thead th{
       text-align:left;
@@ -1307,7 +1309,14 @@ margin-left: -15px;
       text-align:left;
     }
     .collateral-dynamic .ar-section .tables-row .aging-table .align-right{
-      text-align:center;
+      text-align:right;
+    }
+    .collateral-dynamic .ar-section .aging-scroll{
+      width:100%;
+      overflow-x:auto;
+    }
+    .collateral-dynamic .ar-section .aging-scroll table{
+      min-width:720px;
     }
     .collateral-dynamic .ar-section .align-right{text-align:right;}
     .collateral-dynamic .ar-section .align-center{text-align:center;}
@@ -1344,16 +1353,17 @@ margin-left: -15px;
       color:#1f2b5b;
       margin-bottom:8px;
       position:relative;
+      display:flex;
+      align-items:center;
+      justify-content:center;
+      gap:10px;
     }
     .collateral-dynamic .ar-section .comparison-blocks .centered-title::before,
     .collateral-dynamic .ar-section .comparison-blocks .centered-title::after{
       content:"";
-      display:inline-block;
-      width:64px;
+      flex:1;
       height:1px;
       background:#e2e8f8;
-      vertical-align:middle;
-      margin:0 10px;
     }
     .collateral-dynamic .ar-section .total td{
       font-weight:800;
@@ -1730,82 +1740,86 @@ margin-left: -15px;
                     <div class="subcard no-border side-line">
                       
                       <div class="table-title">Customer Aging Composition by Total Balance</div>
-                      <table class="aging-table">
-                        <colgroup>
-                          <col class="col-customer" />
-                          <col class="col-age" span="5" />
-                          <col class="col-total" />
-                          <col class="col-percent" />
-                        </colgroup>
-                        <thead>
-                          <tr>
-                            <th style="width:34%">Customer</th>
-                            <th>Current</th>
-                            <th>0-30</th>
-                            <th>31-60</th>
-                            <th>61-90</th>
-                            <th>91+</th>
-                            <th>Total</th>
-                            <th>% of Total</th>
-                          </tr>
-                        </thead>
-                        <tbody>
-                          {% for row in ar_customer_aging_total_rows %}
+                      <div class="aging-scroll">
+                        <table class="aging-table">
+                          <colgroup>
+                            <col class="col-customer" />
+                            <col class="col-age" span="5" />
+                            <col class="col-total" />
+                            <col class="col-percent" />
+                          </colgroup>
+                          <thead>
                             <tr>
-                              <td>{{ row.customer }}</td>
-                              {% for value in row.values %}
-                                <td class="align-right">{{ value }}</td>
-                              {% endfor %}
-                              <td class="align-right">{{ row.total }}</td>
-                              <td class="align-right">{{ row.percent_total }}</td>
+                              <th>Customer</th>
+                              <th>Current</th>
+                              <th>0-30</th>
+                              <th>31-60</th>
+                              <th>61-90</th>
+                              <th>91+</th>
+                              <th>Total</th>
+                              <th>% of Total</th>
                             </tr>
-                          {% empty %}
-                            <tr>
-                              <td colspan="8" class="align-center">No aging composition data</td>
-                            </tr>
-                          {% endfor %}
-                        </tbody>
-                      </table>
+                          </thead>
+                          <tbody>
+                            {% for row in ar_customer_aging_total_rows %}
+                              <tr>
+                                <td>{{ row.customer }}</td>
+                                {% for value in row.values %}
+                                  <td class="align-right">{{ value }}</td>
+                                {% endfor %}
+                                <td class="align-right">{{ row.total }}</td>
+                                <td class="align-right">{{ row.percent_total }}</td>
+                              </tr>
+                            {% empty %}
+                              <tr>
+                                <td colspan="8" class="align-center">No aging composition data</td>
+                              </tr>
+                            {% endfor %}
+                          </tbody>
+                        </table>
+                      </div>
                     </div>
 
                     <div class="subcard no-border"> 
                       <div class="table-title">Customer Aging Composition by Past Due Balance</div>
-                      <table class="aging-table">
-                        <colgroup>
-                          <col class="col-customer" />
-                          <col class="col-age" span="5" />
-                          <col class="col-total" />
-                          <col class="col-percent" />
-                        </colgroup>
-                        <thead>
-                          <tr>
-                            <th style="width:34%">Customer</th>
-                            <th>Current</th>
-                            <th>0-30</th>
-                            <th>31-60</th>
-                            <th>61-90</th>
-                            <th>91+</th>
-                            <th>Total</th>
-                            <th>% of Total</th>
-                          </tr>
-                        </thead>
-                          <tbody>
-                          {% for row in ar_customer_aging_past_due_rows %}
+                      <div class="aging-scroll">
+                        <table class="aging-table">
+                          <colgroup>
+                            <col class="col-customer" />
+                            <col class="col-age" span="5" />
+                            <col class="col-total" />
+                            <col class="col-percent" />
+                          </colgroup>
+                          <thead>
                             <tr>
-                              <td>{{ row.customer }}</td>
-                              {% for value in row.values %}
-                                <td class="align-right">{{ value }}</td>
-                              {% endfor %}
-                              <td class="align-right">{{ row.total }}</td>
-                              <td class="align-right">{{ row.percent_total }}</td>
+                              <th>Customer</th>
+                              <th>Current</th>
+                              <th>0-30</th>
+                              <th>31-60</th>
+                              <th>61-90</th>
+                              <th>91+</th>
+                              <th>Total</th>
+                              <th>% of Total</th>
                             </tr>
-                          {% empty %}
-                            <tr>
-                              <td colspan="8" class="align-center">No aging composition data</td>
-                            </tr>
-                          {% endfor %}
-                        </tbody>
-                      </table>
+                          </thead>
+                            <tbody>
+                            {% for row in ar_customer_aging_past_due_rows %}
+                              <tr>
+                                <td>{{ row.customer }}</td>
+                                {% for value in row.values %}
+                                  <td class="align-right">{{ value }}</td>
+                                {% endfor %}
+                                <td class="align-right">{{ row.total }}</td>
+                                <td class="align-right">{{ row.percent_total }}</td>
+                              </tr>
+                            {% empty %}
+                              <tr>
+                                <td colspan="8" class="align-center">No aging composition data</td>
+                              </tr>
+                            {% endfor %}
+                          </tbody>
+                        </table>
+                      </div>
                     </div>
                   </div>
                 </section>
@@ -1930,8 +1944,11 @@ margin-left: -15px;
 
                   <div class="three-col comparison-blocks">
                     <div class="subcard">
-                      <div class="table-title centered-title">Concentration</div>
-                      <table class="centered-table">
+                      <div class="table-title centered-title">
+                        <span>Concentration</span>
+                        <span class="table-pill">%</span>
+                      </div>
+                     <table class="centered-table">
                         <thead>
                           <tr>
                             <th>Customer</th>
@@ -1958,7 +1975,10 @@ margin-left: -15px;
                     </div>
 
                     <div class="subcard">
-                      <div class="table-title centered-title">Average Days Outstanding</div>
+                      <div class="table-title centered-title">
+                        <span>Average Days Outstanding</span>
+                        <span class="table-pill">Days</span>
+                      </div>
                       <table class="centered-table">
                         <thead>
                           <tr>
@@ -1971,9 +1991,9 @@ margin-left: -15px;
                         <tbody>
                           {% for row in ar_ado_rows %}
                             <tr>
-                              <td class="align-center">{{ row.customer }}</td>
-                              <td class="align-center">{{ row.current }}</td>
-                              <td class="align-center">{{ row.average }}</td>
+                              <td class="align-left">{{ row.customer }}</td>
+                              <td class="align-center">{{ row.current }}%</td>
+                              <td class="align-center">{{ row.average }}%</td>
                               <td class="align-center">{{ row.variance }}</td>
                             </tr>
                           {% empty %}
@@ -1986,7 +2006,10 @@ margin-left: -15px;
                     </div>
 
                     <div class="subcard">
-                      <div class="table-title centered-title">Days Sales Outstanding</div>
+                      <div class="table-title centered-title">
+                        <span>Days Sales Outstanding</span>
+                        <span class="table-pill">Days</span>
+                      </div>
                       <table class="centered-table">
                         <thead>
                           <tr>
@@ -1999,9 +2022,9 @@ margin-left: -15px;
                         <tbody>
                           {% for row in ar_dso_rows %}
                             <tr>
-                              <td class="align-center">{{ row.customer }}</td>
-                              <td class="align-center">{{ row.current }}</td>
-                              <td class="align-center">{{ row.average }}</td>
+                              <td class="align-left">{{ row.customer }}</td>
+                              <td class="align-center">{{ row.current }}%</td>
+                              <td class="align-center">{{ row.average }}%</td>
                               <td class="align-center">{{ row.variance }}</td>
                             </tr>
                           {% empty %}
