@@ -2395,9 +2395,9 @@ def _accounts_receivable_context(borrower, range_key="today", division="all", sn
         values, labels = _normalize_chart_values(values, labels)
         width = 260
         height = 140
-        left = 48
+        left = 55
         right = 12
-        top = 14
+        top = 16
         bottom = 26
         plot_width = width - left - right
         plot_height = height - top - bottom
@@ -2446,8 +2446,8 @@ def _accounts_receivable_context(borrower, range_key="today", division="all", sn
                 "top": top,
                 "bottom": round(baseline_y, 1),
             },
-            "label_x": left - 10,
-            "label_y": round(baseline_y + 16, 1),
+            "label_x": left - 18,
+            "label_y": round(baseline_y + 20, 1),
         }
 
     def _delta_payload(current, previous):
@@ -2594,7 +2594,7 @@ def _accounts_receivable_context(borrower, range_key="today", division="all", sn
     aging_axis_bottom = Decimal("140")
     aging_plot_height = aging_axis_bottom - aging_axis_top
     bucket_count = len(AGING_BUCKET_DEFS)
-    bar_width = Decimal("20")
+    bar_width = Decimal("26")
     plot_width = aging_axis_right - aging_axis_left
     if bucket_count > 1:
         gap = (plot_width - (bar_width * bucket_count)) / Decimal(bucket_count - 1)
@@ -2693,7 +2693,19 @@ def _accounts_receivable_context(borrower, range_key="today", division="all", sn
                 "label": entry["label"],
             }
         )
-        trend_labels.append({"x": float(label_x), "text": entry["label"]})
+        label_text = entry["label"]
+        month_label = label_text
+        year_label = ""
+        if label_text and " " in label_text:
+            month_label, year_label = label_text.split(" ", 1)
+        trend_labels.append(
+            {
+                "x": float(label_x),
+                "text": label_text,
+                "month": month_label,
+                "year": year_label,
+            }
+        )
 
     trend_ticks = []
     tick_steps = 4
@@ -2989,11 +3001,12 @@ def _accounts_receivable_context(borrower, range_key="today", division="all", sn
         )
         ado_source = _latest_rows_with_values(concentration_rows_all, ado_fields)
     ado_entries = []
+    TOP_CUSTOMER_COUNT = 20
     for row in sorted(
         ado_source,
         key=lambda r: _to_decimal(r.current_ado_days),
         reverse=True,
-    )[:10]:
+    )[:TOP_CUSTOMER_COUNT]:
         current_ado = _to_decimal(row.current_ado_days) if row.current_ado_days is not None else None
         avg_ado = _to_decimal(row.avg_ttm_ado_days) if row.avg_ttm_ado_days is not None else None
         variance_ado = _to_decimal(row.variance_ado_days) if row.variance_ado_days is not None else None
@@ -3024,7 +3037,7 @@ def _accounts_receivable_context(borrower, range_key="today", division="all", sn
         dso_source,
         key=lambda r: _to_decimal(r.current_dso_days),
         reverse=True,
-    )[:10]:
+    )[:TOP_CUSTOMER_COUNT]:
         current_dso = _to_decimal(row.current_dso_days) if row.current_dso_days is not None else None
         avg_dso = _to_decimal(row.avg_ttm_dso_days) if row.avg_ttm_dso_days is not None else None
         variance_dso = _to_decimal(row.variance_dso_days) if row.variance_dso_days is not None else None

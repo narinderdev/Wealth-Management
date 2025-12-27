@@ -659,7 +659,7 @@
     }
     .collateral-dynamic .ar-section .p{
       margin:0;
-      font-size:12px;
+      font-size:10pt;
       color:#737791;
       line-height:1.6;
     }
@@ -735,13 +735,13 @@
       gap:10px;
     }
     .collateral-dynamic .borrowing-base-kpi .kpi-label{
-        font-size: 12px;
+        font-size: 16pt;
     font-weight: 600;
     color: #65758B;
     }
     .collateral-dynamic .borrowing-base-kpi .kpi-value{
       margin-top: 16px;
-      font-size: 24px;
+      font-size: 16pt;
       font-weight: 700;
       color: #101a3c;
     }
@@ -753,8 +753,8 @@
       align-items:center;
       gap:6px;
     }
-    .collateral-dynamic .borrowing-base-kpi .kpi-delta.up{margin-top: 20px;color:var(--teal);font-size: 13px;}
-    .collateral-dynamic .borrowing-base-kpi .kpi-delta.down{margin-top: 20px;color:#e05555;font-size: 13px;}
+    .collateral-dynamic .borrowing-base-kpi .kpi-delta.up{margin-top: 20px;color:var(--teal);font-size: 10pt;}
+    .collateral-dynamic .borrowing-base-kpi .kpi-delta.down{margin-top: 20px;color:#e05555;font-size: 10pt;}
     .collateral-dynamic .borrowing-base-kpi .kpi-icon{
       width:36px;
       height:36px;
@@ -795,7 +795,7 @@
     .collateral-dynamic .borrowing-base-chart .chart-box{
       background:#f8fafc;
       border-radius:10px;
-      overflow:hidden;
+      overflow:visible;
     }
     .collateral-dynamic .chart-box{
       position:relative;
@@ -814,7 +814,7 @@
       inset:0;
       z-index:3;
       width:100%;
-      height:100%;
+      height:102%;
     }
     .collateral-dynamic .chart-layer.is-static{
       pointer-events:none;
@@ -822,6 +822,8 @@
     }
     .collateral-dynamic .chart-layer.label-layer{
       z-index:4;
+margin-top: -12px;
+margin-left: -15px;
     }
     .collateral-dynamic .chart-layer.line-layer{
       z-index:2;
@@ -855,7 +857,7 @@
     }
     .collateral-dynamic .chart-axis-label{
       position:absolute;
-      font-size:9px;
+      font-size:10pt;
       color:#9aa6b2;
       white-space:nowrap;
       pointer-events:none;
@@ -882,8 +884,13 @@
       align-items:flex-start;
       line-height:1.1;
     }
+    .collateral-dynamic .chart-axis-label.stack.center{
+      margin-top: -32px;
+      align-items:center;
+      gap:2px;
+    }
     .collateral-dynamic .chart-axis-year{
-      font-size:9px;
+      font-size:10px;
       color:#9aa6b2;
     }
     .collateral-dynamic .chart-empty{
@@ -1027,6 +1034,7 @@
     }
     .collateral-dynamic .aging-composition-chart .chart-axis-label{
       color:var(--aging-axis);
+      font-size:10pt;
     }
     .collateral-dynamic .aging-composition-chart .aging-percent{
       position:absolute;
@@ -1039,7 +1047,8 @@
     }
     .collateral-dynamic .aging-composition-chart .aging-label{
       position:absolute;
-      font-size:9px;
+      margin-top: 10px;
+      font-size:10pt;
       color:var(--aging-label);
       left:calc(var(--x) * 100% / var(--chart-width));
       top:calc(var(--y) * 100% / var(--chart-height));
@@ -1071,8 +1080,8 @@
       height:calc(var(--bar-height) * 100% / var(--chart-height));
       border-radius:4px;
     }
-    .collateral-dynamic .trend-bar.past{background:#1b2a55;}
-    .collateral-dynamic .trend-bar.current{background:#6d82ff;}
+    .collateral-dynamic .trend-bar.past{background:#1b2a55;width: 4px;}
+    .collateral-dynamic .trend-bar.current{background:#6d82ff;width: 4px;}
     .collateral-dynamic .ar-ineligible-chart{
       --chart-width:520;
       --chart-height:260;
@@ -1107,7 +1116,7 @@
     }
     .collateral-dynamic .ar-ineligible-chart .chart-axis-title{
       right:auto;
-      left: -1px;
+      left: -10px;
       transform:rotate(-90deg);
       transform-origin:left top;
           margin-top: 127px;
@@ -1152,6 +1161,18 @@
     .collateral-dynamic .ar-section .aging-table{
       font-size:12px;
     }
+    .collateral-dynamic .ar-section .aging-table col.col-customer{
+      width:30%;
+    }
+    .collateral-dynamic .ar-section .aging-table col.col-age{
+      width:11%;
+    }
+    .collateral-dynamic .ar-section .aging-table col.col-total{
+      width:9%;
+    }
+    .collateral-dynamic .ar-section .aging-table col.col-percent{
+      width:6%;
+    }
     .collateral-dynamic .ar-section .aging-table thead th,
     .collateral-dynamic .ar-section .aging-table tbody td{
       padding:8px 12px;
@@ -1163,6 +1184,10 @@
     .collateral-dynamic .ar-section .ineligible-table tbody td{
       padding:8px 12px;
     }
+    .collateral-dynamic .ar-section .ineligible-table tfoot tr,
+    .collateral-dynamic .ar-section .ineligible-table tbody tr.total {
+      background:#f7faff;
+    }
     .collateral-dynamic .ar-section .aging-table .align-right{
       text-align:left;
       font-size: 12px;
@@ -1171,13 +1196,14 @@
       text-align:left;
       padding:6px 8px;
       font-weight:700;
-      font-size:10px;
+      font-size:10pt;
       color:#6b7280;
       background:#f7faff;
       border-top:1px solid #e3eaf7;
       border-bottom:1px solid #e3eaf7;
     }
     .collateral-dynamic .ar-section thead th:first-child{
+      font-size: 10pt;
       border-left:1px solid #e3eaf7;
       border-top-left-radius:8px;
     }
@@ -1192,6 +1218,10 @@
     }
     .collateral-dynamic .ar-section tbody tr:last-child td{
       border-bottom:1px solid #e3eaf7;
+    }
+    .collateral-dynamic .ar-section .ineligible-table tbody tr:last-child td{
+      border-bottom:1px solid #e3eaf7;
+      background:#f7faff;
     }
     .collateral-dynamic .ar-section .table-title{
       font-size:14px;
@@ -1261,6 +1291,7 @@
     .collateral-dynamic .ar-section .tables-row thead th:first-child{
       text-align:left;
       border-left:1px solid #e7edf6;
+      font-size: 10pt;
     }
     .collateral-dynamic .ar-section .tables-row thead th:last-child{
       border-right:1px solid #e7edf6;
@@ -1292,6 +1323,7 @@
     .collateral-dynamic .ar-section .centered-table th:first-child,
     .collateral-dynamic .ar-section .centered-table td:first-child{
       text-align:left;
+      font-size: 10pt;
     }
     .collateral-dynamic .ar-section .comparison-blocks{
       gap:0;
@@ -1384,6 +1416,7 @@
   width: 100%;
   max-width: 100%;
   margin-top: 18px;
+  padding-bottom: 18px;
 }
 .content-inner{
   margin-top: -45px;
@@ -1659,7 +1692,12 @@
                               <span class="chart-axis-label y" style="--x: 10; --y: {{ tick.y|add:'3'|floatformat:1 }}">{{ tick.label }}</span>
                             {% endfor %}
                             {% for label in ar_current_vs_past_due_trend.labels %}
-                              <span class="chart-axis-label x" style="--x: {{ label.x }}; --y: 176">{{ label.text }}</span>
+                              <span class="chart-axis-label x stack center" style="--x: {{ label.x }}; --y: 176">
+                                <span>{{ label.month }}</span>
+                                {% if label.year %}
+                                  <span>{{ label.year }}</span>
+                                {% endif %}
+                              </span>
                             {% endfor %}
                           </div>
                           <div class="chart-layer">
@@ -1691,6 +1729,12 @@
                       
                       <div class="table-title">Customer Aging Composition by Total Balance</div>
                       <table class="aging-table">
+                        <colgroup>
+                          <col class="col-customer" />
+                          <col class="col-age" span="5" />
+                          <col class="col-total" />
+                          <col class="col-percent" />
+                        </colgroup>
                         <thead>
                           <tr>
                             <th style="width:34%">Customer</th>
@@ -1725,6 +1769,12 @@
                     <div class="subcard no-border"> 
                       <div class="table-title">Customer Aging Composition by Past Due Balance</div>
                       <table class="aging-table">
+                        <colgroup>
+                          <col class="col-customer" />
+                          <col class="col-age" span="5" />
+                          <col class="col-total" />
+                          <col class="col-percent" />
+                        </colgroup>
                         <thead>
                           <tr>
                             <th style="width:34%">Customer</th>
@@ -1797,7 +1847,7 @@
                             </tr>
                           {% endfor %}
                           {% if ar_ineligible_overview_total %}
-                            <tr class="total">
+                            <tr class="total-IO">
                               <td>{{ ar_ineligible_overview_total.label }}</td>
                               <td class="align-center">{{ ar_ineligible_overview_total.amount }}</td>
                               <td class="align-center">{{ ar_ineligible_overview_total.pct }}</td>
