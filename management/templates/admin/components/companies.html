@@ -15,9 +15,10 @@
       <table class="admin-table">
         <thead>
           <tr>
-            <th>Company</th>
             <th>Specific Individual</th>
             <th>Specific Individual ID</th>
+            <th>Lender</th>
+            <th>Lender ID</th>
             <th>Email</th>
             <th></th>
           </tr>
@@ -25,9 +26,10 @@
         <tbody>
           {% for company in component_data.list %}
             <tr>
-              <td>{{ company.company|default:"—" }}</td>
               <td>{{ company.specific_individual|default:"—" }}</td>
               <td>{{ company.specific_individual_id|default:"—" }}</td>
+              <td>{{ company.lender_name|default:"—" }}</td>
+              <td>{{ company.lender_identifier|default:"—" }}</td>
               <td>
                 {% if company.email %}
                   <a href="mailto:{{ company.email }}">{{ company.email }}</a>
@@ -46,7 +48,7 @@
               </td>
             </tr>
           {% empty %}
-            <tr><td colspan="5">No users recorded.</td></tr>
+            <tr><td colspan="6">No users recorded.</td></tr>
           {% endfor %}
         </tbody>
       </table>

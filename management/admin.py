@@ -9,13 +9,24 @@ class CompanyAdmin(admin.ModelAdmin):
         "company",
         "specific_individual",
         "specific_individual_id",
+        "lender_name",
+        "lender_identifier",
         "company_id",
         "industry",
         "website",
         "email",
         "created_at",
     )
-    search_fields = ("company", "specific_individual", "specific_individual_id", "company_id", "industry", "email")
+    search_fields = (
+        "company",
+        "specific_individual",
+        "specific_individual_id",
+        "lender_name",
+        "lender_identifier",
+        "company_id",
+        "industry",
+        "email",
+    )
     list_filter = ("industry",)
 
 

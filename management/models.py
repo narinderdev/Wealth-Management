@@ -34,6 +34,8 @@ class Company(TimeStampedModel):
     password = models.CharField(max_length=128, null=True, blank=True, db_column="company_password")
     specific_individual = models.CharField(max_length=255, null=True, blank=True)
     specific_individual_id = models.CharField(max_length=255, null=True, blank=True)
+    lender_name = models.CharField(max_length=255, null=True, blank=True)
+    lender_identifier = models.CharField(max_length=255, null=True, blank=True)
 
     def __str__(self):
         return self.company or str(self.company_id)
@@ -92,14 +94,22 @@ class Borrower(TimeStampedModel):
     next_update = models.DateField(null=True, blank=True)
     lender = models.CharField(max_length=255, null=True, blank=True)
     lender_id = models.CharField(max_length=255, null=True, blank=True)
-    specific_individual = models.CharField(max_length=255, null=True, blank=True)
-    specific_individual_id = models.CharField(max_length=255, null=True, blank=True)
+    primary_specific_individual = models.ForeignKey(
+        "SpecificIndividual",
+        on_delete=models.SET_NULL,
+        null=True,
+        blank=True,
+        related_name="primary_for_borrowers",
+    )
     industry = models.CharField(max_length=255, null=True, blank=True)
     primary_naics = models.CharField(max_length=255, null=True, blank=True)
     website = models.CharField(max_length=255, null=True, blank=True)
 
     def __str__(self):
-        return f"{self.company} - {self.primary_contact or 'Borrower'}"
+        label = self.primary_contact
+        if not label and self.primary_specific_individual:
+            label = self.primary_specific_individual.specific_individual
+        return f"{self.company} - {label or 'Borrower'}"
 
 
 # Removed BorrowerUser to ensure Borrower cannot log in

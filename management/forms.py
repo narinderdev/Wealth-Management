@@ -82,8 +82,12 @@ class CompanyChoiceField(forms.ModelChoiceField):
             label_parts.append(obj.specific_individual)
         if obj.company:
             label_parts.append(obj.company)
+        if obj.lender_name:
+            label_parts.append(f"Lender: {obj.lender_name}")
         if obj.specific_individual_id:
             label_parts.append(f"ID {obj.specific_individual_id}")
+        if obj.lender_identifier:
+            label_parts.append(f"Lender ID {obj.lender_identifier}")
         return " • ".join(label_parts) if label_parts else f"Company {obj.company_id or obj.pk}"
 
 
@@ -109,17 +113,22 @@ class BorrowerModelForm(StyledModelForm):
 
 
 class CompanyForm(StyledModelForm):
-    required_fields = ("company", "specific_individual", "specific_individual_id", "email", "password")
+    required_fields = (
+        "specific_individual",
+        "specific_individual_id",
+        "lender_name",
+        "lender_identifier",
+        "email",
+        "password",
+    )
 
     class Meta:
         model = Company
         fields = [
-            "company",
             "specific_individual",
             "specific_individual_id",
-            "industry",
-            "primary_naics",
-            "website",
+            "lender_name",
+            "lender_identifier",
             "email",
             "password",
         ]
@@ -127,12 +136,10 @@ class CompanyForm(StyledModelForm):
             "password": forms.PasswordInput(render_value=False),
         }
         labels = {
-            "company": "Company",
             "specific_individual": "Specific Individual",
             "specific_individual_id": "Specific Individual ID",
-            "industry": "Industry",
-            "primary_naics": "Primary NAICS",
-            "website": "Website",
+            "lender_name": "Lender (Bank)",
+            "lender_identifier": "Lender ID",
             "email": "Email",
             "password": "Password",
         }
@@ -163,8 +170,6 @@ class BorrowerForm(StyledModelForm):
         fields = [
             "lender",
             "lender_id",
-            "specific_individual",
-            "specific_individual_id",
             "company",
             "primary_contact",
             "primary_contact_phone",
@@ -240,12 +245,55 @@ class BorrowerForm(StyledModelForm):
             return
         if not borrower.primary_contact and company.specific_individual:
             borrower.primary_contact = company.specific_individual
-        if not borrower.specific_individual and company.specific_individual:
-            borrower.specific_individual = company.specific_individual
-        if not borrower.specific_individual_id and company.specific_individual_id:
-            borrower.specific_individual_id = company.specific_individual_id
         if not borrower.primary_contact_email and company.email:
             borrower.primary_contact_email = company.email
+        if not borrower.lender and company.lender_name:
+            borrower.lender = company.lender_name
+        if not borrower.lender_id and company.lender_identifier:
+            borrower.lender_id = company.lender_identifier
+
+    def _normalize_specific_id(self, value):
+        if value in (None, ""):
+            return None
+        try:
+            return int(str(value).strip())
+        except (ValueError, TypeError):
+            return None
+
+    def _ensure_primary_specific_individual(self, borrower):
+        company = borrower.company
+        current = borrower.primary_specific_individual
+        name = None
+        specific_id = None
+        if company:
+            name = company.specific_individual or borrower.primary_contact
+            specific_id = self._normalize_specific_id(company.specific_individual_id)
+        elif borrower.primary_contact:
+            name = borrower.primary_contact
+
+        if current:
+            updated = False
+            if name and not current.specific_individual:
+                current.specific_individual = name
+                updated = True
+            if specific_id and not current.specific_id:
+                current.specific_id = specific_id
+                updated = True
+            if updated:
+                current.save(update_fields=["specific_individual", "specific_id"])
+            return current
+
+        if not name and not specific_id:
+            return None
+
+        individual = SpecificIndividual.objects.create(
+            borrower=borrower,
+            specific_individual=name,
+            specific_id=specific_id,
+        )
+        borrower.primary_specific_individual = individual
+        borrower.save(update_fields=["primary_specific_individual"])
+        return individual
 
     def save(self, commit=True):
         borrower = super().save(commit=False)
@@ -254,6 +302,7 @@ class BorrowerForm(StyledModelForm):
         if commit:
             borrower.save()
             self.save_m2m()
+            self._ensure_primary_specific_individual(borrower)
             if is_new:
                 from management.services.borrower_defaults import bootstrap_default_borrower_data
 

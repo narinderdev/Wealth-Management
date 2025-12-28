@@ -644,11 +644,14 @@ def run_cora_import(
     si_name = overview.get("Specific Individual")
     si_id = overview.get("Specific ID")
     if si_name or si_id:
-        SpecificIndividual.objects.get_or_create(
+        individual, _ = SpecificIndividual.objects.get_or_create(
             borrower=borrower,
             specific_individual=str(si_name) if si_name else None,
             specific_id=to_int(si_id),
         )
+        if not borrower.primary_specific_individual_id:
+            borrower.primary_specific_individual = individual
+            borrower.save(update_fields=["primary_specific_individual"])
 
     # report_date preference: CLI -> Current Update -> today
     report_date = report_date or ""
