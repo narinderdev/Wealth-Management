@@ -3,7 +3,7 @@ from django.contrib import messages
 from django.contrib.auth import get_user_model, login, logout
 from django.shortcuts import redirect, render
 
-from management.models import Company
+from management.models import Company, Borrower
 
 User = get_user_model()
 
@@ -96,7 +96,14 @@ def login_view(request):
             else:
                 request.session.set_expiry(0)
             request.session["company_id"] = company.id
-            request.session.pop("selected_borrower_id", None)
+            preferred_borrower = (
+                company.borrowers.order_by("id").first()
+                or Borrower.objects.filter(company=company).order_by("id").first()
+            )
+            if preferred_borrower:
+                request.session["selected_borrower_id"] = preferred_borrower.id
+            else:
+                request.session.pop("selected_borrower_id", None)
             request.session.modified = True
             return redirect("borrower_portfolio")
 

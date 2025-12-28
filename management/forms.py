@@ -129,7 +129,24 @@ class CompanyForm(StyledModelForm):
             instance.set_password(password, save=False)
         if commit:
             instance.save()
+            self._ensure_borrower(instance)
         return instance
+
+    def _ensure_borrower(self, company):
+        if not company:
+            return
+        borrower, created = Borrower.objects.get_or_create(
+            company=company,
+            defaults={
+                "primary_contact": company.company or "Primary Contact",
+                "primary_contact_email": company.email or "",
+                "update_interval": "Monthly",
+            },
+        )
+        if created:
+            from management.services.borrower_defaults import bootstrap_default_borrower_data
+
+            bootstrap_default_borrower_data(borrower)
 
 
 class BorrowerForm(StyledModelForm):
@@ -239,6 +256,15 @@ class BorrowerForm(StyledModelForm):
             raise forms.ValidationError("Company name is required.")
         company, _ = Company.objects.get_or_create(company=name.strip())
         return company
+
+    def save(self, commit=True):
+        is_new = self.instance.pk is None
+        borrower = super().save(commit=commit)
+        if commit and is_new:
+            from management.services.borrower_defaults import bootstrap_default_borrower_data
+
+            bootstrap_default_borrower_data(borrower)
+        return borrower
 
 
 class SpecificIndividualForm(StyledModelForm):
