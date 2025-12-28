@@ -91,6 +91,23 @@ class CompanyChoiceField(forms.ModelChoiceField):
         return " • ".join(label_parts) if label_parts else f"Company {obj.company_id or obj.pk}"
 
 
+class CompanyAttributeChoiceField(forms.ModelChoiceField):
+    def __init__(self, *args, attr=None, fallback_attr=None, prefix="", suffix="", empty_label=None, **kwargs):
+        self.attr = attr
+        self.fallback_attr = fallback_attr or "specific_individual"
+        self.prefix = prefix or ""
+        self.suffix = suffix or ""
+        super().__init__(*args, empty_label=empty_label, **kwargs)
+
+    def label_from_instance(self, obj):
+        value = getattr(obj, self.attr, None) if self.attr else None
+        if not value and self.fallback_attr:
+            value = getattr(obj, self.fallback_attr, None)
+        if not value:
+            value = obj.company or f"Company {obj.company_id or obj.pk}"
+        return f"{self.prefix}{value}{self.suffix}"
+
+
 class BorrowerModelForm(StyledModelForm):
     required_fields = ("borrower",)
 
@@ -200,21 +217,74 @@ class BorrowerForm(StyledModelForm):
         phone = cleaned_data.get("primary_contact_phone")
         if not email and not phone:
             raise forms.ValidationError("Provide an email or phone for the primary contact.")
+
+        selector_fields = [
+            "user_specific_individual",
+            "user_specific_individual_id",
+            "user_lender",
+            "user_lender_id",
+        ]
+        selected_companies = []
+        for field_name in selector_fields:
+            company = cleaned_data.get(field_name)
+            if company:
+                selected_companies.append(company)
+        if not selected_companies:
+            raise forms.ValidationError("Select a specific individual to link this borrower.")
+        base_company = selected_companies[0]
+        mismatch = False
+        for field_name in selector_fields:
+            company = cleaned_data.get(field_name)
+            if company and company.pk != base_company.pk:
+                mismatch = True
+                self.add_error(field_name, "Must match the selected specific individual.")
+        if mismatch:
+            raise forms.ValidationError("Specific Individual, IDs, and lender selections must match.")
+        cleaned_data["company"] = base_company
         return cleaned_data
 
     def _configure_company_selector(self):
-        queryset = Company.objects.order_by("company", "specific_individual")
-        field = CompanyChoiceField(
+        queryset = Company.objects.order_by("specific_individual", "company")
+        company_field = CompanyChoiceField(
             queryset=queryset,
-            required=True,
-            label="Linked User / Company",
+            required=False,
             empty_label="Select user",
         )
-        field.help_text = "Select the user (Specific Individual ID) this borrower belongs to."
-        field.widget.attrs.setdefault("data-company-selector", "true")
+        company_field.widget = forms.HiddenInput()
+        company_field.help_text = ""
+        self.fields["company"] = company_field
+
+        selector_config = [
+            ("user_lender", "Lender", "lender_name", ""),
+            ("user_lender_id", "Lender ID", "lender_identifier", ""),
+            ("user_specific_individual", "Specific Individual", "specific_individual", ""),
+            ("user_specific_individual_id", "Specific Individual ID", "specific_individual_id", "ID "),
+        ]
+        for field_name, label, attr, prefix in selector_config:
+            self.fields[field_name] = CompanyAttributeChoiceField(
+                queryset=queryset,
+                attr=attr,
+                prefix=prefix or "",
+                empty_label="Select",
+                required=True,
+                label=label,
+            )
+
+        initial_company = None
         if not self.is_bound and self.instance.pk and self.instance.company_id:
-            field.initial = self.instance.company_id
-        self.fields["company"] = field
+            initial_company = self.instance.company
+        elif not self.is_bound and self.initial.get("company"):
+            initial_company = self.initial.get("company")
+
+        if initial_company:
+            company_field.initial = initial_company.pk
+            for field_name, *_ in selector_config:
+                self.fields[field_name].initial = initial_company.pk
+
+        for hidden in ("lender", "lender_id", "company"):
+            if hidden in self.fields:
+                self.fields[hidden].widget = forms.HiddenInput()
+                self.fields[hidden].required = False
 
     def _configure_update_interval_field(self):
         if "update_interval" in self.fields:
@@ -232,6 +302,24 @@ class BorrowerForm(StyledModelForm):
             if field:
                 field.widget = forms.TextInput(attrs={"placeholder": "MM/DD/YYYY"})
                 field.input_formats = date_formats
+
+        desired_order = [
+            "user_lender",
+            "user_lender_id",
+            "user_specific_individual",
+            "user_specific_individual_id",
+            "primary_contact",
+            "primary_contact_phone",
+            "primary_contact_email",
+            "industry",
+            "primary_naics",
+            "website",
+            "update_interval",
+            "current_update",
+            "previous_update",
+            "next_update",
+        ]
+        self.order_fields([name for name in desired_order if name in self.fields])
 
     def clean_company(self):
         company = self.cleaned_data.get("company")
