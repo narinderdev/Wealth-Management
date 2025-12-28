@@ -1469,6 +1469,13 @@ margin-left: -15px;
     height: 1px;
     background: #e4eaf4;
 }}
+.chart-layer-bar {
+position: absolute;
+inset: 0;
+z-index: 3;
+width: 91%;
+height: 102%;
+}
   </style>
 {% endblock %}
 
@@ -1586,7 +1593,7 @@ margin-left: -15px;
                                 <span class="chart-grid-line v" style="--x: {{ x }}"></span>
                               {% endfor %}
                             </div>
-                            <div class="chart-layer is-static label-layer">
+                            <div class="chart-layer-bar is-static label-layer">
                               {% for tick in kpi.chart.y_ticks %}
                                 <span class="chart-axis-label y end" style="--x: {{ kpi.chart.label_x }}; --y: {{ tick.y }}">{{ tick.label }}</span>
                               {% endfor %}
@@ -1594,7 +1601,7 @@ margin-left: -15px;
                                 <span class="chart-axis-label x" style="--x: {{ label.x }}; --y: {{ kpi.chart.label_y }}">{{ label.text }}</span>
                               {% endfor %}
                             </div>
-                            <div class="chart-layer">
+                            <div class="chart-layer-bar">
                               {% for dot in kpi.chart.dots %}
                                 <span class="chart-dot" style="--x: {{ dot.cx }}; --y: {{ dot.cy }}; --dot-color: {{ line_color }};"></span>
                                 <span class="chart-hit ar-tip"
@@ -1674,7 +1681,7 @@ margin-left: -15px;
                             <span class="chart-axis-label y" style="--x: 10; --y: 83">$60</span>
                             <span class="chart-axis-label y" style="--x: 10; --y: 53">$80</span>
                           </div>
-                          <div class="chart-layer">
+                          <div class="chart-layer chart-layer-bar">
                             {% for bucket in ar_aging_chart_buckets %}
                               <div class="aging-bar ar-tip"
                                 style="--x: {{ bucket.x }}; --y: {{ bucket.y }}; --bar-width: {{ bucket.width }}; --bar-height: {{ bucket.height }}; --bar-color: {{ bucket.color }};"

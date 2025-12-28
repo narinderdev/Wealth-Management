@@ -28,7 +28,7 @@ class Company(TimeStampedModel):
     company = models.CharField(max_length=255, null=True, blank=True)
     company_id = models.BigIntegerField(unique=True)
     industry = models.CharField(max_length=255, null=True, blank=True)
-    primary_naics = models.BigIntegerField(null=True, blank=True)
+    primary_naics = models.CharField(max_length=255, null=True, blank=True)
     website = models.CharField(max_length=255, null=True, blank=True)
     email = models.EmailField(max_length=255, null=True, blank=True, db_column="company_email")
     password = models.CharField(max_length=128, null=True, blank=True, db_column="company_password")
