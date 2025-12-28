@@ -5,8 +5,17 @@ from management import models
 
 @admin.register(models.Company)
 class CompanyAdmin(admin.ModelAdmin):
-    list_display = ("company", "company_id", "industry", "website", "email", "created_at")
-    search_fields = ("company", "company_id", "industry", "email")
+    list_display = (
+        "company",
+        "specific_individual",
+        "specific_individual_id",
+        "company_id",
+        "industry",
+        "website",
+        "email",
+        "created_at",
+    )
+    search_fields = ("company", "specific_individual", "specific_individual_id", "company_id", "industry", "email")
     list_filter = ("industry",)
 
 

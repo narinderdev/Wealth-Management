@@ -75,6 +75,18 @@ class StyledModelForm(forms.ModelForm):
                     field.widget.attrs.setdefault("data-field-label", str(field.label))
 
 
+class CompanyChoiceField(forms.ModelChoiceField):
+    def label_from_instance(self, obj):
+        label_parts = []
+        if obj.specific_individual:
+            label_parts.append(obj.specific_individual)
+        if obj.company:
+            label_parts.append(obj.company)
+        if obj.specific_individual_id:
+            label_parts.append(f"ID {obj.specific_individual_id}")
+        return " • ".join(label_parts) if label_parts else f"Company {obj.company_id or obj.pk}"
+
+
 class BorrowerModelForm(StyledModelForm):
     required_fields = ("borrower",)
 
@@ -97,19 +109,30 @@ class BorrowerModelForm(StyledModelForm):
 
 
 class CompanyForm(StyledModelForm):
-    required_fields = ("company", "email", "password")
+    required_fields = ("company", "specific_individual", "specific_individual_id", "email", "password")
 
     class Meta:
         model = Company
-        fields = ["company", "industry", "primary_naics", "website", "email", "password"]
+        fields = [
+            "company",
+            "specific_individual",
+            "specific_individual_id",
+            "industry",
+            "primary_naics",
+            "website",
+            "email",
+            "password",
+        ]
         widgets = {
             "password": forms.PasswordInput(render_value=False),
         }
         labels = {
-            "company": "Specific Individual",
-            "industry": "Specific Individual ID",
-            "primary_naics": "Lender",
-            "website": "Lender ID",
+            "company": "Company",
+            "specific_individual": "Specific Individual",
+            "specific_individual_id": "Specific Individual ID",
+            "industry": "Industry",
+            "primary_naics": "Primary NAICS",
+            "website": "Website",
             "email": "Email",
             "password": "Password",
         }
@@ -129,24 +152,7 @@ class CompanyForm(StyledModelForm):
             instance.set_password(password, save=False)
         if commit:
             instance.save()
-            self._ensure_borrower(instance)
         return instance
-
-    def _ensure_borrower(self, company):
-        if not company:
-            return
-        borrower, created = Borrower.objects.get_or_create(
-            company=company,
-            defaults={
-                "primary_contact": company.company or "Primary Contact",
-                "primary_contact_email": company.email or "",
-                "update_interval": "Monthly",
-            },
-        )
-        if created:
-            from management.services.borrower_defaults import bootstrap_default_borrower_data
-
-            bootstrap_default_borrower_data(borrower)
 
 
 class BorrowerForm(StyledModelForm):
@@ -179,8 +185,7 @@ class BorrowerForm(StyledModelForm):
 
     def __init__(self, *args, **kwargs):
         super().__init__(*args, **kwargs)
-        self._configure_company_field()
-        self._configure_dropdowns()
+        self._configure_company_selector()
         self._configure_update_interval_field()
         self._configure_date_fields()
 
@@ -192,46 +197,19 @@ class BorrowerForm(StyledModelForm):
             raise forms.ValidationError("Provide an email or phone for the primary contact.")
         return cleaned_data
 
-    def _configure_company_field(self):
-        company_value = ""
-        if self.instance.pk and self.instance.company:
-            company_value = self.instance.company.company or ""
-        self.fields["company"] = forms.CharField(
-            label="Company Name",
-            initial=company_value,
+    def _configure_company_selector(self):
+        queryset = Company.objects.order_by("company", "specific_individual")
+        field = CompanyChoiceField(
+            queryset=queryset,
             required=True,
-            widget=forms.TextInput(attrs={"placeholder": "Enter company name"}),
+            label="Linked User / Company",
+            empty_label="Select user",
         )
-
-    def _company_value_choices(self, attr):
-        values = (
-            Company.objects.values_list(attr, flat=True)
-            .distinct()
-            .order_by(attr)
-        )
-        choices = [("", "Select")]
-        for value in values:
-            if value in (None, ""):
-                continue
-            value_str = str(value)
-            choices.append((value_str, value_str))
-        return choices
-
-    def _configure_dropdowns(self):
-        dropdown_map = {
-            "lender": "primary_naics",
-            "lender_id": "website",
-            "specific_individual": "company",
-            "specific_individual_id": "industry",
-        }
-        for field_name, attr in dropdown_map.items():
-            if field_name in self.fields:
-                original_label = self.fields[field_name].label
-                self.fields[field_name] = forms.ChoiceField(
-                    label=original_label,
-                    choices=self._company_value_choices(attr),
-                    required=False,
-                )
+        field.help_text = "Select the user (Specific Individual ID) this borrower belongs to."
+        field.widget.attrs.setdefault("data-company-selector", "true")
+        if not self.is_bound and self.instance.pk and self.instance.company_id:
+            field.initial = self.instance.company_id
+        self.fields["company"] = field
 
     def _configure_update_interval_field(self):
         if "update_interval" in self.fields:
@@ -251,19 +229,35 @@ class BorrowerForm(StyledModelForm):
                 field.input_formats = date_formats
 
     def clean_company(self):
-        name = self.cleaned_data.get("company", "")
-        if not name or not name.strip():
-            raise forms.ValidationError("Company name is required.")
-        company, _ = Company.objects.get_or_create(company=name.strip())
+        company = self.cleaned_data.get("company")
+        if not company:
+            raise forms.ValidationError("Company is required.")
         return company
 
-    def save(self, commit=True):
-        is_new = self.instance.pk is None
-        borrower = super().save(commit=commit)
-        if commit and is_new:
-            from management.services.borrower_defaults import bootstrap_default_borrower_data
+    def _apply_company_defaults(self, borrower):
+        company = borrower.company
+        if not company:
+            return
+        if not borrower.primary_contact and company.specific_individual:
+            borrower.primary_contact = company.specific_individual
+        if not borrower.specific_individual and company.specific_individual:
+            borrower.specific_individual = company.specific_individual
+        if not borrower.specific_individual_id and company.specific_individual_id:
+            borrower.specific_individual_id = company.specific_individual_id
+        if not borrower.primary_contact_email and company.email:
+            borrower.primary_contact_email = company.email
 
-            bootstrap_default_borrower_data(borrower)
+    def save(self, commit=True):
+        borrower = super().save(commit=False)
+        is_new = borrower.pk is None
+        self._apply_company_defaults(borrower)
+        if commit:
+            borrower.save()
+            self.save_m2m()
+            if is_new:
+                from management.services.borrower_defaults import bootstrap_default_borrower_data
+
+                bootstrap_default_borrower_data(borrower)
         return borrower
 
 

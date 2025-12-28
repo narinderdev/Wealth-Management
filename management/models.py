@@ -32,6 +32,8 @@ class Company(TimeStampedModel):
     website = models.CharField(max_length=255, null=True, blank=True)
     email = models.EmailField(max_length=255, null=True, blank=True, db_column="company_email")
     password = models.CharField(max_length=128, null=True, blank=True, db_column="company_password")
+    specific_individual = models.CharField(max_length=255, null=True, blank=True)
+    specific_individual_id = models.CharField(max_length=255, null=True, blank=True)
 
     def __str__(self):
         return self.company or str(self.company_id)
