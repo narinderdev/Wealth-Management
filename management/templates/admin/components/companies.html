@@ -39,7 +39,7 @@
               </td>
               <td class="table-actions">
                 <a class="link" href="{% url 'admin_component' component_meta.slug %}?edit={{ company.pk }}">Edit</a>
-                <form method="post" class="inline-form" onsubmit="return confirm('Delete this company?');">
+                <form method="post" class="inline-form" onsubmit="return confirm('Delete this User?');">
                   {% csrf_token %}
                   <input type="hidden" name="_action" value="delete">
                   <input type="hidden" name="object_id" value="{{ company.pk }}">
