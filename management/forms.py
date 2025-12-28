@@ -138,31 +138,34 @@ class BorrowerForm(StyledModelForm):
     class Meta:
         model = Borrower
         fields = [
+            "lender",
+            "lender_id",
+            "specific_individual",
+            "specific_individual_id",
             "company",
             "primary_contact",
             "primary_contact_phone",
             "primary_contact_email",
+            "industry",
+            "primary_naics",
+            "website",
             "update_interval",
             "current_update",
             "previous_update",
             "next_update",
-            "lender",
-            "lender_id",
         ]
         widgets = {
-            "current_update": forms.DateInput(attrs={"type": "date"}),
-            "previous_update": forms.DateInput(attrs={"type": "date"}),
-            "next_update": forms.DateInput(attrs={"type": "date"}),
-            "update_interval": forms.Select(choices=UPDATE_INTERVAL_CHOICES),
+            "industry": forms.TextInput(),
+            "primary_naics": forms.TextInput(),
+            "website": forms.TextInput(),
         }
 
     def __init__(self, *args, **kwargs):
         super().__init__(*args, **kwargs)
-        self.fields["company"].queryset = Company.objects.order_by("company")
-        if "update_interval" in self.fields:
-            self.fields["update_interval"].widget = forms.Select(
-                choices=[("", "Select Interval")] + UPDATE_INTERVAL_CHOICES
-            )
+        self._configure_company_field()
+        self._configure_dropdowns()
+        self._configure_update_interval_field()
+        self._configure_date_fields()
 
     def clean(self):
         cleaned_data = super().clean()
@@ -171,6 +174,71 @@ class BorrowerForm(StyledModelForm):
         if not email and not phone:
             raise forms.ValidationError("Provide an email or phone for the primary contact.")
         return cleaned_data
+
+    def _configure_company_field(self):
+        company_value = ""
+        if self.instance.pk and self.instance.company:
+            company_value = self.instance.company.company or ""
+        self.fields["company"] = forms.CharField(
+            label="Company Name",
+            initial=company_value,
+            required=True,
+            widget=forms.TextInput(attrs={"placeholder": "Enter company name"}),
+        )
+
+    def _company_value_choices(self, attr):
+        values = (
+            Company.objects.values_list(attr, flat=True)
+            .distinct()
+            .order_by(attr)
+        )
+        choices = [("", "Select")]
+        for value in values:
+            if value in (None, ""):
+                continue
+            value_str = str(value)
+            choices.append((value_str, value_str))
+        return choices
+
+    def _configure_dropdowns(self):
+        dropdown_map = {
+            "lender": "primary_naics",
+            "lender_id": "website",
+            "specific_individual": "company",
+            "specific_individual_id": "industry",
+        }
+        for field_name, attr in dropdown_map.items():
+            if field_name in self.fields:
+                original_label = self.fields[field_name].label
+                self.fields[field_name] = forms.ChoiceField(
+                    label=original_label,
+                    choices=self._company_value_choices(attr),
+                    required=False,
+                )
+
+    def _configure_update_interval_field(self):
+        if "update_interval" in self.fields:
+            choices = [("", "Select Interval")] + list(UPDATE_INTERVAL_CHOICES)
+            self.fields["update_interval"] = forms.ChoiceField(
+                label="Update Interval",
+                choices=choices,
+                required=True,
+            )
+
+    def _configure_date_fields(self):
+        date_formats = ["%Y-%m-%d", "%m/%d/%Y", "%d/%m/%Y"]
+        for field_name in ("current_update", "previous_update", "next_update"):
+            field = self.fields.get(field_name)
+            if field:
+                field.widget = forms.TextInput(attrs={"placeholder": "MM/DD/YYYY"})
+                field.input_formats = date_formats
+
+    def clean_company(self):
+        name = self.cleaned_data.get("company", "")
+        if not name or not name.strip():
+            raise forms.ValidationError("Company name is required.")
+        company, _ = Company.objects.get_or_create(company=name.strip())
+        return company
 
 
 class SpecificIndividualForm(StyledModelForm):

@@ -72,16 +72,29 @@ class Company(TimeStampedModel):
 
 
 class Borrower(TimeStampedModel):
+    UPDATE_INTERVAL_CHOICES = [
+        ("Annual", "Annual"),
+        ("Semi-Annual", "Semi-Annual"),
+        ("Quarterly", "Quarterly"),
+        ("Monthly", "Monthly"),
+        ("Weekly", "Weekly"),
+    ]
+
     company = models.ForeignKey(Company, on_delete=models.CASCADE, related_name='borrowers')
     primary_contact = models.CharField(max_length=255, null=True, blank=True)
     primary_contact_phone = models.CharField(max_length=30, null=True, blank=True)
     primary_contact_email = models.EmailField(max_length=255, null=True, blank=True)
-    update_interval = models.CharField(max_length=50, null=True, blank=True)
+    update_interval = models.CharField(max_length=50, choices=UPDATE_INTERVAL_CHOICES, null=True, blank=True)
     current_update = models.DateField(null=True, blank=True)
     previous_update = models.DateField(null=True, blank=True)
     next_update = models.DateField(null=True, blank=True)
     lender = models.CharField(max_length=255, null=True, blank=True)
-    lender_id = models.BigIntegerField(null=True, blank=True)
+    lender_id = models.CharField(max_length=255, null=True, blank=True)
+    specific_individual = models.CharField(max_length=255, null=True, blank=True)
+    specific_individual_id = models.CharField(max_length=255, null=True, blank=True)
+    industry = models.CharField(max_length=255, null=True, blank=True)
+    primary_naics = models.CharField(max_length=255, null=True, blank=True)
+    website = models.CharField(max_length=255, null=True, blank=True)
 
     def __str__(self):
         return f"{self.company} - {self.primary_contact or 'Borrower'}"

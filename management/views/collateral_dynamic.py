@@ -7173,10 +7173,10 @@ def _liquidation_model_context(borrower):
         "Windows",
         "Hardware",
         "Insulation",
-    ]
-    tail_order = [
         "Tools",
         "Other",
+    ]
+    tail_order = [
         "Total In-Line",
         "Excess",
         "Total",

@@ -57,7 +57,7 @@
       <h3>Add Borrower</h3>
       <button type="button" class="modal-close" data-modal-close>&times;</button>
     </div>
-    <form method="post" class="component-form">
+    <form method="post" class="component-form" data-disable-validation="true">
       {% csrf_token %}
       <input type="hidden" name="_action" value="create">
       <div class="component-modal-body">

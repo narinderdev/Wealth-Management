@@ -252,17 +252,18 @@ line-height: 33.339px; /* 138.462% */
     text-align:left;
   }
   .liquidation-model .n-table .subtotal-row td{
-    background:#ffffff;
-    color:#94a3b8;
+    background:#f3f6fb;
+    color:#1f2937;
     font-weight:700;
   }
   .liquidation-model .n-table .total-row td{
-    background:#f0f2f7;
+    background:#eceff5;
     color:#1f2937;
     font-weight:800;
   }
   .liquidation-model .n-table .excess-row td{
-    background:#f7f9fd;
+    background:#ffffff;
+    color:#475569;
   }
   .liquidation-model thead tr.group th{
     background:#FAFAFA;
@@ -521,7 +522,7 @@ gap: 0px;
     padding-left:12px;
   }
   .liquidation-model #nolv-analysis .nolv-gap-row td{
-    padding:18px 0;
+    /* padding:18px 0; */
     border:none;
     background:#ffffff;
   }
@@ -761,10 +762,10 @@ gap: 0px;
           <tr
             {% if row.category == "Total" %}
               class="total-row"
-            {% elif row.category == "Total In-Line" %}
-              class="subtotal-row"
             {% elif row.category == "Excess" %}
               class="excess-row"
+            {% elif row.category == "Total In-Line" %}
+              class="subtotal-row"
             {% endif %}
           >
             <td class="left">{{ row.category|default:"—" }}</td>

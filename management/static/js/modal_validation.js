@@ -330,14 +330,6 @@
         return { field: field, label: label, message: "Enter a valid number." };
       }
     }
-
-    if (type === "date" || name.indexOf("date") !== -1) {
-      var parsed = new Date(rawValue);
-      if (isNaN(parsed.getTime())) {
-        return { field: field, label: label, message: "Enter a valid date." };
-      }
-    }
-
     return null;
   }
 
@@ -375,6 +367,9 @@
   }
 
   function attachForm(form) {
+    if (form.hasAttribute("data-disable-validation")) {
+      return;
+    }
     var modal = form.closest(".component-modal");
     if (!modal) return;
 
