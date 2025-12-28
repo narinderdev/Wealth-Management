@@ -824,7 +824,7 @@
     }
     .collateral-dynamic .chart-layer.label-layer{
       z-index:4;
-margin-top: -12px;
+margin-top: -5px;
 margin-left: -15px;
     }
     .collateral-dynamic .chart-layer.line-layer{
@@ -1681,7 +1681,7 @@ height: 102%;
                             <span class="chart-axis-label y" style="--x: 10; --y: 83">$60</span>
                             <span class="chart-axis-label y" style="--x: 10; --y: 53">$80</span>
                           </div>
-                          <div class="chart-layer chart-layer-bar">
+                          <div class="chart-layer-bar">
                             {% for bucket in ar_aging_chart_buckets %}
                               <div class="aging-bar ar-tip"
                                 style="--x: {{ bucket.x }}; --y: {{ bucket.y }}; --bar-width: {{ bucket.width }}; --bar-height: {{ bucket.height }}; --bar-color: {{ bucket.color }};"
