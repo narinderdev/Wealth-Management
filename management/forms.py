@@ -1,37 +1,47 @@
 from django import forms
 
+UPDATE_INTERVAL_CHOICES = [
+    ("Annual", "Annual"),
+    ("Semi-Annual", "Semi-Annual"),
+    ("Quarterly", "Quarterly"),
+    ("Monthly", "Monthly"),
+    ("Weekly", "Weekly"),
+]
+
 from .models import (
     ARMetricsRow,
     AgingCompositionRow,
+    AvailabilityForecastRow,
     Borrower,
+    BorrowerReport,
+    CashFlowForecastRow,
+    CollateralLimitsRow,
     CollateralOverviewRow,
-    SnapshotSummaryRow,
     Company,
+    CompositeIndexRow,
     ConcentrationADODSORow,
+    CummulativeVarianceRow,
+    CurrentWeekVarianceRow,
     FGCompositionRow,
     FGIneligibleDetailRow,
     FGInlineCategoryAnalysisRow,
     FGInlineExcessByCategoryRow,
     FGInventoryMetricsRow,
     FGGrossRecoveryHistoryRow,
+    ForecastRow,
     IneligibleOverviewRow,
     IneligibleTrendRow,
     MachineryEquipmentRow,
-    ForecastRow,
-    AvailabilityForecastRow,
-    CurrentWeekVarianceRow,
-    CummulativeVarianceRow,
-    CollateralLimitsRow,
-    IneligiblesRow,
     NOLVTableRow,
     RawMaterialRecoveryRow,
-    CompositeIndexRow,
     RiskSubfactorsRow,
     RMCategoryHistoryRow,
     RMIneligibleOverviewRow,
     RMInventoryMetricsRow,
     SalesGMTrendRow,
+    SnapshotSummaryRow,
     SpecificIndividual,
+    IneligiblesRow,
     WIPCategoryHistoryRow,
     WIPIneligibleOverviewRow,
     WIPInventoryMetricsRow,
@@ -135,11 +145,16 @@ class BorrowerForm(StyledModelForm):
             "current_update": forms.DateInput(attrs={"type": "date"}),
             "previous_update": forms.DateInput(attrs={"type": "date"}),
             "next_update": forms.DateInput(attrs={"type": "date"}),
+            "update_interval": forms.Select(choices=UPDATE_INTERVAL_CHOICES),
         }
 
     def __init__(self, *args, **kwargs):
         super().__init__(*args, **kwargs)
         self.fields["company"].queryset = Company.objects.order_by("company")
+        if "update_interval" in self.fields:
+            self.fields["update_interval"].widget = forms.Select(
+                choices=[("", "Select Interval")] + UPDATE_INTERVAL_CHOICES
+            )
 
     def clean(self):
         cleaned_data = super().clean()
@@ -789,6 +804,45 @@ class AvailabilityForecastForm(BorrowerModelForm):
         widgets = {
             "date": forms.DateInput(attrs={"type": "date"}),
         }
+
+
+class CashFlowForecastForm(StyledModelForm):
+    required_fields = ("report", "category")
+
+    class Meta:
+        model = CashFlowForecastRow
+        fields = [
+            "report",
+            "date",
+            "category",
+            "x",
+            "week_1",
+            "week_2",
+            "week_3",
+            "week_4",
+            "week_5",
+            "week_6",
+            "week_7",
+            "week_8",
+            "week_9",
+            "week_10",
+            "week_11",
+            "week_12",
+            "week_13",
+            "total",
+        ]
+        widgets = {
+            "date": forms.DateInput(attrs={"type": "date"}),
+        }
+
+    def __init__(self, *args, **kwargs):
+        super().__init__(*args, **kwargs)
+        if "report" in self.fields:
+            self.fields["report"].queryset = (
+                BorrowerReport.objects.select_related("borrower", "borrower__company")
+                .order_by("borrower__company__company", "-report_date")
+            )
+            self.fields["report"].label = "Borrower Report"
 
 
 class CurrentWeekVarianceForm(BorrowerModelForm):

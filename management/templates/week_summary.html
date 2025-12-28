@@ -245,7 +245,7 @@
     .cash-table{
       width:100%;
       border-collapse:separate;
-      border-spacing:0;
+      border-spacing:0 8px;
       font-size:11px;
       color:#475569;
       min-width:900px;
@@ -262,9 +262,10 @@
       white-space:nowrap;
     }
     .cash-table tbody td{
-      padding:10px;
+      padding:12px 10px;
       border-bottom:1px solid #f0f2f7;
       white-space:nowrap;
+      background:#fff;
     }
     .cash-table tbody tr:nth-child(even) td{
       background:#fbfcfe;
@@ -277,6 +278,23 @@
     .cashflow-table{
       min-width:0;
       table-layout:fixed;
+    }
+    .cashflow-header-row th{
+      background:#f8fbff;
+      color:#64748b;
+      font-size:10px;
+      line-height:1.4;
+      font-weight:600;
+      text-transform:uppercase;
+      letter-spacing:.03em;
+      text-align:center;
+      white-space:normal;
+      padding:12px 8px;
+      border-bottom:1px solid #e3e8f4;
+    }
+    .cashflow-header-row th:first-child{
+      text-align:left;
+      width:200px;
     }
     .cashflow-table thead th{
       text-align:center;
@@ -311,17 +329,6 @@
     }
     .cashflow-table tbody tr.detail-row td:first-child{
       padding-left:28px;
-    }
-    .cashflow-table tbody tr.manual-operating-row td{
-      background:#f3f6fb;
-      font-weight:700;
-      color:#0f1f44;
-    }
-    .cashflow-table tbody tr.manual-operating-row td:first-child{
-      padding-left:10px;
-    }
-    .cashflow-table tbody tr.manual-operating-row td:not(:first-child){
-      color:#94a3b8;
     }
     .cashflow-table tbody td.muted-cell{
       color:#94a3b8;
@@ -618,7 +625,7 @@
       <div class="table-wrapper cashflow-wrapper">
         <table class="cash-table cashflow-table">
             <thead>
-            <tr>
+            <tr class="cashflow-header-row">
                 <th></th>
                 <th>{{ week_summary.cashflow_actual_label|safe }}</th>
                 {% for forecast_label in week_summary.cashflow_forecast_labels %}
@@ -639,16 +646,6 @@
                       {% endfor %}
                       <td>{{ row.total }}</td>
                     </tr>
-                    {% if row.label|lower == "total receipts" %}
-                      <tr class="section-row manual-operating-row">
-                        <td>Operating Disbursements</td>
-                        <td class="muted-cell">&nbsp;</td>
-                        {% for _ in row.forecasts %}
-                          <td class="muted-cell">&nbsp;</td>
-                        {% endfor %}
-                        <td class="muted-cell">&nbsp;</td>
-                      </tr>
-                    {% endif %}
                   {% endwith %}
                 {% endfor %}
               {% else %}
@@ -673,7 +670,7 @@
       <div class="table-wrapper">
         <table class="cash-table cash-forecast-table">
             <thead>
-              <tr>
+            <tr class="cashflow-header-row">
                 <th></th>
                 <th>{{ week_summary.cashflow_actual_label|safe }}</th>
                 {% for forecast_label in week_summary.cashflow_forecast_labels %}
@@ -718,7 +715,7 @@
         <table class="cash-table availability-table">
         <thead>
           {% with avail_labels=week_summary.cashflow_forecast_labels|default:week_summary.availability_week_labels %}
-          <tr>
+          <tr class="cashflow-header-row">
             <th></th>
             <th>{{ week_summary.cashflow_actual_label|safe }}</th>
             {% for label in avail_labels %}

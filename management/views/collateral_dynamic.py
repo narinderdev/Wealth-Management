@@ -1071,10 +1071,10 @@ def _week_summary_context(borrower):
         ),
         _section_row("Operating Disbursements"),
         _build_table_row("Payroll", lambda row: _alloc_disbursement("payroll", _value_for_field(row, "loan_balance")), ""),
-        _build_table_row("Rent", lambda row: _alloc_disbursement("rent", _value_for_field(row, "loan_balance")), ""),
-        _build_table_row("Utilities", lambda row: _alloc_disbursement("utilities", _value_for_field(row, "loan_balance")), ""),
-        _build_table_row("Property Tax", lambda row: _alloc_disbursement("property tax", _value_for_field(row, "loan_balance")), ""),
-        _build_table_row("Insurance", lambda row: _alloc_disbursement("insurance", _value_for_field(row, "loan_balance")), ""),
+        # _build_table_row("Rent", lambda row: _alloc_disbursement("rent", _value_for_field(row, "loan_balance")), ""),
+        # _build_table_row("Utilities", lambda row: _alloc_disbursement("utilities", _value_for_field(row, "loan_balance")), ""),
+        # _build_table_row("Property Tax", lambda row: _alloc_disbursement("property tax", _value_for_field(row, "loan_balance")), ""),
+        # _build_table_row("Insurance", lambda row: _alloc_disbursement("insurance", _value_for_field(row, "loan_balance")), ""),
         _build_table_row("Professional Services", lambda row: _alloc_disbursement("professional services", _value_for_field(row, "loan_balance")), ""),
         _build_table_row("Software Expenses", lambda row: _alloc_disbursement("software expenses", _value_for_field(row, "loan_balance")), ""),
         _build_table_row("Repairs / Maintenance", lambda row: _alloc_disbursement("repairs / maintenance", _value_for_field(row, "loan_balance")), ""),
@@ -1085,8 +1085,8 @@ def _week_summary_context(borrower):
             "title-row",
         ),
         _section_row("Non-Operating Disbursements"),
-        _build_table_row("Interest Expense", lambda row: _alloc_disbursement("interest expense", _value_for_field(row, "loan_balance")), ""),
-        _build_table_row("Non-Recurring Tax Payments", lambda row: _alloc_disbursement("non-recurring tax payments", _value_for_field(row, "loan_balance")), ""),
+        # _build_table_row("Interest Expense", lambda row: _alloc_disbursement("interest expense", _value_for_field(row, "loan_balance")), ""),
+        # _build_table_row("Non-Recurring Tax Payments", lambda row: _alloc_disbursement("non-recurring tax payments", _value_for_field(row, "loan_balance")), ""),
         _build_table_row("One-Time Professional Fees", lambda row: _alloc_disbursement("one-time professional fees", _value_for_field(row, "loan_balance")), ""),
         _build_table_row("Total Non-Operating Disbursements", lambda row: _alloc_disbursement("non-operating disbursements", _value_for_field(row, "loan_balance")), "title-row"),
         _build_table_row(
@@ -1199,11 +1199,31 @@ def _week_summary_context(borrower):
                     last_space = True
         return "".join(cleaned).strip()
 
+    variance_label_map = {}
     variance_order = [
         _normalize_label(row.get("label"))
         for row in cashflow_table_rows
         if row.get("label")
     ]
+    current_section = None
+    for row in cashflow_table_rows:
+        label = row.get("label")
+        norm = _normalize_label(label)
+        entry = variance_label_map.setdefault(
+            norm or label,
+            {
+                "label": label,
+                "row_class": row.get("row_class") or "",
+                "children": [],
+            },
+        )
+        if (row.get("row_class") or "") == "section-row":
+            current_section = norm
+        elif current_section:
+            parent_entry = variance_label_map.get(current_section)
+            if parent_entry is not None:
+                if norm not in parent_entry["children"]:
+                    parent_entry["children"].append(norm)
     if not variance_order:
         variance_order = [
             _normalize_label(label)
@@ -1340,66 +1360,201 @@ def _week_summary_context(borrower):
                 }
             )
 
-    def _variance_rows(rows):
-        output = []
+    def _variance_rows(rows, label_map=None):
+        label_map = label_map or {}
         section_headers = {
             "receipts",
             "operating disbursements",
             "non-operating disbursements",
         }
+
+        def _build_entry(
+            label,
+            row_class="",
+            projected="$—",
+            actual="$—",
+            variance_amount="$—",
+            variance_pct="—%",
+            raw_projected=None,
+            raw_actual=None,
+            raw_variance=None,
+            raw_variance_pct=None,
+        ):
+            return {
+                "category": label,
+                "projected": projected,
+                "actual": actual,
+                "variance_amount": variance_amount,
+                "variance_pct": variance_pct,
+                "_projected": raw_projected,
+                "_actual": raw_actual,
+                "_variance": raw_variance,
+                "_variance_pct": raw_variance_pct,
+                "row_class": row_class,
+            }
+
+        label_keys = list(label_map.keys())
+
+        def _match_label(norm_value):
+            if not norm_value:
+                return norm_value
+            if norm_value in label_map:
+                return norm_value
+            for candidate in label_keys:
+                if not candidate:
+                    continue
+                if candidate in norm_value or norm_value in candidate:
+                    return candidate
+            return norm_value
+
+        normalized_entries = {}
+        extras = []
         for row in rows:
             category = _safe_str(row.category, default="—")
-            proj = _format_money(row.projected)
-            actual = _format_money(row.actual)
-            variance_amount = _format_money(row.variance)
-            variance_pct = _format_pct(row.variance_pct)
+            normalized = _match_label(_normalize_label(category))
+            raw_projected = _to_decimal(row.projected)
+            raw_actual = _to_decimal(row.actual)
+            raw_variance = _to_decimal(row.variance)
+            raw_variance_pct = _to_decimal(row.variance_pct) if getattr(row, "variance_pct", None) is not None else None
+            proj = _format_money(raw_projected)
+            actual = _format_money(raw_actual)
+            variance_amount = _format_money(raw_variance)
+            variance_pct = _format_pct(raw_variance_pct)
             category_lower = category.lower()
             row_class = ""
             if category_lower in section_headers:
                 row_class = "section-row"
             elif "total" in category_lower or "net" in category_lower:
                 row_class = "title-row"
-            output.append(
-                {
-                    "category": category,
-                    "projected": proj,
-                    "actual": actual,
-                    "variance_amount": variance_amount,
-                    "variance_pct": variance_pct,
-                    "row_class": row_class,
-                }
+            entry = _build_entry(
+                category,
+                row_class=row_class,
+                projected=proj,
+                actual=actual,
+                variance_amount=variance_amount,
+                variance_pct=variance_pct,
+                raw_projected=raw_projected,
+                raw_actual=raw_actual,
+                raw_variance=raw_variance,
+                raw_variance_pct=raw_variance_pct,
             )
-        if output and variance_order:
-            order_map = {}
-            for idx, label in enumerate(variance_order):
-                if label and label not in order_map:
-                    order_map[label] = idx
-                if label.endswith("s"):
-                    singular = label[:-1].rstrip()
-                    if singular and singular not in order_map:
-                        order_map[singular] = idx
-            for idx, row in enumerate(output):
-                row["_order_index"] = order_map.get(_normalize_label(row["category"]), len(order_map) + idx)
-                row["_order_seq"] = idx
-            output.sort(key=lambda row: (row["_order_index"], row["_order_seq"]))
-            for row in output:
-                row.pop("_order_index", None)
-                row.pop("_order_seq", None)
+            if normalized:
+                normalized_entries.setdefault(normalized, []).append(entry)
+            else:
+                extras.append(entry)
+
+        def _apply_label(entry, norm_key):
+            mapped = label_map.get(norm_key)
+            if mapped:
+                entry["category"] = mapped.get("label") or entry["category"]
+                mapped_class = mapped.get("row_class")
+                if mapped_class:
+                    entry["row_class"] = mapped_class
+            return entry
+
+        output = []
+        ordered_keys = variance_order or list(normalized_entries.keys())
+        ordered_keys = [_match_label(key) for key in ordered_keys]
+        seen_keys = set()
+        for norm_key in ordered_keys:
+            if norm_key in seen_keys:
+                continue
+            seen_keys.add(norm_key)
+            if norm_key in normalized_entries and normalized_entries[norm_key]:
+                entry = normalized_entries[norm_key].pop(0)
+                output.append(_apply_label(entry, norm_key))
+                seen_keys.add(norm_key)
+                if not normalized_entries[norm_key]:
+                    normalized_entries.pop(norm_key, None)
+            else:
+                mapped = label_map.get(norm_key)
+                if mapped:
+                    output.append(
+                        _build_entry(
+                            mapped.get("label") or "—",
+                            row_class=mapped.get("row_class") or "",
+                        )
+                    )
+                elif norm_key:
+                    output.append(_build_entry(norm_key.title()))
+
+        for norm_key, entries in normalized_entries.items():
+            for entry in entries:
+                output.append(_apply_label(entry, norm_key))
+
+        output.extend(extras)
+
+        entry_lookup = {}
+        for entry in output:
+            norm = _match_label(_normalize_label(entry["category"]))
+            if norm:
+                entry_lookup.setdefault(norm, []).append(entry)
+
+        cleaned_output = []
+        for entry in output:
+            norm = _match_label(_normalize_label(entry["category"]))
+            map_entry = label_map.get(norm or "")
+            if not map_entry:
+                cleaned_output.append(entry)
+                continue
+            children = map_entry.get("children") or []
+            if not children:
+                cleaned_output.append(entry)
+                continue
+            child_entries = []
+            for child_norm in children:
+                child_entries.extend(entry_lookup.get(_match_label(child_norm)) or [])
+            if not child_entries:
+                continue
+
+            def _sum_values(field):
+                total = Decimal("0")
+                has_value = False
+                for child in child_entries:
+                    value = child.get(field)
+                    if value is None:
+                        continue
+                    total += value
+                    has_value = True
+                return total if has_value else None
+
+            summed_projected = _sum_values("_projected")
+            summed_actual = _sum_values("_actual")
+            summed_variance = _sum_values("_variance")
+            if summed_variance is None and summed_projected is not None and summed_actual is not None:
+                summed_variance = summed_actual - summed_projected
+            if summed_projected in (None, Decimal("0")) or summed_variance is None:
+                summed_variance_pct = None
+            else:
+                summed_variance_pct = (summed_variance / summed_projected) * Decimal("100")
+
+            entry["_projected"] = summed_projected
+            entry["_actual"] = summed_actual
+            entry["_variance"] = summed_variance
+            entry["_variance_pct"] = summed_variance_pct
+            entry["projected"] = _format_money(summed_projected)
+            entry["actual"] = _format_money(summed_actual)
+            entry["variance_amount"] = _format_money(summed_variance)
+            entry["variance_pct"] = _format_pct(summed_variance_pct)
+
+            def _has_values(inner_entry):
+                return any(
+                    inner_entry.get(field) not in (None, "$—", "—%")
+                    for field in ("projected", "actual", "variance_amount", "variance_pct")
+                )
+
+            if _has_values(entry):
+                cleaned_output.append(entry)
+        output = cleaned_output
+
         if not output:
             output.append(
-                {
-                    "category": "—",
-                    "projected": "$—",
-                    "actual": "$—",
-                    "variance_amount": "$—",
-                    "variance_pct": "—%",
-                    "row_class": "",
-                }
+                _build_entry("—")
             )
         return output
 
-    variance_current = _variance_rows(cw_rows)
-    variance_cumulative = _variance_rows(cum_rows)
+    variance_current = _variance_rows(cw_rows, variance_label_map)
+    variance_cumulative = _variance_rows(cum_rows, variance_label_map)
 
     context.update(
         {
@@ -2621,7 +2776,7 @@ def _accounts_receivable_context(borrower, range_key="today", division="all", sn
     aging_axis_bottom = Decimal("140")
     aging_plot_height = aging_axis_bottom - aging_axis_top
     bucket_count = len(AGING_BUCKET_DEFS)
-    bar_width = Decimal("26")
+    bar_width = Decimal("32")
     plot_width = aging_axis_right - aging_axis_left
     if bucket_count > 1:
         gap = (plot_width - (bar_width * bucket_count)) / Decimal(bucket_count - 1)
@@ -2652,7 +2807,7 @@ def _accounts_receivable_context(borrower, range_key="today", division="all", sn
         x_position = aging_axis_left + (bar_width + gap) * idx
         text_x = x_position + (bar_width / 2)
         label_y = float(aging_axis_bottom + Decimal("12"))
-        label_secondary_y = float(aging_axis_bottom + Decimal("24"))
+        label_secondary_y = float(aging_axis_bottom + Decimal("18"))
         percent_y = max(float(aging_axis_top) + 4, y_position - 6)
         aging_buckets.append(
             {
@@ -2999,12 +3154,13 @@ def _accounts_receivable_context(borrower, range_key="today", division="all", sn
         )
     trend_chart["dots"] = trend_dots
 
+    TOP_CUSTOMER_COUNT = 20
     concentration_entries = []
     for row in sorted(
         concentration_source,
         key=lambda r: _to_decimal(r.current_concentration_pct),
         reverse=True,
-    )[:10]:
+    )[:TOP_CUSTOMER_COUNT]:
         variance_pp = row.variance_concentration_pp
         if variance_pp is None:
             current_pp = _pct_to_points(row.current_concentration_pct)
@@ -3028,7 +3184,6 @@ def _accounts_receivable_context(borrower, range_key="today", division="all", sn
         )
         ado_source = _latest_rows_with_values(concentration_rows_all, ado_fields)
     ado_entries = []
-    TOP_CUSTOMER_COUNT = 20
     for row in sorted(
         ado_source,
         key=lambda r: _to_decimal(r.current_ado_days),

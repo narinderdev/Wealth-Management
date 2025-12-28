@@ -358,7 +358,8 @@ margin-top: 5px;
       gap:8px;
       padding-top:4px;
       font-family:"Nunito Sans", "Helvetica Neue", Arial, sans-serif;
-      font-size:14px;
+      /* font-size:14px; */
+      font-size: 16px;
       font-weight:600;
       line-height:1.2;
       color:#0f172a;

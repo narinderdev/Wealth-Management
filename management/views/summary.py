@@ -285,8 +285,14 @@ def _build_line_series(values, labels, series_label=None, width=220, height=140)
     max_value = max(values)
     min_value = min(values)
     if max_value == min_value:
-        max_value = max_value if max_value != 0 else 1.0
-        min_value = max_value * 0.85 if max_value else 0
+        padding = abs(max_value) * 0.1 if max_value else 0.1
+        max_value += padding
+        min_value -= padding
+    else:
+        pad_high = max(abs(max_value) * 0.1, 0.1)
+        pad_low = max(abs(min_value) * 0.1, 0.1)
+        max_value += pad_high
+        min_value -= pad_low
 
     left = 50
     right = 16

@@ -737,13 +737,13 @@
       gap:10px;
     }
     .collateral-dynamic .borrowing-base-kpi .kpi-label{
-        font-size: 16pt;
+        font-size: 14pt;
     font-weight: 600;
     color: #65758B;
     }
     .collateral-dynamic .borrowing-base-kpi .kpi-value{
       margin-top: 16px;
-      font-size: 16pt;
+      font-size: 14pt;
       font-weight: 700;
       color: #101a3c;
     }
@@ -980,8 +980,16 @@ margin-left: -15px;
       display:grid;
       gap:14px;
     }
-   .collateral-dynamic .ar-section .two-col{
-  grid-template-columns: minmax(280px, 0.85fr) minmax(380px, 1.15fr);
+.collateral-dynamic .ar-section .two-col{
+  grid-template-columns:minmax(280px,0.85fr) minmax(380px,1.15fr);
+}
+    .collateral-dynamic .ar-section .aging-charts{
+      grid-template-columns:minmax(360px,1fr) minmax(420px,1.1fr);
+      align-items:stretch;
+      column-gap:32px;
+    }
+.collateral-dynamic .ar-section .aging-charts .subcard{
+  height:100%;
 }
 
     .collateral-dynamic .ar-section .tables-row{
@@ -1033,10 +1041,15 @@ margin-left: -15px;
       --axis-top:20;
       --axis-bottom:140;
       --axis-color:var(--aging-grid);
+      position:relative;
+      width:100%;
+      aspect-ratio:var(--chart-width) / var(--chart-height);
+      max-width:100%;
     }
     .collateral-dynamic .aging-composition-chart .chart-axis-label{
       color:var(--aging-axis);
       font-size:10pt;
+      pointer-events:none;
     }
     .collateral-dynamic .aging-composition-chart .aging-percent{
       position:absolute;
@@ -1046,6 +1059,7 @@ margin-left: -15px;
       top:calc(var(--y) * 100% / var(--chart-height));
       transform:translate(-50%, -50%);
       white-space:nowrap;
+      pointer-events:none;
     }
     .collateral-dynamic .aging-composition-chart .aging-label{
       position:absolute;
@@ -1056,6 +1070,9 @@ margin-left: -15px;
       top:calc(var(--y) * 100% / var(--chart-height));
       transform:translate(-50%, -50%);
       white-space:nowrap;
+    }
+    .collateral-dynamic .aging-composition-chart .aging-label.secondary{
+      margin-top:18px;
     }
     .collateral-dynamic .aging-composition-chart .aging-bar{
       position:absolute;
@@ -1082,8 +1099,8 @@ margin-left: -15px;
       height:calc(var(--bar-height) * 100% / var(--chart-height));
       border-radius:4px;
     }
-    .collateral-dynamic .trend-bar.past{background:#1b2a55;width: 4px;}
-    .collateral-dynamic .trend-bar.current{background:#6d82ff;width: 4px;}
+    .collateral-dynamic .trend-bar.past{background:#1b2a55;}
+    .collateral-dynamic .trend-bar.current{background:#6d82ff;}
     .collateral-dynamic .ar-ineligible-chart{
       --chart-width:520;
       --chart-height:260;
@@ -1124,7 +1141,7 @@ margin-left: -15px;
           margin-top: 127px;
     }
     .collateral-dynamic .ar-section .h3{
-      font-size:1.5em;
+      font-size:20px;
       font-weight:700;
       margin:15px;
       display:flex;
@@ -1164,20 +1181,24 @@ margin-left: -15px;
       font-size:12px;
     }
     .collateral-dynamic .ar-section .aging-table col.col-customer{
-      width:32%;
+      width:28%;
     }
     .collateral-dynamic .ar-section .aging-table col.col-age{
-      width:10%;
+      width:11%;
     }
     .collateral-dynamic .ar-section .aging-table col.col-total{
-      width:8%;
+      width:9%;
     }
     .collateral-dynamic .ar-section .aging-table col.col-percent{
-      width:8%;
+      width:9%;
     }
     .collateral-dynamic .ar-section .aging-table thead th,
     .collateral-dynamic .ar-section .aging-table tbody td{
       padding:8px 12px;
+    }
+    .collateral-dynamic .ar-section .aging-table thead th:not(:first-child),
+    .collateral-dynamic .ar-section .aging-table tbody td:not(:first-child){
+      text-align:center;
     }
     .collateral-dynamic .ar-section .ineligible-table{
       font-size:12px;
@@ -1191,7 +1212,7 @@ margin-left: -15px;
       background:#f7faff;
     }
     .collateral-dynamic .ar-section .aging-table .align-right{
-      text-align:right;
+      text-align:center;
       font-size:12px;
       font-variant-numeric:tabular-nums;
       white-space:nowrap;
@@ -1307,9 +1328,7 @@ margin-left: -15px;
     }
     .collateral-dynamic .ar-section .tables-row tbody td:first-child{
       text-align:left;
-    }
-    .collateral-dynamic .ar-section .tables-row .aging-table .align-right{
-      text-align:right;
+    
     }
     .collateral-dynamic .ar-section .aging-scroll{
       width:100%;
@@ -1626,7 +1645,7 @@ margin-left: -15px;
                     Aging Analysis
                   </div>
 
-                  <div class="two-col">
+                  <div class="two-col aging-charts">
                     <!-- Aging Composition -->
                     <div class="subcard ineligible-overview">
                       <div class="subhead">
@@ -1665,7 +1684,7 @@ margin-left: -15px;
                               <span class="aging-percent" style="--x: {{ bucket.text_x }}; --y: {{ bucket.percent_y }}">{{ bucket.percent_display }}</span>
                               <span class="aging-label" style="--x: {{ bucket.text_x }}; --y: {{ bucket.label_y }}">{{ bucket.label_primary }}</span>
                               {% if bucket.label_secondary %}
-                                <span class="aging-label" style="--x: {{ bucket.text_x }}; --y: {{ bucket.label_secondary_y }}">{{ bucket.label_secondary }}</span>
+                                <span class="aging-label secondary" style="--x: {{ bucket.text_x }}; --y: {{ bucket.label_secondary_y }}">{{ bucket.label_secondary }}</span>
                               {% endif %}
                             {% empty %}
                               <span class="chart-empty">No aging data</span>
@@ -2061,7 +2080,24 @@ margin-left: -15px;
   </div>
 
   <script>
-    (function(){
+(function(){
+  function updateAgingCompositionMetrics(){
+    var charts = document.querySelectorAll(".aging-composition-chart");
+    if(!charts.length) return;
+    charts.forEach(function(chart){
+      var rect = chart.getBoundingClientRect();
+      if(rect.width && rect.height){
+        chart.style.setProperty("--chart-width", rect.width.toFixed(2));
+        chart.style.setProperty("--chart-height", rect.height.toFixed(2));
+      }
+    });
+  }
+  window.addEventListener("resize", updateAgingCompositionMetrics);
+  document.addEventListener("DOMContentLoaded", updateAgingCompositionMetrics);
+  updateAgingCompositionMetrics();
+})();
+
+(function(){
       function parseLinePoints(raw, baseWidth, baseHeight, actualWidth, actualHeight){
         if(!raw) return [];
         const safeBaseWidth = baseWidth || actualWidth || 1;

@@ -200,19 +200,7 @@
   .other-collateral .chart-tooltip.is-visible{opacity:1;}
   .other-collateral .value-analysis-scroll table{
     width:100%;
-    table-layout:fixed;
-  }
-  .other-collateral .value-analysis-table .col-id{
-    width:8%;
-  }
-  .other-collateral .value-analysis-table .col-type{
-    width:20%;
-  }
-  .other-collateral .value-analysis-table .col-mfg{
-    width:14%;
-  }
-  .other-collateral .value-analysis-table .col-metric{
-    width:7%;
+    table-layout:auto;
   }
   .other-collateral .value-analysis-table th:first-child,
   .other-collateral .value-analysis-table td:first-child{
@@ -241,19 +229,10 @@
     max-height:none;
   }
   .other-collateral table.data{width:100%;border-collapse:collapse;font-size:12px  ;min-width: 980px;}
-  .other-collateral table.data.value-analysis-table{table-layout:fixed;}
-  .other-collateral table.data.value-analysis-table col.col-id{width:6%;}
-  .other-collateral table.data.value-analysis-table col.col-equipment{width:22%;}
-  .other-collateral table.data.value-analysis-table col.col-manufacturer{width:14%;}
-  .other-collateral table.data.value-analysis-table col.col-num{width:7.25%;}
-  .other-collateral table.data.asset-register-table{table-layout:fixed;}
-  .other-collateral table.data.asset-register-table col.col-id{width:6%;}
-  .other-collateral table.data.asset-register-table col.col-equipment{width:20%;}
-  .other-collateral table.data.asset-register-table col.col-manufacturer{width:14%;}
-  .other-collateral table.data.asset-register-table col.col-serial{width:17%;}
-  .other-collateral table.data.asset-register-table col.col-year{width:7%;}
-  .other-collateral table.data.asset-register-table col.col-condition{width:12%;}
-  .other-collateral table.data.asset-register-table col.col-num{width:12%;}
+  .other-collateral table.data.value-analysis-table{table-layout:auto;}
+  .other-collateral table.data.value-analysis-table col{width:auto;}
+  .other-collateral table.data.asset-register-table{table-layout:auto;}
+  .other-collateral table.data.asset-register-table col{width:auto;}
   .other-collateral table.data thead th{font-size: 10pt ;position:sticky;top:0;background:#FBFCFE;color:#65758b;font-weight:950;text-align:left;padding:10px 12px;border-bottom:1px solid var(--border);white-space:nowrap;}
   .other-collateral table.data.value-analysis-table thead tr:first-child th{
     text-align:center;
@@ -533,7 +512,6 @@
               <td class="numR">{{ row.fmv }}</td>
               <td class="numR">{{ row.olv }}</td>
             </tr>
-            <tr class="empty-placeholder"><td colspan="8" class="numR">Asset register data not available.</td></tr>
           {% empty %}
             <tr class="empty-placeholder"><td colspan="8" class="numR">Asset register data not available.</td></tr>
           {% endfor %}
