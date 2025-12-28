@@ -1309,7 +1309,7 @@
           </div>
         </section>
 
-        <section class="sidebar-section sidebar-collapsible is-open{% if current_nav == 'recovery' or current_nav == 'fg_recovery_history' or current_nav == 'wip_recovery' or current_nav == 'raw_material_recovery' or current_nav == 'liquidation_cash_flow' %} has-active{% endif %}" data-collapsible>
+        <section class="sidebar-section sidebar-collapsible is-open{% if current_nav == 'recovery' or current_nav == 'fg_recovery_history' or current_nav == 'wip_recovery' or current_nav == 'raw_material_recovery' or current_nav == 'liquidation_cash_flow' or current_nav == 'nolv_table' %} has-active{% endif %}" data-collapsible>
           <button class="section-trigger" type="button" aria-expanded="true" aria-controls="sidebar-liquidation-panel">
             <span class="label-left">
               <span class="ico" aria-hidden="true">
@@ -1332,10 +1332,11 @@
             <a class="sidebar-sub-link{% if current_nav == 'wip_recovery' %} active{% endif %}" href="{% url 'admin_component' 'wipRecovery' %}" data-entity="wipRecovery">WIP Recovery</a>
             <a class="sidebar-sub-link{% if current_nav == 'raw_material_recovery' %} active{% endif %}" href="{% url 'admin_component' 'rawMaterialRecovery' %}" data-entity="rawMaterialRecovery">Raw Material Recovery</a>
             <a class="sidebar-sub-link{% if current_nav == 'liquidation_cash_flow' %} active{% endif %}" href="{% url 'admin_component' 'cashFlow' %}" data-entity="cashFlow">Cash Flow</a>
+            <a class="sidebar-sub-link{% if current_nav == 'nolv_table' %} active{% endif %}" href="{% url 'admin_component' 'nolvTable' %}" data-entity="nolvTable">NOLV Table</a>
           </div>
         </section>
 
-        <section class="sidebar-section sidebar-collapsible is-open{% if current_nav == 'risk' or current_nav == 'nolv_table' or current_nav == 'risk_subfactors' or current_nav == 'risk_composite_index' %} has-active{% endif %}" data-collapsible>
+        <section class="sidebar-section sidebar-collapsible is-open{% if current_nav == 'risk' or current_nav == 'risk_subfactors' or current_nav == 'risk_composite_index' %} has-active{% endif %}" data-collapsible>
           <button class="section-trigger" type="button" aria-expanded="true" aria-controls="sidebar-risk-panel">
             <span class="label-left">
               <span class="ico" aria-hidden="true">
@@ -1354,7 +1355,6 @@
             </span>
           </button>
           <div class="sidebar-children" id="sidebar-risk-panel">
-            <a class="sidebar-sub-link{% if current_nav == 'risk' or current_nav == 'nolv_table' %} active{% endif %}" href="{% url 'admin_component' 'nolvTable' %}" data-entity="nolvTable">NOLV Table</a>
             <a class="sidebar-sub-link{% if current_nav == 'risk_subfactors' %} active{% endif %}" href="{% url 'admin_component' 'riskSubfactors' %}" data-entity="riskSubfactors">Risk Subfactors</a>
             <a class="sidebar-sub-link{% if current_nav == 'risk_composite_index' %} active{% endif %}" href="{% url 'admin_component' 'compositeIndex' %}" data-entity="compositeIndex">Composite Index</a>
           </div>
@@ -1369,7 +1369,7 @@
                   <path d="m7 13 4-4 3 3 5-5" stroke-linecap="round" stroke-linejoin="round" />
                 </svg>
               </span>
-              <span>Forecast</span>
+              <span>Cash Flow</span>
             </span>
             <span class="chevron" aria-hidden="true">
               <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
