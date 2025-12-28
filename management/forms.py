@@ -105,6 +105,14 @@ class CompanyForm(StyledModelForm):
         widgets = {
             "password": forms.PasswordInput(render_value=False),
         }
+        labels = {
+            "company": "Specific Individual",
+            "industry": "Specific Individual ID",
+            "primary_naics": "Lender",
+            "website": "Lender ID",
+            "email": "Email",
+            "password": "Password",
+        }
 
     def __init__(self, *args, **kwargs):
         super().__init__(*args, **kwargs)

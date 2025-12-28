@@ -9,17 +9,16 @@
   </div>
   <div class="component-shell-body">
     <div class="component-actions">
-      <button class="btn save" data-modal-open="modal-company-create">Add Company</button>
+      <button class="btn save" data-modal-open="modal-company-create">Add User</button>
     </div>
     <div class="component-table">
       <table class="admin-table">
         <thead>
           <tr>
-            <th>Name</th>
-            <th>Company ID</th>
-            <th>Industry</th>
-            <th>NAICS</th>
-            <th>Website</th>
+            <th>Specific Individual</th>
+            <th>Specific Individual ID</th>
+            <th>Lender</th>
+            <th>Lender ID</th>
             <th>Email</th>
             <th></th>
           </tr>
@@ -28,16 +27,9 @@
           {% for company in component_data.list %}
             <tr>
               <td>{{ company.company|default:"—" }}</td>
-              <td>{{ company.company_id }}</td>
               <td>{{ company.industry|default:"—" }}</td>
               <td>{{ company.primary_naics|default:"—" }}</td>
-              <td>
-                {% if company.website %}
-                  <a href="{{ company.website }}" target="_blank" rel="noreferrer">{{ company.website }}</a>
-                {% else %}
-                  —
-                {% endif %}
-              </td>
+              <td>{{ company.website|default:"—" }}</td>
               <td>
                 {% if company.email %}
                   <a href="mailto:{{ company.email }}">{{ company.email }}</a>
@@ -56,7 +48,7 @@
               </td>
             </tr>
           {% empty %}
-            <tr><td colspan="7">No companies recorded.</td></tr>
+            <tr><td colspan="6">No users recorded.</td></tr>
           {% endfor %}
         </tbody>
       </table>
@@ -67,7 +59,7 @@
 <div class="component-modal" id="modal-company-create" aria-hidden="true">
   <div class="component-modal-dialog">
     <div class="component-modal-head">
-      <h3>Add Company</h3>
+      <h3>Add User</h3>
       <button type="button" class="modal-close" data-modal-close>&times;</button>
     </div>
     <form method="post" class="component-form">
@@ -81,7 +73,7 @@
       </div>
       <div class="component-modal-footer">
         <button type="button" class="btn ghost" data-modal-close>Cancel</button>
-        <button type="submit" class="btn save">Save Company</button>
+        <button type="submit" class="btn save">Save User</button>
       </div>
     </form>
   </div>
@@ -91,7 +83,7 @@
 <div class="component-modal" id="modal-company-edit" aria-hidden="true" data-modal-auto-open="true">
   <div class="component-modal-dialog">
     <div class="component-modal-head">
-      <h3>Edit Company</h3>
+      <h3>Edit User</h3>
       <button type="button" class="modal-close" data-modal-close>&times;</button>
     </div>
     <form method="post" class="component-form">
@@ -106,7 +98,7 @@
       </div>
       <div class="component-modal-footer">
         <a class="btn ghost" href="{% url 'admin_component' component_meta.slug %}">Cancel</a>
-        <button type="submit" class="btn save">Update Company</button>
+        <button type="submit" class="btn save">Update User</button>
       </div>
     </form>
   </div>

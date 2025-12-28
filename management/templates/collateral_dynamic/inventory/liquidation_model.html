@@ -252,14 +252,17 @@ line-height: 33.339px; /* 138.462% */
     text-align:left;
   }
   .liquidation-model .n-table .subtotal-row td{
-    background:#f8fafc;
-    color:#334155;
+    background:#ffffff;
+    color:#94a3b8;
     font-weight:700;
   }
   .liquidation-model .n-table .total-row td{
-    background:#f5f7fb;
-    color:#334155;
+    background:#f0f2f7;
+    color:#1f2937;
     font-weight:800;
+  }
+  .liquidation-model .n-table .excess-row td{
+    background:#f7f9fd;
   }
   .liquidation-model thead tr.group th{
     background:#FAFAFA;
@@ -492,7 +495,7 @@ gap: 0px;
   .liquidation-model #nolv-analysis .nolv-subheading td{
     font-weight:700;
     color:#334155;
-    background:#eef2ff;
+    background:#e2e7f5;
   }
   .liquidation-model #nolv-analysis .nolv-heading td,
   .liquidation-model #nolv-analysis .nolv-subheading td{
@@ -504,13 +507,21 @@ gap: 0px;
     color:#0f172a;
   }
   .liquidation-model #nolv-analysis .nolv-total-light td{
-    background:#f5f7fb;
+    background:#e9edf4;
   }
   .liquidation-model #nolv-analysis .nolv-total-dark td{
     background:#d7dce5;
   }
+  .liquidation-model #nolv-analysis td.row-label{
+    padding-left:22px;
+  }
+  .liquidation-model #nolv-analysis .nolv-total td.row-label,
+  .liquidation-model #nolv-analysis .nolv-heading td,
+  .liquidation-model #nolv-analysis .nolv-subheading td{
+    padding-left:12px;
+  }
   .liquidation-model #nolv-analysis .nolv-gap-row td{
-    padding:12px 0;
+    padding:18px 0;
     border:none;
     background:#ffffff;
   }
@@ -747,7 +758,15 @@ gap: 0px;
 
       <tbody>
         {% for row in fg_gross_recovery_history_rows %}
-          <tr{% if row.category == "Total" %} class="total-row"{% elif row.category == "Total In-Line" %} class="subtotal-row"{% endif %}>
+          <tr
+            {% if row.category == "Total" %}
+              class="total-row"
+            {% elif row.category == "Total In-Line" %}
+              class="subtotal-row"
+            {% elif row.category == "Excess" %}
+              class="excess-row"
+            {% endif %}
+          >
             <td class="left">{{ row.category|default:"—" }}</td>
             <td class="center">{{ row.cost }}</td>
             <td class="center">{{ row.selling }}</td>
@@ -781,14 +800,12 @@ gap: 0px;
           <table>
             <thead>
               <tr class="group">
-                <th class="left no-bg"></th>
-                <th class="center center-alighment">Inventory Cost</th>
-                <th class="center center-alighment">Gross Recovery</th>
-                <th class="center center-alighment"></th>
+                <th class="left no-bg" rowspan="2">Category</th>
+                <th class="center center-alighment" colspan="1">Inventory Cost</th>
+                <th class="center center-alighment" colspan="2">Gross Recovery</th>
               </tr>
 
               <tr class="columns">
-                <th class="left">Category</th>
                 <th class="center center-alighment">$</th>
                 <th class="center center-alighment">$</th>
                 <th class="center center-alighment">% of Cost</th>
@@ -887,7 +904,7 @@ gap: 0px;
                 </tr>
               {% else %}
                 {% with row_label=item.row.label %}
-                  {% if row_label == "Total Liquidation Costs" %}
+                  {% if row_label == "Total Liquidation Costs" or row_label == "Gross Recovery" %}
                     <tr class="nolv-total nolv-total-dark">
                       <td class="row-label">{{ item.row.label }}</td>
                       <td class="num">{{ item.row.fg }}</td>
@@ -899,7 +916,9 @@ gap: 0px;
                       <td class="num">{{ item.row.total }}</td>
                       <td class="num">{% if item.row.total_pct != "—" %}{{ item.row.total_pct }}{% endif %}</td>
                     </tr>
-                    <tr class="nolv-gap-row"><td colspan="9"></td></tr>
+                    {% if row_label == "Total Liquidation Costs" %}
+                      <tr class="nolv-gap-row"><td colspan="9"></td></tr>
+                    {% endif %}
                   {% elif row_label == "Net Recovery" %}
                     <tr class="nolv-total nolv-total-dark">
                       <td class="row-label">{{ item.row.label }}</td>

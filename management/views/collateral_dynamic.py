@@ -246,13 +246,9 @@ def _week_summary_context(borrower):
             output.append({"name": name, "value": amount})
         if not output and forecast_row:
             collections = getattr(forecast_row, "net_sales", None)
-            other_receipts = getattr(forecast_row, "ar", None)
-            receipts_total = None
-            if collections is not None or other_receipts is not None:
-                receipts_total = _to_decimal(collections or 0) + _to_decimal(other_receipts or 0)
+            receipts_total = _to_decimal(collections or 0) if collections is not None else None
             fallback_items = [
                 ("Collections", collections),
-                ("Other Receipts", other_receipts),
                 ("Total Receipts", receipts_total),
             ]
             for label, value in fallback_items:
@@ -363,7 +359,7 @@ def _week_summary_context(borrower):
             values.append(
                 {
                     "label": label_value,
-                    "collections": _pick_value(["net_sales", "ar", "available_collateral"]),
+                    "collections": _pick_value(["net_sales", "available_collateral"]),
                     "disbursements": _pick_value(["loan_balance", "available_collateral"]),
                 }
             )
@@ -992,9 +988,9 @@ def _week_summary_context(borrower):
         if not row:
             return None
         beginning = _value_for_field(row, "available_collateral")
-        receipts = _sum_fields(row, ["net_sales", "ar"])
+        receipts = _sum_fields(row, ["net_sales"])
         disbursements = _value_for_field(row, "loan_balance")
-        net_cash_flow = _difference_fields(row, ["net_sales", "ar"], ["loan_balance"])
+        net_cash_flow = _difference_fields(row, ["net_sales"], ["loan_balance"])
         if beginning is not None and net_cash_flow is not None:
             ending = beginning + net_cash_flow
         elif net_cash_flow is not None:
@@ -1063,18 +1059,13 @@ def _week_summary_context(borrower):
     cashflow_table_rows = [
         _section_row("Receipts"),
         _build_table_row("Collections", lambda row: _value_for_field(row, "net_sales"), ""),
-        _build_table_row("Other Receipts", lambda row: _value_for_field(row, "ar"), ""),
         _build_table_row(
             "Total Receipts",
-            lambda row: _sum_fields(row, ["net_sales", "ar"]),
+            lambda row: _sum_fields(row, ["net_sales"]),
             "title-row",
         ),
         _section_row("Operating Disbursements"),
         _build_table_row("Payroll", lambda row: _alloc_disbursement("payroll", _value_for_field(row, "loan_balance")), ""),
-        # _build_table_row("Rent", lambda row: _alloc_disbursement("rent", _value_for_field(row, "loan_balance")), ""),
-        # _build_table_row("Utilities", lambda row: _alloc_disbursement("utilities", _value_for_field(row, "loan_balance")), ""),
-        # _build_table_row("Property Tax", lambda row: _alloc_disbursement("property tax", _value_for_field(row, "loan_balance")), ""),
-        # _build_table_row("Insurance", lambda row: _alloc_disbursement("insurance", _value_for_field(row, "loan_balance")), ""),
         _build_table_row("Professional Services", lambda row: _alloc_disbursement("professional services", _value_for_field(row, "loan_balance")), ""),
         _build_table_row("Software Expenses", lambda row: _alloc_disbursement("software expenses", _value_for_field(row, "loan_balance")), ""),
         _build_table_row("Repairs / Maintenance", lambda row: _alloc_disbursement("repairs / maintenance", _value_for_field(row, "loan_balance")), ""),
@@ -1085,9 +1076,6 @@ def _week_summary_context(borrower):
             "title-row",
         ),
         _section_row("Non-Operating Disbursements"),
-        # _build_table_row("Interest Expense", lambda row: _alloc_disbursement("interest expense", _value_for_field(row, "loan_balance")), ""),
-        # _build_table_row("Non-Recurring Tax Payments", lambda row: _alloc_disbursement("non-recurring tax payments", _value_for_field(row, "loan_balance")), ""),
-        _build_table_row("One-Time Professional Fees", lambda row: _alloc_disbursement("one-time professional fees", _value_for_field(row, "loan_balance")), ""),
         _build_table_row("Total Non-Operating Disbursements", lambda row: _alloc_disbursement("non-operating disbursements", _value_for_field(row, "loan_balance")), "title-row"),
         _build_table_row(
             "Total Disbursements",
@@ -1096,7 +1084,7 @@ def _week_summary_context(borrower):
         ),
         _build_table_row(
             "Net Cash Flow",
-            lambda row: _difference_fields(row, ["net_sales", "ar"], ["loan_balance"]),
+            lambda row: _difference_fields(row, ["net_sales"], ["loan_balance"]),
             "title-row",
         ),
     ]
@@ -1104,7 +1092,7 @@ def _week_summary_context(borrower):
         ("Beginning Cash", lambda row: _value_for_field(row, "available_collateral"), ""),
         (
             "Net Cash Flow",
-            lambda row: _difference_fields(row, ["net_sales", "ar"], ["loan_balance"]),
+            lambda row: _difference_fields(row, ["net_sales"], ["loan_balance"]),
             "",
         ),
         (
@@ -1230,23 +1218,15 @@ def _week_summary_context(borrower):
             for label in [
                 "Receipts",
                 "Collections",
-                "Other Receipts",
                 "Total Receipts",
                 "Operating Disbursements",
                 "Payroll",
-                "Rent",
-                "Utilities",
-                "Property Tax",
-                "Insurance",
                 "Professional Services",
                 "Software Expenses",
                 "Repairs / Maintenance",
                 "Other Disbursements",
                 "Total Operating Disbursements",
                 "Non-Operating Disbursements",
-                "Interest Expense",
-                "Non-Recurring Tax Payments",
-                "One-Time Professional Fees",
                 "Total Non-Operating Disbursements",
                 "Total Disbursements",
                 "Net Cash Flow",
@@ -1309,7 +1289,7 @@ def _week_summary_context(borrower):
 
     liquidity_fields = [
         ("available_collateral", "Collateral Availability", "#2563eb"),
-        ("revolver_availability", "Revolver Availability", "#6574cd"),
+        ("revolver_availability", "Revolver Availability", "#7c3aed"),
         ("net_sales", "Revolver Availability + Cash", "#1d4ed8"),
     ]
     liquidity_series = []
