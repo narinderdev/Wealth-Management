@@ -442,8 +442,8 @@
   .finished-goals .table-card .card-head{padding-bottom:10px;}
   .finished-goals .table-scroll{overflow:auto;}
   .finished-goals table.data{width:100%;border-collapse:collapse;font-size:12px;min-width:860px;}
-  .finished-goals table.data thead th{position:sticky;top:0;background:#FBFCFE;color:#475467;font-weight:900;text-align:left;padding:10px 12px;border-bottom:1px solid var(--border);white-space:nowrap;}
-  .finished-goals table.data tbody td{padding:10px 12px;border-bottom:1px solid rgba(230,234,242,.65);color:#344054;white-space:nowrap; color:#65758B}
+  .finished-goals table.data thead th{position:sticky;top:0;background:#FBFCFE;color:#475467;font-weight:900;text-align:center;padding:10px 12px;border-bottom:1px solid var(--border);white-space:nowrap;}
+  .finished-goals table.data tbody td{padding:10px 12px;border-bottom:1px solid rgba(230,234,242,.65);color:#344054;white-space:nowrap; color:#65758B;text-align:center;}
   .finished-goals table.data tbody tr:last-child td{border-bottom:none;}
   .finished-goals .numR{text-align:right;}
   .finished-goals .numC{text-align:start;}
@@ -464,13 +464,15 @@
   .finished-goals table.inline-excess-table col.col-percent{width:9%;}
   .finished-goals table.sku{width:100%;border-collapse:collapse;font-size:12px;min-width:880px;color:#344054;}
   .finished-goals table.sku thead th{padding:8px 10px;border-bottom:1px solid var(--border);white-space:nowrap;}
-  .finished-goals table.sku thead tr:first-child th{background:#F7F9FC;color:#475467;font-weight:800;text-align:start;text-align:-webkit-center;}
+  .finished-goals table.sku thead tr:first-child th{background:#F7F9FC;color:#475467;font-weight:800;text-align:center;}
   .finished-goals table.sku thead tr:first-child th.center{text-align:center;}
-  .finished-goals table.sku thead tr:last-child th{background:#FBFCFE;color:#667085;font-weight:700;text-align:left;}
+  .finished-goals table.sku thead tr:last-child th{background:#FBFCFE;color:#667085;font-weight:700;text-align:center;}
   .finished-goals table.sku thead th.center{text-align:center;}
   .finished-goals table.sku .sep-left{border-left:1px solid var(--border);}
-  .finished-goals table.sku tbody td{padding:8px 10px;border-bottom:1px solid rgba(230,234,242,.65);white-space:nowrap;color:#65758B;}
+  .finished-goals table.sku tbody td{padding:8px 10px;border-bottom:1px solid rgba(230,234,242,.65);white-space:nowrap;color:#65758B;text-align:center;}
   .finished-goals table.sku tbody tr:last-child td{border-bottom:none;}
+  .finished-goals table.sku tfoot td{text-align:center;}
+  .finished-goals table.sku tfoot td:first-child{text-align:left;}
   .finished-goals table.sku th.group-header{
     text-align:center;
     background:#F7F9FC;
@@ -863,11 +865,11 @@
           <tr>
             <td colspan="3">Top 20 Total</td>
             <td class="numC">{{ finished_goals_top_sku_total.cost }}</td>
-            <td></td>
+            <td class="numC"></td>
             <td class="numC sep-left">{{ finished_goals_top_sku_total.cogs }}</td>
             <td class="numC">{{ finished_goals_top_sku_total.gm }}</td>
-            <td></td>
-            <td></td>
+            <td class="numC"></td>
+            <td class="numC"></td>
           </tr>
         </tfoot>
         {% endif %}
