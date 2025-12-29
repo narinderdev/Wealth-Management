@@ -129,7 +129,7 @@
     gap:10px
   }
   .other-collateral .kpi-change .pair b{display:block;}
-  .other-collateral .kpi-change .pair .delta{font-size:12px;}
+  .other-collateral .kpi-change .pair .delta{font-size:16px;}
   .other-collateral .kpi .pair + .pair{
     border-top:1px solid var(--border);
     padding-top:12px;
@@ -200,11 +200,7 @@
   .other-collateral .chart-tooltip.is-visible{opacity:1;}
   .other-collateral .value-analysis-scroll table{
     width:100%;
-    table-layout:auto;
-  }
-  .other-collateral .value-analysis-table th:first-child,
-  .other-collateral .value-analysis-table td:first-child{
-    text-align:center;
+    table-layout:fixed;
   }
   .other-collateral .hit{fill:transparent;pointer-events:all;}
   .other-collateral svg{width:100%;height:auto;display:block;}
@@ -228,56 +224,79 @@
     overflow:visible;
     max-height:none;
   }
-  .other-collateral table.data{width:100%;border-collapse:collapse;font-size:12px  ;min-width: 980px;}
-  .other-collateral table.data.value-analysis-table{table-layout:auto;}
-  .other-collateral table.data.value-analysis-table col{width:auto;}
-  .other-collateral table.data.asset-register-table{table-layout:auto;}
-  .other-collateral table.data.asset-register-table col{width:auto;}
-  .other-collateral table.data thead th{font-size: 10pt ;position:sticky;top:0;background:#FBFCFE;color:#65758b;font-weight:950;text-align:left;padding:10px 12px;border-bottom:1px solid var(--border);white-space:nowrap;}
-  .other-collateral table.data.value-analysis-table thead tr:first-child th{
-    text-align:center;
-    vertical-align:bottom;
-    padding-top:6px;
-    padding-bottom:6px;
-    font-size:10pt;
-    line-height:1.2;
-    border-bottom:1px solid var(--border);
+
+  .other-collateral table.data{
+    width:100%;
+    border-collapse:collapse;
+    font-size:12px;
+    min-width: 980px;
   }
-  .other-collateral table.data.value-analysis-table thead tr:first-child th[colspan]{
-    padding-left:0;
-    padding-right:0;
+
+  .other-collateral table.data.value-analysis-table{table-layout:fixed;}
+  .other-collateral table.data.value-analysis-table col.col-id{width:60px;}
+  .other-collateral table.data.value-analysis-table col.col-type{width:190px;}
+  .other-collateral table.data.value-analysis-table col.col-mfg{width:170px;}
+  .other-collateral table.data.value-analysis-table col.col-metric{width:130px;}
+
+  .other-collateral table.data.appraisal-asset-register-table{table-layout:fixed;}
+  .other-collateral table.data.appraisal-asset-register-table col.col-id{width:70px;}
+  .other-collateral table.data.appraisal-asset-register-table col.col-type{width:190px;}
+  .other-collateral table.data.appraisal-asset-register-table col.col-mfg{width:170px;}
+  .other-collateral table.data.appraisal-asset-register-table col.col-serial{width:180px;}
+  .other-collateral table.data.appraisal-asset-register-table col.col-year{width:110px;}
+  .other-collateral table.data.appraisal-asset-register-table col.col-condition{width:180px;}
+  .other-collateral table.data.appraisal-asset-register-table col.col-fmv,
+  .other-collateral table.data.appraisal-asset-register-table col.col-olv{width:170px;}
+
+  /* ✅ UPDATED: CENTER ALIGN ALL HEADER TEXT */
+  .other-collateral table.data thead th{
+    font-size:10pt;
+    position:sticky;
+    top:0;
+    background:#FBFCFE;
+    color:#65758b;
+    font-weight:950;
+    padding:10px 12px;
+    border-bottom:1px solid var(--border);
+    white-space:nowrap;
     text-align:center;
     vertical-align:middle;
   }
-  .other-collateral table.data.value-analysis-table thead tr:first-child th[rowspan]{
-    text-align:left;
-    vertical-align:bottom;
-    padding-bottom:8px;
-    font-size:10pt;
-  }
-  .other-collateral table.data.value-analysis-table thead tr:first-child th.group-center{
-    text-align:center;
-  }
+
+  /* ✅ UPDATED: CENTER ALIGN GROUPED HEADERS + SUBHEADERS */
+  .other-collateral table.data.value-analysis-table thead tr:first-child th,
   .other-collateral table.data.value-analysis-table thead tr.grouphead th{
-    padding-top:6px;
-    padding-bottom:8px;
-    font-size:10pt;
-    border-bottom:1px solid var(--border);
+    text-align:center !important;
+    vertical-align:middle;
   }
-  .other-collateral table.data tbody td{padding:10px 12px;border-bottom:1px solid rgba(230,234,242,.65);color:#344054;white-space:nowrap;}
+
+  /* ✅ UPDATED: CENTER ALIGN ALL BODY VALUES */
+  .other-collateral table.data tbody td{
+    padding:10px 12px;
+    border-bottom:1px solid rgba(230,234,242,.65);
+    color:#344054;
+    white-space:nowrap;
+    text-align:center;
+    vertical-align:middle;
+  }
+
+  .other-collateral .numR{
+    text-align:center !important;
+    font-variant-numeric:tabular-nums;
+  }
+
   .other-collateral table.data tbody tr:last-child td{border-bottom:none;}
   .other-collateral tbody tr:hover td{background:#FAFCFF;}
-  .other-collateral .numR{text-align:left;}
-  .other-collateral table.data.value-analysis-table th.numR,
-  .other-collateral table.data.value-analysis-table td.numR{
-    text-align:center;
+
+  .other-collateral .grouphead{
+    font-size:10px;
+    font-weight:950;
+    color:#475467;
+    background:#FBFCFE;
   }
-  .other-collateral table.data.asset-register-table th.numR,
-  .other-collateral table.data.asset-register-table td.numR{
-    text-align:left;
-  }
-  .other-collateral .grouphead{font-size:10px;font-weight:950;color:#475467;background:#FBFCFE;}
+
   .other-collateral .mini-note{font-size:12px;color:var(--muted);margin:12px;}
+
   .other-collateral .table-controls{
     display:flex;
     justify-content:space-between;
@@ -320,6 +339,23 @@
     font-size:10pt;
     line-height:1.6;
   }
+
+  .other-collateral .chart-tooltip,
+  .other-collateral .chart-tooltip strong,
+  .other-collateral .chart-tooltip span {
+    font-size: 10pt !important;
+  }
+
+  .other-collateral .kpi b,
+  .other-collateral .kpi .big,
+  .other-collateral .kpi .pair b {
+    font-size: 16pt !important;
+  }
+
+  .other-collateral table.data thead th,
+  .other-collateral table.data tbody td {
+    font-size: 10pt !important;
+  }
 </style>
 
 <div class="page other-collateral">
@@ -341,12 +377,12 @@
           class="current-update-icon" />
       Value Monitor
     </div>
+
     <div class="kpi-row">
       {% for card in other_collateral_value_monitor %}
         <div class="kpi{% if card.row_deltas %} kpi-change{% endif %}">
           <div class="left">
             <div class="t">{{ card.title }}</div>
-            <!-- <div class="big">{{ card.big }}</div> -->
             {% for row in card.rows %}
               {% if card.row_deltas %}
                 <div class="pair">
@@ -367,9 +403,7 @@
             {% endfor %}
           </div>
           <div class="right">
-            
-              <img src="{% static 'images/Background.svg' %}" alt="" />
-            
+            <img src="{% static 'images/Background.svg' %}" alt="" />
             {% if not card.row_deltas %}
               {% for delta in card.deltas %}
                 <div class="delta {{ delta.delta_class }}" title="{{ delta.label }}">
@@ -390,7 +424,9 @@
         </div>
       {% endfor %}
     </div>
+
     <div style="margin-top: 20px; margin-bottom: 10px;" class="divider"></div>
+
     <div class="card-head value-trend-head" style="padding-bottom:0">
       <div class="value-trend-title">
         <img src="{% static 'images/borrowing_icon.svg' %}"
@@ -411,9 +447,10 @@
       <img src="{% static 'images/borrowing_icon.svg' %}"
           alt="Current Update Icon"
           class="current-update-icon" />
-  Value Analysis
+      Value Analysis
     </div>
     <div style="margin-bottom: 10px;" class="divider"></div>
+
     <div class="table-controls">
       <input type="search" class="table-search" data-table="value-analysis-table" placeholder="Search value analysis...">
       <div class="pager table-pager" data-table="value-analysis-table">
@@ -422,6 +459,7 @@
         <button type="button" data-action="next">Next</button>
       </div>
     </div>
+
     <div class="table-scroll value-analysis-scroll">
       <table class="data value-analysis-table" aria-label="Value Analysis Table" id="value-analysis-table" data-empty="Value analysis data not available.">
         <colgroup>
@@ -461,9 +499,8 @@
               <td class="numR">{{ row.variance_olv_amount }}</td>
               <td class="numR">{{ row.variance_olv_pct }}</td>
             </tr>
-
           {% empty %}
-            <tr class="empty-placeholder"><td colspan="9" class="numR">Value analysis data not available.</td></tr>
+            <tr class="empty-placeholder"><td colspan="11" class="numR">Value analysis data not available.</td></tr>
           {% endfor %}
         </tbody>
       </table>
@@ -478,6 +515,7 @@
       Appraisal Asset Register
     </div>
     <div class="divider"></div>
+
     <div class="table-controls">
       <input type="search" class="table-search" data-table="asset-register-table" placeholder="Search asset register...">
       <div class="pager table-pager" data-table="asset-register-table">
@@ -486,8 +524,19 @@
         <button type="button" data-action="next">Next</button>
       </div>
     </div>
+
     <div class="table-scroll asset-register-scroll">
-      <table class="data" aria-label="Appraisal Asset Register" id="asset-register-table" data-empty="Asset register data not available.">
+      <table class="data appraisal-asset-register-table" aria-label="Appraisal Asset Register" id="asset-register-table" data-empty="Asset register data not available.">
+        <colgroup>
+          <col class="col-id">
+          <col class="col-type">
+          <col class="col-mfg">
+          <col class="col-serial">
+          <col class="col-year">
+          <col class="col-condition">
+          <col class="col-fmv">
+          <col class="col-olv">
+        </colgroup>
         <thead>
           <tr>
             <th>Item ID</th>
@@ -522,87 +571,104 @@
 </div>
 
 {{ other_collateral_value_trend_config|json_script:"otherCollateralValueTrendData" }}
+
 <script>
   function linePath(pts){
     return pts.map((p,i)=> (i===0?`M ${p[0]} ${p[1]}`:`L ${p[0]} ${p[1]}`)).join(" ");
   }
+
   function renderTwoLine(el,cfg){
     const W=980, H=268;
     const pad={l:96,r:40,t:14,b:60};
     const plotW=W-pad.l-pad.r, plotH=H-pad.t-pad.b;
+
     const seriesEstimated = (cfg.estimated||[]).map(val => Number(val) || 0);
     const seriesAppraisal = (cfg.appraisal||[]).map(val => Number(val) || 0);
     const all = [...seriesEstimated, ...seriesAppraisal];
+
     if(!all.length){
       el.innerHTML="<div class='mini-note'>Value trend data is unavailable.</div>";
       return;
     }
+
     const formatCurrencyLabel = val => `$${Math.round(val).toLocaleString('en-US')}`;
     let max = Math.max(...all, 0);
-    if(max === -Infinity) max = 0;
     let min = 0;
-    if (max <= 0) {
-      max = 1;
-    } else {
-      max = max * 1.08;
-    }
-    const range = (max - min) || 1;
+
+    if (max <= 0) max = 1;
+    max = max * 1.08;
+
     const totalPoints = cfg.labels?.length || Math.max(seriesEstimated.length, seriesAppraisal.length);
     const denominator = totalPoints>1 ? totalPoints-1 : 1;
+
     const x = i => pad.l + (i/denominator)*plotW;
     const y = v => pad.t + (1-(v-min)/(max-min))*plotH;
+
     const ptsEst = seriesEstimated.map((v,i)=>[x(i),y(v)]);
     const ptsApp = seriesAppraisal.map((v,i)=>[x(i),y(v)]);
+
     const ticks=6;
     const yTicks = Array.from({length:ticks},(_,i)=>{
       const t=i/(ticks-1);
       const val=max - t*(max-min);
       return {val, yy:y(val)};
     });
-    const xStep = 1;
+
     const xLabelMonthY = H - 38;
     const xLabelYearOffset = 16;
     const yLabelX = pad.l - 12;
+
     el.innerHTML = `
       <div class="chart-wrap">
         <svg viewBox="0 0 ${W} ${H}" role="img" aria-label="${cfg.title||'Value Trend'}">
-        <rect x="${pad.l}" y="${pad.t}" width="${plotW}" height="${plotH}" class="borderline"></rect>
-        ${yTicks.map(t=>`
-          <line x1="${pad.l}" y1="${t.yy}" x2="${W-pad.r}" y2="${t.yy}" class="gridline"></line>
-          <g class="axis"><text x="${yLabelX}" y="${t.yy+3}" text-anchor="end">${formatCurrencyLabel(t.val)}</text></g>
-        `).join("")}
-        <g class="axis">
-          ${(cfg.labels||[]).map((lab,i)=>{
-            if(i%xStep!==0) return "";
-            const isFirst = i === 0;
-            const isLast = i === (cfg.labels.length - 1);
-            const anchor = isFirst ? "start" : (isLast ? "end" : "middle");
-            const parts = (lab || "").split(/\s+/).filter(Boolean);
-            if(parts.length >= 2){
-              const month = parts[0];
-              const year = parts[parts.length - 1];
-              return `<text text-anchor="${anchor}">
-                <tspan x="${x(i)}" y="${xLabelMonthY}">${month}</tspan>
-                <tspan x="${x(i)}" dy="${xLabelYearOffset}">${year}</tspan>
-              </text>`;
-            }
-            return `<text x="${x(i)}" y="${xLabelMonthY + xLabelYearOffset}" text-anchor="${anchor}">${lab}</text>`;
-          }).join("")}
-        </g>
-        <path d="${linePath(ptsEst)}" class="lineA"></path>
-        <path d="${linePath(ptsApp)}" class="lineB"></path>
-        ${ptsEst.map((p,i)=> (ptsEst.length <= 2 || i%2===1) ? `<circle cx="${p[0]}" cy="${p[1]}" r="3" class="pt"></circle>`:"").join("")}
-        ${ptsApp.map((p,i)=> (ptsApp.length <= 2 || i%2===1) ? `<circle cx="${p[0]}" cy="${p[1]}" r="3" class="ptb"></circle>`:"").join("")}
-        ${ptsEst.map((p,i)=>`<circle cx="${p[0]}" cy="${p[1]}" r="8" class="hit oc-point"
-          data-label="${(cfg.labels||[])[i]||''}" data-value="${formatCurrencyLabel(seriesEstimated[i]||0)}"
-          data-series="Estimated OLV"></circle>`).join("")}
-        ${ptsApp.map((p,i)=>`<circle cx="${p[0]}" cy="${p[1]}" r="8" class="hit oc-point"
-          data-label="${(cfg.labels||[])[i]||''}" data-value="${formatCurrencyLabel(seriesAppraisal[i]||0)}"
-          data-series="Appraisal OLV"></circle>`).join("")}
-      </svg>
+          <rect x="${pad.l}" y="${pad.t}" width="${plotW}" height="${plotH}" class="borderline"></rect>
+
+          ${yTicks.map(t=>`
+            <line x1="${pad.l}" y1="${t.yy}" x2="${W-pad.r}" y2="${t.yy}" class="gridline"></line>
+            <g class="axis">
+              <text x="${yLabelX}" y="${t.yy+3}" text-anchor="end" style="font-size:10px;">
+                ${formatCurrencyLabel(t.val)}
+              </text>
+            </g>
+          `).join("")}
+
+          <g class="axis">
+            ${(cfg.labels||[]).map((lab,i)=>{
+              const isFirst = i === 0;
+              const isLast = i === (cfg.labels.length - 1);
+              const anchor = isFirst ? "start" : (isLast ? "end" : "middle");
+              const parts = (lab || "").split(/\s+/).filter(Boolean);
+
+              if(parts.length >= 2){
+                const month = parts[0];
+                const year = parts[parts.length - 1];
+                return `<text text-anchor="${anchor}" style="font-size:10px;">
+                  <tspan x="${x(i)}" y="${xLabelMonthY}" style="font-size:10px;">${month}</tspan>
+                  <tspan x="${x(i)}" dy="${xLabelYearOffset}" style="font-size:10px;">${year}</tspan>
+                </text>`;
+              }
+              return `<text x="${x(i)}" y="${xLabelMonthY + xLabelYearOffset}" text-anchor="${anchor}" style="font-size:10px;">${lab}</text>`;
+            }).join("")}
+          </g>
+
+          <path d="${linePath(ptsEst)}" class="lineA"></path>
+          <path d="${linePath(ptsApp)}" class="lineB"></path>
+
+          ${ptsEst.map((p,i)=> (ptsEst.length <= 2 || i%2===1) ? `<circle cx="${p[0]}" cy="${p[1]}" r="3" class="pt"></circle>`:"").join("")}
+          ${ptsApp.map((p,i)=> (ptsApp.length <= 2 || i%2===1) ? `<circle cx="${p[0]}" cy="${p[1]}" r="3" class="ptb"></circle>`:"").join("")}
+
+          ${ptsEst.map((p,i)=>`<circle cx="${p[0]}" cy="${p[1]}" r="8" class="hit oc-point"
+            data-label="${(cfg.labels||[])[i]||''}" data-value="${formatCurrencyLabel(seriesEstimated[i]||0)}"
+            data-series="Estimated OLV"></circle>`).join("")}
+
+          ${ptsApp.map((p,i)=>`<circle cx="${p[0]}" cy="${p[1]}" r="8" class="hit oc-point"
+            data-label="${(cfg.labels||[])[i]||''}" data-value="${formatCurrencyLabel(seriesAppraisal[i]||0)}"
+            data-series="Appraisal OLV"></circle>`).join("")}
+        </svg>
         <div class="chart-tooltip" aria-hidden="true"></div>
       </div>
     `;
+
     attachOtherCollateralTooltip(el);
   }
 
@@ -617,19 +683,25 @@
     const wrap = el.querySelector(".chart-wrap");
     const tooltip = el.querySelector(".chart-tooltip");
     if (!wrap || !tooltip) return;
+
     const points = el.querySelectorAll(".oc-point");
     const show = (event)=>{
       const target = event.currentTarget;
       const label = (target.dataset.label||"").replace(/\n/g," ");
       const value = target.dataset.value||"";
       const series = target.dataset.series||"";
+
       tooltip.innerHTML = `<strong>${value}</strong><span>${label}${series ? ` • ${series}` : ""}</span>`;
+
       const {x,y} = positionTooltip(wrap,event);
       tooltip.style.left = `${Math.max(14, Math.min(wrap.clientWidth-14, x))}px`;
       tooltip.style.top = `${Math.max(18, Math.min(wrap.clientHeight-14, y-12))}px`;
+
       tooltip.classList.add("is-visible");
     };
+
     const hide = ()=>tooltip.classList.remove("is-visible");
+
     points.forEach(point=>{
       point.style.cursor = "pointer";
       point.addEventListener("mousemove", show);
@@ -638,80 +710,15 @@
       point.addEventListener("blur", hide);
     });
   }
-function initPagedTable(tableId){
-    const PAGE_SIZE = 20;
-    const table = document.getElementById(tableId);
-    if(!table) return;
-    const tbody = table.querySelector("tbody");
-    const allRows = Array.from(tbody.querySelectorAll("tr")).filter(row => !row.classList.contains("empty-placeholder"));
-    tbody.querySelectorAll(".empty-placeholder").forEach(el => el.remove());
-    const searchInput = document.querySelector(`.table-search[data-table="${tableId}"]`);
-    const pager = document.querySelector(`.table-pager[data-table="${tableId}"]`);
-    const info = pager ? pager.querySelector(".pager-info") : null;
-    const btnPrev = pager ? pager.querySelector('[data-action="prev"]') : null;
-    const btnNext = pager ? pager.querySelector('[data-action="next"]') : null;
-    const emptyRow = document.createElement("tr");
-    emptyRow.className = "empty-row";
-    const emptyCell = document.createElement("td");
-    emptyCell.colSpan = table.querySelectorAll("thead th").length || 1;
-    emptyCell.textContent = table.dataset.empty || "No results found.";
-    emptyRow.appendChild(emptyCell);
-    let filtered = allRows.slice();
-    let page = 1;
-    function render(){
-      const total = filtered.length;
-      const pageCount = Math.max(1, Math.ceil(total / PAGE_SIZE));
-      page = Math.min(Math.max(1, page), pageCount);
-      allRows.forEach(r => r.style.display = "none");
-      if (emptyRow.parentElement === tbody) emptyRow.remove();
-      if(total === 0){
-        tbody.appendChild(emptyRow);
-        if(info) info.textContent = "0 of 0";
-        if(btnPrev) btnPrev.disabled = true;
-        if(btnNext) btnNext.disabled = true;
-        return;
-      }
-      const start = (page - 1) * PAGE_SIZE;
-      const end = start + PAGE_SIZE;
-      filtered.slice(start, end).forEach(r => { r.style.display = ""; });
-      if(info) info.textContent = `Page ${page} of ${pageCount}`;
-      if(btnPrev) btnPrev.disabled = page <= 1;
-      if(btnNext) btnNext.disabled = page >= pageCount;
-    }
-    function applyFilter(){
-      const term = (searchInput && searchInput.value || "").toLowerCase();
-      if(!term){
-        filtered = allRows.slice();
-      } else {
-        filtered = allRows.filter(row => row.textContent.toLowerCase().includes(term));
-      }
-      page = 1;
-      render();
-    }
-    if(searchInput){
-      searchInput.addEventListener("input", applyFilter);
-    }
-    if(btnPrev){
-      btnPrev.addEventListener("click", function(){
-        page = Math.max(1, page - 1);
-        render();
-      });
-    }
-    if(btnNext){
-      btnNext.addEventListener("click", function(){
-        page += 1;
-        render();
-      });
-    }
-    render();
-  }
 
   function initPagedTable(tableId){
     const PAGE_SIZE = 20;
     const table = document.getElementById(tableId);
     if(!table) return;
+
     const tbody = table.querySelector("tbody");
-    const allRows = Array.from(tbody.querySelectorAll("tr")).filter(row => !row.classList.contains("empty-placeholder"));
+    const allRows = Array.from(tbody.querySelectorAll("tr"))
+      .filter(row => !row.classList.contains("empty-placeholder"));
     tbody.querySelectorAll(".empty-placeholder").forEach(el => el.remove());
 
     const searchInput = document.querySelector(`.table-search[data-table="${tableId}"]`);
@@ -757,11 +764,7 @@ function initPagedTable(tableId){
 
     function applyFilter(){
       const term = (searchInput && searchInput.value || "").toLowerCase();
-      if(!term){
-        filtered = allRows.slice();
-      } else {
-        filtered = allRows.filter(row => row.textContent.toLowerCase().includes(term));
-      }
+      filtered = term ? allRows.filter(row => row.textContent.toLowerCase().includes(term)) : allRows.slice();
       page = 1;
       render();
     }
@@ -789,6 +792,7 @@ function initPagedTable(tableId){
     const chartEl = document.querySelector('[data-chart="valueTrend"]');
     const dataEl = document.getElementById("otherCollateralValueTrendData");
     const cfg = dataEl ? JSON.parse(dataEl.textContent || "{}") : {};
+
     if(chartEl){
       if(cfg.labels && cfg.labels.length){
         renderTwoLine(chartEl,cfg);
