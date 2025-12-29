@@ -190,6 +190,46 @@ gap: 9px;
     padding-left:12px;
     padding-right:12px;
   }
+  .raw-materials .category-analysis-table thead th:not(:first-child),
+  .raw-materials .category-analysis-table tbody td:not(:first-child){
+    text-align:center;
+  }
+  .raw-materials .category-analysis-table thead th:first-child,
+  .raw-materials .category-analysis-table tbody td:first-child{
+    text-align:left;
+  }
+  .raw-materials .category-analysis-table th.num,
+  .raw-materials .category-analysis-table td.num{
+    text-align:center;
+  }
+  .raw-materials .top-sku-table thead th:nth-child(4),
+  .raw-materials .top-sku-table thead th:nth-child(5),
+  .raw-materials .top-sku-table thead th:nth-child(6),
+  .raw-materials .top-sku-table thead th:nth-child(7),
+  .raw-materials .top-sku-table tbody td:nth-child(4),
+  .raw-materials .top-sku-table tbody td:nth-child(5),
+  .raw-materials .top-sku-table tbody td:nth-child(6),
+  .raw-materials .top-sku-table tbody td:nth-child(7),
+  .raw-materials .top-sku-table tfoot td:nth-child(4),
+  .raw-materials .top-sku-table tfoot td:nth-child(5),
+  .raw-materials .top-sku-table tfoot td:nth-child(6),
+  .raw-materials .top-sku-table tfoot td:nth-child(7){
+    text-align:center;
+  }
+  .raw-materials .top-sku-table thead th:nth-child(-n+3),
+  .raw-materials .top-sku-table tbody td:nth-child(-n+3),
+  .raw-materials .top-sku-table tfoot td:nth-child(-n+3){
+    text-align:center;
+  }
+  .raw-materials .top-sku-table thead th:nth-child(2),
+  .raw-materials .top-sku-table thead th:nth-child(3){
+    text-align:center;
+  }
+  .raw-materials .top-sku-table thead th:first-child,
+  .raw-materials .top-sku-table tbody td:first-child,
+  .raw-materials .top-sku-table tfoot td:first-child{
+    text-align:left;
+  }
   .raw-materials .chart-area{
     /* border:1px solid var(--line);
     border-radius:12px; */
@@ -444,7 +484,7 @@ height: 24px;}
     </div>
     <div class="body">
       <div class="table-wrap">
-        <table>
+        <table class="category-analysis-table">
           <thead>
             <tr>
               <th>Category</th>
@@ -491,7 +531,7 @@ height: 24px;}
     </div>
     <div class="body">
       <div class="table-wrap">
-        <table>
+        <table class="top-sku-table">
           <thead>
             <tr>
               <th>Item Number</th>
