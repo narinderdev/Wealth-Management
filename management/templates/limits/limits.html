@@ -51,6 +51,12 @@
       font-weight: 600;
     }
     .limits-page .right{text-align:right;}
+    .limits-page th.limit-money,
+    .limits-page td.limit-money{
+      text-align:left;
+      font-variant-numeric:tabular-nums;
+      white-space:nowrap;
+    }
     .limits-page .table-footer{
       display:flex;
       align-items:center;
@@ -88,7 +94,7 @@
             <th>Division</th>
             <th>Collateral Type</th>
             <th>Collateral Sub-Type</th>
-            <th class="right">$ Limit</th>
+            <th class="limit-money">$ Limit</th>
             <th class="right">% Limit</th>
           </tr>
         </thead>
@@ -98,7 +104,7 @@
             <td>{{ row.division }}</td>
             <td>{{ row.collateral_type }}</td>
             <td>{{ row.collateral_sub_type }}</td>
-            <td class="right">{{ row.usd_limit }}</td>
+            <td class="limit-money">{{ row.usd_limit }}</td>
             <td class="right">{{ row.pct_limit }}</td>
           </tr>
           {% empty %}
