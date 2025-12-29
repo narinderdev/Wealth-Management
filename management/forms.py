@@ -210,6 +210,7 @@ class BorrowerForm(StyledModelForm):
         self._configure_company_selector()
         self._configure_update_interval_field()
         self._configure_date_fields()
+        self._mark_required_hints()
 
     def clean(self):
         cleaned_data = super().clean()
@@ -217,6 +218,9 @@ class BorrowerForm(StyledModelForm):
         phone = cleaned_data.get("primary_contact_phone")
         if not email and not phone:
             raise forms.ValidationError("Provide an email or phone for the primary contact.")
+        company_name = (cleaned_data.get("company_name") or "").strip()
+        if company_name:
+            cleaned_data["company_name"] = company_name
 
         selector_fields = [
             "user_specific_individual",
@@ -229,18 +233,23 @@ class BorrowerForm(StyledModelForm):
             company = cleaned_data.get(field_name)
             if company:
                 selected_companies.append(company)
-        if not selected_companies:
-            raise forms.ValidationError("Select a specific individual to link this borrower.")
-        base_company = selected_companies[0]
-        mismatch = False
-        for field_name in selector_fields:
-            company = cleaned_data.get(field_name)
-            if company and company.pk != base_company.pk:
+        if cleaned_data.get("company"):
+            selected_companies.append(cleaned_data["company"])
+        if not selected_companies and not company_name:
+            raise forms.ValidationError("Select a company or enter a company name.")
+        if selected_companies:
+            base_company = selected_companies[0]
+            mismatch = False
+            for field_name in selector_fields:
+                company = cleaned_data.get(field_name)
+                if company and company.pk != base_company.pk:
+                    mismatch = True
+                    self.add_error(field_name, "Must match the selected specific individual.")
+            if cleaned_data.get("company") and cleaned_data["company"].pk != base_company.pk:
                 mismatch = True
-                self.add_error(field_name, "Must match the selected specific individual.")
-        if mismatch:
-            raise forms.ValidationError("Specific Individual, IDs, and lender selections must match.")
-        cleaned_data["company"] = base_company
+            if mismatch:
+                raise forms.ValidationError("Specific Individual, IDs, and lender selections must match.")
+            cleaned_data["company"] = base_company
         return cleaned_data
 
     def _configure_company_selector(self):
@@ -266,9 +275,13 @@ class BorrowerForm(StyledModelForm):
                 attr=attr,
                 prefix=prefix or "",
                 empty_label="Select",
-                required=True,
+                required=False,
                 label=label,
             )
+        self.fields["company_name"] = forms.CharField(
+            label="Company Name",
+            required=False,
+        )
 
         initial_company = None
         if not self.is_bound and self.instance.pk and self.instance.company_id:
@@ -280,6 +293,7 @@ class BorrowerForm(StyledModelForm):
             company_field.initial = initial_company.pk
             for field_name, *_ in selector_config:
                 self.fields[field_name].initial = initial_company.pk
+            self.fields["company_name"].initial = initial_company.company
 
         for hidden in ("lender", "lender_id", "company"):
             if hidden in self.fields:
@@ -308,6 +322,7 @@ class BorrowerForm(StyledModelForm):
             "user_lender_id",
             "user_specific_individual",
             "user_specific_individual_id",
+            "company_name",
             "primary_contact",
             "primary_contact_phone",
             "primary_contact_email",
@@ -322,10 +337,22 @@ class BorrowerForm(StyledModelForm):
         self.order_fields([name for name in desired_order if name in self.fields])
 
     def clean_company(self):
-        company = self.cleaned_data.get("company")
-        if not company:
-            raise forms.ValidationError("Company is required.")
-        return company
+        return self.cleaned_data.get("company")
+
+    def _mark_required_hints(self):
+        conditional_fields = (
+            "user_lender",
+            "user_lender_id",
+            "user_specific_individual",
+            "user_specific_individual_id",
+            "company_name",
+            "primary_contact_email",
+            "primary_contact_phone",
+        )
+        for field_name in conditional_fields:
+            field = self.fields.get(field_name)
+            if field:
+                field.show_required_hint = True
 
     def _apply_company_defaults(self, borrower):
         company = borrower.company
@@ -387,6 +414,15 @@ class BorrowerForm(StyledModelForm):
         borrower = super().save(commit=False)
         is_new = borrower.pk is None
         self._apply_company_defaults(borrower)
+        company_name = (self.cleaned_data.get("company_name") or "").strip()
+        if not borrower.company and company_name:
+            borrower.company = Company.objects.filter(company__iexact=company_name).first()
+            if not borrower.company:
+                borrower.company = Company.objects.create(company=company_name)
+        if company_name and borrower.company:
+            borrower.company.company = company_name
+            if commit:
+                borrower.company.save(update_fields=["company"])
         if commit:
             borrower.save()
             self.save_m2m()

@@ -5,7 +5,7 @@
     <div class="component-field">
       <label for="{{ field.id_for_label }}">
         {{ field.label }}
-        {% if field.field.required %}
+        {% if field.field.required or field.field.show_required_hint %}
           <span class="required-asterisk" aria-hidden="true">*</span>
         {% endif %}
       </label>

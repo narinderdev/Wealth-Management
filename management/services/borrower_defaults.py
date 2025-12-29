@@ -3,7 +3,7 @@ from __future__ import annotations
 from dataclasses import dataclass
 from datetime import date
 from decimal import Decimal
-from typing import Sequence
+from typing import Sequence, Union
 
 from django.utils import timezone
 
@@ -19,7 +19,7 @@ from management.models import (
 )
 
 
-DecimalInput = Decimal | int | float | str
+DecimalInput = Union[Decimal, int, float, str]
 
 
 def _d(value: DecimalInput) -> Decimal:
