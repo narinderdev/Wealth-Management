@@ -314,7 +314,7 @@ class BorrowerForm(StyledModelForm):
         for field_name in ("current_update", "previous_update", "next_update"):
             field = self.fields.get(field_name)
             if field:
-                field.widget = forms.TextInput(attrs={"placeholder": "MM/DD/YYYY"})
+                field.widget = forms.DateInput(attrs={"type": "date"}, format="%Y-%m-%d")
                 field.input_formats = date_formats
 
         desired_order = [
