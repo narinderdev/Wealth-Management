@@ -1098,6 +1098,13 @@ class CashForecastRow(TimeStampedModel):
     week_11 = models.DecimalField(max_digits=20, decimal_places=6, null=True, blank=True)  # Week 11
     week_12 = models.DecimalField(max_digits=20, decimal_places=6, null=True, blank=True)  # Week 12
     week_13 = models.DecimalField(max_digits=20, decimal_places=6, null=True, blank=True)  # Week 13
+    borrower = models.ForeignKey(
+        "Borrower",
+        on_delete=models.CASCADE,
+        related_name="cash_forecast",
+        null=True,
+        blank=True,
+    )
     report = models.ForeignKey(
         "BorrowerReport",
         on_delete=models.CASCADE,
@@ -1106,8 +1113,16 @@ class CashForecastRow(TimeStampedModel):
         blank=True,
     )
 
+    def save(self, *args, **kwargs):
+        if not self.borrower_id and self.report_id:
+            self.borrower = self.report.borrower
+        super().save(*args, **kwargs)
+
     class Meta:
         db_table = 'cash_forecast'
+        indexes = [
+            models.Index(fields=["borrower", "report"]),
+        ]
 
 
 # -------------------------
@@ -1131,6 +1146,13 @@ class CashFlowForecastRow(TimeStampedModel):
     week_12 = models.DecimalField(max_digits=20, decimal_places=6, null=True, blank=True)  # Week 12
     week_13 = models.DecimalField(max_digits=20, decimal_places=6, null=True, blank=True)  # Week 13
     total = models.DecimalField(max_digits=20, decimal_places=2, null=True, blank=True)  # Total
+    borrower = models.ForeignKey(
+        "Borrower",
+        on_delete=models.CASCADE,
+        related_name="cash_flow_forecast",
+        null=True,
+        blank=True,
+    )
     report = models.ForeignKey(
         "BorrowerReport",
         on_delete=models.CASCADE,
@@ -1139,8 +1161,16 @@ class CashFlowForecastRow(TimeStampedModel):
         blank=True,
     )
 
+    def save(self, *args, **kwargs):
+        if not self.borrower_id and self.report_id:
+            self.borrower = self.report.borrower
+        super().save(*args, **kwargs)
+
     class Meta:
         db_table = 'cash_flow_forecast'
+        indexes = [
+            models.Index(fields=["borrower", "report"]),
+        ]
 
 # -------------------------
 # Sheet: Current Week Variance

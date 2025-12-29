@@ -767,51 +767,30 @@ def _week_summary_context(borrower):
     cash_rows = []
     cashflow_report_date = None
 
+    cashflow_qs = CashFlowForecastRow.objects.filter(borrower=borrower)
+    cash_qs = CashForecastRow.objects.filter(borrower=borrower)
+
     if latest_report:
-        cashflow_rows = list(
-            CashFlowForecastRow.objects.filter(report=latest_report).order_by("id")
-        )
-        cash_rows = list(
-            CashForecastRow.objects.filter(report=latest_report).order_by("id")
-        )
+        cashflow_rows = list(cashflow_qs.filter(report=latest_report).order_by("id"))
+        cash_rows = list(cash_qs.filter(report=latest_report).order_by("id"))
         cashflow_report_date = latest_report.report_date
     else:
-        latest_cashflow = (
-            CashFlowForecastRow.objects.filter(report__borrower=borrower)
-            .order_by("-date", "-created_at", "-id")
-            .first()
-        )
+        latest_cashflow = cashflow_qs.order_by("-date", "-created_at", "-id").first()
         if latest_cashflow and latest_cashflow.date:
             cashflow_rows = list(
-                CashFlowForecastRow.objects.filter(
-                    report__borrower=borrower,
-                    date=latest_cashflow.date,
-                ).order_by("id")
+                cashflow_qs.filter(date=latest_cashflow.date).order_by("id")
             )
             cashflow_report_date = latest_cashflow.date
         else:
-            cashflow_rows = list(
-                CashFlowForecastRow.objects.filter(report__borrower=borrower).order_by("id")
-            )
+            cashflow_rows = list(cashflow_qs.order_by("id"))
 
-        latest_cash = (
-            CashForecastRow.objects.filter(report__borrower=borrower)
-            .order_by("-date", "-created_at", "-id")
-            .first()
-        )
+        latest_cash = cash_qs.order_by("-date", "-created_at", "-id").first()
         if latest_cash and latest_cash.date:
-            cash_rows = list(
-                CashForecastRow.objects.filter(
-                    report__borrower=borrower,
-                    date=latest_cash.date,
-                ).order_by("id")
-            )
+            cash_rows = list(cash_qs.filter(date=latest_cash.date).order_by("id"))
             if not cashflow_report_date:
                 cashflow_report_date = latest_cash.date
         else:
-            cash_rows = list(
-                CashForecastRow.objects.filter(report__borrower=borrower).order_by("id")
-            )
+            cash_rows = list(cash_qs.order_by("id"))
 
     report_date_candidates = []
     if latest_forecast:
