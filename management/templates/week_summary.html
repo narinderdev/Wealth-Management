@@ -847,6 +847,15 @@
                       <td class="muted-cell">&nbsp;</td>
                     </tr>
                   {% endif %}
+                  {% if row.category|lower == "total operating disbursements" %}
+                    <tr class="section-row manual-operating-row">
+                      <td>Non-Operating Disbursements</td>
+                      <td class="muted-cell">&nbsp;</td>
+                      <td class="muted-cell">&nbsp;</td>
+                      <td class="muted-cell">&nbsp;</td>
+                      <td class="muted-cell">&nbsp;</td>
+                    </tr>
+                  {% endif %}
                 {% endwith %}
               {% endfor %}
             </tbody>
@@ -879,6 +888,15 @@
                   {% if row.category|lower == "total receipts" %}
                     <tr class="section-row manual-operating-row">
                       <td>Operating Disbursements</td>
+                      <td class="muted-cell">&nbsp;</td>
+                      <td class="muted-cell">&nbsp;</td>
+                      <td class="muted-cell">&nbsp;</td>
+                      <td class="muted-cell">&nbsp;</td>
+                    </tr>
+                  {% endif %}
+                  {% if row.category|lower == "total operating disbursements" %}
+                    <tr class="section-row manual-operating-row">
+                      <td>Non-Operating Disbursements</td>
                       <td class="muted-cell">&nbsp;</td>
                       <td class="muted-cell">&nbsp;</td>
                       <td class="muted-cell">&nbsp;</td>
