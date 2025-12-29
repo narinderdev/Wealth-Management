@@ -305,6 +305,13 @@ height: 24px;}
   border: 1px solid var(--line);
     border-radius: 12px;
 }
+.raw-materials .ineligible-detail-table{width:100%;border-collapse:collapse;}
+.raw-materials .ineligible-detail-table th,
+.raw-materials .ineligible-detail-table td{padding:10px 12px;border-bottom:1px solid rgba(230,234,242,.65);text-align:left;}
+.raw-materials .ineligible-detail-table thead th{background:#FBFCFE;font-weight:700;color:#475467;}
+.raw-materials .ineligible-detail-table th:last-child,
+.raw-materials .ineligible-detail-table td:last-child{text-align:right;width:160px;}
+.raw-materials .ineligible-detail-table tr:last-child td{border-bottom:none;}
 </style>
 
 <div class="page raw-materials">
@@ -385,7 +392,7 @@ height: 24px;}
         <span>Ineligible Details</span>
       </div>
       <div class="table-wrap">
-        <table>
+        <table class="ineligible-detail-table">
           <thead>
             <tr>
               <th>Ineligibles</th>
