@@ -132,7 +132,7 @@
             <th>Available Inventory</th>
             <th colspan="2">Gross Recovery</th>
             <th colspan="2">Liquidation Cost</th>
-            <th colspan="2">Net Recovery Trend</th>
+            <th colspan="2">Net Recovery</th>
           </tr>
           <tr class="tblSub">
             <th></th>
@@ -148,7 +148,7 @@
         <tbody>
           {% for row in inventory_breakdown %}
           <tr>
-            <td>{{ row.label }}</td>
+            <td style="font-weight: 700;">{{ row.label }}</td>
             <td>{{ row.available_value }}</td>
             <td>{{ row.gross_value }}</td>
             <td>{{ row.gross_pct }}</td>
