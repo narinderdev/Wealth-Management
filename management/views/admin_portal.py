@@ -44,6 +44,9 @@ from management.forms import (
     WIPIneligibleOverviewForm,
     WIPInventoryMetricsForm,
     WIPRecoveryForm,
+    BorrowingBaseReportForm,
+    CompleteAnalysisReportForm,
+    CashFlowReportForm,
 )
 from management.models import (
     ARMetricsRow,
@@ -83,7 +86,9 @@ from management.models import (
     WIPIneligibleOverviewRow,
     WIPInventoryMetricsRow,
     WIPRecoveryRow,
+    ReportUpload,
 )
+from management.views.collateral_dynamic import _other_collateral_context
 
 
 COMPONENT_REGISTRY = {
@@ -221,8 +226,26 @@ COMPONENT_REGISTRY = {
         "template": "admin/components/rawMaterialRecovery.html",
         "nav_key": "raw_material_recovery",
     },
+    "borrowingBaseReport": {
+        "title": "Borrowing Base Report",
+        "template": "admin/components/reportUpload.html",
+        "nav_key": "reports_borrowing_base",
+        "description": "Upload Borrowing Base reports in PDF format.",
+    },
+    "completeAnalysisReport": {
+        "title": "Complete Analysis Report",
+        "template": "admin/components/reportUpload.html",
+        "nav_key": "reports_complete_analysis",
+        "description": "Upload Complete Analysis PDF reports.",
+    },
+    "cashFlowReport": {
+        "title": "Cash Flow Report",
+        "template": "admin/components/reportUpload.html",
+        "nav_key": "reports_cash_flow",
+        "description": "Upload Cash Flow PDF reports.",
+    },
     "cashFlow": {
-        "title": "Cash Flow",
+        "title": "13-Week Cash Flow",
         "template": "admin/components/cashFlow.html",
         "nav_key": "liquidation_cash_flow",
     },
@@ -482,7 +505,7 @@ class ModelComponentHandler:
             if action == "update":
                 obj_id = request.POST.get("object_id")
                 instance = get_object_or_404(self.model, pk=obj_id)
-            form = self.form_class(request.POST, instance=instance)
+            form = self.form_class(request.POST or None, request.FILES or None, instance=instance)
             if form.is_valid():
                 form.save()
                 return self.redirect()
@@ -506,6 +529,50 @@ class ModelComponentHandler:
             "page_query": page_query,
             "page_query_prefix": page_query_prefix,
         }
+
+
+class ReportUploadHandler(ModelComponentHandler):
+    def __init__(self, *, report_type, **kwargs):
+        super().__init__(**kwargs)
+        self.report_type = report_type
+
+    def get_queryset(self):
+        return super().get_queryset().filter(report_type=self.report_type)
+
+
+class MachineryEquipmentHandler(ModelComponentHandler):
+    def handle(self, request):
+        data = super().handle(request)
+        borrower = None
+        borrower_id = request.GET.get("borrower")
+        if borrower_id:
+            borrower = Borrower.objects.filter(pk=borrower_id).select_related("company").first()
+
+        value_context = {
+            "rows": [],
+            "monitor_cards": [],
+            "trend": None,
+            "message": "Select a borrower to see value analysis.",
+        }
+        if borrower:
+            collateral_context = _other_collateral_context(borrower, None)
+            rows = collateral_context.get("other_collateral_value_analysis_rows") or []
+            value_context["rows"] = rows
+            value_context["monitor_cards"] = collateral_context.get("other_collateral_value_monitor") or []
+            value_context["trend"] = collateral_context.get("other_collateral_value_trend_config")
+            value_context["message"] = (
+                "No value analysis available for this borrower yet."
+                if not rows
+                else ""
+            )
+
+        data.update(
+            {
+                "value_analysis": value_context,
+                "value_analysis_borrower": borrower,
+            }
+        )
+        return data
 
 
 HANDLERS = {
@@ -553,7 +620,7 @@ HANDLERS = {
         ordering=["borrower__company__company", "borrower__primary_contact", "section"],
         select_related=["borrower", "borrower__company"],
     ),
-    "machineryEquipment": ModelComponentHandler(
+    "machineryEquipment": MachineryEquipmentHandler(
         slug="machineryEquipment",
         model=MachineryEquipmentRow,
         form_class=MachineryEquipmentForm,
@@ -1223,6 +1290,27 @@ HANDLERS = {
             {"param": "collateral_type", "label": "Collateral Type", "field": "collateral_type"},
             {"param": "collateral_sub_type", "label": "Collateral Sub-Type", "field": "collateral_sub_type"},
         ],
+    ),
+    "borrowingBaseReport": ReportUploadHandler(
+        slug="borrowingBaseReport",
+        model=ReportUpload,
+        form_class=BorrowingBaseReportForm,
+        ordering=["-created_at"],
+        report_type=ReportUpload.BORROWING_BASE,
+    ),
+    "completeAnalysisReport": ReportUploadHandler(
+        slug="completeAnalysisReport",
+        model=ReportUpload,
+        form_class=CompleteAnalysisReportForm,
+        ordering=["-created_at"],
+        report_type=ReportUpload.COMPLETE_ANALYSIS,
+    ),
+    "cashFlowReport": ReportUploadHandler(
+        slug="cashFlowReport",
+        model=ReportUpload,
+        form_class=CashFlowReportForm,
+        ordering=["-created_at"],
+        report_type=ReportUpload.CASH_FLOW,
     ),
 }
 

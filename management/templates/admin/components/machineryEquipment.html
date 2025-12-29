@@ -1,3 +1,59 @@
+<style>
+  .value-analysis-panel {
+    margin-top: 32px;
+    padding-top: 24px;
+    border-top: 1px solid var(--line2);
+  }
+  .value-analysis-head {
+    display: flex;
+    justify-content: space-between;
+    flex-wrap: wrap;
+    gap: 16px;
+    margin-bottom: 16px;
+  }
+  .value-analysis-cards {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(220px, 1fr));
+    gap: 16px;
+    margin-bottom: 16px;
+  }
+  .value-card {
+    border: 1px solid var(--line2);
+    border-radius: 12px;
+    padding: 16px;
+    background: #fff;
+  }
+  .value-card-title {
+    font-size: 12px;
+    text-transform: uppercase;
+    color: var(--muted);
+    letter-spacing: 0.04em;
+  }
+  .value-card-big {
+    font-size: 16px;
+    font-weight: 700;
+    margin-bottom: 12px;
+  }
+  .value-card ul {
+    list-style: none;
+    padding: 0;
+    margin: 0;
+    display: flex;
+    flex-direction: column;
+    gap: 6px;
+    font-size: 13px;
+  }
+  .value-card li {
+    display: flex;
+    justify-content: space-between;
+    gap: 8px;
+  }
+  .component-empty-state {
+    margin: 8px 0 0;
+    color: var(--muted);
+    font-size: 13px;
+  }
+</style>
 <div class="component-shell">
   <div class="component-shell-head">
     <p class="component-shell-label">Accounts Receivable</p>
@@ -57,6 +113,91 @@
           {% endfor %}
         </tbody>
       </table>
+    </div>
+
+    <div class="component-panel value-analysis-panel">
+      <div class="value-analysis-head">
+        <div>
+          <h3>Value Analysis</h3>
+          {% if component_data.value_analysis_borrower %}
+            <p class="component-shell-subtext">Borrower: {{ component_data.value_analysis_borrower }}</p>
+          {% endif %}
+        </div>
+        <div class="value-analysis-trend">
+          {% if component_data.value_analysis.trend %}
+            <div class="trend-label">{{ component_data.value_analysis.trend.title }}</div>
+            <div class="trend-chart-meta">
+              {% for lbl in component_data.value_analysis.trend.labels|slice:":1" %}
+                <span>{{ lbl }}</span>
+              {% endfor %}
+              {% if component_data.value_analysis.trend.labels %}
+                <span>…</span>
+                <span>{{ component_data.value_analysis.trend.labels|last }}</span>
+              {% endif %}
+            </div>
+          {% endif %}
+        </div>
+      </div>
+
+      {% if component_data.value_analysis.monitor_cards %}
+        <div class="value-analysis-cards">
+          {% for card in component_data.value_analysis.monitor_cards %}
+            <div class="value-card">
+              <div class="value-card-title">{{ card.title }}</div>
+              <div class="value-card-big">{{ card.big }}</div>
+              <ul>
+                {% for row in card.rows %}
+                  <li>
+                    <span>{{ row.label }}</span>
+                    <strong>{{ row.value }}</strong>
+                  </li>
+                {% endfor %}
+              </ul>
+            </div>
+          {% endfor %}
+        </div>
+      {% endif %}
+
+      {% if component_data.value_analysis.rows %}
+        <div class="component-table">
+          <table class="admin-table">
+            <thead>
+              <tr>
+                <th>Equipment</th>
+                <th>Manufacturer</th>
+                <th>FMV</th>
+                <th>OLV</th>
+                <th>Est. FMV</th>
+                <th>Est. OLV</th>
+                <th>Variance (FMV)</th>
+                <th>Variance % (FMV)</th>
+                <th>Variance (OLV)</th>
+                <th>Variance % (OLV)</th>
+              </tr>
+            </thead>
+            <tbody>
+              {% for row in component_data.value_analysis.rows %}
+                <tr>
+                  <td>{{ row.equipment_type }}</td>
+                  <td>{{ row.manufacturer }}</td>
+                  <td>{{ row.fmv }}</td>
+                  <td>{{ row.olv }}</td>
+                  <td>{{ row.estimated_fmv }}</td>
+                  <td>{{ row.estimated_olv }}</td>
+                  <td>{{ row.variance_amount }}</td>
+                  <td>{{ row.variance_pct }}</td>
+                  <td>{{ row.variance_olv_amount }}</td>
+                  <td>{{ row.variance_olv_pct }}</td>
+                </tr>
+              {% empty %}
+                <tr><td colspan="10">No value analysis data.</td></tr>
+              {% endfor %}
+            </tbody>
+          </table>
+        </div>
+      {% else %}
+        <p class="component-empty-state">{{ component_data.value_analysis.message }}</p>
+      {% endif %}
     </div>
   </div>
 </div>
