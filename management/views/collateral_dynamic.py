@@ -1288,7 +1288,7 @@ def _week_summary_context(borrower):
         context["availability_actual_label"] = cashflow_actual_label
 
     liquidity_fields = [
-        ("available_collateral", "Collateral Availability", "#2563eb"),
+        ("available_collateral", "Collateral Availability", "#0ea5e9"),
         ("revolver_availability", "Revolver Availability", "#7c3aed"),
         ("net_sales", "Revolver Availability + Cash", "#1d4ed8"),
     ]
