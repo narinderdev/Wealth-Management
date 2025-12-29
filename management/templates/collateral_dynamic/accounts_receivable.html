@@ -395,7 +395,7 @@
     .collateral-dynamic thead th{
       font-weight:600;
       color:#6b7280;
-      padding:8px 6px;
+      padding:10px 10px;
       border-bottom:1px solid #f0f4fa;
       text-align:left;
     }
@@ -984,9 +984,9 @@ margin-left: -15px;
   grid-template-columns:minmax(280px,0.85fr) minmax(380px,1.15fr);
 }
     .collateral-dynamic .ar-section .aging-charts{
-      grid-template-columns:minmax(360px,1fr) minmax(420px,1.1fr);
+      grid-template-columns:minmax(300px,0.8fr) minmax(520px,1.4fr);
       align-items:stretch;
-      column-gap:32px;
+      column-gap:25px;
     }
 .collateral-dynamic .ar-section .aging-charts .subcard{
   height:100%;
@@ -1034,17 +1034,18 @@ margin-left: -15px;
       --aging-axis:#9aa7b8;
       --aging-label:#6b7280;
       --aging-percent:#6b7280;
-      --chart-width:520;
-      --chart-height:190;
+      --chart-width:480;
+      --chart-height:240;
       --axis-left:40;
       --axis-right:500;
       --axis-top:20;
       --axis-bottom:140;
       --axis-color:var(--aging-grid);
       position:relative;
-      width:100%;
+      width:95%;
       aspect-ratio:var(--chart-width) / var(--chart-height);
       max-width:100%;
+      margin:0 auto;
     }
     .collateral-dynamic .aging-composition-chart .chart-axis-label{
       color:var(--aging-axis);
@@ -1671,7 +1672,7 @@ height: 102%;
 
                       <div class="chart-wrap ar-chart">
                         <div class="chart-box aging-composition-chart" aria-label="Aging composition bar chart">
-                          <div class="chart-layer is-static">
+                          <div class="chart-layer is-static" style="height: 400px;">
                             <span class="chart-grid-line v axis-line" style="--x: 40"></span>
                             <span class="chart-grid-line h axis-line" style="--y: 140"></span>
                             <span class="chart-grid-line h" style="--y: 110"></span>
@@ -1679,13 +1680,13 @@ height: 102%;
                             <span class="chart-grid-line h" style="--y: 50"></span>
                             <span class="chart-grid-line h" style="--y: 20"></span>
                           </div>
-                          <div class="chart-layer is-static label-layer">
+                          <div class="chart-layer is-static label-layer" style="height: 400px;" >
                             <span class="chart-axis-label y" style="--x: 10; --y: 143">$20</span>
                             <span class="chart-axis-label y" style="--x: 10; --y: 113">$40</span>
                             <span class="chart-axis-label y" style="--x: 10; --y: 83">$60</span>
                             <span class="chart-axis-label y" style="--x: 10; --y: 53">$80</span>
                           </div>
-                          <div class="chart-layer-bar">
+                          <div class="chart-layer-bar" style="height: 400px;">
                             {% for bucket in ar_aging_chart_buckets %}
                               <div class="aging-bar ar-tip"
                                 style="--x: {{ bucket.x }}; --y: {{ bucket.y }}; --bar-width: {{ bucket.width }}; --bar-height: {{ bucket.height }}; --bar-color: {{ bucket.color }};"

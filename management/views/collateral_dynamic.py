@@ -3354,6 +3354,39 @@ def _finished_goals_context(
         filtered = _apply_date_filter(qs, field_name)
         return filtered if filtered.exists() else qs
 
+    def _month_bounds(value):
+        if value is None:
+            return None, None
+        if isinstance(value, datetime):
+            value = value.date()
+        month_start = value.replace(day=1)
+        next_month = (month_start.replace(day=28) + timedelta(days=4)).replace(day=1)
+        month_end = next_month - timedelta(days=1)
+        return month_start, month_end
+
+    def _filter_to_latest_month(qs, field_name, fallback_field=None):
+        latest_value = (
+            qs.exclude(**{f"{field_name}__isnull": True})
+            .order_by(f"-{field_name}")
+            .values_list(field_name, flat=True)
+            .first()
+        )
+        filter_field = field_name
+        if latest_value is None and fallback_field:
+            latest_value = (
+                qs.exclude(**{f"{fallback_field}__isnull": True})
+                .order_by(f"-{fallback_field}")
+                .values_list(fallback_field, flat=True)
+                .first()
+            )
+            filter_field = fallback_field if latest_value is not None else field_name
+        start, end = _month_bounds(latest_value)
+        if not start or not end:
+            return qs, None
+        if fallback_field and filter_field == fallback_field:
+            return qs.filter(**{f"{filter_field}__date__range": (start, end)}), (start, end)
+        return qs.filter(**{f"{filter_field}__range": (start, end)}), (start, end)
+
     def _apply_division_filter(qs):
         if normalized_division != "all":
             return qs.filter(division__iexact=normalized_division)
@@ -3734,6 +3767,11 @@ def _finished_goals_context(
     inline_rows = FGInlineCategoryAnalysisRow.objects.filter(borrower=borrower)
     inline_rows = _apply_division_filter(inline_rows)
     inline_rows = _apply_date_filter_or_latest(inline_rows, "as_of_date")
+    inline_rows, _ = _filter_to_latest_month(
+        inline_rows,
+        "as_of_date",
+        fallback_field="created_at",
+    )
     inline_rows = inline_rows.order_by("-fg_available", "id")
     inline_total = Decimal("0")
     for row in inline_rows:
@@ -3780,14 +3818,12 @@ def _finished_goals_context(
                     "fg_available": Decimal("0"),
                     "sales": Decimal("0"),
                     "cogs": Decimal("0"),
-                    "gm": Decimal("0"),
                 }
             category_totals[category]["fg_total"] += _to_decimal(row.fg_total)
             category_totals[category]["fg_ineligible"] += _to_decimal(row.fg_ineligible)
             category_totals[category]["fg_available"] += _to_decimal(row.fg_available)
             category_totals[category]["sales"] += _to_decimal(row.sales)
             category_totals[category]["cogs"] += _to_decimal(row.cogs)
-            category_totals[category]["gm"] += _to_decimal(row.gm)
             total_available += _to_decimal(row.fg_available)
 
         sorted_categories = sorted(
@@ -3797,7 +3833,9 @@ def _finished_goals_context(
         )
         for category, totals in sorted_categories:
             sales_total = totals["sales"]
-            gm_pct = (totals["gm"] / sales_total) if sales_total else None
+            cogs_total = totals["cogs"]
+            gm_value = sales_total - cogs_total
+            gm_pct = (gm_value / sales_total) if sales_total else None
             weeks_supply = None
             if sales_total:
                 weeks_supply = totals["fg_available"] / sales_total * Decimal("52")
@@ -3813,7 +3851,7 @@ def _finished_goals_context(
                     "pct_of_available": _format_pct(pct_available),
                     "sales": _format_currency(sales_total),
                     "cogs": _format_currency(totals["cogs"]),
-                    "gm": _format_currency(totals["gm"]),
+                    "gm": _format_currency(gm_value),
                     "gm_pct": _format_pct(gm_pct),
                     "weeks_supply": _format_wos(weeks_supply),
                 }
@@ -4396,14 +4434,12 @@ def _finished_goals_context(
     inline_excess_qs = FGInlineExcessByCategoryRow.objects.filter(borrower=borrower)
     inline_excess_qs = _apply_division_filter(inline_excess_qs)
     inline_excess_qs = _apply_date_filter_or_latest(inline_excess_qs, "as_of_date")
-    inline_excess_latest = (
-        inline_excess_qs.exclude(as_of_date__isnull=True).order_by("-as_of_date").first()
+    inline_excess_qs, _ = _filter_to_latest_month(
+        inline_excess_qs,
+        "as_of_date",
+        fallback_field="created_at",
     )
-    if inline_excess_latest and inline_excess_latest.as_of_date:
-        inline_excess_qs = inline_excess_qs.filter(as_of_date=inline_excess_latest.as_of_date)
-    inline_excess_rows = list(
-        inline_excess_qs.order_by("category", "id")
-    )
+    inline_excess_rows = list(inline_excess_qs.order_by("category", "id"))
     inline_excess_by_category = []
     inline_excess_totals = {}
     if inline_excess_rows:
@@ -4541,6 +4577,7 @@ def _finished_goals_context(
             "excess_total_pct": sample_pct,
         }
 
+    TOP_SKU_LIMIT = 20
     top_sku_rows = []
     sku_query = HistoricalTop20SKUsRow.objects.filter(borrower=borrower)
     sku_query = _apply_division_filter(sku_query)
@@ -4611,37 +4648,12 @@ def _finished_goals_context(
                 continue
             seen_keys.add(key)
             unique_sorted_skus.append(entry)
-        category_totals = OrderedDict()
-        for entry in unique_sorted_skus:
-            category_key = entry["category"] or "—"
-            bucket = category_totals.setdefault(
-                category_key,
-                {
-                    "category": category_key,
-                    "item_number": entry["item_number"],
-                    "description": entry["description"],
-                    "cost": Decimal("0"),
-                    "cogs": Decimal("0"),
-                    "gm": Decimal("0"),
-                    "wos_weighted": Decimal("0"),
-                    "wos_weight": Decimal("0"),
-                },
-            )
-            bucket["cost"] += entry["cost"]
-            bucket["cogs"] += entry["cogs"]
-            bucket["gm"] += entry["gm"]
-            bucket["wos_weighted"] += entry["wos_weighted"]
-            bucket["wos_weight"] += entry["wos_weight"]
+        top_sku_entries = unique_sorted_skus[:TOP_SKU_LIMIT]
+        total_cost = sum((entry["cost"] for entry in top_sku_entries), Decimal("0"))
+        total_cogs = sum((entry["cogs"] for entry in top_sku_entries), Decimal("0"))
+        total_gm = sum((entry["gm"] for entry in top_sku_entries), Decimal("0"))
 
-        aggregated_categories = list(category_totals.values())
-        aggregated_categories.sort(key=lambda entry: entry["cost"], reverse=True)
-        TOP_CATEGORY_LIMIT = 20
-        top_category_rows = aggregated_categories[:TOP_CATEGORY_LIMIT]
-        total_cost = sum((entry["cost"] for entry in top_category_rows), Decimal("0"))
-        total_cogs = sum((entry["cogs"] for entry in top_category_rows), Decimal("0"))
-        total_gm = sum((entry["gm"] for entry in top_category_rows), Decimal("0"))
-
-        for entry in top_category_rows:
+        for entry in top_sku_entries:
             pct_total = entry["cost"] / total_cost if total_cost else None
             gm_pct = entry["gm"] / entry["cogs"] if entry["cogs"] else None
             wos_value = (
@@ -4690,7 +4702,7 @@ def _finished_goals_context(
             "Outdoor Trim",
             "Bamboo Plank Flooring",
         ]
-        for desc in sample_desc:
+        for desc in sample_desc[:TOP_SKU_LIMIT]:
             top_sku_rows.append(
                 {
                     "item_number": "128986",
@@ -5248,34 +5260,7 @@ def _raw_materials_context(borrower, range_key="today", division="all"):
             key=lambda entry: entry["amount"],
             reverse=True,
         )
-        def _normalize_category(value):
-            text = (value or "").strip().lower()
-            cleaned = []
-            last_space = False
-            for char in text:
-                if char.isalnum():
-                    cleaned.append(char)
-                    last_space = False
-                else:
-                    if not last_space:
-                        cleaned.append(" ")
-                        last_space = True
-            return "".join(cleaned).strip()
-
-        unique_skus = []
-        seen_categories = set()
-        for entry in sorted_skus:
-            meta = sku_meta.get(entry["item_number"], {})
-            category = _normalize_category(meta.get("category"))
-            if not category:
-                category = "unknown"
-            if category in seen_categories:
-                continue
-            seen_categories.add(category)
-            unique_skus.append(entry)
-            if len(unique_skus) >= 20:
-                break
-        top20_skus = unique_skus
+        top20_skus = sorted_skus[:20]
         top_label = f"Top {len(top20_skus)} Total"
         top20_total_amount = Decimal("0")
         top20_available_amount = Decimal("0")
@@ -5406,6 +5391,8 @@ def _raw_materials_context(borrower, range_key="today", division="all"):
                 (total_available / total_amount) if total_amount else Decimal("0")
             ),
         }
+
+    raw_skus = raw_skus[:20]
 
     def _line_values(base, length=13):
         values = []
@@ -5818,34 +5805,7 @@ def _work_in_progress_context(borrower, range_key="today", division="all"):
             key=lambda entry: entry["amount"],
             reverse=True,
         )
-        def _normalize_category(value):
-            text = (value or "").strip().lower()
-            cleaned = []
-            last_space = False
-            for char in text:
-                if char.isalnum():
-                    cleaned.append(char)
-                    last_space = False
-                else:
-                    if not last_space:
-                        cleaned.append(" ")
-                        last_space = True
-            return "".join(cleaned).strip()
-
-        unique_skus = []
-        seen_categories = set()
-        for entry in sorted_skus:
-            meta = sku_meta.get(entry["item_number"], {})
-            category = _normalize_category(meta.get("category"))
-            if not category:
-                category = "unknown"
-            if category in seen_categories:
-                continue
-            seen_categories.add(category)
-            unique_skus.append(entry)
-            if len(unique_skus) >= 20:
-                break
-        top20_skus = unique_skus
+        top20_skus = sorted_skus[:20]
         top20_total_amount = Decimal("0")
         top20_available_amount = Decimal("0")
         for entry in top20_skus:
@@ -5949,6 +5909,8 @@ def _work_in_progress_context(borrower, range_key="today", division="all"):
                 (top20_available / top20_amount) if top20_amount else Decimal("0")
             ),
         }
+
+    raw_skus = raw_skus[:20]
 
     category_other = base_context["work_in_progress_category_other"]
     footer = base_context["work_in_progress_category_footer"]
