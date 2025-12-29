@@ -4098,6 +4098,8 @@ def _finished_goals_context(borrower, range_key="today", division="all"):
             "suffix": "%",
             "decimals": 0,
         }
+    # Hide the secondary (percentage) axis on the Sales Trend chart
+    sales_right = None
 
     chart_config = {
         "inventoryTrend": {
