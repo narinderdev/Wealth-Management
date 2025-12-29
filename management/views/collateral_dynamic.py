@@ -94,6 +94,26 @@ def collateral_dynamic_view(request):
     ]
     snapshot_map = get_snapshot_summary_map(borrower, snapshot_sections)
 
+    inline_excess_pad_ratio = None
+    pad_override = request.GET.get("inline_excess_pad")
+    if pad_override:
+        try:
+            pad_value = float(pad_override)
+        except (TypeError, ValueError):
+            pad_value = None
+        if pad_value in (0.05, 0.1, 0.10):
+            inline_excess_pad_ratio = pad_value
+
+    inventory_trend_pad_ratio = None
+    inventory_pad_override = request.GET.get("inventory_trend_pad")
+    if inventory_pad_override:
+        try:
+            pad_value = float(inventory_pad_override)
+        except (TypeError, ValueError):
+            pad_value = None
+        if pad_value in (0.05, 0.1, 0.10):
+            inventory_trend_pad_ratio = pad_value
+
     context = {
         "borrower_summary": _build_borrower_summary(borrower),
         "active_section": section,
@@ -110,7 +130,13 @@ def collateral_dynamic_view(request):
             ar_division,
             snapshot_summary=snapshot_map.get(SnapshotSummaryRow.SECTION_ACCOUNTS_RECEIVABLE),
         ),
-        **_finished_goals_context(borrower, finished_goals_range, finished_goals_division),
+        **_finished_goals_context(
+            borrower,
+            finished_goals_range,
+            finished_goals_division,
+            inline_excess_pad_ratio=inline_excess_pad_ratio,
+            inventory_trend_pad_ratio=inventory_trend_pad_ratio,
+        ),
         **_raw_materials_context(borrower, raw_materials_range, raw_materials_division),
         **_work_in_progress_context(borrower, work_in_progress_range, work_in_progress_division),
         **_other_collateral_context(
@@ -2317,7 +2343,16 @@ def _accounts_receivable_context(borrower, range_key="today", division="all", sn
         "ar_current_vs_past_due_trend": {"bars": [], "labels": []},
         "ar_ineligible_overview_rows": [],
         "ar_ineligible_overview_total": None,
-        "ar_ineligible_trend": {"points": "", "dots": [], "labels": []},
+        "ar_ineligible_trend": {
+            "points": "",
+            "dots": [],
+            "labels": [],
+            "ticks": [],
+            "series_values": [],
+            "series_labels": [],
+            "axis_min": 0.0,
+            "axis_max": 100.0,
+        },
         "ar_concentration_rows": [],
         "ar_ado_rows": [],
         "ar_dso_rows": [],
@@ -3054,6 +3089,8 @@ def _accounts_receivable_context(borrower, range_key="today", division="all", sn
     trend_points = []
     trend_texts = []
     for row in ineligible_trend_rows:
+        if row.ineligible_pct_of_ar is None:
+            continue
         value = float(_to_decimal(row.ineligible_pct_of_ar) * Decimal("100"))
         trend_points.append(value)
         label_date = row.date
@@ -3068,29 +3105,17 @@ def _accounts_receivable_context(borrower, range_key="today", division="all", sn
     if trend_points:
         min_val = min(trend_points)
         max_val = max(trend_points)
-        span = max_val - min_val
-        if span <= 0:
-            span = max(max_val, 1.0)
-        pad = span * 0.2
-        min_val -= pad
-        max_val += pad
-        min_span = 30.0
-        if (max_val - min_val) < min_span:
-            mid = (min_val + max_val) / 2
-            min_val = mid - (min_span / 2)
-            max_val = mid + (min_span / 2)
-        if min_val < 10:
-            min_val = 10.0
-            max_val = min_val + min_span
-        step = _nice_step((max_val - min_val) / 4)
-        if step <= 0:
-            step = 5.0
-        axis_min = math.floor(min_val / step) * step
-        axis_max = math.ceil(max_val / step) * step
-        if axis_min < 0:
-            axis_min = 0.0
-        if axis_max <= axis_min:
-            axis_max = axis_min + step
+        if min_val == max_val:
+            pad = 1.0
+            axis_min = max(min_val - pad, 0.0)
+            axis_max = max_val + pad
+        else:
+            pad_ratio = 0.10
+            axis_min = min_val - (abs(min_val) * pad_ratio)
+            axis_max = max_val + (abs(max_val) * pad_ratio)
+            axis_min = max(axis_min, 0.0)
+            if axis_max <= axis_min:
+                axis_max = axis_min + 1.0
     trend_chart = _build_trend_points(
         trend_points,
         trend_texts,
@@ -3103,6 +3128,10 @@ def _accounts_receivable_context(borrower, range_key="today", division="all", sn
         tick_count=5,
         value_formatter=_format_axis_pct,
     )
+    trend_chart["series_values"] = [round(value, 4) for value in trend_points]
+    trend_chart["series_labels"] = list(trend_texts)
+    trend_chart["axis_min"] = round(axis_min, 4)
+    trend_chart["axis_max"] = round(axis_max, 4)
     formatted_labels = []
     for label in trend_chart["labels"]:
         text = label.get("text") or ""
@@ -3296,7 +3325,13 @@ def _normalize_division(division):
     return normalized_division
 
 
-def _finished_goals_context(borrower, range_key="today", division="all"):
+def _finished_goals_context(
+    borrower,
+    range_key="today",
+    division="all",
+    inline_excess_pad_ratio=None,
+    inventory_trend_pad_ratio=None,
+):
     normalized_range = _normalize_range(range_key)
     normalized_division = _normalize_division(division)
     base_context = {
@@ -3805,14 +3840,77 @@ def _finished_goals_context(borrower, range_key="today", division="all"):
                 }
             )
 
+    def _build_trend_series(month_map):
+        if not month_map:
+            return [], [], 0
+        month_count = len(month_map)
+        if month_count < 2:
+            return [], [], month_count
+        latest_year = max(year for year, _ in month_map.keys())
+        labels, values = _build_year_series(month_map, latest_year)
+        return labels, values, month_count
+
     inline_excess_trend_labels = []
     inline_excess_trend_values = []
+    inline_excess_trend_source = "none"
+    trend_candidates = []
+
+    inline_excess_trend_rows = FGInlineExcessByCategoryRow.objects.filter(
+        borrower=borrower
+    ).exclude(as_of_date__isnull=True)
+    inline_excess_trend_rows = _apply_division_filter(inline_excess_trend_rows)
+    inline_excess_trend_rows = _apply_date_filter_or_latest(inline_excess_trend_rows, "as_of_date")
+    inline_excess_trend_rows = list(inline_excess_trend_rows.order_by("as_of_date", "id"))
+    inline_excess_trend_row_count = len(inline_excess_trend_rows)
+    inline_excess_month_map = OrderedDict()
+    for row in inline_excess_trend_rows:
+        dt = row.as_of_date
+        if not dt:
+            continue
+        key = (dt.year, dt.month)
+        if key not in inline_excess_month_map:
+            inline_excess_month_map[key] = {"weighted": Decimal("0"), "weight": Decimal("0")}
+        pct_value = None
+        if row.inline_pct is not None:
+            pct_value = _to_decimal(row.inline_pct)
+            if abs(pct_value) <= 1:
+                pct_value *= Decimal("100")
+        elif row.fg_available is not None:
+            available = _to_decimal(row.fg_available)
+            if available:
+                pct_value = (_to_decimal(row.inline_dollars) / available) * Decimal("100")
+        if pct_value is None:
+            continue
+        weight = _to_decimal(row.fg_available) if row.fg_available is not None else Decimal("1")
+        if weight <= 0:
+            weight = Decimal("1")
+        inline_excess_month_map[key]["weighted"] += pct_value * weight
+        inline_excess_month_map[key]["weight"] += weight
+
+    inline_excess_pct_map = OrderedDict()
+    for key, entry in inline_excess_month_map.items():
+        if entry["weight"] > 0:
+            inline_excess_pct_map[key] = float(entry["weighted"] / entry["weight"])
+
+    inline_excess_trend_candidate_labels, inline_excess_trend_candidate_values, inline_excess_month_count = _build_trend_series(
+        inline_excess_pct_map
+    )
+    trend_candidates.append(
+        {
+            "source": "fg_inline_excess_by_category",
+            "labels": inline_excess_trend_candidate_labels,
+            "values": inline_excess_trend_candidate_values,
+            "month_count": inline_excess_month_count,
+        }
+    )
+
     inline_trend_rows = FGInlineCategoryAnalysisRow.objects.filter(borrower=borrower).exclude(
         as_of_date__isnull=True
     )
     inline_trend_rows = _apply_division_filter(inline_trend_rows)
     inline_trend_rows = _apply_date_filter_or_latest(inline_trend_rows, "as_of_date")
-    inline_trend_rows = inline_trend_rows.order_by("as_of_date", "id")
+    inline_trend_rows = list(inline_trend_rows.order_by("as_of_date", "id"))
+    inline_trend_row_count = len(inline_trend_rows)
     inline_trend_map = OrderedDict()
     for row in inline_trend_rows:
         dt = row.as_of_date
@@ -3838,12 +3936,17 @@ def _finished_goals_context(borrower, range_key="today", division="all"):
         pct = (totals["inline"] / totals["total"] * Decimal("100")) if totals["total"] else Decimal("0")
         inline_pct_map[key] = float(pct)
 
-    if inline_pct_map:
-        latest_year = max(year for year, _ in inline_pct_map.keys())
-        inline_excess_trend_labels, inline_excess_trend_values = _build_year_series(
-            inline_pct_map,
-            latest_year,
-        )
+    inline_trend_labels, inline_trend_values, inline_trend_month_count = _build_trend_series(
+        inline_pct_map
+    )
+    trend_candidates.append(
+        {
+            "source": "inline_category_analysis",
+            "labels": inline_trend_labels,
+            "values": inline_trend_values,
+            "month_count": inline_trend_month_count,
+        }
+    )
 
     composition_qs = FGCompositionRow.objects.filter(borrower=borrower)
     composition_qs = _apply_division_filter(composition_qs)
@@ -3851,8 +3954,14 @@ def _finished_goals_context(borrower, range_key="today", division="all"):
     composition_rows = list(
         composition_qs.exclude(as_of_date__isnull=True).order_by("as_of_date", "id")
     )
+    composition_row_count = len(composition_rows)
+    composition_inline_pct_series = OrderedDict()
+    composition_pct_map = OrderedDict()
+    composition_inline_month_count = 0
+    composition_bucket_month_count = 0
     if composition_rows:
         composition_map = OrderedDict()
+        composition_inline_pct_map = OrderedDict()
         for row in composition_rows:
             dt = row.as_of_date
             if dt not in composition_map:
@@ -3874,6 +3983,19 @@ def _finished_goals_context(borrower, range_key="today", division="all"):
             totals["39 - 52"] += _to_decimal(row.fg_39_52)
             totals["52+"] += _to_decimal(row.fg_52_plus)
             totals["No Sales"] += _to_decimal(row.fg_no_sales)
+            if row.inline_pct is not None:
+                key = (dt.year, dt.month)
+                weight = _to_decimal(row.fg_available)
+                weight = weight if weight > 0 else Decimal("1")
+                pct_value = _to_decimal(row.inline_pct)
+                if abs(pct_value) <= 1:
+                    pct_value *= Decimal("100")
+                entry = composition_inline_pct_map.get(key)
+                if not entry:
+                    entry = {"weighted": Decimal("0"), "weight": Decimal("0")}
+                    composition_inline_pct_map[key] = entry
+                entry["weighted"] += pct_value * weight
+                entry["weight"] += weight
 
         def _composition_total(totals):
             bucket_total = (
@@ -3909,13 +4031,106 @@ def _finished_goals_context(borrower, range_key="today", division="all"):
             )
             pct = (inline_amount / total_amount * Decimal("100")) if total_amount else Decimal("0")
             composition_pct_map[(dt.year, dt.month)] = float(pct)
+        if composition_inline_pct_map:
+            for key, entry in composition_inline_pct_map.items():
+                if entry["weight"] > 0:
+                    composition_inline_pct_series[key] = float(entry["weighted"] / entry["weight"])
+            composition_inline_month_count = len(composition_inline_pct_series)
+        if composition_pct_map:
+            composition_bucket_month_count = len(composition_pct_map)
 
-        if not inline_excess_trend_values and composition_pct_map:
-            latest_year = max(year for year, _ in composition_pct_map.keys())
-            inline_excess_trend_labels, inline_excess_trend_values = _build_year_series(
-                composition_pct_map,
-                latest_year,
+    composition_inline_labels, composition_inline_values, _ = _build_trend_series(
+        composition_inline_pct_series
+    )
+    trend_candidates.append(
+        {
+            "source": "fg_composition_inline_pct",
+            "labels": composition_inline_labels,
+            "values": composition_inline_values,
+            "month_count": composition_inline_month_count,
+        }
+    )
+
+    composition_bucket_labels, composition_bucket_values, _ = _build_trend_series(
+        composition_pct_map
+    )
+    trend_candidates.append(
+        {
+            "source": "fg_composition_buckets",
+            "labels": composition_bucket_labels,
+            "values": composition_bucket_values,
+            "month_count": composition_bucket_month_count,
+        }
+    )
+
+    trend_priority = {
+        "fg_inline_excess_by_category": 4,
+        "fg_composition_inline_pct": 3,
+        "inline_category_analysis": 2,
+        "fg_composition_buckets": 1,
+    }
+    scored_candidates = [
+        candidate
+        for candidate in trend_candidates
+        if candidate["month_count"] >= 2 and candidate["labels"] and candidate["values"]
+    ]
+    if scored_candidates:
+        max_months = max(candidate["month_count"] for candidate in scored_candidates)
+        top_candidates = [
+            candidate for candidate in scored_candidates if candidate["month_count"] == max_months
+        ]
+        selected = max(
+            top_candidates,
+            key=lambda candidate: trend_priority.get(candidate["source"], 0),
+        )
+        inline_excess_trend_labels = selected["labels"]
+        inline_excess_trend_values = selected["values"]
+        inline_excess_trend_source = selected["source"]
+
+    inline_excess_trend_axis_min = None
+    inline_excess_trend_axis_max = None
+    inline_excess_trend_values_clean = [
+        value for value in inline_excess_trend_values if value is not None
+    ]
+    if inline_excess_trend_values_clean:
+        min_val = min(inline_excess_trend_values_clean)
+        max_val = max(inline_excess_trend_values_clean)
+        if min_val == max_val:
+            pad = 1.0
+            inline_excess_trend_axis_min = max(min_val - pad, 0.0)
+            inline_excess_trend_axis_max = max_val + pad
+        else:
+            pad_ratio = (
+                inline_excess_pad_ratio
+                if inline_excess_pad_ratio in (0.05, 0.1, 0.10)
+                else 0.10
             )
+            inline_excess_trend_axis_min = min_val - (abs(min_val) * pad_ratio)
+            inline_excess_trend_axis_max = max_val + (abs(max_val) * pad_ratio)
+            inline_excess_trend_axis_min = max(inline_excess_trend_axis_min, 0.0)
+            if inline_excess_trend_axis_max <= inline_excess_trend_axis_min:
+                inline_excess_trend_axis_max = inline_excess_trend_axis_min + 1.0
+
+    inline_excess_trend_debug = {
+        "source": inline_excess_trend_source,
+        "pad_ratio": (
+            inline_excess_pad_ratio
+            if inline_excess_pad_ratio in (0.05, 0.1, 0.10)
+            else 0.10
+        ),
+        "inline_excess_rows": inline_excess_trend_row_count,
+        "inline_excess_months": inline_excess_month_count,
+        "inline_category_rows": inline_trend_row_count,
+        "inline_category_months": inline_trend_month_count,
+        "composition_rows": composition_row_count,
+        "composition_inline_months": composition_inline_month_count,
+        "composition_bucket_months": composition_bucket_month_count,
+        "range": {
+            "start": start_date.isoformat() if start_date else None,
+            "end": end_date.isoformat() if end_date else None,
+        },
+        "division": normalized_division,
+    }
 
     inventory_trend_labels = []
     inventory_trend_values = []
@@ -4002,15 +4217,29 @@ def _finished_goals_context(borrower, range_key="today", division="all"):
             for idx in range(12)
         ]
 
-    trend_min = min(inventory_trend_values) if inventory_trend_values else 0
-    trend_max = max(inventory_trend_values) if inventory_trend_values else 0
-    trend_y_min = 0
-    if trend_max <= 0:
-        trend_y_max = 1
+    trend_values_clean = [value for value in inventory_trend_values if value is not None]
+    trend_min = min(trend_values_clean) if trend_values_clean else 0
+    trend_max = max(trend_values_clean) if trend_values_clean else 0
+    pad_ratio = (
+        inventory_trend_pad_ratio
+        if inventory_trend_pad_ratio in (0.05, 0.1, 0.10)
+        else 0.10
+    )
+    if trend_values_clean:
+        if trend_min == trend_max:
+            pad = abs(trend_min) * pad_ratio
+            if pad == 0:
+                pad = 1.0
+            trend_y_min = trend_min - pad
+            trend_y_max = trend_max + pad
+        else:
+            trend_y_min = trend_min - (abs(trend_min) * pad_ratio)
+            trend_y_max = trend_max + (abs(trend_max) * pad_ratio)
+            if trend_y_max <= trend_y_min:
+                trend_y_max = trend_y_min + max(1.0, abs(trend_max) * pad_ratio)
     else:
-        trend_y_max = math.ceil((trend_max * 1.1) / 5) * 5
-        if trend_y_max == 0:
-            trend_y_max = max(trend_max, 1)
+        trend_y_min = 0
+        trend_y_max = 1
     trend_tick_values = None
 
     trend_rows_all = list(
@@ -4174,13 +4403,14 @@ def _finished_goals_context(borrower, range_key="today", division="all"):
             "labels": inline_excess_trend_labels,
             "values": inline_excess_trend_values,
             "ySuffix": "%",
-            "yMin": 0,
-            "yMax": 100,
+            "yMin": inline_excess_trend_axis_min,
+            "yMax": inline_excess_trend_axis_max,
             "yTicks": 6,
             "yDecimals": 0,
             "yLabel": "% Of Inventory",
             "xStep": 1,
             "xLabelDedupe": False,
+            "debug": inline_excess_trend_debug,
         },
     }
 

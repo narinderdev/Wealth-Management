@@ -880,6 +880,24 @@
 
 <script>
   const charts = {{ finished_goals_chart_config_json|safe }};
+  (function logInlineExcessTrend(){
+    const trend = charts && charts.inlineExcessTrend;
+    if (!trend) return;
+    const values = Array.isArray(trend.values) ? trend.values.map(v => Number(v)) : [];
+    const labels = Array.isArray(trend.labels) ? trend.labels : [];
+    console.info("[InlineExcessTrend] series", {
+      values,
+      labels,
+      yMin: trend.yMin,
+      yMax: trend.yMax,
+      debug: trend.debug || {},
+      valueType: values.length ? typeof values[0] : "n/a",
+      labelType: labels.length ? typeof labels[0] : "n/a",
+    });
+    if (!values.length || values.every(v => Number.isNaN(v))) {
+      console.warn("[InlineExcessTrend] no numeric values available for chart.");
+    }
+  })();
 
   function fmtY(v,c){
     const dec = Number.isFinite(c.yDecimals) ? c.yDecimals : 2;

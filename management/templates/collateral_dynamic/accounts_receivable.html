@@ -2090,6 +2090,7 @@ height: 102%;
     </div>
   </div>
 
+  {{ ar_ineligible_trend|json_script:"arIneligibleTrendData" }}
   <script>
 (function(){
   function updateAgingCompositionMetrics(){
@@ -2109,6 +2110,7 @@ height: 102%;
 })();
 
 (function(){
+      let arTrendLogged = false;
       function parseLinePoints(raw, baseWidth, baseHeight, actualWidth, actualHeight){
         if(!raw) return [];
         const safeBaseWidth = baseWidth || actualWidth || 1;
@@ -2242,16 +2244,36 @@ height: 102%;
           });
         });
       }
+      function logArIneligibleTrendData(){
+        if(arTrendLogged) return;
+        const dataEl = document.getElementById("arIneligibleTrendData");
+        if(!dataEl) return;
+        try{
+          const data = JSON.parse(dataEl.textContent);
+          console.info("[AR Ineligible Trend] series", {
+            values: data.series_values || [],
+            labels: data.series_labels || [],
+            axisMin: data.axis_min,
+            axisMax: data.axis_max,
+            ticks: data.ticks || [],
+          });
+          arTrendLogged = true;
+        } catch (error){
+          console.warn("[AR Ineligible Trend] failed to parse chart data", error);
+        }
+      }
       if(document.readyState === "loading"){
         document.addEventListener("DOMContentLoaded", ()=>{
           attachArTooltips();
           drawLineCharts();
           observeChartResize();
+          logArIneligibleTrendData();
         });
       } else {
         attachArTooltips();
         drawLineCharts();
         observeChartResize();
+        logArIneligibleTrendData();
         let resizeTimer;
         window.addEventListener("resize", ()=>{
           window.clearTimeout(resizeTimer);
