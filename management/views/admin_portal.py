@@ -1,3 +1,7 @@
+from datetime import date
+
+from django.core.exceptions import FieldDoesNotExist
+from django.core.paginator import Paginator
 from django.db import ProgrammingError
 from django.http import HttpResponse
 from django.shortcuts import get_object_or_404, redirect, render
@@ -45,6 +49,7 @@ from management.models import (
     ARMetricsRow,
     AgingCompositionRow,
     Borrower,
+    BorrowerReport,
     CashFlowForecastRow,
     CollateralLimitsRow,
     CollateralOverviewRow,
@@ -60,6 +65,7 @@ from management.models import (
     FGInventoryMetricsRow,
     FGGrossRecoveryHistoryRow,
     ForecastRow,
+    IneligiblesRow,
     IneligibleTrendRow,
     IneligibleOverviewRow,
     IneligibleTrendRow,
@@ -302,6 +308,8 @@ COMPONENT_REGISTRY = {
     },
 }
 class ModelComponentHandler:
+    page_size = 15
+
     def __init__(self, *, slug, model, form_class, ordering=None, select_related=None, filters=None):
         self.slug = slug
         self.model = model
@@ -315,10 +323,48 @@ class ModelComponentHandler:
         for spec in self.filters:
             options = [{"value": "", "label": "All"}]
             values = []
-            if spec.get("queryset"):
+            label_format = spec.get("label_format")
+            month_year = spec.get("month_year")
+
+            def format_label(value):
+                if label_format and value and hasattr(value, "strftime"):
+                    try:
+                        return value.strftime(label_format)
+                    except (TypeError, ValueError):
+                        pass
+                return str(value)
+
+            if month_year:
+                values = (
+                    self.model.objects.order_by()
+                    .values_list(spec["field"], flat=True)
+                    .distinct()
+                )
+                month_year_values = set()
+                for value in values:
+                    if not value:
+                        continue
+                    try:
+                        month_year_values.add((value.year, value.month))
+                    except AttributeError:
+                        continue
+                for year_value, month_value in sorted(month_year_values, reverse=True):
+                    label_date = date(year_value, month_value, 1)
+                    label = (
+                        label_date.strftime(label_format)
+                        if label_format
+                        else label_date.strftime("%b %Y")
+                    )
+                    options.append(
+                        {
+                            "value": f"{year_value:04d}-{month_value:02d}",
+                            "label": label,
+                        }
+                    )
+            elif spec.get("queryset"):
                 values = list(spec["queryset"])
                 for item in values:
-                    options.append({"value": str(getattr(item, "pk", "")), "label": str(item)})
+                    options.append({"value": str(getattr(item, "pk", "")), "label": format_label(item)})
             elif spec.get("choices"):
                 for value, label in spec["choices"]:
                     options.append({"value": value, "label": label})
@@ -331,10 +377,22 @@ class ModelComponentHandler:
                 for value in values:
                     if value is None or value == "":
                         continue
-                    options.append({"value": str(value), "label": str(value)})
+                    options.append({"value": str(value), "label": format_label(value)})
             selected = request.GET.get(spec["param"], "")
             if selected:
-                queryset = queryset.filter(**{spec["field"]: selected})
+                if month_year:
+                    try:
+                        year_value, month_value = selected.split("-", 1)
+                        queryset = queryset.filter(
+                            **{
+                                f"{spec['field']}__year": int(year_value),
+                                f"{spec['field']}__month": int(month_value),
+                            }
+                        )
+                    except (ValueError, TypeError):
+                        selected = ""
+                else:
+                    queryset = queryset.filter(**{spec["field"]: selected})
             filter_defs.append(
                 {
                     "param": spec["param"],
@@ -351,6 +409,27 @@ class ModelComponentHandler:
             qs = qs.select_related(*self.select_related)
         return qs.order_by(*self.ordering)
 
+    def apply_global_borrower_filter(self, request, queryset):
+        borrower_id = request.GET.get("borrower")
+        if not borrower_id:
+            return queryset
+        if self.model is Borrower:
+            return queryset.filter(pk=borrower_id)
+        if self.model is Company:
+            return queryset.filter(borrowers__id=borrower_id).distinct()
+        try:
+            self.model._meta.get_field("borrower")
+            return queryset.filter(borrower_id=borrower_id)
+        except FieldDoesNotExist:
+            pass
+        try:
+            report_field = self.model._meta.get_field("report")
+        except FieldDoesNotExist:
+            report_field = None
+        if report_field and report_field.related_model is BorrowerReport:
+            return queryset.filter(report__borrower_id=borrower_id)
+        return queryset
+
     def redirect(self):
         return redirect("admin_component", component_slug=self.slug)
 
@@ -362,8 +441,14 @@ class ModelComponentHandler:
         data_list = []
         db_error = None
         table_ready = True
+        page_obj = None
+        params = request.GET.copy()
+        params.pop("page", None)
+        page_query = params.urlencode()
+        page_query_prefix = f"{page_query}&" if page_query else ""
 
         qs = self.get_queryset()
+        qs = self.apply_global_borrower_filter(request, qs)
         filter_defs = []
         if table_ready:
             try:
@@ -373,7 +458,10 @@ class ModelComponentHandler:
                 db_error = str(exc)
         if table_ready:
             try:
-                data_list = list(qs)
+                paginator = Paginator(qs, self.page_size)
+                page_number = request.GET.get("page", 1)
+                page_obj = paginator.get_page(page_number)
+                data_list = list(page_obj.object_list)
             except ProgrammingError as exc:
                 table_ready = False
                 db_error = str(exc)
@@ -414,6 +502,9 @@ class ModelComponentHandler:
             "slug": self.slug,
             "db_error": db_error,
             "filters": filter_defs,
+            "page_obj": page_obj,
+            "page_query": page_query,
+            "page_query_prefix": page_query_prefix,
         }
 
 
@@ -444,6 +535,16 @@ HANDLERS = {
         form_class=CollateralOverviewForm,
         ordering=["id"],
         select_related=["borrower", "borrower__company"],
+        filters=[
+            {
+                "param": "borrower",
+                "label": "Borrower",
+                "field": "borrower__id",
+                "queryset": Borrower.objects.select_related("company").order_by("company__company", "primary_contact"),
+            },
+            {"param": "main_type", "label": "Main Type", "field": "main_type"},
+            {"param": "sub_type", "label": "Sub Type", "field": "sub_type"},
+        ],
     ),
     "snapshotSummaries": ModelComponentHandler(
         slug="snapshotSummaries",
@@ -457,6 +558,18 @@ HANDLERS = {
         model=MachineryEquipmentRow,
         form_class=MachineryEquipmentForm,
         ordering=["equipment_type"],
+        select_related=["borrower", "borrower__company"],
+        filters=[
+            {
+                "param": "borrower",
+                "label": "Borrower",
+                "field": "borrower__id",
+                "queryset": Borrower.objects.select_related("company").order_by("company__company", "primary_contact"),
+            },
+            {"param": "equipment_type", "label": "Type", "field": "equipment_type"},
+            {"param": "year", "label": "Year", "field": "year"},
+            {"param": "condition", "label": "Condition", "field": "condition"},
+        ],
     ),
     "agingComposition": ModelComponentHandler(
         slug="agingComposition",
@@ -478,6 +591,9 @@ HANDLERS = {
                 "queryset": Borrower.objects.select_related("company").order_by("company__company", "primary_contact"),
             },
             {"param": "division", "label": "Division", "field": "division"},
+            {"param": "category", "label": "Category", "field": "category"},
+            {"param": "type", "label": "Type", "field": "type"},
+            {"param": "year", "label": "Year", "field": "as_of_date__year"},
         ],
     ),
     "ineligibleTrend": ModelComponentHandler(
@@ -493,6 +609,8 @@ HANDLERS = {
                 "queryset": Borrower.objects.select_related("company").order_by("company__company", "primary_contact"),
             },
             {"param": "division", "label": "Division", "field": "division"},
+            {"param": "line_item", "label": "Line Item", "field": "line_item"},
+            {"param": "year", "label": "Year", "field": "date__year"},
         ],
     ),
     "ineligibleOverview": ModelComponentHandler(
@@ -531,6 +649,17 @@ HANDLERS = {
         form_class=FGInventoryMetricsForm,
         ordering=["-as_of_date", "inventory_type", "division"],
         select_related=["borrower", "borrower__company"],
+        filters=[
+            {
+                "param": "borrower",
+                "label": "Borrower",
+                "field": "borrower__id",
+                "queryset": Borrower.objects.select_related("company").order_by("company__company", "primary_contact"),
+            },
+            {"param": "inventory_type", "label": "Inventory Type", "field": "inventory_type"},
+            {"param": "division", "label": "Division", "field": "division"},
+            {"param": "as_of_date", "label": "As Of Date", "field": "as_of_date", "label_format": "%b %Y"},
+        ],
     ),
     "fgIneligibleDetail": ModelComponentHandler(
         slug="fgIneligibleDetail",
@@ -545,6 +674,8 @@ HANDLERS = {
                 "field": "borrower__id",
                 "queryset": Borrower.objects.select_related("company").order_by("company__company", "primary_contact"),
             },
+            {"param": "date", "label": "Date", "field": "date", "label_format": "%b %Y"},
+            {"param": "inventory_type", "label": "Inventory Type", "field": "inventory_type"},
             {"param": "division", "label": "Division", "field": "division"},
         ],
     ),
@@ -562,6 +693,7 @@ HANDLERS = {
                 "queryset": Borrower.objects.select_related("company").order_by("company__company", "primary_contact"),
             },
             {"param": "division", "label": "Division", "field": "division"},
+            {"param": "as_of_date", "label": "As Of Date", "field": "as_of_date", "label_format": "%b %Y"},
         ],
     ),
     "fgInlineCategoryAnalysis": ModelComponentHandler(
@@ -578,6 +710,7 @@ HANDLERS = {
                 "queryset": Borrower.objects.select_related("company").order_by("company__company", "primary_contact"),
             },
             {"param": "division", "label": "Division", "field": "division"},
+            {"param": "category", "label": "Category", "field": "category"},
         ],
     ),
     "salesGMTrend": ModelComponentHandler(
@@ -594,6 +727,7 @@ HANDLERS = {
                 "queryset": Borrower.objects.select_related("company").order_by("company__company", "primary_contact"),
             },
             {"param": "division", "label": "Division", "field": "division"},
+            {"param": "year", "label": "Year", "field": "as_of_date__year"},
         ],
     ),
     "fgInlineExcessByCategory": ModelComponentHandler(
@@ -610,6 +744,8 @@ HANDLERS = {
                 "queryset": Borrower.objects.select_related("company").order_by("company__company", "primary_contact"),
             },
             {"param": "division", "label": "Division", "field": "division"},
+            {"param": "category", "label": "Category", "field": "category"},
+            {"param": "year", "label": "Year", "field": "as_of_date__year"},
         ],
     ),
     "rmInventoryMetrics": ModelComponentHandler(
@@ -624,7 +760,9 @@ HANDLERS = {
                 "field": "borrower__id",
                 "queryset": Borrower.objects.select_related("company").order_by("company__company", "primary_contact"),
             },
+            {"param": "inventory_type", "label": "Inventory Type", "field": "inventory_type"},
             {"param": "division", "label": "Division", "field": "division"},
+            {"param": "year", "label": "Year", "field": "as_of_date__year"},
         ],
     ),
     "rmIneligibleOverview": ModelComponentHandler(
@@ -639,7 +777,9 @@ HANDLERS = {
                 "field": "borrower__id",
                 "queryset": Borrower.objects.select_related("company").order_by("company__company", "primary_contact"),
             },
+            {"param": "inventory_type", "label": "Inventory Type", "field": "inventory_type"},
             {"param": "division", "label": "Division", "field": "division"},
+            {"param": "year", "label": "Year", "field": "date__year"},
         ],
     ),
     "rmCategoryHistory": ModelComponentHandler(
@@ -654,7 +794,10 @@ HANDLERS = {
                 "field": "borrower__id",
                 "queryset": Borrower.objects.select_related("company").order_by("company__company", "primary_contact"),
             },
+            {"param": "inventory_type", "label": "Inventory Type", "field": "inventory_type"},
             {"param": "division", "label": "Division", "field": "division"},
+            {"param": "category", "label": "Category", "field": "category"},
+            {"param": "year", "label": "Year", "field": "date__year"},
         ],
     ),
     "wipInventoryMetrics": ModelComponentHandler(
@@ -669,6 +812,7 @@ HANDLERS = {
                 "field": "borrower__id",
                 "queryset": Borrower.objects.select_related("company").order_by("company__company", "primary_contact"),
             },
+            {"param": "inventory_type", "label": "Inventory Type", "field": "inventory_type"},
             {"param": "division", "label": "Division", "field": "division"},
         ],
     ),
@@ -684,6 +828,7 @@ HANDLERS = {
                 "field": "borrower__id",
                 "queryset": Borrower.objects.select_related("company").order_by("company__company", "primary_contact"),
             },
+            {"param": "inventory_type", "label": "Inventory Type", "field": "inventory_type"},
             {"param": "division", "label": "Division", "field": "division"},
         ],
     ),
@@ -699,7 +844,10 @@ HANDLERS = {
                 "field": "borrower__id",
                 "queryset": Borrower.objects.select_related("company").order_by("company__company", "primary_contact"),
             },
+            {"param": "inventory_type", "label": "Inventory Type", "field": "inventory_type"},
             {"param": "division", "label": "Division", "field": "division"},
+            {"param": "category", "label": "Category", "field": "category"},
+            {"param": "year", "label": "Year", "field": "date__year"},
         ],
     ),
     "fgGrossRecoveryHistory": ModelComponentHandler(
@@ -716,6 +864,9 @@ HANDLERS = {
                 "queryset": Borrower.objects.select_related("company").order_by("company__company", "primary_contact"),
             },
             {"param": "division", "label": "Division", "field": "division"},
+            {"param": "category", "label": "Category", "field": "category"},
+            {"param": "type", "label": "Type", "field": "type"},
+            {"param": "year", "label": "Year", "field": "as_of_date__year"},
         ],
     ),
     "wipRecovery": ModelComponentHandler(
@@ -731,6 +882,8 @@ HANDLERS = {
                 "queryset": Borrower.objects.select_related("company").order_by("company__company", "primary_contact"),
             },
             {"param": "division", "label": "Division", "field": "division"},
+            {"param": "inventory_type", "label": "Inventory Type", "field": "inventory_type"},
+            {"param": "category", "label": "Category", "field": "category"},
         ],
     ),
     "rawMaterialRecovery": ModelComponentHandler(
@@ -746,6 +899,8 @@ HANDLERS = {
                 "queryset": Borrower.objects.select_related("company").order_by("company__company", "primary_contact"),
             },
             {"param": "division", "label": "Division", "field": "division"},
+            {"param": "inventory_type", "label": "Inventory Type", "field": "inventory_type"},
+            {"param": "category", "label": "Category", "field": "category"},
         ],
     ),
     "cashFlow": ModelComponentHandler(
@@ -754,6 +909,29 @@ HANDLERS = {
         form_class=CashFlowForecastForm,
         ordering=["-date", "category"],
         select_related=["report", "report__borrower", "report__borrower__company"],
+        filters=[
+            {
+                "param": "borrower",
+                "label": "Borrower",
+                "field": "report__borrower__id",
+                "queryset": Borrower.objects.select_related("company").order_by("company__company", "primary_contact"),
+            },
+            {
+                "param": "report_date",
+                "label": "Report Date",
+                "field": "report__report_date",
+                "label_format": "%b %Y",
+                "month_year": True,
+            },
+            {
+                "param": "entry_date",
+                "label": "Entry Date",
+                "field": "date",
+                "label_format": "%b %Y",
+                "month_year": True,
+            },
+            {"param": "category", "label": "Category", "field": "category"},
+        ],
     ),
     "nolvTable": ModelComponentHandler(
         slug="nolvTable",
@@ -784,6 +962,8 @@ HANDLERS = {
                 "queryset": Borrower.objects.select_related("company").order_by("company__company", "primary_contact"),
             },
             {"param": "main_category", "label": "Category", "field": "main_category"},
+            {"param": "sub_risk", "label": "Sub Risk", "field": "sub_risk"},
+            {"param": "high_impact_factor", "label": "High Impact Factor", "field": "high_impact_factor"},
         ],
     ),
     "compositeIndex": ModelComponentHandler(
@@ -792,54 +972,221 @@ HANDLERS = {
         form_class=CompositeIndexForm,
         ordering=["-date"],
         select_related=["borrower", "borrower__company"],
+        filters=[
+            {
+                "param": "borrower",
+                "label": "Borrower",
+                "field": "borrower__id",
+                "queryset": Borrower.objects.select_related("company").order_by("company__company", "primary_contact"),
+            },
+            {"param": "year", "label": "Year", "field": "date__year"},
+        ],
     ),
     "forecastAccountsReceivable": ModelComponentHandler(
         slug="forecastAccountsReceivable",
         model=ForecastRow,
         form_class=ForecastForm,
         ordering=["-as_of_date", "-period"],
+        filters=[
+            {
+                "param": "borrower",
+                "label": "Borrower",
+                "field": "borrower__id",
+                "queryset": Borrower.objects.select_related("company").order_by("company__company", "primary_contact"),
+            },
+            {
+                "param": "as_of_date",
+                "label": "As Of",
+                "field": "as_of_date",
+                "label_format": "%b %Y",
+                "month_year": True,
+            },
+            {
+                "param": "period",
+                "label": "Period",
+                "field": "period",
+                "label_format": "%b %Y",
+                "month_year": True,
+            },
+            {"param": "actual_forecast", "label": "Actual/Forecast", "field": "actual_forecast"},
+        ],
     ),
     "forecastFinishedGoods": ModelComponentHandler(
         slug="forecastFinishedGoods",
         model=ForecastRow,
         form_class=ForecastForm,
         ordering=["-as_of_date", "-period"],
+        filters=[
+            {
+                "param": "borrower",
+                "label": "Borrower",
+                "field": "borrower__id",
+                "queryset": Borrower.objects.select_related("company").order_by("company__company", "primary_contact"),
+            },
+            {
+                "param": "as_of_date",
+                "label": "As Of",
+                "field": "as_of_date",
+                "label_format": "%b %Y",
+                "month_year": True,
+            },
+            {
+                "param": "period",
+                "label": "Period",
+                "field": "period",
+                "label_format": "%b %Y",
+                "month_year": True,
+            },
+            {"param": "actual_forecast", "label": "Actual/Forecast", "field": "actual_forecast"},
+        ],
     ),
     "forecastRawMaterials": ModelComponentHandler(
         slug="forecastRawMaterials",
         model=ForecastRow,
         form_class=ForecastForm,
         ordering=["-as_of_date", "-period"],
+        filters=[
+            {
+                "param": "borrower",
+                "label": "Borrower",
+                "field": "borrower__id",
+                "queryset": Borrower.objects.select_related("company").order_by("company__company", "primary_contact"),
+            },
+            {
+                "param": "as_of_date",
+                "label": "As Of",
+                "field": "as_of_date",
+                "label_format": "%b %Y",
+                "month_year": True,
+            },
+            {
+                "param": "period",
+                "label": "Period",
+                "field": "period",
+                "label_format": "%b %Y",
+                "month_year": True,
+            },
+            {"param": "actual_forecast", "label": "Actual/Forecast", "field": "actual_forecast"},
+        ],
     ),
     "forecastWeeksOfSupply": ModelComponentHandler(
         slug="forecastWeeksOfSupply",
         model=ForecastRow,
         form_class=ForecastForm,
         ordering=["-as_of_date", "-period"],
+        filters=[
+            {
+                "param": "borrower",
+                "label": "Borrower",
+                "field": "borrower__id",
+                "queryset": Borrower.objects.select_related("company").order_by("company__company", "primary_contact"),
+            },
+            {
+                "param": "as_of_date",
+                "label": "As Of",
+                "field": "as_of_date",
+                "label_format": "%b %Y",
+                "month_year": True,
+            },
+            {
+                "param": "period",
+                "label": "Period",
+                "field": "period",
+                "label_format": "%b %Y",
+                "month_year": True,
+            },
+            {"param": "actual_forecast", "label": "Actual/Forecast", "field": "actual_forecast"},
+        ],
     ),
     "forecastWorkInProcess": ModelComponentHandler(
         slug="forecastWorkInProcess",
         model=ForecastRow,
         form_class=ForecastForm,
         ordering=["-as_of_date", "-period"],
+        filters=[
+            {
+                "param": "borrower",
+                "label": "Borrower",
+                "field": "borrower__id",
+                "queryset": Borrower.objects.select_related("company").order_by("company__company", "primary_contact"),
+            },
+            {
+                "param": "as_of_date",
+                "label": "As Of",
+                "field": "as_of_date",
+                "label_format": "%b %Y",
+                "month_year": True,
+            },
+            {
+                "param": "period",
+                "label": "Period",
+                "field": "period",
+                "label_format": "%b %Y",
+                "month_year": True,
+            },
+            {"param": "actual_forecast", "label": "Actual/Forecast", "field": "actual_forecast"},
+        ],
     ),
     "forecast": ModelComponentHandler(
         slug="forecast",
         model=ForecastRow,
         form_class=ForecastForm,
         ordering=["-as_of_date", "-period"],
+        filters=[
+            {
+                "param": "borrower",
+                "label": "Borrower",
+                "field": "borrower__id",
+                "queryset": Borrower.objects.select_related("company").order_by("company__company", "primary_contact"),
+            },
+            {
+                "param": "as_of_date",
+                "label": "As Of",
+                "field": "as_of_date",
+                "label_format": "%b %Y",
+                "month_year": True,
+            },
+            {
+                "param": "period",
+                "label": "Period",
+                "field": "period",
+                "label_format": "%b %Y",
+                "month_year": True,
+            },
+            {"param": "actual_forecast", "label": "Actual/Forecast", "field": "actual_forecast"},
+        ],
     ),
     "currentWeekVariance": ModelComponentHandler(
         slug="currentWeekVariance",
         model=CurrentWeekVarianceRow,
         form_class=CurrentWeekVarianceForm,
         ordering=["-date", "category"],
+        filters=[
+            {
+                "param": "borrower",
+                "label": "Borrower",
+                "field": "borrower__id",
+                "queryset": Borrower.objects.select_related("company").order_by("company__company", "primary_contact"),
+            },
+            {"param": "year", "label": "Year", "field": "date__year"},
+            {"param": "category", "label": "Category", "field": "category"},
+        ],
     ),
     "cumulativeVariance": ModelComponentHandler(
         slug="cumulativeVariance",
         model=CummulativeVarianceRow,
         form_class=CumulativeVarianceForm,
         ordering=["-date", "category"],
+        filters=[
+            {
+                "param": "borrower",
+                "label": "Borrower",
+                "field": "borrower__id",
+                "queryset": Borrower.objects.select_related("company").order_by("company__company", "primary_contact"),
+            },
+            {"param": "year", "label": "Year", "field": "date__year"},
+            {"param": "category", "label": "Category", "field": "category"},
+        ],
     ),
     "collateralLimits": ModelComponentHandler(
         slug="collateralLimits",
@@ -847,12 +1194,35 @@ HANDLERS = {
         form_class=CollateralLimitsForm,
         ordering=["division", "collateral_type", "collateral_sub_type"],
         select_related=["borrower", "borrower__company"],
+        filters=[
+            {
+                "param": "borrower",
+                "label": "Borrower",
+                "field": "borrower__id",
+                "queryset": Borrower.objects.select_related("company").order_by("company__company", "primary_contact"),
+            },
+            {"param": "division", "label": "Division", "field": "division"},
+            {"param": "collateral_type", "label": "Collateral Type", "field": "collateral_type"},
+            {"param": "collateral_sub_type", "label": "Collateral Sub-Type", "field": "collateral_sub_type"},
+        ],
     ),
     "ineligibles": ModelComponentHandler(
         slug="ineligibles",
-        model=IneligibleTrendRow,
+        model=IneligiblesRow,
         form_class=IneligiblesForm,
         ordering=["division", "collateral_type", "collateral_sub_type"],
+        select_related=["borrower", "borrower__company"],
+        filters=[
+            {
+                "param": "borrower",
+                "label": "Borrower",
+                "field": "borrower__id",
+                "queryset": Borrower.objects.select_related("company").order_by("company__company", "primary_contact"),
+            },
+            {"param": "division", "label": "Division", "field": "division"},
+            {"param": "collateral_type", "label": "Collateral Type", "field": "collateral_type"},
+            {"param": "collateral_sub_type", "label": "Collateral Sub-Type", "field": "collateral_sub_type"},
+        ],
     ),
 }
 

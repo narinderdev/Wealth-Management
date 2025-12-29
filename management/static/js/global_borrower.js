@@ -32,6 +32,85 @@
       }
     })();
 
+    function getBorrowerFromUrl() {
+      if (typeof URLSearchParams === "undefined") return "";
+      var params = new URLSearchParams(window.location.search || "");
+      return params.get("borrower") || "";
+    }
+
+    function updatePageFilter(selection, forceReload) {
+      if (typeof URL === "undefined") return;
+      var borrowerId = selection && selection.id ? String(selection.id) : "";
+      var url = new URL(window.location.href);
+      if (borrowerId) {
+        url.searchParams.set("borrower", borrowerId);
+      } else {
+        url.searchParams.delete("borrower");
+      }
+      var next = url.toString();
+      if (next !== window.location.href) {
+        if (forceReload) {
+          window.location.assign(next);
+        } else if (window.history && window.history.replaceState) {
+          window.history.replaceState({}, "", next);
+        }
+      }
+    }
+
+    function updateAdminLinks(selection) {
+      var borrowerId = selection && selection.id ? String(selection.id) : "";
+      document.querySelectorAll("a[href]").forEach(function (link) {
+        var href = link.getAttribute("href");
+        if (!href) return;
+        if (href.indexOf("javascript:") === 0 || href.indexOf("mailto:") === 0) return;
+        if (href.charAt(0) === "#") return;
+        var url;
+        try {
+          url = new URL(href, window.location.origin);
+        } catch (err) {
+          return;
+        }
+        if (url.origin !== window.location.origin) return;
+        if (url.pathname.indexOf("/admin/") !== 0) return;
+        if (borrowerId) {
+          url.searchParams.set("borrower", borrowerId);
+        } else {
+          url.searchParams.delete("borrower");
+        }
+        link.setAttribute("href", url.pathname + url.search + url.hash);
+      });
+    }
+
+    function syncFilterForms(selection) {
+      var borrowerId = selection && selection.id ? String(selection.id) : "";
+      document.querySelectorAll("form.component-filter").forEach(function (form) {
+        var borrowerSelect = form.querySelector('select[name="borrower"]');
+        var hidden = form.querySelector('input[type="hidden"][name="borrower"]');
+        if (borrowerSelect) {
+          if (borrowerId) {
+            borrowerSelect.value = borrowerId;
+          }
+          if (hidden) {
+            hidden.parentNode.removeChild(hidden);
+          }
+          return;
+        }
+        if (!borrowerId) {
+          if (hidden) {
+            hidden.parentNode.removeChild(hidden);
+          }
+          return;
+        }
+        if (!hidden) {
+          hidden = document.createElement("input");
+          hidden.type = "hidden";
+          hidden.name = "borrower";
+          form.appendChild(hidden);
+        }
+        hidden.value = borrowerId;
+      });
+    }
+
     function hasBorrowerOptions() {
       return Array.prototype.some.call(select.options, function (opt) {
         return opt.value;
@@ -224,6 +303,8 @@
       }
       updateBadge(currentSelection);
       applyToForms(currentSelection);
+      updateAdminLinks(currentSelection);
+      syncFilterForms(currentSelection);
       if (currentSelection) {
         setHeaderMessage("");
       }
@@ -231,20 +312,35 @@
 
     function initialize() {
       updateBorrowerAvailability();
+      var urlBorrower = getBorrowerFromUrl();
       var stored = readSelection();
       var missingStored = false;
-      if (stored && !optionLabel(stored.id)) {
-        stored = null;
+      var selection = null;
+
+      if (urlBorrower) {
+        if (optionLabel(urlBorrower)) {
+          selection = { id: String(urlBorrower), label: optionLabel(urlBorrower) };
+        } else {
+          persistSelection(null);
+          missingStored = true;
+          syncSelection(null);
+          setHeaderMessage(missingSelectionText);
+          updatePageFilter(null, true);
+          return;
+        }
+      } else if (stored && optionLabel(stored.id)) {
+        selection = { id: String(stored.id), label: stored.label || optionLabel(stored.id) };
+      } else if (stored) {
         persistSelection(null);
         missingStored = true;
       }
-      if (stored && optionLabel(stored.id)) {
-        syncSelection({ id: String(stored.id), label: stored.label || optionLabel(stored.id) });
-      } else {
-        syncSelection(null);
-      }
+
+      syncSelection(selection);
       if (missingStored) {
         setHeaderMessage(missingSelectionText);
+      }
+      if (!urlBorrower && selection) {
+        updatePageFilter(selection, true);
       }
     }
 
@@ -253,6 +349,7 @@
       var value = select.value;
       var selection = value ? { id: value, label: optionLabel(value) || value } : null;
       syncSelection(selection);
+      updatePageFilter(selection, true);
     });
 
     document.querySelectorAll("[data-modal-open]").forEach(function (trigger) {
@@ -272,11 +369,14 @@
       currentSelection = next;
       updateBadge(next);
       applyToForms(next);
+      updateAdminLinks(next);
+      syncFilterForms(next);
       if (next && next.id) {
         select.value = next.id;
       } else {
         select.value = "";
       }
+      updatePageFilter(next, true);
     });
 
     initialize();

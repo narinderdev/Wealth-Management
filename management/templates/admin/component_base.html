@@ -38,6 +38,38 @@
       font-weight:700;
       cursor:pointer;
     }
+    .component-pagination{
+      display:flex;
+      justify-content:space-between;
+      align-items:center;
+      gap:12px;
+      margin-top:16px;
+      padding-top:12px;
+      border-top:1px solid var(--line2);
+      font-size:12px;
+      color:var(--muted);
+    }
+    .component-pagination .page-controls{
+      display:flex;
+      gap:8px;
+    }
+    .component-pagination .page-link{
+      display:inline-flex;
+      align-items:center;
+      justify-content:center;
+      padding:6px 10px;
+      border-radius:8px;
+      border:1px solid var(--line2);
+      background:#fff;
+      color:var(--text);
+      text-decoration:none;
+      font-weight:600;
+      min-width:64px;
+    }
+    .component-pagination .page-link.is-disabled{
+      opacity:0.5;
+      pointer-events:none;
+    }
   </style>
 {% endblock %}
 
@@ -60,4 +92,23 @@
     </form>
   {% endif %}
   {% include component_meta.template with component_meta=component_meta component_data=component_data %}
+  {% if component_data.page_obj and component_data.page_obj.paginator.num_pages > 1 %}
+    <div class="component-pagination" aria-label="Pagination">
+      <div class="page-status">
+        Page {{ component_data.page_obj.number }} of {{ component_data.page_obj.paginator.num_pages }}
+      </div>
+      <div class="page-controls">
+        {% if component_data.page_obj.has_previous %}
+          <a class="page-link" href="?{{ component_data.page_query_prefix }}page={{ component_data.page_obj.previous_page_number }}">Previous</a>
+        {% else %}
+          <span class="page-link is-disabled">Previous</span>
+        {% endif %}
+        {% if component_data.page_obj.has_next %}
+          <a class="page-link" href="?{{ component_data.page_query_prefix }}page={{ component_data.page_obj.next_page_number }}">Next</a>
+        {% else %}
+          <span class="page-link is-disabled">Next</span>
+        {% endif %}
+      </div>
+    </div>
+  {% endif %}
 {% endblock %}
