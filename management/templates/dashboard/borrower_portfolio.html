@@ -196,11 +196,17 @@ background: var(--W-Background, #FFF);
             {% if borrowers %}
               {% for borrower in borrowers %}
                 <tr class="borrower-row {% if borrower.id|stringformat:"s" == selected_borrower_id %}selected{% endif %}"
-                    data-borrower-name="{{ borrower.contact_name|default:'' }} {{ borrower.company_name|default:'' }}">
+                    data-borrower-name="{{ borrower.company_name|default:'' }} {{ borrower.contact_name|default:'' }}">
                   <td>
                     <a href="{% url 'dashboard' %}?select={{ borrower.id }}" class="borrower-link">
                       <span class="status-dot"></span>
-                    {{ borrower.contact_name }}
+                      {% if borrower.company_name %}
+                        {{ borrower.company_name }}
+                      {% elif borrower.contact_name %}
+                        {{ borrower.contact_name }}
+                      {% else %}
+                        —
+                      {% endif %}
                     </a>
                   </td>
                   <td>{{ borrower.last_updated }}</td>

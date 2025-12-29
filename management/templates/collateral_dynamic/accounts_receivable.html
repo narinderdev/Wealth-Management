@@ -400,9 +400,13 @@
       text-align:left;
     }
     .collateral-dynamic tbody td{
-      padding:10px 6px;
+      padding:10px 4px;
       border-bottom:1px solid #f0f4fa;
-      color:#344256;
+      background:#FAFAFA;
+    font-weight:600;
+    color:#0b1220;
+    border-top:1px solid #e7eef7;
+    font-size:13px;
       text-align:left;
     }
     .collateral-dynamic tbody tr:last-child td{
@@ -614,9 +618,13 @@
     }
     .collateral-dynamic th,
     .collateral-dynamic td{
-      padding:10px 8px;
-      border-bottom:1px solid var(--cd-line);
+      padding:10px 3px;
       text-align:left;
+    background:#FAFAFA;
+    font-weight:600;
+    color:#0b1220;
+    border-top:1px solid #e7eef7;
+    font-size:13px;
     }
     .collateral-dynamic th{
       background:#f9fbff;
@@ -988,9 +996,17 @@ margin-left: -15px;
       align-items:stretch;
       column-gap:25px;
     }
-.collateral-dynamic .ar-section .aging-charts .subcard{
-  height:100%;
-}
+    .collateral-dynamic .ar-section .aging-charts .subcard{
+      height:100%;
+      border-radius:12px;
+      box-shadow:var(--cd-shadow);
+      padding:12px 14px 14px;
+    }
+    @media (max-width: 980px){
+      .collateral-dynamic .ar-section .aging-charts{
+        grid-template-columns:1fr;
+      }
+    }
 
     .collateral-dynamic .ar-section .tables-row{
       grid-template-columns:repeat(auto-fit,minmax(320px,1fr));
@@ -1037,9 +1053,9 @@ margin-left: -15px;
       --chart-width:480;
       --chart-height:240;
       --axis-left:40;
-      --axis-right:500;
+      --axis-right:460;
       --axis-top:20;
-      --axis-bottom:140;
+      --axis-bottom:160;
       --axis-color:var(--aging-grid);
       position:relative;
       width:95%;
@@ -1674,10 +1690,10 @@ height: 102%;
                         <div class="chart-box aging-composition-chart" aria-label="Aging composition bar chart">
                           <div class="chart-layer is-static" style="height: 400px;">
                             <span class="chart-grid-line v axis-line" style="--x: 40"></span>
-                            <span class="chart-grid-line h axis-line" style="--y: 140"></span>
-                            <span class="chart-grid-line h" style="--y: 110"></span>
-                            <span class="chart-grid-line h" style="--y: 80"></span>
-                            <span class="chart-grid-line h" style="--y: 50"></span>
+                            <span class="chart-grid-line h axis-line" style="--y: 160"></span>
+                            <span class="chart-grid-line h" style="--y: 125"></span>
+                            <span class="chart-grid-line h" style="--y: 90"></span>
+                            <span class="chart-grid-line h" style="--y: 55"></span>
                             <span class="chart-grid-line h" style="--y: 20"></span>
                           </div>
                           <div class="chart-layer is-static label-layer" style="height: 400px;" >
