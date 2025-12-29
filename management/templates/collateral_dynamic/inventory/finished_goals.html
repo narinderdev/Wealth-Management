@@ -210,6 +210,13 @@
   .finished-goals .mini-table td{padding:9px 14px;}
   .finished-goals .mini-table td:first-child{color:var(--muted);font-weight:700;}
   .finished-goals .mini-table td:last-child{text-align:right;font-weight:900;}
+  .finished-goals .ineligible-detail-table{width:100%;border-collapse:collapse;}
+  .finished-goals .ineligible-detail-table th,
+  .finished-goals .ineligible-detail-table td{padding:10px 12px;border-bottom:1px solid rgba(230,234,242,.65);text-align:left;}
+  .finished-goals .ineligible-detail-table thead th{background:#FBFCFE;font-weight:700;color:#475467;}
+  .finished-goals .ineligible-detail-table th:last-child,
+  .finished-goals .ineligible-detail-table td:last-child{text-align:right;width:160px;}
+  .finished-goals .ineligible-detail-table tr:last-child td{border-bottom:none;}
   .finished-goals .table-wrap{overflow:auto;}
   .finished-goals .chart-wrap{
     padding:8px 10px 12px;
@@ -557,7 +564,7 @@
     </diV>
           
       <div class="table-wrap">
-        <table>
+        <table class="ineligible-detail-table">
           <thead>
             <tr>
               <th>Ineligibles</th>
@@ -910,6 +917,7 @@
     const H = Number.isFinite(c.height) ? c.height : 190;
     const hasMulti = c.labels.some(l => String(l).includes("\n"));
     const pad = {l:c.yLabel ? 58 : 46,r:c.yRight ? 42 : 14,t:16,b:hasMulti ? 44 : 30};
+    pad.l += 10;
     const plotW = W-pad.l-pad.r, plotH = H-pad.t-pad.b;
 
     const customTicks = Array.isArray(c.yTickValues) && c.yTickValues.length > 1;
