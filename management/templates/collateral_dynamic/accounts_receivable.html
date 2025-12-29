@@ -1091,6 +1091,10 @@ margin-left: -15px;
       --axis-top:20;
       --axis-bottom:140;
     }
+    /* Keep AR trend x-axis labels centered under their bars */
+    .collateral-dynamic .ar-trend-chart .label-layer{
+      margin-left:0;
+    }
     .collateral-dynamic .trend-bar{
       position:absolute;
       left:calc(var(--x) * 100% / var(--chart-width));
