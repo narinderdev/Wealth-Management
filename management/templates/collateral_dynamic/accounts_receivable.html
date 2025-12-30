@@ -411,7 +411,7 @@
     }
     .collateral-dynamic tbody tr:last-child td{
       border-bottom:none;
-      color: black;
+      /* color: black; */
     }
     .collateral-dynamic .recovery-table{
       table-layout:fixed;
@@ -628,7 +628,7 @@
     font-size:13px;
     }
     .collateral-dynamic th{
-      background:#f9fbff;
+      background:#f7faff;
       color:#6b7280;
       font-weight:600;
     }
@@ -1229,8 +1229,15 @@ margin-left: -15px;
     .collateral-dynamic .ar-section .ineligible-table tbody td{
       padding:8px 12px;
     }
-    .collateral-dynamic .ar-section .ineligible-table tfoot tr,
-    .collateral-dynamic .ar-section .ineligible-table tbody tr.total {
+    .collateral-dynamic .ar-section .ineligible-table thead th:nth-child(2),
+    .collateral-dynamic .ar-section .ineligible-table thead th:nth-child(3),
+    .collateral-dynamic .ar-section .ineligible-table td.align-center{
+      white-space:nowrap;
+    }
+    .collateral-dynamic .ar-section .ineligible-table tfoot tr{
+      background:transparent;
+    }
+    .collateral-dynamic .ar-section .ineligible-table tbody tr.total{
       background:#f7faff;
     }
     .collateral-dynamic .ar-section .aging-table .align-right{
@@ -1376,7 +1383,10 @@ margin-left: -15px;
       min-width:720px;
     }
     .collateral-dynamic .ar-section .align-right{text-align:right;}
-    .collateral-dynamic .ar-section .align-center{text-align:center;}
+    .collateral-dynamic .ar-section .align-center{
+      text-align:center;
+      white-space:nowrap;
+    }
     .collateral-dynamic .ar-section .centered-table th,
     .collateral-dynamic .ar-section .centered-table td{
       text-align:center;
