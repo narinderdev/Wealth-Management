@@ -3,7 +3,7 @@ import math
 from collections import OrderedDict
 from datetime import date, datetime, timedelta
 
-from decimal import Decimal
+from decimal import Decimal, ROUND_DOWN
 
 from django.contrib.auth.decorators import login_required
 from django.shortcuts import redirect, render
@@ -1855,6 +1855,7 @@ def _inventory_state(borrower, start_date=None, end_date=None):
 
     inventory_total = Decimal("0")
     inventory_ineligible = Decimal("0")
+    inventory_ineligible_raw = Decimal("0")
     inventory_net_total = Decimal("0")
 
     category_metrics = {
@@ -1877,7 +1878,9 @@ def _inventory_state(borrower, start_date=None, end_date=None):
     for row in inventory_rows:
         eligible = _to_decimal(row.eligible_collateral)
         inventory_total += eligible
-        inventory_ineligible += _to_decimal(row.ineligibles)
+        ineligible_amount = _to_decimal(row.ineligibles)
+        inventory_ineligible_raw += ineligible_amount
+        inventory_ineligible += abs(ineligible_amount)
         net_collateral = _to_decimal(row.net_collateral)
         inventory_net_total += net_collateral
         for category in CATEGORY_CONFIG:
@@ -1907,6 +1910,7 @@ def _inventory_state(borrower, start_date=None, end_date=None):
         "inventory_rows": inventory_rows,
         "inventory_total": inventory_total,
         "inventory_ineligible": inventory_ineligible,
+        "inventory_ineligible_raw": inventory_ineligible_raw,
         "inventory_net_total": inventory_net_total,
         "inventory_available_total": inventory_available_total,
         "category_metrics": category_metrics,
@@ -2018,13 +2022,14 @@ def _inventory_context(borrower, snapshot_text=None):
 
     inventory_total = state["inventory_total"]
     inventory_ineligible = state["inventory_ineligible"]
+    inventory_ineligible_raw = state.get("inventory_ineligible_raw", inventory_ineligible)
     inventory_net_total = state["inventory_net_total"]
     inventory_available_total = state["inventory_available_total"]
     inventory_rows = state["inventory_rows"]
     category_metrics = state["category_metrics"]
 
     inventory_available_display = _format_currency(inventory_available_total)
-    ineligible_display = _format_currency(inventory_ineligible)
+    ineligible_display = _format_currency(inventory_ineligible_raw)
 
     mix_total = inventory_total if inventory_total > 0 else Decimal("0")
 
@@ -3513,6 +3518,7 @@ def _finished_goals_context(
     inventory_total = state["inventory_total"]
     inventory_available_total = state["inventory_available_total"]
     inventory_ineligible = state["inventory_ineligible"]
+    inventory_ineligible_display = state.get("inventory_ineligible_raw", inventory_ineligible)
     inventory_net_total = state["inventory_net_total"]
     category_metrics = state["category_metrics"]
     inventory_rows = state["inventory_rows"]
@@ -3526,8 +3532,11 @@ def _finished_goals_context(
     metrics_row = metrics_qs.order_by("-as_of_date", "-created_at", "-id").first()
     if metrics_row:
         inventory_total = _to_decimal(metrics_row.total_inventory)
-        inventory_ineligible = _to_decimal(metrics_row.ineligible_inventory)
-        inventory_available_total = _to_decimal(metrics_row.available_inventory)
+        inventory_ineligible_display = _to_decimal(metrics_row.ineligible_inventory)
+        inventory_ineligible = abs(inventory_ineligible_display)
+        inventory_available_total = inventory_total - inventory_ineligible
+        if inventory_available_total < 0:
+            inventory_available_total = Decimal("0")
         inventory_net_total = inventory_available_total
 
     ar_row = (
@@ -3558,7 +3567,7 @@ def _finished_goals_context(
 
     metric_defs = [
         ("Total Inventory", _format_currency(inventory_total), total_delta),
-        ("Ineligible Inventory", _format_currency(inventory_ineligible), ineligible_delta),
+        ("Ineligible Inventory", _format_currency(inventory_ineligible_display), ineligible_delta),
         ("Available Inventory", _format_currency(inventory_available_total), available_delta),
     ]
 
@@ -3586,7 +3595,7 @@ def _finished_goals_context(
     if not ineligible_row and normalized_division != "all":
         ineligible_row = ineligible_qs.order_by("-date", "-created_at", "-id").first()
     if ineligible_row:
-        total_ineligible = _to_decimal(ineligible_row.total_ineligible)
+        total_ineligible = abs(_to_decimal(ineligible_row.total_ineligible))
         reason_fields = [
             ("Slow-Moving/Obsolete", "slow_moving_obsolete"),
             ("Aged", "aged"),
@@ -3595,8 +3604,13 @@ def _finished_goals_context(
             ("In-Transit", "in_transit"),
             ("Damaged/Non-Saleable", "damaged_non_saleable"),
         ]
-        for label, field in reason_fields:
-            amount = _to_decimal(getattr(ineligible_row, field, None))
+        amounts = [
+            (label, abs(_to_decimal(getattr(ineligible_row, field, None))))
+            for label, field in reason_fields
+        ]
+        if total_ineligible <= 0:
+            total_ineligible = sum(amount for _, amount in amounts)
+        for label, amount in amounts:
             pct = (amount / total_ineligible) if total_ineligible else Decimal("0")
             ineligible_detail_rows.append(
                 {
@@ -4917,11 +4931,21 @@ def _raw_materials_context(borrower, range_key="today", division="all"):
     if not state:
         return base_context
 
-    inventory_total = state["inventory_total"]
-    inventory_available_total = state["inventory_available_total"]
-    inventory_ineligible = state["inventory_ineligible"]
+    raw_rows = _filter_inventory_rows_by_key(state, "raw_materials")
+    inventory_rows = raw_rows or state["inventory_rows"]
+
+    raw_total = sum(_to_decimal(row.beginning_collateral) for row in raw_rows) if raw_rows else Decimal("0")
+    raw_available = sum(_to_decimal(row.eligible_collateral) for row in raw_rows) if raw_rows else Decimal("0")
+    raw_ineligible_raw = sum(_to_decimal(row.ineligibles) for row in raw_rows) if raw_rows else Decimal("0")
+    raw_ineligible = sum(abs(_to_decimal(row.ineligibles)) for row in raw_rows) if raw_rows else Decimal("0")
+    if raw_ineligible <= 0 and raw_total:
+        raw_ineligible = max(raw_total - raw_available, Decimal("0"))
+
+    inventory_total = raw_total if raw_rows else state["inventory_total"]
+    inventory_available_total = raw_available if raw_rows else state["inventory_available_total"]
+    inventory_ineligible = raw_ineligible if raw_rows else state["inventory_ineligible"]
+    inventory_ineligible_display = raw_ineligible_raw if raw_rows else state.get("inventory_ineligible_raw", inventory_ineligible)
     category_metrics = state["category_metrics"]
-    inventory_rows = state["inventory_rows"]
 
     available_pct = (
         (inventory_available_total / inventory_total) if inventory_total else Decimal("0")
@@ -4940,7 +4964,7 @@ def _raw_materials_context(borrower, range_key="today", division="all"):
         },
         {
             "label": "Ineligible Inventory",
-            "value": _format_currency(inventory_ineligible),
+            "value": _format_currency(inventory_ineligible_display),
             "delta": -abs(available_delta * Decimal("100")) if inventory_ineligible else None,
             "delta_class": "danger",
             "symbol": "▼",
@@ -4997,11 +5021,11 @@ def _raw_materials_context(borrower, range_key="today", division="all"):
             ("In Transit", getattr(rm_ineligible_row, "in_transit", None)),
             ("Damaged/Non Saleable", getattr(rm_ineligible_row, "damaged_non_saleable", None)),
         ]
-        total_ineligible = _to_decimal(getattr(rm_ineligible_row, "total_ineligible", None))
+        reason_amounts = [(label, abs(_to_decimal(value))) for label, value in reason_fields]
+        total_ineligible = abs(_to_decimal(getattr(rm_ineligible_row, "total_ineligible", None)))
         if total_ineligible <= 0:
-            total_ineligible = sum(_to_decimal(value) for _, value in reason_fields if value is not None)
-        for label, value in reason_fields:
-            amount = _to_decimal(value)
+            total_ineligible = sum(amount for _, amount in reason_amounts)
+        for label, amount in reason_amounts:
             pct = (amount / total_ineligible) if total_ineligible else Decimal("0")
             ineligible_detail.append(
                 {
@@ -5021,7 +5045,7 @@ def _raw_materials_context(borrower, range_key="today", division="all"):
             return "slow-moving/obsolete"
 
         for row in inventory_rows:
-            amount = _to_decimal(row.ineligibles)
+            amount = abs(_to_decimal(row.ineligibles))
             if amount <= 0:
                 continue
             text = " ".join(filter(None, [(row.sub_type or ""), (row.main_type or "")]))
@@ -5053,33 +5077,32 @@ def _raw_materials_context(borrower, range_key="today", division="all"):
         if range_qs.exists():
             category_qs = range_qs
 
-    category_totals = OrderedDict()
+    category_latest_rows = OrderedDict()
     for row in category_qs:
         label = (row.category or "—").strip()
-        if label not in category_totals:
-            category_totals[label] = {
-                "total": Decimal("0"),
-                "available": Decimal("0"),
-                "ineligible": Decimal("0"),
-            }
-        total = _to_decimal(row.total_inventory)
-        available = _to_decimal(row.available_inventory)
-        ineligible = _to_decimal(row.ineligible_inventory)
-        if ineligible <= 0 and total:
-            ineligible = max(total - available, Decimal("0"))
-        category_totals[label]["total"] += total
-        category_totals[label]["available"] += available
-        category_totals[label]["ineligible"] += ineligible
+        row_key = (
+            row.date or date.min,
+            row.created_at or datetime.min,
+            row.id or 0,
+        )
+        existing = category_latest_rows.get(label)
+        if existing is None or row_key > existing[0]:
+            category_latest_rows[label] = (row_key, row)
 
-    if category_totals:
-        for label, totals in category_totals.items():
-            total = totals["total"]
-            available = totals["available"]
-            ineligible = totals["ineligible"]
-            pct_ratio = (available / total) if total else Decimal("0")
+    if category_latest_rows:
+        for _, row in category_latest_rows.values():
+            total = _to_decimal(row.total_inventory)
+            available = _to_decimal(row.available_inventory)
+            ineligible = abs(_to_decimal(row.ineligible_inventory))
+            if ineligible <= 0 and total:
+                ineligible = max(total - available, Decimal("0"))
+            pct_value = _to_decimal(getattr(row, "pct_available", None))
+            if pct_value <= 0 and total:
+                pct_value = available / total
+            pct_ratio = pct_value / Decimal("100") if pct_value > 1 else pct_value
             category_rows.append(
                 {
-                    "label": label,
+                    "label": row.category or "—",
                     "total": _format_currency(total),
                     "ineligible": _format_currency(ineligible),
                     "available": _format_currency(available),
@@ -5242,14 +5265,21 @@ def _raw_materials_context(borrower, range_key="today", division="all"):
     sku_dated = sku_qs.exclude(as_of_date__isnull=True)
     if sku_dated.exists():
         if start_date and end_date:
-            sku_rows = list(sku_dated.filter(as_of_date__range=(start_date, end_date)))
-        if not sku_rows:
-            latest_date = sku_dated.order_by("-as_of_date").values_list("as_of_date", flat=True).first()
-            if latest_date:
-                fallback_start = latest_date - timedelta(days=364)
-                sku_rows = list(
-                    sku_dated.filter(as_of_date__range=(fallback_start, latest_date))
+            dated_in_range = sku_dated.filter(as_of_date__range=(start_date, end_date))
+            if dated_in_range.exists():
+                latest_date = (
+                    dated_in_range.order_by("-as_of_date")
+                    .values_list("as_of_date", flat=True)
+                    .first()
                 )
+                if latest_date:
+                    sku_rows = list(dated_in_range.filter(as_of_date=latest_date))
+        if not sku_rows:
+            latest_date = (
+                sku_dated.order_by("-as_of_date").values_list("as_of_date", flat=True).first()
+            )
+            if latest_date:
+                sku_rows = list(sku_dated.filter(as_of_date=latest_date))
     if not sku_rows:
         sku_rows = list(sku_qs)
 
@@ -5259,6 +5289,20 @@ def _raw_materials_context(borrower, range_key="today", division="all"):
         total_amount = Decimal("0")
         total_available = Decimal("0")
         top_label = "Top 20 Total"
+
+        def _format_per_unit(value):
+            if value is None:
+                return "ƒ?"
+            try:
+                dec = Decimal(value)
+            except Exception:
+                try:
+                    dec = Decimal(str(value))
+                except Exception:
+                    return "ƒ?"
+            quantized = dec.quantize(Decimal("0.00"), rounding=ROUND_DOWN)
+            return f"${quantized:,.2f}"
+
         for row in sku_rows:
             item_number = _format_item_number_value(row.sku)
             category = row.category or "—"
@@ -5335,7 +5379,7 @@ def _raw_materials_context(borrower, range_key="today", division="all"):
                     "description": meta.get("description", "—"),
                     "amount": _format_currency(entry["amount"]),
                     "units": units_display,
-                    "per_unit": _format_currency(per_unit_value),
+                    "per_unit": _format_per_unit(per_unit_value),
                     "pct_available": _format_pct(pct_available),
                     "status": "Current",
                 }
@@ -5605,13 +5649,13 @@ def _work_in_progress_context(borrower, range_key="today", division="all"):
             "-date", "-created_at", "-id"
         ).first()
     if wip_ineligible_row:
-        total_ineligible_row = _to_decimal(getattr(wip_ineligible_row, "total_ineligible", None))
-        slow_moving = _to_decimal(getattr(wip_ineligible_row, "slow_moving_obsolete", None))
-        aged = _to_decimal(getattr(wip_ineligible_row, "aged", None))
-        off_site = _to_decimal(getattr(wip_ineligible_row, "off_site", None))
-        consigned = _to_decimal(getattr(wip_ineligible_row, "consigned", None))
-        in_transit = _to_decimal(getattr(wip_ineligible_row, "in_transit", None))
-        damaged = _to_decimal(getattr(wip_ineligible_row, "damaged_non_saleable", None))
+        total_ineligible_row = abs(_to_decimal(getattr(wip_ineligible_row, "total_ineligible", None)))
+        slow_moving = abs(_to_decimal(getattr(wip_ineligible_row, "slow_moving_obsolete", None)))
+        aged = abs(_to_decimal(getattr(wip_ineligible_row, "aged", None)))
+        off_site = abs(_to_decimal(getattr(wip_ineligible_row, "off_site", None)))
+        consigned = abs(_to_decimal(getattr(wip_ineligible_row, "consigned", None)))
+        in_transit = abs(_to_decimal(getattr(wip_ineligible_row, "in_transit", None)))
+        damaged = abs(_to_decimal(getattr(wip_ineligible_row, "damaged_non_saleable", None)))
         if total_ineligible_row <= 0:
             total_ineligible_row = slow_moving + aged + off_site + consigned + in_transit + damaged
         work_in_progress = max(
