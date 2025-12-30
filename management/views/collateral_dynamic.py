@@ -5090,16 +5090,14 @@ def _raw_materials_context(borrower, range_key="today", division="all"):
             category_latest_rows[label] = (row_key, row)
 
     if category_latest_rows:
+        available_denominator = inventory_available_total if inventory_available_total > 0 else Decimal("0")
         for _, row in category_latest_rows.values():
             total = _to_decimal(row.total_inventory)
             available = _to_decimal(row.available_inventory)
             ineligible = abs(_to_decimal(row.ineligible_inventory))
             if ineligible <= 0 and total:
                 ineligible = max(total - available, Decimal("0"))
-            pct_value = _to_decimal(getattr(row, "pct_available", None))
-            if pct_value <= 0 and total:
-                pct_value = available / total
-            pct_ratio = pct_value / Decimal("100") if pct_value > 1 else pct_value
+            pct_ratio = (available / available_denominator) if available_denominator else Decimal("0")
             category_rows.append(
                 {
                     "label": row.category or "—",
@@ -5126,7 +5124,7 @@ def _raw_materials_context(borrower, range_key="today", division="all"):
             "ineligible": _format_currency(max(top10_total - top10_available, Decimal("0"))),
             "available": _format_currency(top10_available),
             "pct_available": _format_pct(
-                (top10_available / top10_total) if top10_total else Decimal("0")
+                (top10_available / available_denominator) if available_denominator else Decimal("0")
             ),
         }
 
@@ -5140,7 +5138,7 @@ def _raw_materials_context(borrower, range_key="today", division="all"):
             "ineligible": _format_currency(max(other_total - other_available, Decimal("0"))),
             "available": _format_currency(other_available),
             "pct_available": _format_pct(
-                (other_available / other_total) if other_total else Decimal("0")
+                (other_available / available_denominator) if available_denominator else Decimal("0")
             ),
         }
 
@@ -5152,7 +5150,7 @@ def _raw_materials_context(borrower, range_key="today", division="all"):
             "ineligible": _format_currency(total_ineligible_calc),
             "available": _format_currency(total_available),
             "pct_available": _format_pct(
-                total_available / total_beginning if total_beginning else Decimal("0")
+                (total_available / available_denominator) if available_denominator else Decimal("0")
             ),
         }
 
@@ -5289,6 +5287,7 @@ def _raw_materials_context(borrower, range_key="today", division="all"):
         total_amount = Decimal("0")
         total_available = Decimal("0")
         top_label = "Top 20 Total"
+        available_denominator = inventory_available_total if inventory_available_total > 0 else Decimal("0")
 
         def _format_per_unit(value):
             if value is None:
@@ -5370,7 +5369,7 @@ def _raw_materials_context(borrower, range_key="today", division="all"):
                 entry["amount"] / entry["units"] if entry["units"] else None
             )
             pct_available = (
-                entry["available"] / entry["amount"] if entry["amount"] else None
+                entry["amount"] / available_denominator if available_denominator else Decimal("0")
             )
             raw_skus.append(
                 {
@@ -5388,9 +5387,7 @@ def _raw_materials_context(borrower, range_key="today", division="all"):
             top20_available_amount += entry["available"]
 
         total_pct = (
-            top20_available_amount / top20_total_amount
-            if top20_total_amount
-            else Decimal("0")
+            top20_total_amount / available_denominator if available_denominator else Decimal("0")
         )
         top20_total = {
             "label": top_label,
@@ -5728,16 +5725,14 @@ def _work_in_progress_context(borrower, range_key="today", division="all"):
             category_latest_rows[label] = (row_key, row)
 
     if category_latest_rows:
+        available_denominator = total_available if total_available > 0 else Decimal("0")
         for _, row in category_latest_rows.values():
             total = _to_decimal(row.total_inventory)
             available = _to_decimal(row.available_inventory)
             ineligible = _to_decimal(row.ineligible_inventory)
             if ineligible <= 0 and total:
                 ineligible = max(total - available, Decimal("0"))
-            pct_value = _to_decimal(row.pct_available)
-            if pct_value <= 0 and total:
-                pct_value = available / total
-            pct_ratio = pct_value / Decimal("100") if pct_value > 1 else pct_value
+            pct_ratio = (available / available_denominator) if available_denominator else Decimal("0")
             category_rows.append(
                 {
                     "label": row.category or "—",
@@ -5763,7 +5758,7 @@ def _work_in_progress_context(borrower, range_key="today", division="all"):
             "ineligible": _format_currency(max(top10_total - top10_available, Decimal("0"))),
             "available": _format_currency(top10_available),
             "pct_available": _format_pct(
-                (top10_available / top10_total) if top10_total else Decimal("0")
+                (top10_available / available_denominator) if available_denominator else Decimal("0")
             ),
         }
         for item in category_rows:
@@ -5785,7 +5780,7 @@ def _work_in_progress_context(borrower, range_key="today", division="all"):
             total = metrics["total"]
             available = metrics["available"]
             ineligible = max(total - available, Decimal("0"))
-            pct_available = available / total if total else Decimal("0")
+            pct_available = (available / total_available) if total_available else Decimal("0")
             category_rows.append(
                 {
                     "label": label,
@@ -5811,13 +5806,15 @@ def _work_in_progress_context(borrower, range_key="today", division="all"):
             "ineligible": _format_currency(max(top10_total - top10_available, Decimal("0"))),
             "available": _format_currency(top10_available),
             "pct_available": _format_pct(
-                (top10_available / top10_total) if top10_total else Decimal("0")
+                (top10_available / total_available) if total_available else Decimal("0")
             ),
         }
         for item in category_rows:
             item.pop("_total_value", None)
             item.pop("_available_value", None)
 
+    available_denominator = total_available if total_available > 0 else Decimal("0")
+    available_denominator = total_available if total_available > 0 else Decimal("0")
     raw_skus = []
     top20_total = _empty_summary_entry("Top 20 Total")
     sku_base_qs = WIPTop20HistoryRow.objects.filter(borrower=borrower)
@@ -5848,6 +5845,18 @@ def _work_in_progress_context(borrower, range_key="today", division="all"):
         sku_meta = {}
         total_amount = Decimal("0")
         total_available = Decimal("0")
+        def _format_per_unit(value):
+            if value is None:
+                return "ƒ?"
+            try:
+                dec = Decimal(value)
+            except Exception:
+                try:
+                    dec = Decimal(str(value))
+                except Exception:
+                    return "ƒ?"
+            quantized = dec.quantize(Decimal("0.00"), rounding=ROUND_DOWN)
+            return f"${quantized:,.2f}"
         for row in sku_rows:
             item_number = _format_item_number_value(row.sku)
             category = row.category or "—"
@@ -5914,7 +5923,7 @@ def _work_in_progress_context(borrower, range_key="today", division="all"):
                 entry["amount"] / entry["units"] if entry["units"] else None
             )
             pct_available = (
-                entry["available"] / entry["amount"] if entry["amount"] else None
+                entry["amount"] / available_denominator if available_denominator else Decimal("0")
             )
             raw_skus.append(
                 {
@@ -5923,7 +5932,7 @@ def _work_in_progress_context(borrower, range_key="today", division="all"):
                     "description": meta.get("description", "—"),
                     "amount": _format_currency(entry["amount"]),
                     "units": units_display,
-                    "per_unit": _format_currency(per_unit_value),
+                    "per_unit": _format_per_unit(per_unit_value),
                     "pct_available": _format_pct(pct_available),
                     "status": "Current",
                 }
@@ -5932,9 +5941,7 @@ def _work_in_progress_context(borrower, range_key="today", division="all"):
             top20_available_amount += entry["available"]
 
         total_pct = (
-            top20_available_amount / top20_total_amount
-            if top20_total_amount
-            else Decimal("0")
+            top20_total_amount / available_denominator if available_denominator else Decimal("0")
         )
         top20_total = {
             "label": "Top 20 Total",

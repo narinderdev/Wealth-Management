@@ -2055,7 +2055,7 @@ height: 102%;
                     <div class="subcard">
                       <div class="table-title centered-title">
                         <span>Average Days Outstanding</span>
-                        <span class="table-pill">Days</span>
+                        <span class="table-pill"></span>
                       </div>
                       <table class="centered-table">
                         <thead>
@@ -2070,8 +2070,8 @@ height: 102%;
                           {% for row in ar_ado_rows %}
                             <tr>
                               <td class="align-left">{{ row.customer }}</td>
-                              <td class="align-center">{{ row.current }}%</td>
-                              <td class="align-center">{{ row.average }}%</td>
+                              <td class="align-center">{{ row.current }}</td>
+                              <td class="align-center">{{ row.average }}</td>
                               <td class="align-center">{{ row.variance }}</td>
                             </tr>
                           {% empty %}
@@ -2086,7 +2086,7 @@ height: 102%;
                     <div class="subcard">
                       <div class="table-title centered-title">
                         <span>Days Sales Outstanding</span>
-                        <span class="table-pill">Days</span>
+                        <span class="table-pill"></span>
                       </div>
                       <table class="centered-table">
                         <thead>
@@ -2101,8 +2101,8 @@ height: 102%;
                           {% for row in ar_dso_rows %}
                             <tr>
                               <td class="align-left">{{ row.customer }}</td>
-                              <td class="align-center">{{ row.current }}%</td>
-                              <td class="align-center">{{ row.average }}%</td>
+                              <td class="align-center">{{ row.current }}</td>
+                              <td class="align-center">{{ row.average }}</td>
                               <td class="align-center">{{ row.variance }}</td>
                             </tr>
                           {% empty %}
