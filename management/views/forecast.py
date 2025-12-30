@@ -13,6 +13,7 @@ from management.views.summary import (
     get_preferred_borrower,
     _to_decimal,
     get_snapshot_summary_map,
+    SNAPSHOT_EMPTY_MESSAGE,
 )
 
 
@@ -279,6 +280,9 @@ def forecast_view(request):
     context["active_tab"] = "forecast"
     context["forecast_charts_json"] = json.dumps(context["forecast_charts"])
     context["price_target"] = _price_target_snapshot()
+    context["forecast_has_data"] = bool(rows)
+    context["forecast_borrower_selected"] = borrower is not None
+    context["snapshot_empty_message"] = SNAPSHOT_EMPTY_MESSAGE
     context["forecast_snapshots"] = {
         "liquidity": snapshot_map.get(SnapshotSummaryRow.SECTION_FORECAST_LIQUIDITY),
         "sales_gm": snapshot_map.get(SnapshotSummaryRow.SECTION_FORECAST_SALES_GM),

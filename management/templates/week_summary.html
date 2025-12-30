@@ -22,11 +22,52 @@
       border-radius:16px;
       box-shadow:0 12px 28px rgba(15,23,42,.08);
     }
+    .empty-state{
+      display:flex;
+      align-items:center;
+      gap:14px;
+      padding:18px;
+      border:1px dashed #d6deee;
+      border-radius:14px;
+      background:#f8fafc;
+      color:#475569;
+    }
+    .empty-state__icon{
+      width:36px;
+      height:36px;
+      border-radius:12px;
+      background:linear-gradient(135deg,#dbeafe,#f8fafc);
+      box-shadow:inset 0 0 0 1px #dbeafe;
+    }
+    .empty-state__title{
+      font-size:14px;
+      font-weight:600;
+      color:#0f172a;
+      margin-bottom:4px;
+    }
+    .empty-state__message{
+      font-size:12px;
+      line-height:1.5;
+    }
+    .empty-state__action{
+      display:inline-flex;
+      align-items:center;
+      gap:6px;
+      margin-top:10px;
+      padding:6px 12px;
+      border-radius:999px;
+      border:1px solid #d7e0f5;
+      background:#fff;
+      color:#1e3a8a;
+      font-size:12px;
+      font-weight:600;
+      text-decoration:none;
+    }
     .summary-card{
-      padding:16px;
+      padding:18px;
       display:flex;
       flex-direction:column;
-      gap:14px;
+      gap:16px;
       align-self:stretch;
       height:100%;
     }
@@ -72,6 +113,9 @@
       flex-direction:column;
       gap:16px;
       min-height:560px;
+    }
+    .cashflow-card.is-empty{
+      min-height:240px;
     }
     .cashflow-header{
       display:flex;
@@ -486,14 +530,31 @@
       gap:18px;
       margin-top:18px;
     }
+    .cd-empty{
+      padding:22px;
+    }
+    .empty-inline{
+      font-size:12px;
+      color:#94a3b8;
+      padding:6px 0 2px;
+    }
   </style>
 {% endblock %}
 
 {% block page_content %}
+  {% url "admin_component" "snapshotSummaries" as admin_snapshot_url %}
+  {% url "admin_component" "forecast" as admin_forecast_url %}
+  {% if borrower_message %}
+  <div class="cd-static">
+    <div class="cd-card wide cd-empty">
+      {% include "shared/empty_state.html" with type="noBorrower" title="Select a borrower" message=borrower_message action_label=borrower_action_label action_url=borrower_action_url %}
+    </div>
+  </div>
+  {% else %}
   <div class="cd-static">
     <aside class="cd-card summary-card">
-      <div>
-        <p class="summary-title">Current Week Summary</p>
+      <p class="summary-title">Current Week Summary</p>
+      {% if week_summary.has_summary_data %}
         <div>
           {% for stat in week_summary.stats %}
             <div class="kv-pair">
@@ -502,26 +563,36 @@
             </div>
           {% endfor %}
         </div>
-      </div>
-      <div class="section-block">
-        <p class="summary-title">Top Customer Receipts</p>
-        <div class="stacked-list">
-          {% for item in week_summary.top_receipts %}
-            <span>{{ item.name }}<span>{{ item.value }}</span></span>
-          {% endfor %}
+        <div class="section-block">
+          <p class="summary-title">Top Customer Receipts</p>
+          <div class="stacked-list">
+            {% if week_summary.top_receipts %}
+              {% for item in week_summary.top_receipts %}
+                <span>{{ item.name }}<span>{{ item.value }}</span></span>
+              {% endfor %}
+            {% else %}
+              <div class="empty-inline">No receipt data available.</div>
+            {% endif %}
+          </div>
         </div>
-      </div>
-      <div class="section-block">
-        <p class="summary-title">Top Spend Categories</p>
-        <div class="stacked-list">
-          {% for item in week_summary.top_spend %}
-            <span>{{ item.name }}<span>{{ item.value }}</span></span>
-          {% endfor %}
+        <div class="section-block">
+          <p class="summary-title">Top Spend Categories</p>
+          <div class="stacked-list">
+            {% if week_summary.top_spend %}
+              {% for item in week_summary.top_spend %}
+                <span>{{ item.name }}<span>{{ item.value }}</span></span>
+              {% endfor %}
+            {% else %}
+              <div class="empty-inline">No spend data available.</div>
+            {% endif %}
+          </div>
         </div>
-      </div>
+      {% else %}
+        {% include "shared/empty_state.html" with type="empty" title="No summary data" message="No weekly summary data available for this borrower yet." action_label="Add from Admin panel" action_url=admin_forecast_url %}
+      {% endif %}
     </aside>
 
-    <div class="cd-card cashflow-card">
+    <div class="cd-card cashflow-card{% if not week_summary.has_cashflow_data %} is-empty{% endif %}">
       <div class="cashflow-header">
         <span class="heading-with-icon">
           <img src="{% static 'images/tick.svg' %}" alt="tick icon"/>
@@ -532,78 +603,81 @@
         </span>
       </div>
 
-      <div class="stat-row">
-        {% for stat in week_summary.summary_cards %}
-          <div class="stat-card">
-            <div class="stat-card-header">
-              <div>
-                <small>{{ stat.label }}</small>
-                <div class="stat-value">{{ stat.value }}</div>
+      {% if week_summary.has_cashflow_data %}
+        <div class="stat-row">
+          {% for stat in week_summary.summary_cards %}
+            <div class="stat-card">
+              <div class="stat-card-header">
+                <div>
+                  <small>{{ stat.label }}</small>
+                  <div class="stat-value">{{ stat.value }}</div>
+                </div>
+                
+                  {% if stat.label == "Ending Cash" %}
+                    <img src="{% static 'images/endingcash.svg' %}" alt="Ending Cash"/>
+                  {% elif stat.label == "Total Receipts" %}
+                    <img src="{% static 'images/totalreciept.svg' %}" alt="Total Receipts"/>
+                  {% else %}
+                    <img src="{% static 'images/totaldisbursement.svg' %}" alt="Total Disbursement"/>
+                  {% endif %}
+                
               </div>
-              
-                {% if stat.label == "Ending Cash" %}
-                  <img src="{% static 'images/endingcash.svg' %}" alt="Ending Cash"/>
-                {% elif stat.label == "Total Receipts" %}
-                  <img src="{% static 'images/totalreciept.svg' %}" alt="Total Receipts"/>
-                {% else %}
-                  <img src="{% static 'images/totaldisbursement.svg' %}" alt="Total Disbursement"/>
-                {% endif %}
-              
+              {% if stat.delta %}
+                <div class="stat-delta {{ stat.delta_class }}">{{ stat.delta }}</div>
+              {% endif %}
             </div>
-            {% if stat.delta %}
-              <div class="stat-delta {{ stat.delta_class }}">{{ stat.delta }}</div>
-            {% endif %}
-          </div>
-        {% empty %}
-          <div class="stat-card">
-            <small>Ending Cash</small>
-            <div class="stat-value">—</div>
-          </div>
-        {% endfor %}
-      </div>
-
-      <div class="chart-panel">
-        <div class="chart-wrap">
-          <svg viewBox="0 0 1080 300" preserveAspectRatio="none">
-            <rect x="0" y="0" width="1080" height="300" fill="none" stroke="none"/>
-            <g stroke="#dce3f5">
-              {% for tick in week_summary.chart.ticks %}
-                <line x1="80" y1="{{ tick.y }}" x2="1030" y2="{{ tick.y }}"/>
-              {% endfor %}
-            </g>
-            <g fill="#94a3b8" font-size="10pt">
-              {% for tick in week_summary.chart.ticks %}
-                <text x="68" y="{{ tick.y|add:4 }}" text-anchor="end">{{ tick.label }}</text>
-              {% endfor %}
-            </g>
-            <g fill="#1889E6">
-              {% for bar in week_summary.chart.collections_bars %}
-                <rect x="{{ bar.x }}" y="{{ bar.y }}" width="{{ bar.width }}" height="{{ bar.height }}"
-                  class="ws-tip" data-label="{{ bar.label }}" data-series="Collections" data-value="{{ bar.value }}"/>
-              {% endfor %}
-            </g>
-            <g fill="#FC912E">
-              {% for bar in week_summary.chart.disbursement_bars %}
-                <rect x="{{ bar.x }}" y="{{ bar.y }}" width="{{ bar.width }}" height="{{ bar.height }}"
-                  class="ws-tip" data-label="{{ bar.label }}" data-series="Disbursements" data-value="{{ bar.value }}"/>
-              {% endfor %}
-            </g>
-            <g fill="#94a3b8" font-size="10pt">
-              {% for label in week_summary.chart.labels %}
-                <text x="{{ label.x }}" y="280" text-anchor="middle">{{ label.text }}</text>
-              {% endfor %}
-            </g>
-            {% comment %} Inline legend aligned near the top-right with padding from edge {% endcomment %}
-            <g font-size="10pt" font-weight="600" fill="#0f1f44">
-              <rect x="760" y="2" width="21" height="21" fill="#1889E6" rx="4"/>
-              <text x="790" y="18">Collections</text>
-              <rect x="900" y="2" width="21" height="21" fill="#FC912E" rx="4"/>
-              <text x="930" y="18">Disbursements</text>
-            </g>
-          </svg>
-          <div class="chart-tooltip" aria-hidden="true"></div>
+          {% endfor %}
         </div>
-      </div>
+
+        <div class="chart-panel">
+          {% if week_summary.chart.labels %}
+            <div class="chart-wrap">
+              <svg viewBox="0 0 1080 300" preserveAspectRatio="none">
+                <rect x="0" y="0" width="1080" height="300" fill="none" stroke="none"/>
+                <g stroke="#dce3f5">
+                  {% for tick in week_summary.chart.ticks %}
+                    <line x1="80" y1="{{ tick.y }}" x2="1030" y2="{{ tick.y }}"/>
+                  {% endfor %}
+                </g>
+                <g fill="#94a3b8" font-size="10pt">
+                  {% for tick in week_summary.chart.ticks %}
+                    <text x="68" y="{{ tick.y|add:4 }}" text-anchor="end">{{ tick.label }}</text>
+                  {% endfor %}
+                </g>
+                <g fill="#1889E6">
+                  {% for bar in week_summary.chart.collections_bars %}
+                    <rect x="{{ bar.x }}" y="{{ bar.y }}" width="{{ bar.width }}" height="{{ bar.height }}"
+                      class="ws-tip" data-label="{{ bar.label }}" data-series="Collections" data-value="{{ bar.value }}"/>
+                  {% endfor %}
+                </g>
+                <g fill="#FC912E">
+                  {% for bar in week_summary.chart.disbursement_bars %}
+                    <rect x="{{ bar.x }}" y="{{ bar.y }}" width="{{ bar.width }}" height="{{ bar.height }}"
+                      class="ws-tip" data-label="{{ bar.label }}" data-series="Disbursements" data-value="{{ bar.value }}"/>
+                  {% endfor %}
+                </g>
+                <g fill="#94a3b8" font-size="10pt">
+                  {% for label in week_summary.chart.labels %}
+                    <text x="{{ label.x }}" y="280" text-anchor="middle">{{ label.text }}</text>
+                  {% endfor %}
+                </g>
+                {% comment %} Inline legend aligned near the top-right with padding from edge {% endcomment %}
+                <g font-size="10pt" font-weight="600" fill="#0f1f44">
+                  <rect x="760" y="2" width="21" height="21" fill="#1889E6" rx="4"/>
+                  <text x="790" y="18">Collections</text>
+                  <rect x="900" y="2" width="21" height="21" fill="#FC912E" rx="4"/>
+                  <text x="930" y="18">Disbursements</text>
+                </g>
+              </svg>
+              <div class="chart-tooltip" aria-hidden="true"></div>
+            </div>
+          {% else %}
+            {% include "shared/empty_state.html" with type="empty" title="No cash flow summary data" message="No cash flow summary data available for this borrower yet." action_label="Add from Admin panel" action_url=admin_forecast_url %}
+          {% endif %}
+        </div>
+      {% else %}
+        {% include "shared/empty_state.html" with type="empty" title="No cash flow summary data" message="No cash flow summary data available for this borrower yet." action_label="Add from Admin panel" action_url=admin_forecast_url %}
+      {% endif %}
     </div>
 
     <div class="cd-card snapshot-card wide">
@@ -611,7 +685,11 @@
         <img src="{% static 'images/tick.svg' %}" alt="tick icon"/>
         Snapshot Summary
       </h3>
-      <p>{{ week_summary.snapshot_summary|linebreaksbr }}</p>
+      {% if not week_summary.snapshot_summary or week_summary.snapshot_summary == "No snapshot summary available." %}
+        {% include "shared/empty_state.html" with type="empty" title="No snapshot summary" message="No snapshot summary available for this borrower yet." action_label="Add Snapshot Summary" action_url=admin_snapshot_url %}
+      {% else %}
+        <p>{{ week_summary.snapshot_summary|linebreaksbr }}</p>
+      {% endif %}
     </div>
 
     <div class="cd-card forecast-card wide">
@@ -622,20 +700,20 @@
         </span>
         <span style="font-size:11px;color:#64748b;">Updated {{ week_summary.forecast_updated_label }}</span>
       </div>
-      <div class="table-wrapper cashflow-wrapper">
-        <table class="cash-table cashflow-table">
-            <thead>
-            <tr class="cashflow-header-row">
-                <th></th>
-                <th>{{ week_summary.cashflow_actual_label|safe }}</th>
-                {% for forecast_label in week_summary.cashflow_forecast_labels %}
-                  <th>{{ forecast_label|safe }}</th>
-                {% endfor %}
-                <th>13-Week<br/>Total</th>
-              </tr>
-            </thead>
-            <tbody>
-              {% if week_summary.cashflow_table_rows %}
+      {% if week_summary.cashflow_table_rows %}
+        <div class="table-wrapper cashflow-wrapper">
+          <table class="cash-table cashflow-table">
+              <thead>
+              <tr class="cashflow-header-row">
+                  <th></th>
+                  <th>{{ week_summary.cashflow_actual_label|safe }}</th>
+                  {% for forecast_label in week_summary.cashflow_forecast_labels %}
+                    <th>{{ forecast_label|safe }}</th>
+                  {% endfor %}
+                  <th>13-Week<br/>Total</th>
+                </tr>
+              </thead>
+              <tbody>
                 {% for row in week_summary.cashflow_table_rows %}
                   {% with row_class=row.row_class|default_if_none:"" %}
                     <tr class="{% if row_class %}{{ row_class }}{% else %}detail-row{% endif %}">
@@ -648,14 +726,12 @@
                     </tr>
                   {% endwith %}
                 {% endfor %}
-              {% else %}
-                <tr>
-                  <td colspan="{{ week_summary.cashflow_table_colspan }}">{{ week_summary.cashflow_empty_state|default:"No forecast data available." }}</td>
-                </tr>
-              {% endif %}
-            </tbody>
-          </table>
-        </div>
+              </tbody>
+            </table>
+          </div>
+        {% else %}
+          {% include "shared/empty_state.html" with type="empty" title="No cash flow forecast data" message=week_summary.cashflow_empty_state|default:"No forecast data available." action_label="Add from Admin panel" action_url=admin_forecast_url %}
+        {% endif %}
       </div>
     </div>
 
@@ -667,19 +743,19 @@
         </span>
         <span style="font-size:11px;color:#64748b;">Updated {{ week_summary.forecast_updated_label|default:"—" }}</span>
       </div>
-      <div class="table-wrapper">
-        <table class="cash-table cash-forecast-table">
-            <thead>
-            <tr class="cashflow-header-row">
-                <th></th>
-                <th>{{ week_summary.cashflow_actual_label|safe }}</th>
-                {% for forecast_label in week_summary.cashflow_forecast_labels %}
-                  <th>{{ forecast_label|safe }}</th>
-                {% endfor %}
-              </tr>
-            </thead>
-            <tbody>
-              {% if week_summary.cashflow_cash_rows %}
+      {% if week_summary.cashflow_cash_rows %}
+        <div class="table-wrapper">
+          <table class="cash-table cash-forecast-table">
+              <thead>
+              <tr class="cashflow-header-row">
+                  <th></th>
+                  <th>{{ week_summary.cashflow_actual_label|safe }}</th>
+                  {% for forecast_label in week_summary.cashflow_forecast_labels %}
+                    <th>{{ forecast_label|safe }}</th>
+                  {% endfor %}
+                </tr>
+              </thead>
+              <tbody>
                 {% for row in week_summary.cashflow_cash_rows %}
                   {% with row_class=row.row_class|default_if_none:"" %}
                     <tr class="{% if row_class %}{{ row_class }}{% else %}detail-row{% endif %}">
@@ -692,14 +768,12 @@
                     </tr>
                   {% endwith %}
                 {% endfor %}
-              {% else %}
-                <tr>
-                  <td colspan="{{ week_summary.cashflow_cash_colspan }}">{{ week_summary.cashforecast_empty_state|default:"No forecast data available." }}</td>
-                </tr>
-              {% endif %}
-            </tbody>
-          </table>
-      </div>
+              </tbody>
+            </table>
+        </div>
+      {% else %}
+        {% include "shared/empty_state.html" with type="empty" title="No cash forecast data" message=week_summary.cashforecast_empty_state|default:"No forecast data available." action_label="Add from Admin panel" action_url=admin_forecast_url %}
+      {% endif %}
     </div>
 
   <div class="cd-stack">
@@ -711,22 +785,22 @@
       </span>
       <span style="font-size:11px;color:#64748b;">Collateral view + cash cushion</span>
     </div>
-    <div class="table-wrapper">
-        <table class="cash-table availability-table">
-        <thead>
-          {% with avail_labels=week_summary.cashflow_forecast_labels|default:week_summary.availability_week_labels %}
-          <tr class="cashflow-header-row">
-            <th></th>
-            <th>{{ week_summary.cashflow_actual_label|safe }}</th>
-            {% for label in avail_labels %}
-              <th>{{ label|safe }}</th>
-            {% endfor %}
-            <!-- <th>13-Week<br/>Total</th> -->
-          </tr>
-          {% endwith %}
-        </thead>
-        <tbody>
-          {% if week_summary.availability_rows %}
+    {% if week_summary.availability_rows %}
+      <div class="table-wrapper">
+          <table class="cash-table availability-table">
+          <thead>
+            {% with avail_labels=week_summary.cashflow_forecast_labels|default:week_summary.availability_week_labels %}
+            <tr class="cashflow-header-row">
+              <th></th>
+              <th>{{ week_summary.cashflow_actual_label|safe }}</th>
+              {% for label in avail_labels %}
+                <th>{{ label|safe }}</th>
+              {% endfor %}
+              <!-- <th>13-Week<br/>Total</th> -->
+            </tr>
+            {% endwith %}
+          </thead>
+          <tbody>
             {% for row in week_summary.availability_rows %}
               <tr>
                 <td>{{ row.label }}</td>
@@ -737,14 +811,12 @@
                 <!-- <td>{{ row.total }}</td> -->
               </tr>
             {% endfor %}
-            {% else %}
-              <tr>
-                <td colspan="{{ week_summary.availability_week_labels|length|add:'2' }}">$&nbsp;—</td>
-              </tr>
-            {% endif %}
-        </tbody>
-      </table>
-    </div>
+          </tbody>
+        </table>
+      </div>
+    {% else %}
+      {% include "shared/empty_state.html" with type="empty" title="No availability forecast data" message="No availability forecast data available for this borrower yet." action_label="Add from Admin panel" action_url=admin_forecast_url %}
+    {% endif %}
   </div>
 
   <div class="cd-card forecast-card">
@@ -760,49 +832,53 @@
       </div>
     </div>
     <div class="chart-panel">
-      <div class="chart-wrap">
-        <svg viewBox="0 0 800 240" preserveAspectRatio="none">
-          <rect x="0" y="0" width="800" height="240" fill="none" stroke="none"/>
-          <g stroke="#dce3f5">
-            {% for tick in week_summary.liquidity_ticks %}
-              <line x1="70" y1="{{ tick.y }}" x2="740" y2="{{ tick.y }}"/>
-            {% endfor %}
-          </g>
-          <g fill="#94a3b8" font-size="11">
-            {% for tick in week_summary.liquidity_ticks %}
-              <text x="34" y="{{ tick.y|add:4 }}" text-anchor="end">{{ tick.label }}</text>
-            {% endfor %}
-          </g>
-          {% for series in week_summary.liquidity_series %}
-            <polyline
-              fill="none"
-              stroke="{{ series.color }}"
-              stroke-width="3"
-              stroke-linecap="round"
-              points="{{ series.points }}"
-            />
-            {% for dot in series.dots %}
-              <circle cx="{{ dot.cx }}" cy="{{ dot.cy }}" r="3" fill="{{ series.color }}"/>
-              <circle
-                cx="{{ dot.cx }}"
-                cy="{{ dot.cy }}"
-                r="9"
-                fill="transparent"
-                class="ws-tip"
-                data-label="{{ dot.label }}"
-                data-series="{{ series.label }}"
-                data-value="{{ dot.value }}"
+      {% if week_summary.liquidity_series %}
+        <div class="chart-wrap">
+          <svg viewBox="0 0 800 240" preserveAspectRatio="none">
+            <rect x="0" y="0" width="800" height="240" fill="none" stroke="none"/>
+            <g stroke="#dce3f5">
+              {% for tick in week_summary.liquidity_ticks %}
+                <line x1="70" y1="{{ tick.y }}" x2="740" y2="{{ tick.y }}"/>
+              {% endfor %}
+            </g>
+            <g fill="#94a3b8" font-size="11">
+              {% for tick in week_summary.liquidity_ticks %}
+                <text x="34" y="{{ tick.y|add:4 }}" text-anchor="end">{{ tick.label }}</text>
+              {% endfor %}
+            </g>
+            {% for series in week_summary.liquidity_series %}
+              <polyline
+                fill="none"
+                stroke="{{ series.color }}"
+                stroke-width="3"
+                stroke-linecap="round"
+                points="{{ series.points }}"
               />
+              {% for dot in series.dots %}
+                <circle cx="{{ dot.cx }}" cy="{{ dot.cy }}" r="3" fill="{{ series.color }}"/>
+                <circle
+                  cx="{{ dot.cx }}"
+                  cy="{{ dot.cy }}"
+                  r="9"
+                  fill="transparent"
+                  class="ws-tip"
+                  data-label="{{ dot.label }}"
+                  data-series="{{ series.label }}"
+                  data-value="{{ dot.value }}"
+                />
+              {% endfor %}
             {% endfor %}
-          {% endfor %}
-          <g fill="#94a3b8" font-size="11">
-            {% for label in week_summary.liquidity_labels %}
-              <text x="{{ label.x }}" y="212" text-anchor="middle">{{ label.text }}</text>
-            {% endfor %}
-          </g>
-        </svg>
-        <div class="chart-tooltip" aria-hidden="true"></div>
-      </div>
+            <g fill="#94a3b8" font-size="11">
+              {% for label in week_summary.liquidity_labels %}
+                <text x="{{ label.x }}" y="212" text-anchor="middle">{{ label.text }}</text>
+              {% endfor %}
+            </g>
+          </svg>
+          <div class="chart-tooltip" aria-hidden="true"></div>
+        </div>
+      {% else %}
+        {% include "shared/empty_state.html" with type="empty" title="No liquidity forecast data" message="No liquidity forecast data available for this borrower yet." action_label="Add from Admin panel" action_url=admin_forecast_url %}
+      {% endif %}
     </div>
   </div>
 
@@ -817,102 +893,111 @@
     <div class="variance-grid">
       <div class="variance-block">
         <div class="variance-title">Current Week Variance Report</div>
-        <div class="table-wrapper">
-          <table class="variance-table">
-            <thead>
-              <tr>
-                <th></th>
-                <th>Projected</th>
-                <th>Actual</th>
-                <th>Variance</th>
-                <th>Variance %</th>
-              </tr>
-            </thead>
-            <tbody>
-              {% for row in week_summary.variance_current_rows %}
-                {% with row_class=row.row_class|default_if_none:"" %}
-                  <tr class="{% if row_class %}{{ row_class }}{% else %}detail-row{% endif %}">
-                    <td>{{ row.category }}</td>
-                    <td>{{ row.projected }}</td>
-                    <td>{{ row.actual }}</td>
-                    <td>{{ row.variance_amount }}</td>
-                    <td>{{ row.variance_pct }}</td>
-                  </tr>
-                  {% if row.category|lower == "total receipts" %}
-                    <tr class="section-row manual-operating-row">
-                      <td>Operating Disbursements</td>
-                      <td class="muted-cell">&nbsp;</td>
-                      <td class="muted-cell">&nbsp;</td>
-                      <td class="muted-cell">&nbsp;</td>
-                      <td class="muted-cell">&nbsp;</td>
+        {% if week_summary.variance_current_rows %}
+          <div class="table-wrapper">
+            <table class="variance-table">
+              <thead>
+                <tr>
+                  <th></th>
+                  <th>Projected</th>
+                  <th>Actual</th>
+                  <th>Variance</th>
+                  <th>Variance %</th>
+                </tr>
+              </thead>
+              <tbody>
+                {% for row in week_summary.variance_current_rows %}
+                  {% with row_class=row.row_class|default_if_none:"" %}
+                    <tr class="{% if row_class %}{{ row_class }}{% else %}detail-row{% endif %}">
+                      <td>{{ row.category }}</td>
+                      <td>{{ row.projected }}</td>
+                      <td>{{ row.actual }}</td>
+                      <td>{{ row.variance_amount }}</td>
+                      <td>{{ row.variance_pct }}</td>
                     </tr>
-                  {% endif %}
-                  {% if row.category|lower == "total operating disbursements" %}
-                    <tr class="section-row manual-operating-row">
-                      <td>Non-Operating Disbursements</td>
-                      <td class="muted-cell">&nbsp;</td>
-                      <td class="muted-cell">&nbsp;</td>
-                      <td class="muted-cell">&nbsp;</td>
-                      <td class="muted-cell">&nbsp;</td>
-                    </tr>
-                  {% endif %}
-                {% endwith %}
-              {% endfor %}
-            </tbody>
-          </table>
-        </div>
+                    {% if row.category|lower == "total receipts" %}
+                      <tr class="section-row manual-operating-row">
+                        <td>Operating Disbursements</td>
+                        <td class="muted-cell">&nbsp;</td>
+                        <td class="muted-cell">&nbsp;</td>
+                        <td class="muted-cell">&nbsp;</td>
+                        <td class="muted-cell">&nbsp;</td>
+                      </tr>
+                    {% endif %}
+                    {% if row.category|lower == "total operating disbursements" %}
+                      <tr class="section-row manual-operating-row">
+                        <td>Non-Operating Disbursements</td>
+                        <td class="muted-cell">&nbsp;</td>
+                        <td class="muted-cell">&nbsp;</td>
+                        <td class="muted-cell">&nbsp;</td>
+                        <td class="muted-cell">&nbsp;</td>
+                      </tr>
+                    {% endif %}
+                  {% endwith %}
+                {% endfor %}
+              </tbody>
+            </table>
+          </div>
+        {% else %}
+          {% include "shared/empty_state.html" with type="empty" title="No variance data" message="No current week variance data available for this borrower yet." action_label="Add from Admin panel" action_url=admin_forecast_url %}
+        {% endif %}
       </div>
       <div class="variance-block">
         <div class="variance-title">Cumulative Variance Report</div>
-        <div class="table-wrapper">
-          <table class="variance-table">
-            <thead>
-              <tr>
-                <th></th>
-                <th>Projected</th>
-                <th>Actual</th>
-                <th>Variance</th>
-                <th>Variance %</th>
-              </tr>
-            </thead>
-            <tbody>
-              {% for row in week_summary.variance_cumulative_rows %}
-                {% with row_class=row.row_class|default_if_none:"" %}
-                  <tr class="{% if row_class %}{{ row_class }}{% else %}detail-row{% endif %}">
-                    <td>{{ row.category }}</td>
-                    <td>{{ row.projected }}</td>
-                    <td>{{ row.actual }}</td>
-                    <td>{{ row.variance_amount }}</td>
-                    <td>{{ row.variance_pct }}</td>
-                  </tr>
-                  {% if row.category|lower == "total receipts" %}
-                    <tr class="section-row manual-operating-row">
-                      <td>Operating Disbursements</td>
-                      <td class="muted-cell">&nbsp;</td>
-                      <td class="muted-cell">&nbsp;</td>
-                      <td class="muted-cell">&nbsp;</td>
-                      <td class="muted-cell">&nbsp;</td>
+        {% if week_summary.variance_cumulative_rows %}
+          <div class="table-wrapper">
+            <table class="variance-table">
+              <thead>
+                <tr>
+                  <th></th>
+                  <th>Projected</th>
+                  <th>Actual</th>
+                  <th>Variance</th>
+                  <th>Variance %</th>
+                </tr>
+              </thead>
+              <tbody>
+                {% for row in week_summary.variance_cumulative_rows %}
+                  {% with row_class=row.row_class|default_if_none:"" %}
+                    <tr class="{% if row_class %}{{ row_class }}{% else %}detail-row{% endif %}">
+                      <td>{{ row.category }}</td>
+                      <td>{{ row.projected }}</td>
+                      <td>{{ row.actual }}</td>
+                      <td>{{ row.variance_amount }}</td>
+                      <td>{{ row.variance_pct }}</td>
                     </tr>
-                  {% endif %}
-                  {% if row.category|lower == "total operating disbursements" %}
-                    <tr class="section-row manual-operating-row">
-                      <td>Non-Operating Disbursements</td>
-                      <td class="muted-cell">&nbsp;</td>
-                      <td class="muted-cell">&nbsp;</td>
-                      <td class="muted-cell">&nbsp;</td>
-                      <td class="muted-cell">&nbsp;</td>
-                    </tr>
-                  {% endif %}
-                {% endwith %}
-              {% endfor %}
-            </tbody>
-          </table>
-        </div>
+                    {% if row.category|lower == "total receipts" %}
+                      <tr class="section-row manual-operating-row">
+                        <td>Operating Disbursements</td>
+                        <td class="muted-cell">&nbsp;</td>
+                        <td class="muted-cell">&nbsp;</td>
+                        <td class="muted-cell">&nbsp;</td>
+                        <td class="muted-cell">&nbsp;</td>
+                      </tr>
+                    {% endif %}
+                    {% if row.category|lower == "total operating disbursements" %}
+                      <tr class="section-row manual-operating-row">
+                        <td>Non-Operating Disbursements</td>
+                        <td class="muted-cell">&nbsp;</td>
+                        <td class="muted-cell">&nbsp;</td>
+                        <td class="muted-cell">&nbsp;</td>
+                        <td class="muted-cell">&nbsp;</td>
+                      </tr>
+                    {% endif %}
+                  {% endwith %}
+                {% endfor %}
+              </tbody>
+            </table>
+          </div>
+        {% else %}
+          {% include "shared/empty_state.html" with type="empty" title="No variance data" message="No cumulative variance data available for this borrower yet." action_label="Add from Admin panel" action_url=admin_forecast_url %}
+        {% endif %}
       </div>
     </div>
   </div>
   </div>
 </div>
+{% endif %}
 {% endblock %}
 
 {% block extra_scripts %}

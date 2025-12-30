@@ -1,0 +1,21 @@
+<div class="empty-state empty-state--{{ type|default:'empty' }}">
+  <div class="empty-state__icon" aria-hidden="true"></div>
+  <div class="empty-state__body">
+    {% if title %}
+      <div class="empty-state__title">{{ title }}</div>
+    {% endif %}
+    {% if message %}
+      <div class="empty-state__message">{{ message }}</div>
+    {% endif %}
+    {% if type == "loading" %}
+      <div class="empty-state__skeleton" aria-hidden="true">
+        <span></span>
+        <span></span>
+        <span></span>
+      </div>
+    {% endif %}
+    {% if action_url and action_label %}
+      <a class="empty-state__action" href="{{ action_url }}">{{ action_label }}</a>
+    {% endif %}
+  </div>
+</div>

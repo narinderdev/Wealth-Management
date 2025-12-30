@@ -78,11 +78,85 @@
   svg-wrap {
     margin: 134px;
     margin-top: 10px;
-}
+  }
+
+  .empty-state {
+    display: flex;
+    align-items: center;
+    gap: 14px;
+    padding: 18px;
+    border: 1px dashed #d6deee;
+    border-radius: 12px;
+    background: #f8fafc;
+    color: #475569;
+  }
+  .empty-state__icon {
+    width: 38px;
+    height: 38px;
+    border-radius: 12px;
+    background: linear-gradient(135deg, #dbeafe, #f8fafc);
+    box-shadow: inset 0 0 0 1px #dbeafe;
+  }
+  .empty-state__title {
+    font-size: 14px;
+    font-weight: 600;
+    color: #0f172a;
+    margin-bottom: 4px;
+  }
+  .empty-state__message {
+    font-size: 12px;
+    line-height: 1.5;
+  }
+  .empty-state__action {
+    display: inline-flex;
+    align-items: center;
+    gap: 6px;
+    margin-top: 10px;
+    padding: 6px 12px;
+    border-radius: 999px;
+    border: 1px solid #d7e0f5;
+    background: #fff;
+    color: #1e3a8a;
+    font-size: 12px;
+    font-weight: 600;
+    text-decoration: none;
+  }
+  .empty-state__skeleton span {
+    display: block;
+    height: 8px;
+    border-radius: 999px;
+    background: linear-gradient(90deg, #e2e8f0, #f8fafc, #e2e8f0);
+    background-size: 200% 100%;
+    animation: empty-shimmer 1.5s ease-in-out infinite;
+    margin-top: 8px;
+    width: 220px;
+  }
+  .empty-state__skeleton span:nth-child(2) {
+    width: 180px;
+  }
+  .empty-state__skeleton span:nth-child(3) {
+    width: 140px;
+  }
+  @keyframes empty-shimmer {
+    0% { background-position: 0% 50%; }
+    100% { background-position: 200% 50%; }
+  }
+  .chart-card .empty-state {
+    min-height: 200px;
+  }
+  .chart-card.chart-big .empty-state {
+    min-height: 240px;
+  }
+  .forecast-empty {
+    margin-top: 16px;
+    padding: 12px;
+  }
 </style>
 {% endblock %}
 
 {% block page_content %}
+{% url "admin_component" "snapshotSummaries" as admin_snapshot_url %}
+{% url "admin_component" "forecast" as admin_forecast_url %}
 <!doctype html>
 <html lang="en">
 
@@ -648,6 +722,11 @@
 
 <body class="forecast-shell">
   <div class="wrap">
+    {% if borrower_message %}
+      <div class="chart-card forecast-empty">
+        {% include "shared/empty_state.html" with type="noBorrower" title="Select a borrower" message=borrower_message action_label=borrower_action_label action_url=borrower_action_url %}
+      </div>
+    {% else %}
     <div class="dashboard">
 
       <!-- Liquidity Forecast -->
@@ -664,9 +743,13 @@
             </div>
           </div>
 
-          <p class="snapshot-text">
-            {{ forecast_snapshots.liquidity|linebreaksbr }}
-          </p>
+          {% if not forecast_snapshots.liquidity or forecast_snapshots.liquidity == snapshot_empty_message %}
+            {% include "shared/empty_state.html" with type="empty" title="No snapshot summary" message="No liquidity snapshot available for this borrower yet." action_label="Add Snapshot Summary" action_url=admin_snapshot_url %}
+          {% else %}
+            <p class="snapshot-text">
+              {{ forecast_snapshots.liquidity|linebreaksbr }}
+            </p>
+          {% endif %}
         </div>
     
 
@@ -688,9 +771,13 @@
 
         <div class="snapshot">
           <div class="label"><span><img src="{% static 'images/borrowing_icon.svg' %}" alt="Snapshot Icon" class="snapshot-icon" /></span>Snapshot Overview</div>
-          <p>
-            {{ forecast_snapshots.sales_gm|linebreaksbr }}
-          </p>
+          {% if not forecast_snapshots.sales_gm or forecast_snapshots.sales_gm == snapshot_empty_message %}
+            {% include "shared/empty_state.html" with type="empty" title="No snapshot summary" message="No sales & gross margin snapshot available for this borrower yet." action_label="Add Snapshot Summary" action_url=admin_snapshot_url %}
+          {% else %}
+            <p>
+              {{ forecast_snapshots.sales_gm|linebreaksbr }}
+            </p>
+          {% endif %}
         </div>
 
         <div class="grid-2">
@@ -708,9 +795,13 @@
 
         <div class="snapshot">
           <div class="label"><img src="{% static 'images/borrowing_icon.svg' %}" alt="Snapshot Icon" class="snapshot-icon" />Snapshot Overview</div>
-          <p>
-            {{ forecast_snapshots.ar|linebreaksbr }}
-          </p>
+          {% if not forecast_snapshots.ar or forecast_snapshots.ar == snapshot_empty_message %}
+            {% include "shared/empty_state.html" with type="empty" title="No snapshot summary" message="No accounts receivable snapshot available for this borrower yet." action_label="Add Snapshot Summary" action_url=admin_snapshot_url %}
+          {% else %}
+            <p>
+              {{ forecast_snapshots.ar|linebreaksbr }}
+            </p>
+          {% endif %}
         </div>
 
         <div class="chart-card chart-big" data-chart="accountsReceivable"></div>
@@ -725,9 +816,13 @@
 
         <div class="snapshot">
           <div class="label"><img src="{% static 'images/borrowing_icon.svg' %}" alt="" class="snapshot-icon" />Snapshot Overview</div>
-          <p>
-            {{ forecast_snapshots.inventory|linebreaksbr }}
-          </p>
+          {% if not forecast_snapshots.inventory or forecast_snapshots.inventory == snapshot_empty_message %}
+            {% include "shared/empty_state.html" with type="empty" title="No snapshot summary" message="No inventory snapshot available for this borrower yet." action_label="Add Snapshot Summary" action_url=admin_snapshot_url %}
+          {% else %}
+            <p>
+              {{ forecast_snapshots.inventory|linebreaksbr }}
+            </p>
+          {% endif %}
         </div>
 
         <div class="grid-2">
@@ -741,19 +836,94 @@
         </div>
       </section>
     </div>
-
+    {% endif %}
   </div>
 
   <script>
     /* ------------ Lightweight inline chart renderer (SVG) ------------ */
 
-    const parsedCharts = JSON.parse('{{ forecast_charts_json|default:"{}"|escapejs }}');
+    const BORROWER_SELECTED = {{ forecast_borrower_selected|yesno:"true,false" }};
+    const HAS_FORECAST_DATA = {{ forecast_has_data|yesno:"true,false" }};
+    const BORROWER_MESSAGE = "{{ borrower_message|default:''|escapejs }}";
+    const BORROWER_ACTION_URL = "{{ borrower_action_url|default:''|escapejs }}";
+    const BORROWER_ACTION_LABEL = "{{ borrower_action_label|default:''|escapejs }}";
+    const EMPTY_ACTION_URL = "{{ admin_forecast_url|escapejs }}";
+    const EMPTY_ACTION_LABEL = "Add from Admin panel";
+
+    let parsedCharts = {};
+    let parseError = null;
+    try {
+      parsedCharts = JSON.parse('{{ forecast_charts_json|default:"{}"|escapejs }}') || {};
+    } catch (err) {
+      parseError = err;
+      console.error("Forecast chart data parse failed:", err);
+      parsedCharts = {};
+    }
     const deepClone = (obj) => obj ? JSON.parse(JSON.stringify(obj)) : obj;
     let CHARTS = parsedCharts;
     const SERVER_CHARTS = parsedCharts && Object.keys(parsedCharts).length ? deepClone(parsedCharts) : null;
 
-    const BASE_MONTHS_PAST = ["Jan 2025", "Feb 2025", "Mar 2025", "Apr 2025", "May 2025", "Jun 2025", "Jul 2025", "Aug 2025", "Sep 2025", "Oct 2025", "Nov 2025", "Dec 2025"];
-    const BASE_MONTHS_FUTURE = ["Jan 2026", "Feb 2026", "Mar 2026", "Apr 2026", "May 2026", "Jun 2026", "Jul 2026", "Aug 2026", "Sep 2026", "Oct 2026", "Nov 2026", "Dec 2026"];
+    const chartEls = Array.from(document.querySelectorAll("[data-chart]"));
+
+    function buildEmptyStateMarkup(state, opts = {}) {
+      const title = opts.title ? `<div class="empty-state__title">${opts.title}</div>` : "";
+      const message = opts.message ? `<div class="empty-state__message">${opts.message}</div>` : "";
+      const action = opts.actionLabel && opts.actionUrl
+        ? `<a class="empty-state__action" href="${opts.actionUrl}">${opts.actionLabel}</a>`
+        : "";
+      const skeleton = state === "loading"
+        ? `<div class="empty-state__skeleton" aria-hidden="true"><span></span><span></span><span></span></div>`
+        : "";
+      return `
+        <div class="empty-state empty-state--${state}">
+          <div class="empty-state__icon" aria-hidden="true"></div>
+          <div class="empty-state__body">
+            ${title}
+            ${message}
+            ${skeleton}
+            ${action}
+          </div>
+        </div>
+      `;
+    }
+
+    function renderChartState(state, options = {}) {
+      chartEls.forEach((el) => {
+        el.innerHTML = buildEmptyStateMarkup(state, options);
+      });
+    }
+
+    function stateConfig(state) {
+      if (state === "loading") {
+        return {
+          title: "Loading forecast data",
+          message: "Building the latest forecast view.",
+        };
+      }
+      if (state === "noBorrower") {
+        return {
+          title: "Select a borrower",
+          message: BORROWER_MESSAGE || "Select a borrower to view forecast data.",
+          actionLabel: BORROWER_ACTION_LABEL,
+          actionUrl: BORROWER_ACTION_URL,
+        };
+      }
+      if (state === "empty") {
+        return {
+          title: "No forecast data",
+          message: "No forecast data available for this borrower yet.",
+          actionLabel: EMPTY_ACTION_LABEL,
+          actionUrl: EMPTY_ACTION_URL,
+        };
+      }
+      if (state === "error") {
+        return {
+          title: "Unable to load forecast data",
+          message: "Please try again later.",
+        };
+      }
+      return {};
+    }
 
     function formatMonthLabel(dateObj) {
       const month = dateObj.toLocaleString("en-US", { month: "short" });
@@ -774,33 +944,6 @@
       }
       return { past, future };
     }
-
-    function makeStaticChart(title, actual, forecast, yPrefix = "$") {
-      const labels = [...BASE_MONTHS_PAST, ...BASE_MONTHS_FUTURE];
-      const labelsShort = labels;
-      return {
-        title,
-        actual,
-        forecast,
-        labels,
-        labelsShort,
-        pastLabel: "Past 12 Months",
-        forecastLabel: "12 Month Forecast",
-        yPrefix,
-        yTicks: 5,
-        yFormat: "short",
-      };
-    }
-
-    const STATIC_CHARTS = {
-      sales: makeStaticChart("Sales", [9, 11, 13, 10, 12, 11, 13, 12, 11, 12, 11, 12], [12, 13, 12, 13, 14, 13, 12.5, 12.8, 13.2, 13.5, 13.1, 13.0]),
-      grossMargin: makeStaticChart("Gross Margin", [4.4, 4.9, 5.2, 4.8, 5.1, 5.0, 5.3, 5.2, 5.0, 5.1, 5.0, 5.1], [5.1, 5.2, 5.0, 4.9, 5.3, 5.5, 5.6, 5.4, 5.3, 5.2, 5.3, 5.4]),
-      accountsReceivable: makeStaticChart("Accounts Receivable", [7.0, 7.6, 8.1, 7.8, 8.2, 8.0, 8.4, 8.3, 8.1, 8.0, 7.9, 7.8], [7.9, 8.1, 8.0, 7.8, 8.2, 8.5, 8.6, 8.4, 8.3, 8.1, 8.2, 8.3]),
-      finishedGoods: makeStaticChart("Finished Goods", [6.0, 6.4, 6.1, 6.2, 6.0, 6.3, 6.5, 6.4, 6.2, 6.1, 6.0, 6.1], [6.1, 6.2, 6.0, 5.9, 6.3, 6.5, 6.6, 6.5, 6.4, 6.3, 6.4, 6.5]),
-      weeksOfSupply: makeStaticChart("Weeks of Supply", [5.0, 5.4, 5.1, 5.2, 5.0, 5.3, 5.5, 5.4, 5.2, 5.1, 5.0, 5.1], [5.1, 5.2, 5.0, 4.9, 5.3, 5.5, 5.6, 5.4, 5.3, 5.2, 5.3, 5.4]),
-      rawMaterials: makeStaticChart("Raw Materials", [4.2, 4.5, 4.3, 4.4, 4.2, 4.5, 4.6, 4.5, 4.4, 4.3, 4.2, 4.3], [4.3, 4.4, 4.2, 4.1, 4.4, 4.6, 4.7, 4.5, 4.4, 4.3, 4.4, 4.5]),
-      workInProcess: makeStaticChart("Work In Process", [3.1, 3.3, 3.2, 3.3, 3.1, 3.4, 3.5, 3.4, 3.3, 3.2, 3.1, 3.2], [3.2, 3.3, 3.1, 3.0, 3.3, 3.5, 3.6, 3.4, 3.3, 3.2, 3.3, 3.4]),
-    };
 
     function sliceChart(chart, months, labelSeqPast, labelSeqFuture, pastCount, futureCount) {
       const m = Math.max(1, Math.min(months, 12));
@@ -837,64 +980,20 @@
       };
     }
 
-    const BASE_SERIES = {
-      availableCollateral: {
-        actual: [18.4, 21.0, 16.5, 19.2, 20.6, 18.1, 19.8, 19.4, 18.7, 18.9, 19.1, 19.3],
-        forecast: [19.1, 18.7, 18.2, 17.9, 18.8, 19.5, 20.1, 20.4, 19.9, 19.6, 19.8, 20.2],
-        yPrefix: "$", yTicks: 5, title: "Available Collateral"
-      },
-      revolverBalance: {
-        actual: [10.4, 12.1, 11.0, 11.8, 12.6, 11.9, 12.3, 11.7, 11.1, 11.5, 11.2, 11.0],
-        forecast: [11.1, 11.4, 11.0, 10.8, 11.6, 12.0, 12.5, 12.2, 12.0, 11.8, 12.1, 12.4],
-        yPrefix: "$", yTicks: 5, title: "Revolver Balance"
-      },
-      availableLiquidity: {
-        actual: [15.0, 18.8, 17.5, 14.0, 13.6, 17.1, 17.6, 17.3, 17.1, 16.9, 16.6, 16.4],
-        forecast: [16.5, 16.9, 17.4, 18.0, 18.6, 17.9, 17.2, 17.0, 17.3, 17.6, 17.9, 18.2],
-        yPrefix: "$", yTicks: 5, title: "Available Liquidity", big: true
-      }
-    };
-
     function buildChartConfig(periodMonths) {
       const totalMonths = Math.max(1, Math.min(12, periodMonths));
       const pastMonths = Math.ceil(totalMonths / 2);
       const futureMonths = Math.max(1, totalMonths - pastMonths);
       const { past: pastLabels, future: futureLabels } = getMonthLabels(pastMonths, futureMonths);
 
-      if (SERVER_CHARTS) {
-        const sliced = {};
-        Object.keys(SERVER_CHARTS).forEach(key => {
-          sliced[key] = sliceChart(SERVER_CHARTS[key], totalMonths, pastLabels, futureLabels, pastMonths, futureMonths);
-        });
-        return sliced;
+      if (!SERVER_CHARTS) {
+        return {};
       }
-
-      const cfg = { ...STATIC_CHARTS };
-      Object.keys(BASE_SERIES).forEach(key => {
-        const base = BASE_SERIES[key];
-        const actual = base.actual.slice(-pastMonths);
-        const forecast = base.forecast.slice(0, futureMonths);
-        const labels = [...pastLabels, ...futureLabels];
-        const labelsShort = labels;
-        cfg[key] = {
-          title: base.title,
-          actual,
-          forecast,
-          labels,
-          labelsShort,
-          pastLabel: `Past ${totalMonths} Months`,
-          forecastLabel: `${totalMonths} Month Forecast`,
-          yPrefix: base.yPrefix || "",
-          yTicks: base.yTicks || 5,
-          yFormat: "short",
-        };
+      const sliced = {};
+      Object.keys(SERVER_CHARTS).forEach(key => {
+        sliced[key] = sliceChart(SERVER_CHARTS[key], totalMonths, pastLabels, futureLabels, pastMonths, futureMonths);
       });
-      Object.keys(cfg).forEach(key => {
-        if (!(key in BASE_SERIES)) {
-          cfg[key] = sliceChart(cfg[key], totalMonths, pastLabels, futureLabels, pastMonths, futureMonths);
-        }
-      });
-      return cfg;
+      return sliced;
     }
 
     function formatY(v, chart) {
@@ -932,7 +1031,7 @@
       const isBig = el.classList.contains("chart-big");
 
       if (!cfg || !cfg.labels?.length) {
-        el.innerHTML = `<div class="card-pad"><p class="card-title">Awaiting forecast data.</p></div>`;
+        el.innerHTML = buildEmptyStateMarkup("empty", stateConfig("empty"));
         return;
       }
 
@@ -946,7 +1045,7 @@
       });
       const values = series.filter(v => v !== null && v !== undefined);
       if (!values.length) {
-        el.innerHTML = `<div class="card-pad"><p class="card-title">Awaiting forecast data.</p></div>`;
+        el.innerHTML = buildEmptyStateMarkup("empty", stateConfig("empty"));
         return;
       }
 
@@ -1180,13 +1279,13 @@
 
       // compute min/max across all values with gentle padding
       if (!cfg || !cfg.labels?.length) {
-        el.innerHTML = `<div class="card-pad"><p class="card-title">Awaiting forecast data.</p></div>`;
+        el.innerHTML = buildEmptyStateMarkup("empty", stateConfig("empty"));
         return;
       }
 
       const all = [...(cfg.actual || []), ...(cfg.forecast || [])];
       if (!all.length) {
-        el.innerHTML = `<div class="card-pad"><p class="card-title">Awaiting forecast data.</p></div>`;
+        el.innerHTML = buildEmptyStateMarkup("empty", stateConfig("empty"));
         return;
       }
       let min = Math.min(...all);
@@ -1330,9 +1429,12 @@
     }
 
     function init() {
-      document.querySelectorAll("[data-chart]").forEach(el => {
+      chartEls.forEach(el => {
         const key = el.getAttribute("data-chart");
-        if (!CHARTS[key]) return;
+        if (!CHARTS || !CHARTS[key]) {
+          el.innerHTML = buildEmptyStateMarkup("empty", stateConfig("empty"));
+          return;
+        }
         if (LEVEL_KEYS.has(key)) {
           renderLevelCard(el, key);
         } else {
@@ -1346,13 +1448,35 @@
       init();
     }
 
+    function bootCharts() {
+      renderChartState("loading", stateConfig("loading"));
+      let state = "ok";
+      if (parseError) {
+        state = "error";
+      } else if (!BORROWER_SELECTED) {
+        state = "noBorrower";
+      } else if (!HAS_FORECAST_DATA) {
+        state = "empty";
+      }
+      if (state !== "ok") {
+        renderChartState(state, stateConfig(state));
+        return;
+      }
+      try {
+        CHARTS = buildChartConfig(12);
+        init();
+      } catch (err) {
+        console.error("Forecast chart render failed:", err);
+        renderChartState("error", stateConfig("error"));
+      }
+    }
+
     // initial render
-    CHARTS = buildChartConfig(12);
-    init();
+    bootCharts();
 
     // period selector (fallback only when server data not provided)
     const periodSelect = document.getElementById("period-select");
-    if (periodSelect) {
+    if (periodSelect && BORROWER_SELECTED && HAS_FORECAST_DATA && !parseError) {
       periodSelect.addEventListener("change", function () {
         const months = parseInt(this.value, 10) || 12;
         rebuild(months);

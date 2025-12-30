@@ -234,6 +234,8 @@ def _week_summary_context(borrower):
                 key=lambda r: _to_decimal(getattr(r, "current_concentration_pct", None)),
                 reverse=True,
             )[:limit]
+            if receipts_amount is None:
+                return []
             weights = []
             for row in top_customers:
                 weight = _to_decimal(getattr(row, "current_concentration_pct", None))
@@ -247,11 +249,9 @@ def _week_summary_context(borrower):
             output = []
             for idx, row in enumerate(top_customers):
                 ratio = weights[idx] / total_weight if total_weight else Decimal("0")
-                amount_val = receipts_amount * ratio if receipts_amount is not None else Decimal("0")
+                amount_val = receipts_amount * ratio
                 name = _safe_str(getattr(row, "customer", None), default=f"Customer {idx + 1}")
                 output.append({"name": name, "value": _format_money(amount_val)})
-            while len(output) < limit:
-                output.append({"name": f"Customer {len(output) + 1}", "value": _format_money(Decimal("0"))})
             return output
 
         candidates = [row for row in rows if _is_receipt_row(row) and not _is_spend_row(row)]
@@ -272,7 +272,7 @@ def _week_summary_context(borrower):
             output.append({"name": name, "value": amount})
         if not output and forecast_row:
             collections = getattr(forecast_row, "net_sales", None)
-            receipts_total = _to_decimal(collections or 0) if collections is not None else None
+            receipts_total = _to_decimal(collections) if collections is not None else None
             fallback_items = [
                 ("Collections", collections),
                 ("Total Receipts", receipts_total),
@@ -280,8 +280,6 @@ def _week_summary_context(borrower):
             for label, value in fallback_items:
                 if value is not None:
                     output.append({"name": label, "value": _format_money(value)})
-        while len(output) < limit:
-            output.append({"name": "Receipt", "value": _format_money(Decimal("0"))})
         return output
 
     def _collect_top_spend(rows, limit=5):
@@ -351,27 +349,18 @@ def _week_summary_context(borrower):
                     fill_row = extra_rows.pop(0)
                     output[idx]["value"] = _row_amount(fill_row)
 
-        while len(output) < limit:
-            output.append({"name": "Expense", "value": Decimal("0")})
-
+        filtered = [item for item in output if item["value"] is not None]
         return [
             {
                 "name": item["name"],
-                "value": _format_money(item["value"] if item["value"] is not None else Decimal("0")),
+                "value": _format_money(item["value"]),
             }
-            for item in output[:limit]
+            for item in filtered[:limit]
         ]
 
     def _build_chart_rows(rows, max_points=9):
         if not rows:
-            return [
-                {
-                    "label": None,
-                    "collections": Decimal("0"),
-                    "disbursements": Decimal("0"),
-                }
-                for _ in range(max_points)
-            ]
+            return []
         values = []
         for row in rows:
             def _pick_value(attr_names):
@@ -392,6 +381,8 @@ def _week_summary_context(borrower):
         return values[-max_points:]
 
     def _build_cashflow_chart_rows(rows, week_fields):
+        if not rows:
+            return []
         if not week_fields:
             week_fields = [f"week_{i}" for i in range(1, 14)]
 
@@ -404,10 +395,13 @@ def _week_summary_context(borrower):
 
         def _row_values(row):
             values = []
+            has_value = False
             for field in week_fields:
                 val = getattr(row, field, None) if row else None
+                if val is not None:
+                    has_value = True
                 values.append(_to_decimal(val) if val is not None else Decimal("0"))
-            return values
+            return values, has_value
 
         collections_row = _find_row(["total receipts", "total receipt"])
         if not collections_row:
@@ -423,8 +417,10 @@ def _week_summary_context(borrower):
                 ["operating disbursements", "non-operating disbursements"]
             )
 
-        collections_values = _row_values(collections_row)
-        disbursement_values = _row_values(disbursement_row)
+        collections_values, collections_has = _row_values(collections_row)
+        disbursement_values, disbursement_has = _row_values(disbursement_row)
+        if not collections_has and not disbursement_has:
+            return []
 
         return [
             {
@@ -1223,6 +1219,7 @@ def _week_summary_context(borrower):
             for label in [
                 "Receipts",
                 "Collections",
+                "Other Receipts",
                 "Total Receipts",
                 "Operating Disbursements",
                 "Payroll",
@@ -1352,14 +1349,31 @@ def _week_summary_context(borrower):
             "operating disbursements",
             "non-operating disbursements",
         }
+        default_template = [
+            ("Receipts", ""),
+            ("Collections", ""),
+            ("Other Receipts", ""),
+            ("Total Receipts", "title-row"),
+            ("Operating Disbursements", ""),
+            ("Payroll", ""),
+            ("Professional Services", ""),
+            ("Software Expenses", ""),
+            ("Repairs/Maintenance", ""),
+            ("Other Disbursements", ""),
+            ("Total Operating Disbursements", "title-row"),
+            ("Non Operating Disbursements", ""),
+            ("Total Non Operating Disbursements", "title-row"),
+            ("Total Disbursements", "title-row"),
+            ("Net Cash Flow", "title-row"),
+        ]
 
         def _build_entry(
             label,
             row_class="",
-            projected="$—",
-            actual="$—",
-            variance_amount="$—",
-            variance_pct="—%",
+            projected="—",
+            actual="—",
+            variance_amount="—",
+            variance_pct="—",
             raw_projected=None,
             raw_actual=None,
             raw_variance=None,
@@ -1378,7 +1392,21 @@ def _week_summary_context(borrower):
                 "row_class": row_class,
             }
 
+        def _normalize_placeholder(value, empty_replacement="—"):
+            if value in ("$—", "—%"):
+                return empty_replacement
+            return value
+
+        def _default_rows():
+            return [
+                _build_entry(label, row_class=row_class)
+                for label, row_class in default_template
+            ]
+
         label_keys = list(label_map.keys())
+
+        if not rows:
+            return _default_rows()
 
         def _match_label(norm_value):
             if not norm_value:
@@ -1389,6 +1417,8 @@ def _week_summary_context(borrower):
                 if not candidate:
                     continue
                 if candidate in norm_value or norm_value in candidate:
+                    if len(candidate.split()) == 1 and len(norm_value.split()) > 1:
+                        continue
                     return candidate
             return norm_value
 
@@ -1405,6 +1435,10 @@ def _week_summary_context(borrower):
             actual = _format_money(raw_actual)
             variance_amount = _format_money(raw_variance)
             variance_pct = _format_pct(raw_variance_pct)
+            proj = _normalize_placeholder(proj)
+            actual = _normalize_placeholder(actual)
+            variance_amount = _normalize_placeholder(variance_amount)
+            variance_pct = _normalize_placeholder(variance_pct)
             category_lower = category.lower()
             row_class = ""
             if category_lower in section_headers:
@@ -1524,7 +1558,7 @@ def _week_summary_context(borrower):
 
             def _has_values(inner_entry):
                 return any(
-                    inner_entry.get(field) not in (None, "$—", "—%")
+                    inner_entry.get(field) not in (None, "$—", "—%", "—")
                     for field in ("projected", "actual", "variance_amount", "variance_pct")
                 )
 
@@ -1532,18 +1566,34 @@ def _week_summary_context(borrower):
                 cleaned_output.append(entry)
         output = cleaned_output
 
-        if not output:
-            output.append(
-                _build_entry("—")
-            )
-        return output
+        return output or _default_rows()
 
     variance_current = _variance_rows(cw_rows, variance_label_map)
     variance_cumulative = _variance_rows(cum_rows, variance_label_map)
+    has_summary_data = any(
+        stat.get("value") not in ("$—", "—") for stat in stats
+    )
+    has_cashflow_data = bool(cashflow_rows)
+    has_week_summary_data = any(
+        [
+            cashflow_rows,
+            cash_rows,
+            availability_rows,
+            liquidity_series,
+            variance_current,
+            variance_cumulative,
+            forecast_rows,
+            cw_rows,
+            cum_rows,
+        ]
+    )
 
     context.update(
         {
             "stats": stats,
+            "has_summary_data": has_summary_data,
+            "has_cashflow_data": has_cashflow_data,
+            "has_week_summary_data": has_week_summary_data,
             "summary_cards": [
                 {
                     "label": "Ending Cash",
