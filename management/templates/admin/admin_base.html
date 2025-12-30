@@ -1309,7 +1309,7 @@
           </div>
         </section>
 
-        <section class="sidebar-section sidebar-collapsible is-open{% if current_nav == 'recovery' or current_nav == 'fg_recovery_history' or current_nav == 'wip_recovery' or current_nav == 'raw_material_recovery' or current_nav == 'liquidation_cash_flow' or current_nav == 'nolv_table' %} has-active{% endif %}" data-collapsible>
+        <section class="sidebar-section sidebar-collapsible is-open{% if current_nav == 'recovery' or current_nav == 'fg_recovery_history' or current_nav == 'wip_recovery' or current_nav == 'raw_material_recovery' or current_nav == 'nolv_table' %} has-active{% endif %}" data-collapsible>
           <button class="section-trigger" type="button" aria-expanded="true" aria-controls="sidebar-liquidation-panel">
             <span class="label-left">
               <span class="ico" aria-hidden="true">
@@ -1331,7 +1331,6 @@
             <a class="sidebar-sub-link{% if current_nav == 'recovery' or current_nav == 'fg_recovery_history' %} active{% endif %}" href="{% url 'admin_component' 'fgGrossRecoveryHistory' %}" data-entity="fgGrossRecoveryHistory">FG Gross Recovery History</a>
             <a class="sidebar-sub-link{% if current_nav == 'wip_recovery' %} active{% endif %}" href="{% url 'admin_component' 'wipRecovery' %}" data-entity="wipRecovery">WIP Recovery</a>
             <a class="sidebar-sub-link{% if current_nav == 'raw_material_recovery' %} active{% endif %}" href="{% url 'admin_component' 'rawMaterialRecovery' %}" data-entity="rawMaterialRecovery">Raw Material Recovery</a>
-            <a class="sidebar-sub-link{% if current_nav == 'liquidation_cash_flow' %} active{% endif %}" href="{% url 'admin_component' 'cashFlow' %}" data-entity="cashFlow">13-Week Cash Flow</a>
             <a class="sidebar-sub-link{% if current_nav == 'nolv_table' %} active{% endif %}" href="{% url 'admin_component' 'nolvTable' %}" data-entity="nolvTable">NOLV Table</a>
           </div>
         </section>
@@ -1369,7 +1368,7 @@
                   <path d="m7 13 4-4 3 3 5-5" stroke-linecap="round" stroke-linejoin="round" />
                 </svg>
               </span>
-              <span>Cash Flow</span>
+              <span>Forecast</span>
             </span>
             <span class="chevron" aria-hidden="true">
               <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
@@ -1383,6 +1382,28 @@
             <a class="sidebar-sub-link{% if current_nav == 'forecast_rm' %} active{% endif %}" href="{% url 'admin_component' 'forecastRawMaterials' %}" data-entity="forecastRawMaterials">Raw Materials</a>
             <a class="sidebar-sub-link{% if current_nav == 'forecast_wos' %} active{% endif %}" href="{% url 'admin_component' 'forecastWeeksOfSupply' %}" data-entity="forecastWeeksOfSupply">Weeks of Supply</a>
             <a class="sidebar-sub-link{% if current_nav == 'forecast_wip' %} active{% endif %}" href="{% url 'admin_component' 'forecastWorkInProcess' %}" data-entity="forecastWorkInProcess">Work-In-Process</a>
+          </div>
+        </section>
+
+        <section class="sidebar-section sidebar-collapsible is-open{% if current_nav == 'liquidation_cash_flow' %} has-active{% endif %}" data-collapsible>
+          <button class="section-trigger" type="button" aria-expanded="true" aria-controls="sidebar-cash-flow-panel">
+            <span class="label-left">
+              <span class="ico" aria-hidden="true">
+                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                  <path d="M3 3v18h18" stroke-linecap="round" stroke-linejoin="round" />
+                  <path d="m7 13 4-4 3 3 5-5" stroke-linecap="round" stroke-linejoin="round" />
+                </svg>
+              </span>
+              <span>Cash Flow</span>
+            </span>
+            <span class="chevron" aria-hidden="true">
+              <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                <path d="M6 9l6 6 6-6" stroke-linecap="round" stroke-linejoin="round" />
+              </svg>
+            </span>
+          </button>
+          <div class="sidebar-children" id="sidebar-cash-flow-panel">
+            <a class="sidebar-sub-link{% if current_nav == 'liquidation_cash_flow' %} active{% endif %}" href="{% url 'admin_component' 'cashFlow' %}" data-entity="cashFlow">13-Week Cash Flow</a>
           </div>
         </section>
 
