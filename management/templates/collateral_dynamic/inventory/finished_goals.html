@@ -504,11 +504,33 @@
   .finished-goals table.category tbody td{padding:8px 10px;border-bottom:1px solid rgba(230,234,242,.65);white-space:nowrap; color:#65758B ; text-align:start;font-size: 10pt;}
   .finished-goals table.category tbody td.numC{text-align:center;}
   .finished-goals table.category tbody tr:last-child td{border-bottom:none;}
-  .finished-goals table.category tfoot td{padding:8px 10px;font-weight:600;background:#FBFCFE;border-top:1px solid var(--border);text-align:center;}
-  .finished-goals table.category tfoot td:first-child{text-align:left;}
-  .finished-goals table.inline-excess-table col.col-category{width:18%;}
-  .finished-goals table.inline-excess-table col.col-dollar{width:9%;}
-  .finished-goals table.inline-excess-table col.col-percent{width:9%;}
+.finished-goals table.category tfoot td{padding:8px 10px;font-weight:600;background:#FBFCFE;border-top:1px solid var(--border);text-align:center;}
+.finished-goals table.category tfoot td:first-child{text-align:left;}
+.finished-goals table.inline-excess-table col.col-category{width:18%;}
+.finished-goals table.inline-excess-table col.col-dollar{width:9%;}
+.finished-goals table.inline-excess-table col.col-percent{width:9%;}
+.finished-goals .inline-excess-card{
+  border:1px solid #e6edf7;
+  border-left:0;
+  border-right:0;
+  border-radius:14px;
+  box-shadow:none;
+}
+.finished-goals .inline-excess-card .table-scroll{
+  border:1px solid #e3eaf7;
+  border-left:0;
+  border-right:0;
+  border-radius:12px;
+  box-shadow:none;
+}
+.finished-goals .inline-excess-table thead th:first-child{
+  border-left:1px solid #e3eaf7;
+  border-top-left-radius:10px;
+}
+.finished-goals .inline-excess-table thead th:last-child{
+  border-right:1px solid #e3eaf7;
+  border-top-right-radius:10px;
+}
   .finished-goals table.sku{width:100%;border-collapse:collapse;font-size:12px;min-width:880px;color:#344054;}
   .finished-goals table.sku thead th{padding:8px 10px;border-bottom:1px solid var(--border);white-space:nowrap;}
   .finished-goals table.sku thead tr:first-child th{background:#F7F9FC;color:#475467;font-weight:800;text-align:center;}
@@ -737,14 +759,14 @@
     </div>
   </div>
 
-  <div class="card table-card" style="margin-top:25px">
+  <div class="card table-card inline-excess-card" style="margin-top:25px">
     <div class="card-head">
       <img src="{% static 'images/borrowing_icon.svg' %}" 
           alt="Current Update Icon"
           class="current-update-icon" />
       In-Line/Excess by Category
     </div>
-    <div class="divider"></div>
+    <!-- <div class="divider"></div> -->
     <div class="table-scroll">
       <table class="category inline-excess-table" aria-label="In-Line/Excess by Category">
         <colgroup>
