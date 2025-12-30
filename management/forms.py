@@ -34,6 +34,7 @@ from .models import (
     MachineryEquipmentRow,
     NOLVTableRow,
     RawMaterialRecoveryRow,
+    ReportUpload,
     RiskSubfactorsRow,
     RMCategoryHistoryRow,
     RMIneligibleOverviewRow,
@@ -1178,3 +1179,48 @@ class IneligiblesForm(BorrowerModelForm):
             "collateral_type",
             "collateral_sub_type",
         ]
+
+
+class BaseReportUploadForm(StyledModelForm):
+    report_type = None
+
+    class Meta:
+        model = ReportUpload
+        fields = ["name", "file"]
+        labels = {
+            "name": "Report Name",
+            "file": "Report PDF",
+        }
+        widgets = {
+            "file": forms.ClearableFileInput(attrs={"accept": "application/pdf"}),
+        }
+        help_texts = {
+            "file": "Upload a PDF file.",
+        }
+
+    def __init__(self, *args, **kwargs):
+        super().__init__(*args, **kwargs)
+        if "file" in self.fields:
+            self.fields["file"].required = True
+        if "name" in self.fields:
+            self.fields["name"].widget.attrs.setdefault("placeholder", "Example: October BBC")
+
+    def save(self, commit=True):
+        instance = super().save(commit=False)
+        if self.report_type:
+            instance.report_type = self.report_type
+        if commit:
+            instance.save()
+        return instance
+
+
+class BorrowingBaseReportForm(BaseReportUploadForm):
+    report_type = ReportUpload.BORROWING_BASE
+
+
+class CompleteAnalysisReportForm(BaseReportUploadForm):
+    report_type = ReportUpload.COMPLETE_ANALYSIS
+
+
+class CashFlowReportForm(BaseReportUploadForm):
+    report_type = ReportUpload.CASH_FLOW

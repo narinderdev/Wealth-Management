@@ -2815,9 +2815,9 @@ def _accounts_receivable_context(borrower, range_key="today", division="all", sn
 
     total_amount = sum(bucket_amounts.values())
     aging_axis_left = Decimal("40")
-    aging_axis_right = Decimal("500")
+    aging_axis_right = Decimal("460")
     aging_axis_top = Decimal("20")
-    aging_axis_bottom = Decimal("140")
+    aging_axis_bottom = Decimal("160")
     aging_plot_height = aging_axis_bottom - aging_axis_top
     bucket_count = len(AGING_BUCKET_DEFS)
     bar_width = Decimal("32")
@@ -7359,6 +7359,7 @@ def _liquidation_model_context(borrower):
                 "pct_sp": _format_pct(pct_sp_ratio),
                 "wos": wos_display,
                 "gr_pct": _format_pct(gm_ratio),
+                "_cost_value": cost_value,
                 "_row_key": (
                     history_row.as_of_date or date.min,
                     history_row.created_at or datetime.min,
@@ -7478,35 +7479,58 @@ def _liquidation_model_context(borrower):
                     unmatched_lookup[label_key] = row
 
         primary_rows = []
-        tail_rows = []
         for label in display_order:
+            if label in tail_order:
+                continue
             match = row_lookup.get(label)
             if match:
-                cleaned = _clean_history_row(match, label)
-                if label in tail_order:
-                    tail_rows.append(cleaned)
-                else:
-                    primary_rows.append(cleaned)
-        history_summary_rows = primary_rows
+                primary_rows.append((match, label))
 
-        extra_rows = [
-            row
-            for label, row in unmatched_lookup.items()
-            if label not in row_lookup
-        ]
+        tail_label_map = {_normalize_fg_key(label): label for label in tail_order}
+        extra_rows = []
+        for label, row in unmatched_lookup.items():
+            if label in row_lookup:
+                continue
+            normalized_label = _normalize_fg_key(label)
+            if normalized_label in tail_label_map:
+                continue
+            extra_rows.append(row)
         extra_rows.sort(key=lambda row: row.get("_row_key", (date.min, datetime.min, 0)), reverse=True)
-        for row in extra_rows:
-            history_summary_rows.append(_clean_history_row(row))
+        body_rows = primary_rows + [(row, None) for row in extra_rows]
+        body_rows.sort(
+            key=lambda item: item[0].get("_cost_value") or Decimal("0"),
+            reverse=True,
+        )
+        history_summary_rows = [
+            _clean_history_row(row, label_override)
+            for row, label_override in body_rows
+        ]
 
+        tail_candidates = {}
+        for label in tail_order:
+            match = row_lookup.get(label)
+            if match:
+                tail_candidates[label] = match
+        for label, row in unmatched_lookup.items():
+            if label in row_lookup:
+                continue
+            normalized_label = _normalize_fg_key(label)
+            canonical_label = tail_label_map.get(normalized_label)
+            if not canonical_label:
+                continue
+            existing = tail_candidates.get(canonical_label)
+            if not existing or row.get("_row_key") > existing.get("_row_key", (date.min, datetime.min, 0)):
+                tail_candidates[canonical_label] = row
+
+        for label in tail_order:
+            if label not in tail_candidates:
+                tail_candidates[label] = _blank_history_row(label)
+
+        tail_rows = [
+            _clean_history_row(tail_candidates[label], label)
+            for label in tail_order
+        ]
         history_summary_rows.extend(tail_rows)
-
-        def _ensure_tail_row(label):
-            if any(row.get("category") == label for row in history_summary_rows):
-                return
-            history_summary_rows.append(_blank_history_row(label))
-
-        for label in ["Total In-Line", "Excess", "Total"]:
-            _ensure_tail_row(label)
 
     else:
         history_summary_rows = []

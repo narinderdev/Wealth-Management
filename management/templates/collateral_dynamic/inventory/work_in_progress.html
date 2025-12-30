@@ -245,6 +245,13 @@ line-height: 50px;
     color:#0b1220;
     border-top:1px solid var(--line);
   }
+  .collateral-dynamic .work-in-progress .top-sku-total-row td{
+    background:#FAFAFA;
+    font-weight:600;
+    color:#0b1220;
+    border-top:1px solid var(--line);
+    padding:10px 12px;
+  }
   .work-in-progress .table-card + .table-card{margin-top:8px;}
   .work-in-progress .numR{text-align:left;}
   .work-in-progress .filters{
@@ -521,7 +528,7 @@ line-height: 50px;
             {% endfor %}
           </tbody>
           <tfoot>
-            <tr class="footer-row">
+            <tr class="footer-row top-sku-total-row">
               <td>Top 20 Total</td>
               <td colspan="2"></td>
               <td class="num">{{ work_in_progress_top20_total.total }}</td>

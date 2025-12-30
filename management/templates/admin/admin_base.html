@@ -1331,7 +1331,7 @@
             <a class="sidebar-sub-link{% if current_nav == 'recovery' or current_nav == 'fg_recovery_history' %} active{% endif %}" href="{% url 'admin_component' 'fgGrossRecoveryHistory' %}" data-entity="fgGrossRecoveryHistory">FG Gross Recovery History</a>
             <a class="sidebar-sub-link{% if current_nav == 'wip_recovery' %} active{% endif %}" href="{% url 'admin_component' 'wipRecovery' %}" data-entity="wipRecovery">WIP Recovery</a>
             <a class="sidebar-sub-link{% if current_nav == 'raw_material_recovery' %} active{% endif %}" href="{% url 'admin_component' 'rawMaterialRecovery' %}" data-entity="rawMaterialRecovery">Raw Material Recovery</a>
-            <a class="sidebar-sub-link{% if current_nav == 'liquidation_cash_flow' %} active{% endif %}" href="{% url 'admin_component' 'cashFlow' %}" data-entity="cashFlow">Cash Flow</a>
+            <a class="sidebar-sub-link{% if current_nav == 'liquidation_cash_flow' %} active{% endif %}" href="{% url 'admin_component' 'cashFlow' %}" data-entity="cashFlow">13-Week Cash Flow</a>
             <a class="sidebar-sub-link{% if current_nav == 'nolv_table' %} active{% endif %}" href="{% url 'admin_component' 'nolvTable' %}" data-entity="nolvTable">NOLV Table</a>
           </div>
         </section>
@@ -1383,6 +1383,31 @@
             <a class="sidebar-sub-link{% if current_nav == 'forecast_rm' %} active{% endif %}" href="{% url 'admin_component' 'forecastRawMaterials' %}" data-entity="forecastRawMaterials">Raw Materials</a>
             <a class="sidebar-sub-link{% if current_nav == 'forecast_wos' %} active{% endif %}" href="{% url 'admin_component' 'forecastWeeksOfSupply' %}" data-entity="forecastWeeksOfSupply">Weeks of Supply</a>
             <a class="sidebar-sub-link{% if current_nav == 'forecast_wip' %} active{% endif %}" href="{% url 'admin_component' 'forecastWorkInProcess' %}" data-entity="forecastWorkInProcess">Work-In-Process</a>
+          </div>
+        </section>
+
+        <section class="sidebar-section sidebar-collapsible is-open{% if current_nav == 'reports_borrowing_base' or current_nav == 'reports_complete_analysis' or current_nav == 'reports_cash_flow' %} has-active{% endif %}" data-collapsible>
+          <button class="section-trigger" type="button" aria-expanded="true" aria-controls="sidebar-reports-panel">
+            <span class="label-left">
+              <span class="ico" aria-hidden="true">
+                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                  <path d="M4 4h16v16H4z" stroke-linejoin="round" />
+                  <path d="M8 4v16" stroke-linecap="round" />
+                  <path d="M4 10h16" stroke-linecap="round" />
+                </svg>
+              </span>
+              <span>Reports</span>
+            </span>
+            <span class="chevron" aria-hidden="true">
+              <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                <path d="M6 9l6 6 6-6" stroke-linecap="round" stroke-linejoin="round" />
+              </svg>
+            </span>
+          </button>
+          <div class="sidebar-children" id="sidebar-reports-panel">
+            <a class="sidebar-sub-link{% if current_nav == 'reports_borrowing_base' %} active{% endif %}" href="{% url 'admin_component' 'borrowingBaseReport' %}" data-entity="borrowingBaseReport">Borrowing Base Report</a>
+            <a class="sidebar-sub-link{% if current_nav == 'reports_complete_analysis' %} active{% endif %}" href="{% url 'admin_component' 'completeAnalysisReport' %}" data-entity="completeAnalysisReport">Complete Analysis Report</a>
+            <a class="sidebar-sub-link{% if current_nav == 'reports_cash_flow' %} active{% endif %}" href="{% url 'admin_component' 'cashFlowReport' %}" data-entity="cashFlowReport">Cash Flow Report</a>
           </div>
         </section>
 

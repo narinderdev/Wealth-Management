@@ -1,5 +1,6 @@
 from django.conf import settings
 from django.contrib.auth.hashers import check_password, make_password
+from django.core.validators import FileExtensionValidator
 from django.db import models
 
 
@@ -1254,3 +1255,31 @@ class IneligiblesRow(TimeStampedModel):
 
     class Meta:
         db_table = 'ineligibles'
+
+
+# -------------------------
+# Uploaded Reports
+# -------------------------
+class ReportUpload(TimeStampedModel):
+    BORROWING_BASE = "borrowing_base"
+    COMPLETE_ANALYSIS = "complete_analysis"
+    CASH_FLOW = "cash_flow"
+    REPORT_CHOICES = [
+        (BORROWING_BASE, "Borrowing Base Report"),
+        (COMPLETE_ANALYSIS, "Complete Analysis Report"),
+        (CASH_FLOW, "Cash Flow Report"),
+    ]
+
+    report_type = models.CharField(max_length=32, choices=REPORT_CHOICES)
+    name = models.CharField(max_length=255)
+    file = models.FileField(
+        upload_to="reports/%Y/%m",
+        validators=[FileExtensionValidator(["pdf"])],
+    )
+
+    class Meta:
+        db_table = "uploaded_reports"
+        ordering = ["-created_at"]
+
+    def __str__(self):
+        return f"{self.get_report_type_display()}: {self.name}"
