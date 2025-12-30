@@ -533,6 +533,74 @@
   border-right:1px solid #e3eaf7;
   border-top-right-radius:10px;
 }
+.finished-goals .table-card.inline-style{
+  border:1px solid #e6edf7;
+  border-radius:14px;
+  box-shadow:none;
+}
+.finished-goals .table-card.inline-style .table-scroll{
+  border:1px solid #e3eaf7;
+  border-radius:12px;
+  background:#fff;
+  box-shadow:none;
+}
+.finished-goals .table-card.inline-style table{
+  width:100%;
+  border-collapse:collapse;
+  font-size:12px;
+  color:#475569;
+}
+.finished-goals .table-card.inline-style thead th{
+  position:static;
+  top:auto;
+  background:#f7faff;
+  color:#6b7280;
+  font-weight:700;
+  padding:10px 12px;
+  border-bottom:1px solid #e3eaf7;
+  white-space:nowrap;
+  text-align:center;
+}
+.finished-goals .table-card.inline-style thead th:first-child{
+  text-align:left;
+  border-left:1px solid #e3eaf7;
+  border-top-left-radius:10px;
+}
+.finished-goals .table-card.inline-style thead th:last-child{
+  border-right:1px solid #e3eaf7;
+  border-top-right-radius:10px;
+}
+.finished-goals .table-card.inline-style tbody td {
+  padding: 10px 12px;
+  border-bottom: 1px solid #eef2fb;
+
+  border-left: none;
+  border-right: none;
+
+  background: #fff;
+  color: #65758B;
+  font-weight: 600;
+  text-align: center;
+  white-space: nowrap;
+}
+
+.finished-goals .table-card.inline-style tbody td:first-child{
+  text-align:left;
+}
+.finished-goals .table-card.inline-style tbody tr:last-child td{
+  border-bottom:1px solid #e3eaf7;
+}
+.finished-goals .table-card.inline-style tfoot td{
+  background:#f7faff;
+  border-top:1px solid #e3eaf7;
+  font-weight:600;
+  color:#0b1220;
+  padding:10px 12px;
+  text-align:center;
+}
+.finished-goals .table-card.inline-style tfoot td:first-child{
+  text-align:left;
+}
   .finished-goals table.sku{width:100%;border-collapse:collapse;font-size:12px;min-width:880px;color:#344054;}
   .finished-goals table.sku thead th{padding:8px 10px;border-bottom:1px solid var(--border);white-space:nowrap;}
   .finished-goals table.sku thead tr:first-child th{background:#F7F9FC;color:#475467;font-weight:800;text-align:center;}
@@ -855,14 +923,13 @@
     </div>
   </div>
 
-  <div class="card table-card" style="margin-top:25px">
+  <div class="card table-card inline-style" style="margin-top:25px">
     <div class="card-head">
       <img src="{% static 'images/borrowing_icon.svg' %}" 
           alt="Current Update Icon"
           class="current-update-icon" />
       In-Line Category Analysis
     </div>
-    <div class="divider"></div>
     <div class="table-scroll">
       <table class="data" aria-label="In-Line Category Analysis">
         <thead>
@@ -901,14 +968,13 @@
     </div>
   </div>
 
-  <div class="card table-card" style="margin-top:25px">
+  <div class="card table-card inline-style" style="margin-top:25px">
     <div class="card-head">
       <img src="{% static 'images/borrowing_icon.svg' %}" 
           alt="Current Update Icon"
           class="current-update-icon" />
       Top Sku Analysis
     </div>
-    <div class="divider"></div>
     <div class="table-scroll">
       <table class="sku" aria-label="Top SKU Analysis">
         <thead>
