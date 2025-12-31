@@ -1047,12 +1047,16 @@
 
       const actual = Array.isArray(cfg.actual) ? cfg.actual : [];
       const forecast = Array.isArray(cfg.forecast) ? cfg.forecast : [];
-      const total = cfg.labels.length || actual.length + forecast.length;
-      const series = Array.from({ length: total }, (_, i) => {
-        if (i < actual.length) return actual[i];
-        const idx = i - actual.length;
-        return idx < forecast.length ? forecast[idx] : null;
-      });
+      const total = actual.length + forecast.length;
+      const baseLabels = Array.isArray(cfg.labels) ? cfg.labels.slice(0, total) : [];
+      if (baseLabels.length < total) {
+        baseLabels.push(...Array(total - baseLabels.length).fill(""));
+      }
+      const labelsShort =
+        Array.isArray(cfg.labelsShort) && cfg.labelsShort.length === baseLabels.length
+          ? cfg.labelsShort
+          : baseLabels;
+      const series = [...actual, ...forecast];
       const values = series.filter(v => v !== null && v !== undefined);
       if (!values.length) {
         el.innerHTML = buildEmptyStateMarkup("empty", stateConfig("empty"));
@@ -1123,7 +1127,7 @@
           return {
             index: i,
             value: v,
-            label: cfg.labels[i] || "",
+            label: baseLabels[i] || "",
             x: xPx(i),
             y: yPx(v),
             xp: xPct(i),
@@ -1131,18 +1135,19 @@
           };
         });
 
-        const forecastPoints = Array.from({ length: total }, (_, i) => {
+        const forecastPoints = series.map((v, i) => {
           if (i < actual.length) return null;
-          const idx = i - actual.length;
-          if (idx < forecast.length) {
-            const v = forecast[idx];
-            return {
-              x: xPx(i),
-              y: yPx(v),
-            };
-          }
-          return null;
+          if (v === null || v === undefined) return null;
+          return {
+            x: xPx(i),
+            y: yPx(v),
+          };
         });
+        const forecastPointsWithBridge = forecastPoints.slice();
+        const lastActualPoint = points[actual.length - 1] || null;
+        if (lastActualPoint) {
+          forecastPointsWithBridge[actual.length - 1] = lastActualPoint;
+        }
 
         const ticks = cfg.yTicks || 5;
         const yTicks = Array.from({ length: ticks }, (_, i) => {
@@ -1154,7 +1159,7 @@
         let xLabelStep = 1;
         if (total > 12) xLabelStep = 2;
         if (total > 24) xLabelStep = 3;
-        const xTickIndices = cfg.labels.map((_, i) => i).filter(i => i % xLabelStep === 0);
+        const xTickIndices = baseLabels.map((_, i) => i).filter(i => i % xLabelStep === 0);
 
         const xLabelTopPx = pad.t + plotH + Math.max(12, height * 0.05);
         const xLabelTopPct = (xLabelTopPx / height) * 100;
@@ -1169,7 +1174,7 @@
         `).join("");
 
         const xLabels = xTickIndices.map(i => {
-          const shortLab = (cfg.labelsShort && cfg.labelsShort[i]) || cfg.labels[i] || "";
+          const shortLab = labelsShort[i] || baseLabels[i] || "";
           const parts = shortLab.split(" ");
           const line1 = parts.slice(0, parts.length - 1).join(" ") || shortLab;
           const line2 = parts[parts.length - 1] || "";
@@ -1184,17 +1189,16 @@
         const areaPoints = points.filter(Boolean);
         const actualArea = areaPoints.filter(p => p.index < actual.length);
         const forecastArea = areaPoints.filter(p => p.index >= actual.length);
+        if (lastActualPoint && forecastArea.length) {
+          forecastArea.unshift(lastActualPoint);
+        }
         const areaBottomPct = (pad.t + plotH) / height * 100;
         const buildAreaClip = (pts) => {
           if (!pts.length) return "none";
           return `polygon(${pts.map(p => `${p.xp}% ${p.yp}%`).join(", ")}, ${pts[pts.length - 1].xp}% ${areaBottomPct}%, ${pts[0].xp}% ${areaBottomPct}%)`;
         };
         const actualClip = buildAreaClip(actualArea);
-        let forecastAreaPoints = forecastArea;
-        if (forecastArea.length && actualArea.length) {
-          forecastAreaPoints = [actualArea[actualArea.length - 1], ...forecastArea];
-        }
-        const forecastClip = buildAreaClip(forecastAreaPoints);
+        const forecastClip = buildAreaClip(forecastArea);
 
         const buildSegments = (pts, color) => {
           let html = "";
@@ -1213,8 +1217,12 @@
           return html;
         };
 
-        const mainSegments = buildSegments(points, "#7e5bf6");
-        const forecastSegments = buildSegments(forecastPoints, "#FC912E");
+        const actualPointsOnly = points.map(point => {
+          if (!point || point.index >= actual.length) return null;
+          return point;
+        });
+        const mainSegments = buildSegments(actualPointsOnly, "#7e5bf6");
+        const forecastSegments = buildSegments(forecastPointsWithBridge, "#FC912E");
 
         const pointDots = points.map(point => {
           if (!point) return "";
@@ -1250,7 +1258,7 @@
         }
         const index = parseInt(hit.dataset.index, 10);
         if (Number.isNaN(index)) return;
-        const label = cfg.labels[index] || "Point";
+        const label = baseLabels[index] || "Point";
         const actualValue = index < actual.length ? actual[index] : null;
         const forecastIndex = index - actual.length;
         const forecastValue =
@@ -1293,7 +1301,18 @@
         return;
       }
 
-      const all = [...(cfg.actual || []), ...(cfg.forecast || [])];
+      const actual = Array.isArray(cfg.actual) ? cfg.actual : [];
+      const forecast = Array.isArray(cfg.forecast) ? cfg.forecast : [];
+      const nTotal = actual.length + forecast.length;
+      const labels = Array.isArray(cfg.labels) ? cfg.labels.slice(0, nTotal) : [];
+      if (labels.length < nTotal) {
+        labels.push(...Array(nTotal - labels.length).fill(""));
+      }
+      const labelsShort =
+        Array.isArray(cfg.labelsShort) && cfg.labelsShort.length === labels.length
+          ? cfg.labelsShort
+          : labels;
+      const all = [...actual, ...forecast];
       if (!all.length) {
         el.innerHTML = buildEmptyStateMarkup("empty", stateConfig("empty"));
         return;
@@ -1307,16 +1326,15 @@
       const plotW = W - pad.l - pad.r;
       const plotH = H - pad.t - pad.b;
 
-      const nTotal = cfg.labels.length;
-      const nActual = cfg.actual.length;
+      const nActual = actual.length;
       const denom = Math.max(1, nTotal - 1);
       const x = (i) => pad.l + (i / denom) * plotW;
       const y = (v) => pad.t + (1 - (v - min) / (max - min)) * plotH;
 
       // points
-      const actualPts = (cfg.actual || []).map((v, i) => [x(i), y(v)]);
-      const forecastPts = (cfg.forecast || []).map((v, j) => {
-        const i = (nActual - 1) + j; // forecast begins at last actual point
+      const actualPts = actual.map((v, i) => [x(i), y(v)]);
+      const forecastPts = forecast.map((v, j) => {
+        const i = nActual + j;
         return [x(i), y(v)];
       });
 
@@ -1332,7 +1350,7 @@
       let xLabelStep = 1;
       if (nTotal > 12) xLabelStep = 2;
       if (nTotal > 24) xLabelStep = 3;
-      const xTickIndices = cfg.labels.map((_, i) => i).filter(i => i % xLabelStep === 0);
+      const xTickIndices = labels.map((_, i) => i).filter(i => i % xLabelStep === 0);
 
       // card shell (HTML)
       el.innerHTML = `
@@ -1371,11 +1389,11 @@
             <!-- x labels -->
             <line x1="${pad.l}" y1="${H - pad.b}" x2="${W - pad.r}" y2="${H - pad.b}" class="baseline" />
             <g class="axis">
-              ${cfg.labels.map((lab, i) => {
+              ${labels.map((lab, i) => {
         if (i % xLabelStep !== 0) return "";
         const xx = x(i);
-        if (i > 0 && lab === cfg.labels[i - 1]) return "";
-        const shortLab = (cfg.labelsShort && cfg.labelsShort[i]) || lab;
+        if (i > 0 && lab === labels[i - 1]) return "";
+        const shortLab = labelsShort[i] || lab;
         const parts = shortLab.split(" ");
         const line1 = parts.slice(0, parts.length - 1).join(" ") || shortLab;
         const line2 = parts[parts.length - 1] || "";
@@ -1403,8 +1421,8 @@
 
       const svgEl = el.querySelector("svg");
       if (svgEl) {
-        const totalPoints = cfg.labels.length;
-        const actualCount = (cfg.actual || []).length;
+        const totalPoints = labels.length;
+        const actualCount = actual.length;
         svgEl.addEventListener("mousemove", (event) => {
           const rect = svgEl.getBoundingClientRect();
           const cardRect = el.getBoundingClientRect();
@@ -1412,13 +1430,12 @@
           const frac = (xPos - pad.l) / plotW;
           const clampedFrac = Math.max(0, Math.min(1, frac));
           const index = Math.round(clampedFrac * (totalPoints - 1));
-          const label = cfg.labels[index] || "";
-          const actualValue = index < actualCount ? cfg.actual[index] : null;
-          const splitIndex = Math.max(0, actualCount - 1);
-          const forecastIndex = index - splitIndex;
+          const label = labels[index] || "";
+          const actualValue = index < actualCount ? actual[index] : null;
+          const forecastIndex = index - actualCount;
           const forecastValue =
-            forecastIndex >= 0 && forecastIndex < cfg.forecast.length
-              ? cfg.forecast[forecastIndex]
+            forecastIndex >= 0 && forecastIndex < forecast.length
+              ? forecast[forecastIndex]
               : null;
           const parts = [`<strong>${label || "Point"}</strong>`];
           if (actualValue !== null && actualValue !== undefined) {
