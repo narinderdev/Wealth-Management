@@ -472,11 +472,23 @@ def _build_limit_map(limit_rows):
 
 
 def _collateral_row_payload(row, limit_map=None):
+    def _display_ineligible(row_obj):
+        has_ineligible = getattr(row_obj, "ineligibles", None) is not None
+        has_beginning = getattr(row_obj, "beginning_collateral", None) is not None
+        has_eligible = getattr(row_obj, "eligible_collateral", None) is not None
+        if has_ineligible:
+            return abs(_to_decimal(row_obj.ineligibles))
+        if has_beginning and has_eligible:
+            return abs(_to_decimal(row_obj.beginning_collateral) - _to_decimal(row_obj.eligible_collateral))
+        return None
+
+    ineligible_value = _display_ineligible(row)
+
     return {
         "label": _safe_str(row.main_type),
         "detail": row.sub_type or "",
         "beginning_collateral": _format_currency(row.beginning_collateral),
-        "ineligibles": _format_currency(row.ineligibles),
+        "ineligibles": _format_currency(ineligible_value),
         "eligible_collateral": _format_currency(row.eligible_collateral),
         "nolv_pct": _format_pct(row.nolv_pct),
         "dilution_rate": _format_pct(row.dilution_rate),
@@ -540,7 +552,21 @@ def _build_collateral_parent_payload(label, rows, limit_map=None):
         return _resolve_rate_limit(row, limit_map) or row.rate_limit
 
     beginning = _sum_collateral_field(rows, "beginning_collateral")
-    ineligibles = _sum_collateral_field(rows, "ineligibles")
+    ineligibles = None
+    if rows:
+        derived_values = []
+        for row in rows:
+            has_ineligible = getattr(row, "ineligibles", None) is not None
+            has_beginning = getattr(row, "beginning_collateral", None) is not None
+            has_eligible = getattr(row, "eligible_collateral", None) is not None
+            if has_ineligible:
+                derived_values.append(abs(_to_decimal(row.ineligibles)))
+            elif has_beginning and has_eligible:
+                derived_values.append(
+                    abs(_to_decimal(row.beginning_collateral) - _to_decimal(row.eligible_collateral))
+                )
+        if derived_values:
+            ineligibles = sum(derived_values, Decimal("0"))
     eligible = _sum_collateral_field(rows, "eligible_collateral")
     pre_reserve = _sum_collateral_field(rows, "pre_reserve_collateral")
     reserves = _sum_collateral_field(rows, "reserves")
@@ -801,7 +827,6 @@ def summary_view(request):
     limit_rows = list(CollateralLimitsRow.objects.filter(borrower=borrower))
     limit_map = _build_limit_map(limit_rows)
     net_total = sum((_to_decimal(row.net_collateral) for row in collateral_rows), Decimal("0"))
-    eligible_total = sum((_to_decimal(row.eligible_collateral) for row in collateral_rows), Decimal("0"))
     ineligibles_total = sum((_to_decimal(row.ineligibles) for row in collateral_rows), Decimal("0"))
 
     ar_qs = ARMetricsRow.objects.filter(borrower=borrower)
@@ -821,9 +846,12 @@ def summary_view(request):
         _collateral_row_payload(row, limit_map=limit_map) for row in collateral_rows
     ]
 
-    available_total = eligible_total - ineligibles_total
-    if available_total < Decimal("0"):
-        available_total = Decimal("0")
+    outstanding_value = (
+        _to_decimal(ar_row.balance) if ar_row and ar_row.balance is not None else None
+    )
+    availability_value = net_total - (outstanding_value if outstanding_value is not None else Decimal("0"))
+    if availability_value < Decimal("0"):
+        availability_value = Decimal("0")
 
     insights = {
         "net": {
@@ -831,11 +859,13 @@ def summary_view(request):
             "detail": f"Ineligibles { _format_currency(ineligibles_total) } across {len(collateral_rows)} rows",
         },
         "outstanding": {
-            "amount": _format_currency(ar_row.balance if ar_row else None),
+            "amount": _format_currency(outstanding_value),
             "detail": f"As of {ar_row.as_of_date.strftime('%m/%d/%Y')}" if ar_row and ar_row.as_of_date else "Awaiting AR snapshot",
         },
         "availability": {
-            "amount": _format_currency(available_total if collateral_rows else None),
+            "amount": _format_currency(
+                availability_value if collateral_rows or outstanding_value is not None else None
+            ),
             "detail": f"{len(collateral_rows)} collateral entries",
         },
     }
@@ -853,7 +883,6 @@ def summary_view(request):
     forecast_chart_labels = []
     forecast_net_series = []
     forecast_outstanding_series = []
-    forecast_availability_series = []
 
     if latest_forecast:
         forecast_label = (latest_forecast.actual_forecast or "").strip()
@@ -877,8 +906,7 @@ def summary_view(request):
                 previous_value,
             )
 
-        _apply_forecast_metric("outstanding", "loan_balance")
-        _apply_forecast_metric("availability", "revolver_availability")
+        # Forecast values are used for chart history only; keep insight cards anchored to the latest collateral/AR snapshot.
 
         def _forecast_row_date(row):
             label_date = row.as_of_date or row.period
@@ -910,7 +938,6 @@ def summary_view(request):
             forecast_chart_labels.append(base_label)
             forecast_net_series.append(_forecast_value(row, "available_collateral"))
             forecast_outstanding_series.append(_forecast_value(row, "loan_balance"))
-            forecast_availability_series.append(_forecast_value(row, "revolver_availability"))
 
     previous_collateral_rows = []
     if latest_collateral_time:
@@ -929,21 +956,28 @@ def summary_view(request):
         (_to_decimal(row.net_collateral) for row in previous_collateral_rows),
         Decimal("0"),
     )
-    previous_eligible_total = sum(
-        (_to_decimal(row.eligible_collateral) for row in previous_collateral_rows),
-        Decimal("0"),
+    previous_outstanding_value = (
+        _to_decimal(ar_prev_row.balance) if ar_prev_row and ar_prev_row.balance is not None else None
     )
-    previous_ineligibles_total = sum(
-        (_to_decimal(row.ineligibles) for row in previous_collateral_rows),
-        Decimal("0"),
-    )
-    previous_available_total = previous_eligible_total - previous_ineligibles_total
-    if previous_available_total < Decimal("0"):
-        previous_available_total = Decimal("0")
+    previous_availability_value = None
+    if previous_collateral_rows or previous_outstanding_value is not None:
+        previous_availability_value = previous_net_total - (
+            previous_outstanding_value if previous_outstanding_value is not None else Decimal("0")
+        )
+        if previous_availability_value < Decimal("0"):
+            previous_availability_value = Decimal("0")
 
     insights["net"]["delta"] = _delta_payload(
         net_total,
         previous_net_total if previous_collateral_rows else None,
+    )
+    insights["outstanding"]["delta"] = _delta_payload(
+        outstanding_value,
+        previous_outstanding_value,
+    )
+    insights["availability"]["delta"] = _delta_payload(
+        availability_value if collateral_rows or outstanding_value is not None else None,
+        previous_availability_value,
     )
 
     collateral_history = list(
@@ -958,7 +992,6 @@ def summary_view(request):
     )
     collateral_labels = []
     net_series = []
-    availability_series = []
     if collateral_history:
         buckets = {}
         for row in collateral_history:
@@ -973,11 +1006,8 @@ def summary_view(request):
         for date_key in sorted(buckets.keys())[-chart_points:]:
             bucket = buckets[date_key]
             net_series.append(bucket["net"])
-            available = bucket["eligible"] - bucket["ineligible"]
-            if available < Decimal("0"):
-                available = Decimal("0")
-            availability_series.append(available)
             collateral_labels.append(date_key.strftime("%m/%d"))
+    net_series_raw = list(net_series)
 
     ar_rows = list(
         ar_qs.order_by("-as_of_date", "-created_at")[:chart_points]
@@ -989,6 +1019,7 @@ def summary_view(request):
             date_value = row.as_of_date or (row.created_at.date() if row.created_at else None)
             ar_labels.append(date_value.strftime("%m/%d") if date_value else f"{idx + 1:02d}")
             outstanding_series.append(_to_decimal(row.balance))
+    outstanding_series_raw = list(outstanding_series)
 
     label_source = forecast_chart_labels or collateral_labels or ar_labels
     base_labels = _normalize_labels(label_source, chart_points)
@@ -1002,9 +1033,6 @@ def summary_view(request):
             outstanding_fallback = (
                 ar_row.balance if ar_row and ar_row.balance is not None else Decimal("0")
             )
-        availability_fallback = getattr(latest_forecast, "revolver_availability", None)
-        if availability_fallback is None:
-            availability_fallback = available_total
 
         net_series = _normalize_series(forecast_net_series, chart_points, net_fallback)
         outstanding_series = _normalize_series(
@@ -1012,29 +1040,50 @@ def summary_view(request):
             chart_points,
             outstanding_fallback,
         )
-        availability_series = _normalize_series(
-            forecast_availability_series,
-            chart_points,
-            availability_fallback,
-        )
     else:
         net_series = _normalize_series(net_series, chart_points, net_total)
-        availability_series = _normalize_series(availability_series, chart_points, available_total)
+        outstanding_fallback = (
+            outstanding_value if outstanding_value is not None else Decimal("0")
+        )
         outstanding_series = _normalize_series(
             outstanding_series,
             chart_points,
-            ar_row.balance if ar_row and ar_row.balance is not None else Decimal("0"),
+            outstanding_fallback,
         )
 
-    if not latest_forecast:
-        insights["outstanding"]["delta"] = _delta_payload(
-            ar_row.balance if ar_row else None,
-            ar_prev_row.balance if ar_prev_row else None,
-        )
-        insights["availability"]["delta"] = _delta_payload(
-            available_total if collateral_rows else None,
-            previous_available_total if previous_collateral_rows else None,
-        )
+    availability_series = []
+    for net_val, out_val in zip(net_series, outstanding_series):
+        net_clean = _to_decimal(net_val) if net_val is not None else Decimal("0")
+        out_clean = _to_decimal(out_val) if out_val is not None else Decimal("0")
+        avail_val = net_clean - out_clean
+        if avail_val < Decimal("0"):
+            avail_val = Decimal("0")
+        availability_series.append(avail_val)
+
+    availability_series_raw = []
+    pair_count = min(len(net_series_raw), len(outstanding_series_raw))
+    if pair_count:
+        for net_val, out_val in zip(net_series_raw[-pair_count:], outstanding_series_raw[-pair_count:]):
+            net_clean = _to_decimal(net_val) if net_val is not None else Decimal("0")
+            out_clean = _to_decimal(out_val) if out_val is not None else Decimal("0")
+            avail_val = net_clean - out_clean
+            if avail_val < Decimal("0"):
+                avail_val = Decimal("0")
+            availability_series_raw.append(avail_val)
+
+    def _recent_delta(series):
+        if not series or len(series) < 2:
+            return None
+        return _delta_payload(series[-1], series[-2])
+
+    def _apply_recent_delta(metric_key, series):
+        delta_val = _recent_delta(series)
+        if delta_val is not None:
+            insights[metric_key]["delta"] = delta_val
+
+    _apply_recent_delta("net", net_series_raw)
+    _apply_recent_delta("outstanding", outstanding_series_raw)
+    _apply_recent_delta("availability", availability_series_raw)
 
     net_chart = _build_line_series(
         net_series,

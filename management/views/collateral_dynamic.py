@@ -1901,9 +1901,8 @@ def _inventory_state(borrower, start_date=None, end_date=None):
                     metrics["trend_denominator"] += row_beginning
                 break
 
-    inventory_available_total = inventory_total - inventory_ineligible
-    if inventory_available_total < 0:
-        inventory_available_total = Decimal("0")
+    # Use net collateral as the available inventory figure so it aligns with collateral composition.
+    inventory_available_total = inventory_net_total
 
     return {
         "inventory_rows": inventory_rows,
@@ -2030,13 +2029,13 @@ def _inventory_context(borrower, snapshot_text=None):
     inventory_available_display = _format_currency(inventory_available_total)
     ineligible_display = _format_currency(inventory_ineligible_raw)
 
-    mix_total = inventory_total if inventory_total > 0 else Decimal("0")
+    mix_total = inventory_net_total if inventory_net_total > 0 else Decimal("0")
 
     inventory_mix = []
     for category in CATEGORY_CONFIG:
         metrics = category_metrics[category["key"]]
         if mix_total > 0:
-            pct_ratio = metrics["eligible"] / mix_total
+            pct_ratio = metrics["net"] / mix_total
         else:
             pct_ratio = Decimal("0")
         metrics["mix_pct"] = pct_ratio
@@ -2051,10 +2050,10 @@ def _inventory_context(borrower, snapshot_text=None):
 
     def _format_cost_pct(amount, base):
         if amount is None:
-            return "—"
+            return "-"
         base_val = _to_decimal(base)
         if base_val <= 0:
-            return "—"
+            return "-"
         return _format_pct(_to_decimal(amount) / base_val)
 
     inventory_breakdown = []
@@ -2080,21 +2079,20 @@ def _inventory_context(borrower, snapshot_text=None):
             if metrics["trend_denominator"] > 0
             else None
         )
-        liquidation_budget = metrics["pre_reserve"] or metrics["reserves"]
-        liquidation_amount = None
-        if liquidation_budget is not None:
-            liquidation_amount = -_to_decimal(liquidation_budget)
+        available_value = metrics["net"]
+        gross_value = metrics["pre_reserve"] if metrics["pre_reserve"] is not None else metrics["net"]
+        liquidation_amount = _to_decimal(metrics["reserves"]) if metrics["reserves"] is not None else Decimal("0")
 
         inventory_breakdown.append(
             {
                 "label": category["label"],
-                "available_value": _format_currency(metrics["eligible"]),
-                "gross_value": _format_currency(metrics["beginning"]),
-                "gross_pct": _format_cost_pct(metrics["beginning"], metrics["eligible"]),
+                "available_value": _format_currency(available_value),
+                "gross_value": _format_currency(gross_value),
+                "gross_pct": _format_cost_pct(gross_value, available_value),
                 "liquidation_value": _format_currency(liquidation_amount),
-                "liquidation_pct": _format_cost_pct(liquidation_amount, metrics["eligible"]),
+                "liquidation_pct": _format_cost_pct(liquidation_amount, available_value),
                 "net_value": _format_currency(metrics["net"]),
-                "net_pct": _format_cost_pct(metrics["net"], metrics["eligible"]),
+                "net_pct": _format_cost_pct(metrics["net"], available_value),
             }
         )
         metrics["trend_pct"] = trend_pct or Decimal("0")
@@ -2506,6 +2504,28 @@ def _accounts_receivable_context(borrower, range_key="today", division="all", sn
     if len(history) > max_history:
         history = history[-max_history:]
 
+    collateral_ar_qs = (
+        CollateralOverviewRow.objects.filter(borrower=borrower)
+        .exclude(created_at__isnull=True)
+        .order_by("created_at")
+    )
+    if start_date and end_date:
+        collateral_ar_qs = collateral_ar_qs.filter(created_at__date__range=(start_date, end_date))
+    ar_collateral_buckets = OrderedDict()
+    for row in collateral_ar_qs:
+        main_label = (row.main_type or "").lower()
+        if "receivable" not in main_label:
+            continue
+        date_key = row.created_at.date()
+        ar_collateral_buckets.setdefault(date_key, Decimal("0"))
+        ar_collateral_buckets[date_key] += _to_decimal(row.eligible_collateral)
+    ar_collateral_history = [
+        {"label": key.strftime("%m/%d"), "total_balance": total}
+        for key, total in ar_collateral_buckets.items()
+    ]
+    if len(ar_collateral_history) > max_history:
+        ar_collateral_history = ar_collateral_history[-max_history:]
+
     def _format_days(value):
         if value is None:
             return "—"
@@ -2741,8 +2761,18 @@ def _accounts_receivable_context(borrower, range_key="today", division="all", sn
     chart_points = 7
     chart_history = history[-chart_points:] if len(history) > chart_points else history[:]
     chart_labels = [f"{idx + 1:02d}" for idx in range(len(chart_history))]
+    collateral_chart_history = (
+        ar_collateral_history[-chart_points:] if ar_collateral_history else []
+    )
     for spec in kpi_specs:
-        series_values = [_to_decimal(row[spec["key"]]) for row in chart_history]
+        if spec["key"] == "total_balance" and collateral_chart_history:
+            series_values = [_to_decimal(row["total_balance"]) for row in collateral_chart_history]
+            spec_labels = [row.get("label") or "" for row in collateral_chart_history]
+            if len(spec_labels) < len(series_values):
+                spec_labels += [f"{idx + 1:02d}" for idx in range(len(series_values) - len(spec_labels))]
+        else:
+            series_values = [_to_decimal(row[spec["key"]]) for row in chart_history]
+            spec_labels = chart_labels
         scale = spec.get("scale") or Decimal("1")
         scaled_values = []
         for value in series_values:
@@ -2753,16 +2783,26 @@ def _accounts_receivable_context(borrower, range_key="today", division="all", sn
                 scaled_values.append(float(value / scale))
         chart = _build_kpi_chart(
             scaled_values,
-            chart_labels,
+            spec_labels,
             axis_formatter=spec["axis_formatter"],
             value_formatter=spec.get("chart_formatter") or spec["formatter"],
             pad_ratio=spec.get("pad_ratio", 0.12),
             clamp_min=spec.get("clamp_min"),
             clamp_max=spec.get("clamp_max"),
         )
+        current_value = current_snapshot[spec["key"]]
+        previous_value = previous_snapshot[spec["key"]] if previous_snapshot else None
+        if spec["key"] == "total_balance" and ar_collateral_history:
+            current_value = ar_collateral_history[-1]["total_balance"]
+            previous_value = (
+                ar_collateral_history[-2]["total_balance"] if len(ar_collateral_history) > 1 else None
+            )
+            current_snapshot[spec["key"]] = current_value
+            if previous_snapshot is not None:
+                previous_snapshot[spec["key"]] = previous_value
         delta = _delta_payload(
-            current_snapshot[spec["key"]],
-            previous_snapshot[spec["key"]] if previous_snapshot else None,
+            current_value,
+            previous_value,
         )
         kpis.append(
             {
@@ -3088,10 +3128,31 @@ def _accounts_receivable_context(borrower, range_key="today", division="all", sn
             "date",
         ).order_by("date", "id")
     )
+    collateral_ineligible_total = None
+    collateral_ar_qs = CollateralOverviewRow.objects.filter(
+        borrower=borrower, main_type__icontains="receivable"
+    )
+    if start_date and end_date:
+        collateral_ar_qs = collateral_ar_qs.filter(created_at__date__range=(start_date, end_date))
+    latest_collateral_time = (
+        collateral_ar_qs.order_by("-created_at").values_list("created_at", flat=True).first()
+    )
+    if latest_collateral_time:
+        latest_collateral_date = latest_collateral_time.date()
+        collateral_ar_rows = list(
+            collateral_ar_qs.filter(created_at__date=latest_collateral_date)
+        )
+        if collateral_ar_rows:
+            collateral_ineligible_total = sum(
+                (abs(_to_decimal(row.ineligibles)) for row in collateral_ar_rows),
+                Decimal("0"),
+            )
     ineligible_rows = []
     ineligible_total_row = None
     if ineligible_overview:
         total_ineligible = _to_decimal(ineligible_overview.total_ineligible)
+        if collateral_ineligible_total is not None:
+            total_ineligible = collateral_ineligible_total
         categories = [
             ("Past Due Over 60 Days", ineligible_overview.past_due_gt_90_days),
             ("Dilution", ineligible_overview.dilution),
@@ -3104,7 +3165,7 @@ def _accounts_receivable_context(borrower, range_key="today", division="all", sn
             ("Other", ineligible_overview.other),
         ]
         for label, amount in categories:
-            amount_value = _to_decimal(amount)
+            amount_value = abs(_to_decimal(amount))
             pct = amount_value / total_ineligible if total_ineligible else Decimal("0")
             ineligible_rows.append(
                 {
