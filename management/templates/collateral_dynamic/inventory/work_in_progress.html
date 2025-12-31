@@ -26,6 +26,21 @@
     border-radius:var(--radius);
     /* box-shadow:var(--shadow); */
   }
+  .work-in-progress .summary-card{
+    border:1px solid #E6EAF2;
+    border-radius:12px;
+    box-shadow:0 1px 2px rgba(16,24,40,.06);
+    overflow:hidden;
+    background:#fff;
+    height:100%;
+  }
+  .work-in-progress .summary-card.ineligible-card{
+    border:1px solid #e6edf7;
+    border-left:0;
+    border-right:0;
+    border-radius:14px;
+    box-shadow:none;
+  }
   .work-in-progress .section{
     padding:16px 18px;
     
@@ -133,7 +148,7 @@ line-height: 50px;
   .work-in-progress tbody td{
     padding:10px 12px;
     border-bottom:1px solid var(--line2);
-    color:#0f172a;
+    
   }
   .work-in-progress tbody tr:last-child td{border-bottom:none;}
   .work-in-progress td.num,.work-in-progress th.num{text-align:left;font-variant-numeric:tabular-nums;}
@@ -179,6 +194,13 @@ line-height: 50px;
     font-size:22px;
     font-weight:800;
     color:#585858;
+  }
+  .work-in-progress .ineligible-card .card-head{
+    padding:14px 16px 10px;
+    margin:0;
+    gap:10px;
+    color:#1f2b5b;
+    font-weight:700;
   }
   .work-in-progress .stat-grid{
     display:grid;
@@ -317,13 +339,175 @@ line-height: 50px;
 .work-in-progress .table-border td.num{
   text-align:center;
 }
-  .work-in-progress .ineligible-detail-table{width:100%;border-collapse:collapse;}
-  .work-in-progress .ineligible-detail-table th,
-  .work-in-progress .ineligible-detail-table td{padding:10px 12px;border-bottom:1px solid rgba(230,234,242,.65);text-align:left;}
-  .work-in-progress .ineligible-detail-table thead th{background:#FBFCFE;font-weight:700;color:#475467;}
-  .work-in-progress .ineligible-detail-table th:last-child,
-  .work-in-progress .ineligible-detail-table td:last-child{text-align:center;width:160px;}
-  .work-in-progress .ineligible-detail-table tr:last-child td{border-bottom:none;}
+  .work-in-progress .ineligible-card .table-wrap{
+    overflow:auto;
+    border:1px solid #e3eaf7;
+    border-left:0;
+    border-right:0;
+    border-radius:12px;
+    background:#fff;
+    box-shadow:none;
+    height:auto;
+  }
+  .work-in-progress .ineligible-detail-table{
+    width:100%;
+    margin-top:0;
+    border-collapse:collapse;
+    font-size:12px;
+    color:#475569;
+  }
+  .work-in-progress .ineligible-detail-table thead th{
+    background:#f7faff;
+    font-weight:700;
+    color:#64748b;
+    padding:10px 12px;
+    border-bottom:1px solid #e3eaf7;
+    text-align:center;
+  }
+  .work-in-progress .ineligible-detail-table thead th:first-child{
+    border-left:1px solid #e3eaf7;
+    border-top-left-radius:10px;
+    text-align:left;
+  }
+  .work-in-progress .ineligible-detail-table thead th:last-child{
+    border-right:1px solid #e3eaf7;
+    border-top-right-radius:10px;
+    text-align:center;
+    width:160px;
+  }
+  .work-in-progress .ineligible-detail-table th:first-child{font-size:10pt;}
+  .work-in-progress .ineligible-detail-table td{
+    padding:10px 12px;
+    border-bottom:1px solid #eef2f7;
+    text-align:left;
+    background:#fff;
+    font-weight:600;
+  }
+  .work-in-progress .ineligible-detail-table td:first-child{
+    border-left:1px solid #e3eaf7;
+  }
+  .work-in-progress .ineligible-detail-table td:last-child{
+    border-right:1px solid #e3eaf7;
+  }
+  .work-in-progress .ineligible-detail-table td.num{
+    text-align:center;
+    font-variant-numeric:tabular-nums;
+  }
+  .work-in-progress .ineligible-detail-table tr:last-child td{border-bottom:0;}
+  .work-in-progress .table-card{
+    padding:0;
+    border:1px solid #e6edf7;
+    border-radius:14px;
+    box-shadow:none;
+  }
+  .work-in-progress .table-card .head{padding:16px 18px 10px;}
+  .work-in-progress .table-card .body{padding:0 18px 18px;}
+  .work-in-progress .table-card .table-wrap{
+    border:1px solid #e3eaf7;
+    border-radius:12px;
+    background:#fff;
+    overflow:auto;
+    height:auto;
+  }
+  .work-in-progress .table-card table{
+    width:100%;
+    margin-top:0;
+    border-collapse:separate;
+    border-spacing:0;
+    font-size:12px;
+    color:#475569;
+  }
+  .work-in-progress .table-card thead th{
+    background:#f7faff;
+    color:#6b7280;
+    font-weight:700;
+    padding:10px 12px;
+    border-bottom:1px solid #e3eaf7;
+    text-align:center;
+    white-space:nowrap;
+  }
+  .work-in-progress .table-card thead th:first-child{
+    text-align:left;
+    border-left:1px solid #e3eaf7;
+    border-top-left-radius:10px;
+  }
+  .work-in-progress .table-card thead th:last-child{
+    border-right:1px solid #e3eaf7;
+    border-top-right-radius:10px;
+  }
+  .work-in-progress .table-card tbody td{
+    padding:10px 12px;
+    border-bottom:1px solid #eef2fb;
+    border-left:0;
+    border-right:0;
+    background:#fff;
+    color:#65758B;
+    font-weight:600;
+    text-align:center;
+    white-space:nowrap;
+  }
+  .work-in-progress .table-card tbody td:first-child{
+    text-align:left;
+  }
+  .work-in-progress .table-card tbody tr:last-child td{
+    border-bottom:1px solid #e3eaf7;
+  }
+  .work-in-progress .table-card tbody tr.footer-row td{
+    color:#0b1220;
+    font-weight:600;
+    background-color: #f7faff;
+  }
+  .work-in-progress .table-card tfoot td{
+    background:#f7faff;
+    border-top:1px solid #e3eaf7;
+    font-weight:600;
+    color:#0b1220;
+    padding:10px 12px;
+    text-align:center;
+  }
+  .work-in-progress .table-card tfoot td:first-child{
+    text-align:left;
+  }
+  .work-in-progress .category-analysis-table thead th:not(:first-child),
+  .work-in-progress .category-analysis-table tbody td:not(:first-child){
+    text-align:center;
+  }
+  .work-in-progress .category-analysis-table thead th:first-child,
+  .work-in-progress .category-analysis-table tbody td:first-child{
+    text-align:left;
+  }
+  .work-in-progress .category-analysis-table th.num,
+  .work-in-progress .category-analysis-table td.num{
+    text-align:center;
+  }
+  .work-in-progress .top-sku-table thead th:nth-child(4),
+  .work-in-progress .top-sku-table thead th:nth-child(5),
+  .work-in-progress .top-sku-table thead th:nth-child(6),
+  .work-in-progress .top-sku-table thead th:nth-child(7),
+  .work-in-progress .top-sku-table tbody td:nth-child(4),
+  .work-in-progress .top-sku-table tbody td:nth-child(5),
+  .work-in-progress .top-sku-table tbody td:nth-child(6),
+  .work-in-progress .top-sku-table tbody td:nth-child(7),
+  .work-in-progress .top-sku-table tfoot td:nth-child(4),
+  .work-in-progress .top-sku-table tfoot td:nth-child(5),
+  .work-in-progress .top-sku-table tfoot td:nth-child(6),
+  .work-in-progress .top-sku-table tfoot td:nth-child(7){
+    text-align:center;
+  }
+  .work-in-progress .top-sku-table thead th:nth-child(-n+3),
+  .work-in-progress .top-sku-table tbody td:nth-child(-n+3),
+  .work-in-progress .top-sku-table tfoot td:nth-child(-n+3){
+    text-align:center;
+  }
+  .work-in-progress .top-sku-table thead th:nth-child(2),
+  .work-in-progress .top-sku-table thead th:nth-child(3){
+    text-align:center;
+  }
+  .work-in-progress .top-sku-table thead th:first-child,
+  .work-in-progress .top-sku-table tbody td:first-child,
+  .work-in-progress .top-sku-table tfoot td:first-child{
+    text-align:left;
+  }
 </style>
 
 <div class="page work-in-progress">
@@ -356,7 +540,7 @@ line-height: 50px;
     </label>
   </form>
   <div class="grid-2">
-    <div class="card">
+    <div class="card summary-card">
       <div class="card-head">
         <img src="{% static 'images/borrowing_icon.svg' %}" 
             alt="Available Inventory Icon"
@@ -396,8 +580,8 @@ line-height: 50px;
       </div>
     </div>
 
-    <div class="card">
-      <div class="card-head" style="margin-bottom: 10px;">
+    <div class="card summary-card ineligible-card">
+      <div class="card-head">
         <img src="{% static 'images/borrowing_icon.svg' %}" 
             alt="Current Update Icon"
             class="current-update-icon" />
@@ -409,7 +593,7 @@ line-height: 50px;
             <tr>
               <th>Ineligibles</th>
               <th class="num">Amount</th>
-              <th class="num">% of Ineligible</th>
+              <th class="num">% of Ineligibles</th>
             </tr>
           </thead>
           <tbody>
@@ -426,7 +610,6 @@ line-height: 50px;
         </table>
       </div>
     </div>
-  </div>
   </div>
 
   <div class="card section">
@@ -454,7 +637,7 @@ line-height: 50px;
     </div>
     <div class="body">
       <div class="table-wrap">
-        <table>
+        <table class="category-analysis-table">
           <thead>
             <tr>
               <th>Category</th>
@@ -500,7 +683,7 @@ line-height: 50px;
     </div>
     <div class="body">
       <div class="table-wrap">
-        <table>
+        <table class="top-sku-table">
           <thead>
             <tr>
               <th>Item Number</th>
