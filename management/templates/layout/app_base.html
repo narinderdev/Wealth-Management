@@ -79,8 +79,29 @@ table th{
   font-weight: 400 !important;
 }
 
+.dashboard-ui table thead th,
+.dashboard-ui table th,
+.dashboard-ui table tbody td,
+.dashboard-ui table td{
+  text-align:center;
+}
+
+.dashboard-ui table thead th:first-child,
+.dashboard-ui table th:first-child,
+.dashboard-ui table tbody td:first-child,
+.dashboard-ui table td:first-child{
+  text-align:left;
+}
+
+.dashboard-ui table thead th[colspan]:not([colspan="1"]),
+.dashboard-ui table th[colspan]:not([colspan="1"]),
+.dashboard-ui table tbody td[colspan]:not([colspan="1"]),
+.dashboard-ui table td[colspan]:not([colspan="1"]){
+  text-align:center;
+}
+
 </style>
-<body class="{% block body_class %}{% endblock %}">
+<body class="{% block body_class %}{% endblock %}{% if active_tab == 'summary' or active_tab == 'collateral_dynamic' or active_tab == 'forecast' or active_tab == 'risk' or active_tab == 'reports' or active_tab == 'limits' or active_tab == 'portfolio' %} dashboard-ui{% endif %}">
   <div class="frame">
     <div class="app">
       <aside class="sidebar">
