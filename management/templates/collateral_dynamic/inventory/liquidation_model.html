@@ -320,16 +320,14 @@ line-height: 33.339px; /* 138.462% */
     border-bottom:1px solid #e3eaf7;
     text-align:center;
     white-space:nowrap;
-    border-left:1px solid #e3eaf7;
-    border-right:1px solid #e3eaf7;
+    border-left:0;
+    border-right:0;
   }
   .liquidation-model .n-table thead th:first-child{
     text-align:left;
-    border-left:1px solid #e3eaf7;
     border-top-left-radius:10px;
   }
   .liquidation-model .n-table thead th:last-child{
-    border-right:1px solid #e3eaf7;
     border-top-right-radius:10px;
   }
   /* ensure leading group cell is also tinted */
@@ -591,24 +589,41 @@ gap: 0px;
     color:#6b7280;
     font-weight:700;
     padding:10px 12px;
-    border-bottom:1px solid #e3eaf7;
-    border-left:0;
-    border-right:0;
+    border-bottom:0;
+    border-left:0 !important;
+    border-right:0 !important;
     white-space:nowrap;
   }
   .liquidation-model .n-table-change thead tr.group th:not(:first-child){
-    border-left:1px solid #e3eaf7;
+    border-left:0 !important;
   }
   .liquidation-model .n-table-change thead tr.group th:first-child{
     text-align:left;
     padding-left:12px;
     padding-right:12px;
     border-top-left-radius:10px;
-    border-left:1px solid #e3eaf7;
+    border-left:0 !important;
   }
   .liquidation-model .n-table-change thead tr.group th:last-child{
     border-top-right-radius:10px;
-    border-right:1px solid #e3eaf7;
+    border-right:0 !important;
+  }
+  .liquidation-model .n-table-change thead tr.columns th{
+    text-align:center;
+    background:#f7faff;
+    color:#6b7280;
+    font-weight:700;
+    padding:10px 12px;
+    border-bottom:1px solid #e3eaf7;
+    border-left:0 !important;
+    border-right:0 !important;
+    white-space:nowrap;
+  }
+  .liquidation-model .n-table-change thead tr.columns th:first-child{
+    border-left:1px solid #e3eaf7 !important;
+  }
+  .liquidation-model .n-table-change thead tr.columns th:last-child{
+    border-right:1px solid #e3eaf7 !important;
   }
   .liquidation-model #nolv-analysis thead tr.group th{
     text-align:center;
@@ -623,18 +638,18 @@ gap: 0px;
     font-weight:700;
     padding:10px 12px;
     border-bottom:1px solid #e3eaf7;
-    border-left:0;
-    border-right:0;
+    border-left:0 !important;
+    border-right:0 !important;
     white-space:nowrap;
   }
   .liquidation-model #nolv-analysis thead tr.columns th:first-child{
-    border-left:1px solid #e3eaf7;
+    border-left:0 !important;
   }
   .liquidation-model #nolv-analysis thead tr.columns th:last-child{
-    border-right:1px solid #e3eaf7;
+    border-right:0 !important;
   }
   .liquidation-model #nolv-analysis thead tr.columns th:not(:first-child){
-    border-left:1px solid #e3eaf7;
+    border-left:0 !important;
   }
   .liquidation-model #nolv-analysis tbody td.num,
   .liquidation-model #nolv-analysis tfoot td.num{
@@ -668,7 +683,7 @@ gap: 0px;
     white-space:nowrap;
   }
   .liquidation-model #nolv-analysis thead tr.group th:not(:last-child){
-    border-right:1px solid #e3eaf7;
+    border-right:0;
   }
   .liquidation-model #nolv-analysis thead tr.group th:first-child{
     border-top-left-radius:10px;
@@ -698,15 +713,15 @@ gap: 0px;
   .liquidation-model #nolv-analysis .nolv-subheading td{
     padding:10px 12px;
     border-bottom:1px solid #e3eaf7;
-    border-left:1px solid #e3eaf7;
-    border-right:1px solid #e3eaf7;
+    border-left:0;
+    border-right:0;
   }
   .liquidation-model #nolv-analysis .nolv-total td{
     font-weight:500;
     color:#0f172a;
     background:#f7faff;
-    border-left:1px solid #e3eaf7;
-    border-right:1px solid #e3eaf7;
+    border-left:0;
+    border-right:0;
   }
   .liquidation-model #nolv-analysis .nolv-total-light td{
     background:#f7f9fc;
@@ -740,10 +755,10 @@ gap: 0px;
   }
   .liquidation-model #nolv-analysis tbody td:first-child{
     text-align:left;
-    border-left:1px solid #e3eaf7;
+    border-left:0;
   }
   .liquidation-model #nolv-analysis tbody td:last-child{
-    border-right:1px solid #e3eaf7;
+    border-right:0;
   }
   .liquidation-model #nolv-analysis tbody tr:last-child td{
     border-bottom:1px solid #e3eaf7;
@@ -780,18 +795,18 @@ gap: 0px;
     font-weight:700;
     padding:10px 12px;
     border-bottom:1px solid #e3eaf7;
-    border-left:0;
-    border-right:0;
+    border-left:0 !important;
+    border-right:0 !important;
     white-space:nowrap;
   }
   .liquidation-model .n-table-change thead tr.columns th:first-child{
     text-align:left;
     border-top-left-radius:0;
-    border-left:1px solid #e3eaf7;
+    border-left:0 !important;
   }
   .liquidation-model .n-table-change thead tr.columns th:last-child{
     border-top-right-radius:0;
-    border-right:1px solid #e3eaf7;
+    border-right:1px solid #e3eaf7 !important;
   }
   .liquidation-model .n-table-change tbody td{
     padding:10px 12px;
@@ -801,6 +816,8 @@ gap: 0px;
     text-align:center;
     white-space:nowrap;
     background:#fff;
+    border-left:0 !important;
+    border-right:0 !important;
   }
   .liquidation-model .n-table-change tbody td:first-child{
     text-align:left;
@@ -822,8 +839,8 @@ gap: 0px;
   .liquidation-model .n-table-change tfoot td{
     background:#f7faff;
     border-top:1px solid #e3eaf7;
-    border-left:0;
-    border-right:0;
+    border-left:0 !important;
+    border-right:0 !important;
     font-weight:700;
     color:#0b1220;
     padding:10px 12px;

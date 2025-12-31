@@ -125,6 +125,15 @@
       font-weight:600;
       color:#0f1f44;
     }
+     .main-head{
+     font-size: 24px;
+     font-weight: 800;
+     color:black;
+     margin-top: 0px;
+     margin-bottom: 0px;
+     font-family: system-ui, -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Oxygen, Ubuntu, Cantarell, 'Open Sans', 'Helvetica Neue', sans-serif;
+     
+    }
     .stat-row{
       display:grid;
       grid-template-columns:repeat(auto-fit,minmax(180px,1fr));
@@ -141,6 +150,7 @@
     }
     .stat-card small{
       font-size:16pt;
+      font-weight: 800;
       color:#64748b;
       text-transform:uppercase;
       letter-spacing:.04em;
@@ -315,7 +325,7 @@
       background:#fbfcfe;
     }
     .cash-table tbody tr.title-row td{
-      font-weight:600;
+      font-weight:700;
       color:#0f1f44;
       background:#f5f7fb;
     }
@@ -431,7 +441,7 @@
     }
     .availability-table tbody td:first-child{
       text-align:left;
-      font-weight:500;
+      font-weight:700;
       color:#334155;
     }
     .variance-grid{
@@ -498,7 +508,7 @@
       color:#0f1f44;
     }
     .variance-table tbody tr.title-row td{
-      font-weight:600;
+      font-weight:700;
       color:#0f1f44;
       background:#f8fafc;
     }
@@ -596,7 +606,7 @@
       <div class="cashflow-header">
         <span class="heading-with-icon">
           <img src="{% static 'images/tick.svg' %}" alt="tick icon"/>
-          13 Week Cash Flow Summary
+         <h2 class="main-head">13 Week Cash Flow Summary</h2> 
         </span>
         <span style="font-size:11px;color:#64748b;">
           As of week ending {{ week_summary.period_label|default:"—" }}
@@ -683,7 +693,7 @@
     <div class="cd-card snapshot-card wide">
       <h3 class="heading-with-icon">
         <img src="{% static 'images/tick.svg' %}" alt="tick icon"/>
-        Snapshot Summary
+       <h2 class="main-head">Snapshot Summary</h2> 
       </h3>
       {% if not week_summary.snapshot_summary or week_summary.snapshot_summary == "No snapshot summary available." %}
         {% include "shared/empty_state.html" with type="empty" title="No snapshot summary" message="No snapshot summary available for this borrower yet." action_label="Add Snapshot Summary" action_url=admin_snapshot_url %}
@@ -696,7 +706,7 @@
       <div class="forecast-header">
         <span class="heading-with-icon">
           <img src="{% static 'images/tick.svg' %}" alt="tick icon"/>
-          13-Week Cash Flow Forecast
+          <h2 class="main-head">13-Week Cash Flow Forecast</h2>
         </span>
         <span style="font-size:11px;color:#64748b;">Updated {{ week_summary.forecast_updated_label }}</span>
       </div>
@@ -739,7 +749,7 @@
       <div class="forecast-header">
         <span class="heading-with-icon">
           <img src="{% static 'images/tick.svg' %}" alt="tick icon"/>
-          Cash Forecast
+         <h2 class="main-head">Cash Forecast</h2> 
         </span>
         <span style="font-size:11px;color:#64748b;">Updated {{ week_summary.forecast_updated_label|default:"—" }}</span>
       </div>
@@ -781,7 +791,7 @@
     <div class="forecast-header">
       <span class="heading-with-icon">
         <img src="{% static 'images/tick.svg' %}" alt="tick icon"/>
-        Availability Forecast
+       <h2 class="main-head">Availability Forecast</h2> 
       </span>
       <span style="font-size:11px;color:#64748b;">Collateral view + cash cushion</span>
     </div>
@@ -823,7 +833,7 @@
     <div class="forecast-header">
       <span class="heading-with-icon">
         <img src="{% static 'images/tick.svg' %}" alt="tick icon"/>
-        13-Week Liquidity Forecast
+       <h2 class="main-head">13-Week Liquidity Forecast</h2> 
       </span>
       <div class="liquidity-legend">
         {% for item in week_summary.liquidity_legend %}
@@ -886,7 +896,7 @@
     <div class="forecast-header">
       <span class="heading-with-icon">
         <img src="{% static 'images/tick.svg' %}" alt="tick icon"/>
-        Variance Reporting
+       <h2 class="main-head">Variance Reporting</h2> 
       </span>
       <span style="font-size:11px;color:#64748b;">Current vs. cumulative</span>
     </div>

@@ -839,6 +839,9 @@ color: #65758B;
       color:#0f172a;
       padding-left:calc(10px + (var(--lvl,0) * 14px));
     }
+    .cc-row.level-0 .cc-label{
+      font-weight:700;
+    }
     .cc-row.level-0 td{background:#fff}
     .cc-row.level-1 td{background:#fff}
     .cc-row.level-2 td{background:#fff}
