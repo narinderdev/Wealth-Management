@@ -459,10 +459,10 @@ line-height: 27px; /* 150% */
       font-weight:400;
       line-height:1.2;
       color:#475467;
-      overflow:visible;
-      text-overflow:clip;
-      white-space:normal;
-      word-break:break-word;
+      display:block;
+      overflow:hidden;
+      text-overflow:ellipsis;
+      white-space:nowrap;
     }
 
     .risk-page .track{
@@ -750,6 +750,24 @@ line-height: 27px; /* 150% */
       if(!chartBox.contains(event.target)){
         tooltip.style.opacity = "0";
         activeCircle = null;
+      }
+    });
+  });
+</script>
+<script>
+  document.addEventListener("DOMContentLoaded", function(){
+    function truncateLabel(label, maxLen){
+      if(!label) return "";
+      const text = String(label).trim();
+      if(text.length <= maxLen) return text;
+      return text.slice(0, Math.max(0, maxLen - 3)) + "...";
+    }
+
+    document.querySelectorAll(".risk-page .barrow .lbl").forEach(function(label){
+      const fullText = label.textContent || "";
+      label.textContent = truncateLabel(fullText, 24);
+      if(!label.getAttribute("title")){
+        label.setAttribute("title", fullText.trim());
       }
     });
   });
