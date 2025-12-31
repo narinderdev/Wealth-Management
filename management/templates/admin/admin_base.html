@@ -1385,7 +1385,7 @@
           </div>
         </section>
 
-        <section class="sidebar-section sidebar-collapsible is-open{% if current_nav == 'liquidation_cash_flow' or current_nav == 'cash_forecast' or current_nav == 'availability_forecast' %} has-active{% endif %}" data-collapsible>
+        <section class="sidebar-section sidebar-collapsible is-open{% if current_nav == 'liquidation_cash_flow' or current_nav == 'cash_forecast' or current_nav == 'availability_forecast' or current_nav == 'current_week_variance' or current_nav == 'cumulative_variance' %} has-active{% endif %}" data-collapsible>
           <button class="section-trigger" type="button" aria-expanded="true" aria-controls="sidebar-cash-flow-panel">
             <span class="label-left">
               <span class="ico" aria-hidden="true">
@@ -1405,6 +1405,8 @@
           <div class="sidebar-children" id="sidebar-cash-flow-panel">
             <a class="sidebar-sub-link{% if current_nav == 'cash_forecast' %} active{% endif %}" href="{% url 'admin_component' 'cashForecast' %}" data-entity="cashForecast">Cash Forecast</a>
             <a class="sidebar-sub-link{% if current_nav == 'availability_forecast' %} active{% endif %}" href="{% url 'admin_component' 'availabilityForecast' %}" data-entity="availabilityForecast">Availability Forecast</a>
+            <a class="sidebar-sub-link{% if current_nav == 'current_week_variance' %} active{% endif %}" href="{% url 'admin_component' 'currentWeekVariance' %}" data-entity="currentWeekVariance">Current Week Variance Report</a>
+            <a class="sidebar-sub-link{% if current_nav == 'cumulative_variance' %} active{% endif %}" href="{% url 'admin_component' 'cumulativeVariance' %}" data-entity="cumulativeVariance">Cumulative Variance Report</a>
             <a class="sidebar-sub-link{% if current_nav == 'liquidation_cash_flow' %} active{% endif %}" href="{% url 'admin_component' 'cashFlow' %}" data-entity="cashFlow">13-Week Cash Flow</a>
           </div>
         </section>
@@ -1434,7 +1436,7 @@
           </div>
         </section>
 
-        <section class="sidebar-section sidebar-collapsible is-open{% if current_nav == 'forecast' or current_nav == 'availability_forecast' or current_nav == 'current_week_variance' or current_nav == 'cumulative_variance' %} has-active{% endif %}" data-collapsible>
+        <section class="sidebar-section sidebar-collapsible is-open{% if current_nav == 'forecast' %} has-active{% endif %}" data-collapsible>
           <button class="section-trigger" type="button" aria-expanded="true" aria-controls="sidebar-collateral-panel">
             <span class="label-left">
               <span class="ico" aria-hidden="true">
@@ -1453,8 +1455,6 @@
           </button>
           <div class="sidebar-children" id="sidebar-collateral-panel">
             <a class="sidebar-sub-link{% if current_nav == 'forecast' %} active{% endif %}" href="{% url 'admin_component' 'forecast' %}" data-entity="forecast">Forecast</a>
-            <a class="sidebar-sub-link{% if current_nav == 'current_week_variance' %} active{% endif %}" href="{% url 'admin_component' 'currentWeekVariance' %}" data-entity="currentWeekVariance">Current Week Variance</a>
-            <a class="sidebar-sub-link{% if current_nav == 'cumulative_variance' %} active{% endif %}" href="{% url 'admin_component' 'cumulativeVariance' %}" data-entity="cumulativeVariance">Cumulative Variance</a>
           </div>
         </section>
 

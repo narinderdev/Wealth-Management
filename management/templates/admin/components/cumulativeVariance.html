@@ -7,8 +7,17 @@
     {% endif %}
   </div>
   <div class="component-shell-body">
+    {% if component_data.borrower_selected is not True %}
+      <div class="component-alert">
+        Select a borrower from the header to view cumulative variance data.
+      </div>
+    {% endif %}
     <div class="component-actions">
-      <button class="btn save" data-modal-open="modal-cumulative-variance-create">Add Cumulative Variance</button>
+      {% if component_data.borrower_selected %}
+        <button class="btn save" data-modal-open="modal-cumulative-variance-create">Add Cumulative Variance</button>
+      {% else %}
+        <button class="btn save is-disabled" type="button" disabled>Add Cumulative Variance</button>
+      {% endif %}
     </div>
     <div class="component-table">
       <table class="admin-table">
@@ -25,28 +34,32 @@
           </tr>
         </thead>
         <tbody>
-          {% for row in component_data.list %}
-            <tr>
-              <td>{% include "admin/components/_borrower_cell.html" with row=row only %}</td>
-              <td>{{ row.date|date:"Y-m-d"|default:"—" }}</td>
-              <td>{{ row.category|default:"—" }}</td>
-              <td>{{ row.projected|default:"—" }}</td>
-              <td>{{ row.actual|default:"—" }}</td>
-              <td>{{ row.variance|default:"—" }}</td>
-              <td>{{ row.variance_pct|default:"—" }}</td>
-              <td class="table-actions">
-                <a class="link" href="{% url 'admin_component' component_meta.slug %}?edit={{ row.pk }}">Edit</a>
-                <form method="post" class="inline-form" onsubmit="return confirm('Delete this variance row?');">
-                  {% csrf_token %}
-                  <input type="hidden" name="_action" value="delete">
-                  <input type="hidden" name="object_id" value="{{ row.pk }}">
-                  <button type="submit" class="link link-danger">Delete</button>
-                </form>
-              </td>
-            </tr>
-          {% empty %}
-            <tr><td colspan="9">No cumulative variance data recorded.</td></tr>
-          {% endfor %}
+          {% if component_data.borrower_selected %}
+            {% for row in component_data.list %}
+              <tr>
+                <td>{% include "admin/components/_borrower_cell.html" with row=row only %}</td>
+                <td>{{ row.date|date:"Y-m-d"|default:"—" }}</td>
+                <td>{{ row.category|default:"—" }}</td>
+                <td>{{ row.projected|default:"—" }}</td>
+                <td>{{ row.actual|default:"—" }}</td>
+                <td>{{ row.variance|default:"—" }}</td>
+                <td>{{ row.variance_pct|default:"—" }}</td>
+                <td class="table-actions">
+                  <a class="link" href="{% url 'admin_component' component_meta.slug %}?edit={{ row.pk }}">Edit</a>
+                  <form method="post" class="inline-form" onsubmit="return confirm('Delete this variance row?');">
+                    {% csrf_token %}
+                    <input type="hidden" name="_action" value="delete">
+                    <input type="hidden" name="object_id" value="{{ row.pk }}">
+                    <button type="submit" class="link link-danger">Delete</button>
+                  </form>
+                </td>
+              </tr>
+            {% empty %}
+              <tr><td colspan="9">No cumulative variance data recorded.</td></tr>
+            {% endfor %}
+          {% else %}
+            <tr><td colspan="9">Select a borrower to view cumulative variance data.</td></tr>
+          {% endif %}
         </tbody>
       </table>
     </div>

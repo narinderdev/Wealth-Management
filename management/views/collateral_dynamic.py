@@ -1406,7 +1406,7 @@ def _week_summary_context(borrower):
         label_keys = list(label_map.keys())
 
         if not rows:
-            return _default_rows()
+            return []
 
         def _match_label(norm_value):
             if not norm_value:

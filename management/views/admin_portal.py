@@ -324,12 +324,12 @@ COMPONENT_REGISTRY = {
         "nav_key": "forecast",
     },
     "currentWeekVariance": {
-        "title": "Current Week Variance",
+        "title": "Current Week Variance Report",
         "template": "admin/components/currentWeekVariance.html",
         "nav_key": "current_week_variance",
     },
     "cumulativeVariance": {
-        "title": "Cumulative Variance",
+        "title": "Cumulative Variance Report",
         "template": "admin/components/cumulativeVariance.html",
         "nav_key": "cumulative_variance",
     },
@@ -1304,6 +1304,8 @@ HANDLERS = {
         model=CurrentWeekVarianceRow,
         form_class=CurrentWeekVarianceForm,
         ordering=["-date", "category"],
+        select_related=["borrower", "borrower__company"],
+        require_borrower=True,
         filters=[
             {
                 "param": "borrower",
@@ -1320,6 +1322,8 @@ HANDLERS = {
         model=CummulativeVarianceRow,
         form_class=CumulativeVarianceForm,
         ordering=["-date", "category"],
+        select_related=["borrower", "borrower__company"],
+        require_borrower=True,
         filters=[
             {
                 "param": "borrower",
