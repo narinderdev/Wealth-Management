@@ -53,6 +53,58 @@ letter-spacing: -0.6px;
     .risk-page .panel-body{
       padding:12px 14px 14px;
     }
+    /* High Impact Factors table styling to match collateral tables */
+    .risk-page .impact-table{
+      border:1px solid #e3eaf7;
+      border-radius:12px;
+      overflow:hidden;
+      padding:0;
+      background:#fff;
+    }
+    .risk-page .impact-table-styled{
+      width:100%;
+      border-collapse:separate;
+      border-spacing:0;
+      font-size:12px;
+      color:#475569;
+    }
+    .risk-page .impact-table-styled thead th{
+      background:#f7faff;
+      color:#6b7280;
+      font-weight:700;
+      padding:10px 12px;
+      border-bottom:1px solid #e3eaf7;
+      text-align:center;
+      white-space:nowrap;
+    }
+    .risk-page .impact-table-styled thead th:first-child{
+      text-align:left;
+      border-top-left-radius:10px;
+      border-left:1px solid #e3eaf7;
+    }
+    .risk-page .impact-table-styled thead th:last-child{
+      border-top-right-radius:10px;
+      border-right:1px solid #e3eaf7;
+    }
+    .risk-page .impact-table-styled tbody td{
+      padding:10px 12px;
+      border-bottom:1px solid #eef2fb;
+      color:#65758B;
+      font-weight:600;
+      text-align:center;
+      background:#fff;
+      white-space:nowrap;
+    }
+    .risk-page .impact-table-styled tbody td:first-child{
+      text-align:left;
+      border-left:1px solid #e3eaf7;
+    }
+    .risk-page .impact-table-styled tbody td:last-child{
+      border-right:1px solid #e3eaf7;
+    }
+    .risk-page .impact-table-styled tbody tr:last-child td{
+      border-bottom:1px solid #e3eaf7;
+    }
 
     /* ===============================
        Current Primary Risk Rating bar
@@ -134,6 +186,8 @@ line-height: 27px; /* 150% */
 
     .risk-page .risk-main-grid > .panel{
       min-width: 0;
+      padding-left: 10px;
+      padding-right: 10px;
     }
 
     /* Composite inside layout: Score | Trend */
@@ -570,11 +624,11 @@ line-height: 27px; /* 150% */
     <section class="panel">
       <div class="panel-title">
         <img src="{% static 'images/borrowing_icon.svg' %}" alt="Snapshot Icon" class="snapshot-icon" />
-        High Impact Factors
-      </div>
+      High Impact Factors
+    </div>
 
       <div class="panel-body impact-table">
-        <table aria-label="High impact factors">
+        <table aria-label="High impact factors" class="impact-table-styled">
           <thead>
             <tr>
               <th>Risk</th>

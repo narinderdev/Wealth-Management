@@ -783,8 +783,8 @@ color: #65758B;
     /* Collateral Composition v2 */
     .table-card--collateral2{
       background:#fff;
-      border:1px solid #e5e7eb;
-      border-radius:10px;
+      border:1px solid #e3eaf7;
+      border-radius:12px;
       padding:0;
       overflow:hidden;
       margin-top:12px;
@@ -794,26 +794,44 @@ color: #65758B;
       background:#fff;
     }
     .cc-head-left svg{width:14px;height:14px;color:#2563eb}
-    .cc-wrap{overflow:auto}
+    .cc-wrap{
+      overflow:auto;
+      border:1px solid #e3eaf7;
+      border-radius:12px;
+      background:#fff;
+      padding:0;
+    }
     .cc-table{
       width:100%;
       border-collapse:separate;
-      border-spacing:4px;
-      font-size:11px;
-      color:#334155;
+      border-spacing:0;
+      font-size:12px;
+      color:#475569;
       min-width:900px;
-      font-size: 12px;
     }
     .cc-table thead th {
-      position: sticky;
-      top: 7px;
-      background: #f8fafc;
-      color: #64748b;
-      font-weight: 600;
-      padding: 8px 10px;
-      border-bottom: 1px solid #e5e7eb;
-      white-space: nowrap;
-      text-align: left;
+      background:#f7faff;
+      color:#6b7280;
+      font-weight:700;
+      padding:10px 12px;
+      border-bottom:1px solid #e3eaf7;
+      white-space:nowrap;
+      text-align:center;
+      border-left:0;
+      border-right:0;
+    }
+    .cc-table thead th:first-child{
+      text-align:left;
+      border-top-left-radius:10px;
+      border-left:1px solid #e3eaf7;
+       background:#f7faff;
+    }
+    .cc-table thead th:last-child{
+      border-top-right-radius:10px;
+      border-right:1px solid #e3eaf7;
+    }
+    .cc-table thead th + th{
+      border-left:1px solid #e3eaf7;
     }
     
     .cc-label{
@@ -886,26 +904,40 @@ color: #65758B;
       width:100%;
       border-collapse:separate;
       border-spacing:0;
-      font-size:10px;
-      color:#334155;
+      font-size:12px;
+      color:#475569;
       min-width:900px;
     }
     .cc-table tbody td{
-      padding:10px 10px;
+      padding:10px 12px;
+      border-bottom:1px solid #eef2fb;
+      color:#65758B;
+      font-weight:600;
+      text-align:center;
+      white-space:nowrap;
+      background:#fff;
+      border-left:0;
+      border-right:0;
     }
-    .cc-table tbody tr:first-child td{
-      padding-top:16px;
-      font-size: 12px;
+    .cc-table tbody td:first-child{
+      text-align:left;
+      border-left:1px solid #e3eaf7;
+    }
+    .cc-table tbody td:last-child{
+      border-right:1px solid #e3eaf7;
+    }
+    .cc-table tbody tr:last-child td{
+      border-bottom:1px solid #e3eaf7;
     }
     .cc-label{
       font-weight:600;
       color:#0f172a;
       padding-left:calc(10px + (var(--lvl,0) * 14px));
     }
-    .cc-row.level-0 td{background:#fff;font-size: 12px;}
-    .cc-row.level-1 td{background:#fff;font-size: 12px;}
-    .cc-row.level-2 td{background:#fff;font-size: 12px;}
-    .cc-row.level-3 td{background:#fff;font-size: 12px;}
+    .cc-row.level-0 td{background:#fff;}
+    .cc-row.level-1 td{background:#fff;}
+    .cc-row.level-2 td{background:#fff;}
+    .cc-row.level-3 td{background:#fff;}
     .cc-ctl{
       width:34px;
       text-align:right;

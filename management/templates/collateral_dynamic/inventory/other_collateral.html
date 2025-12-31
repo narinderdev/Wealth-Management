@@ -36,7 +36,7 @@
     box-shadow:var(--shadow);
     overflow:hidden;
     margin-top:12px;
-    margin-left:10px
+    margin-left:0;
   }
   .other-collateral .snapshot-card{margin-top:16px;}
   .other-collateral .snapshot-card + .card{margin-top:8px;}
@@ -225,11 +225,21 @@
     max-height:none;
   }
 
+  .other-collateral .table-scroll{
+    border:1px solid #e3eaf7;
+    border-radius:12px;
+    background:#fff;
+    overflow:auto;
+    max-height:420px;
+    padding:0;
+  }
   .other-collateral table.data{
     width:100%;
-    border-collapse:collapse;
+    border-collapse:separate;
+    border-spacing:0;
     font-size:12px;
     min-width: 980px;
+    color:#65758B;
   }
 
   .other-collateral table.data.value-analysis-table{table-layout:fixed;}
@@ -253,14 +263,28 @@
     font-size:10pt;
     position:sticky;
     top:0;
-    background:#FBFCFE;
-    color:#65758b;
-    font-weight:950;
+    background:#f7faff;
+    color:#6b7280;
+    font-weight:700;
     padding:10px 12px;
-    border-bottom:1px solid var(--border);
+    border-bottom:1px solid #e3eaf7;
     white-space:nowrap;
     text-align:center;
     vertical-align:middle;
+    border-left:0;
+    border-right:0;
+  }
+  .other-collateral table.data thead th:first-child{
+    border-top-left-radius:10px;
+    border-left:1px solid #e3eaf7;
+    text-align:left !important;
+  }
+  .other-collateral table.data thead th:last-child{
+    border-top-right-radius:10px;
+    border-right:1px solid #e3eaf7;
+  }
+  .other-collateral table.data thead tr th + th{
+    border-left:1px solid #e3eaf7;
   }
 
   /* ✅ UPDATED: CENTER ALIGN GROUPED HEADERS + SUBHEADERS */
@@ -273,11 +297,25 @@
   /* ✅ UPDATED: CENTER ALIGN ALL BODY VALUES */
   .other-collateral table.data tbody td{
     padding:10px 12px;
-    border-bottom:1px solid rgba(230,234,242,.65);
-    color:#344054;
+    border-bottom:1px solid #eef2fb;
+    color:#65758B;
+    font-weight:600;
     white-space:nowrap;
     text-align:center;
     vertical-align:middle;
+    background:#fff;
+    border-left:0;
+    border-right:0;
+  }
+  .other-collateral table.data tbody td:first-child{
+    text-align:left !important;
+    border-left:1px solid #e3eaf7;
+  }
+  .other-collateral table.data tbody td:last-child{
+    border-right:1px solid #e3eaf7;
+  }
+  .other-collateral table.data tbody tr:last-child td{
+    border-bottom:1px solid #e3eaf7;
   }
 
   .other-collateral .numR{
