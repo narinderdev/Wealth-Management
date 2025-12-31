@@ -877,7 +877,6 @@ def summary_view(request):
                 previous_value,
             )
 
-        _apply_forecast_metric("net", "available_collateral")
         _apply_forecast_metric("outstanding", "loan_balance")
         _apply_forecast_metric("availability", "revolver_availability")
 
@@ -941,6 +940,11 @@ def summary_view(request):
     previous_available_total = previous_eligible_total - previous_ineligibles_total
     if previous_available_total < Decimal("0"):
         previous_available_total = Decimal("0")
+
+    insights["net"]["delta"] = _delta_payload(
+        net_total,
+        previous_net_total if previous_collateral_rows else None,
+    )
 
     collateral_history = list(
         _apply_date_filter(
@@ -1023,7 +1027,6 @@ def summary_view(request):
         )
 
     if not latest_forecast:
-        insights["net"]["delta"] = _delta_payload(net_total, previous_net_total if previous_collateral_rows else None)
         insights["outstanding"]["delta"] = _delta_payload(
             ar_row.balance if ar_row else None,
             ar_prev_row.balance if ar_prev_row else None,
