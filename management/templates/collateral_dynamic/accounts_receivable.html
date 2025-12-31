@@ -1272,6 +1272,7 @@ margin-left: -15px;
     border-left:0;
     border-right:0;
   }
+  
   .collateral-dynamic .ar-section tbody tr:last-child td{
     /* color: black; */
     border-bottom:1px solid #e3eaf7;
@@ -1382,11 +1383,22 @@ margin-left: -15px;
     .collateral-dynamic .ar-section .tables-row tbody td:first-child{
       text-align:left;
     }
+    .collateral-dynamic .ar-section .tables-row tbody td:last-child{
+      /* border-right:1px solid #e3eaf7; */
+    }
     .collateral-dynamic .ar-section .tables-row tbody tr:nth-child(even) td{
       background:white;
     }
     .collateral-dynamic .ar-section .tables-row tbody tr:last-child td{
       border-bottom:0;
+    }
+    .collateral-dynamic .ar-section .tables-row tbody tr:last-child td:first-child{
+      border-bottom-left-radius:8px;
+      /* border-left:1px solid #e3eaf7; */
+    }
+    .collateral-dynamic .ar-section .tables-row tbody tr:last-child td:last-child{
+      border-bottom-right-radius:8px;
+      /* border-right:1px solid #e3eaf7; */
     }
     .collateral-dynamic .ar-section .aging-scroll{
       width:100%;
@@ -1406,10 +1418,20 @@ margin-left: -15px;
     }
     .collateral-dynamic .ar-section .centered-table{
       font-size:12px;
+      /* border:1px solid #e3eaf7; */
+      border-radius:10px;
+      overflow:hidden;
+      background:#fff;
     }
     .collateral-dynamic .ar-section .centered-table thead th,
     .collateral-dynamic .ar-section .centered-table tbody td{
       padding:9px 12px;
+    }
+    .collateral-dynamic .ar-section .centered-table tbody tr:last-child td:first-child{
+      border-bottom-left-radius:10px;
+    }
+    .collateral-dynamic .ar-section .centered-table tbody tr:last-child td:last-child{
+      border-bottom-right-radius:10px;
     }
     .collateral-dynamic .ar-section .centered-table th:first-child,
     .collateral-dynamic .ar-section .centered-table td:first-child{
