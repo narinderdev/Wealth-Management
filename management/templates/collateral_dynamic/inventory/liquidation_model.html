@@ -266,10 +266,10 @@ line-height: 33.339px; /* 138.462% */
     color:#475569;
   }
   .liquidation-model thead tr.group th{
-    background:#FAFAFA;
-    text-align:left;
-    font-weight:900;
-    border-bottom:1px solid var(--line);
+    background:#f7faff;
+    text-align:center;
+    font-weight:700;
+    border-bottom:1px solid #e3eaf7;
   }
   .liquidation-model .n-table thead tr.group th{
     text-align:center;
@@ -286,13 +286,110 @@ line-height: 33.339px; /* 138.462% */
   .liquidation-model .n-table .col-num{
     width:11.7%;
   }
+.liquidation-model .n-table .table-wrap{
+    border:1px solid #e3eaf7;
+    border-radius:12px;
+    background:#fff;
+    overflow:auto;
+    padding:0;
+    box-shadow:none;
+  }
+  .liquidation-model .n-table table{
+    width:100%;
+    margin-top:0;
+    border-collapse:separate;
+    border-spacing:0;
+    font-size:12px;
+    color:#475569;
+  }
+  .liquidation-model .n-table thead th{
+    background:#f7faff;
+    color:#6b7280;
+    font-weight:700;
+    padding:10px 12px;
+    border-bottom:1px solid #e3eaf7;
+    text-align:center;
+    white-space:nowrap;
+    border-left:1px solid #e3eaf7;
+    border-right:1px solid #e3eaf7;
+  }
+  .liquidation-model .n-table thead th:first-child{
+    text-align:left;
+    border-left:1px solid #e3eaf7;
+    border-top-left-radius:10px;
+  }
+  .liquidation-model .n-table thead th:last-child{
+    border-right:1px solid #e3eaf7;
+    border-top-right-radius:10px;
+  }
+  /* ensure leading group cell is also tinted */
+  .liquidation-model .n-table thead th.no-bg{
+    background:#f7faff!important;
+  }
+  .liquidation-model .n-table thead tr.group th{
+    background:#f7faff;
+    font-weight:700;
+    border-left:0;
+    border-right:0;
+  }
+  .liquidation-model .n-table thead tr.columns th{
+    border-top-left-radius:0;
+    border-top-right-radius:0;
+  }
+  .liquidation-model .n-table tbody td{
+    padding:10px 12px;
+    border-bottom:1px solid #eef2fb;
+    border-left:0;
+    border-right:0;
+    background:#fff;
+    color:#65758B;
+    font-weight:600;
+    text-align:center;
+    white-space:nowrap;
+  }
+  .liquidation-model .n-table tbody td:first-child{
+    border-left:1px solid #e3eaf7;
+  }
+  .liquidation-model .n-table tbody td:last-child{
+    border-right:1px solid #e3eaf7;
+  }
+  .liquidation-model .n-table tbody td:first-child{
+    text-align:left;
+  }
+  .liquidation-model .n-table tbody tr:last-child td{
+    border-bottom:1px solid #e3eaf7;
+  }
+  .liquidation-model .n-table tbody tr.total-row td,
+  .liquidation-model .n-table tbody tr.total td{
+    color:#0b1220;
+    font-weight:500;
+    background-color:#f7faff;
+  }
+  .liquidation-model .n-table tfoot td{
+    background:#f7faff;
+    border-top:1px solid #e3eaf7;
+    border-left:0;
+    border-right:0;
+    font-weight:700;
+    color:#0b1220;
+    padding:10px 12px;
+    text-align:center;
+  }
+  .liquidation-model .n-table tfoot td:first-child{
+    text-align:left;
+    border-bottom-left-radius:10px;
+    border-left:1px solid #e3eaf7;
+  }
+  .liquidation-model .n-table tfoot td:last-child{
+    border-bottom-right-radius:10px;
+    border-right:1px solid #e3eaf7;
+  }
   .n-table .columns{
 background:#FAFAFA;
   }
   .liquidation-model tbody td{
     padding:9px 12px;
     border-bottom:1px solid var(--line2);
-    color:#0f172a;
     vertical-align:middle;
     white-space:nowrap;
     max-width:220px;
@@ -408,12 +505,12 @@ padding-top: 0px!important;
     text-align:right;
   }
   .liquidation-model .acc-liquidation tbody td{
-    color:#0f172a;
-    font-weight:400;
+   
+    font-weight:600;
   }
   .liquidation-model .acc-liquidation tfoot td{
-    background:#FAFAFA;
-    font-weight:600;
+    background:#f7faff;
+    font-weight:800;
     color:#0b1220;
     border-top:1px solid var(--line);
   }
@@ -469,16 +566,39 @@ gap: 0px;
 }
   .liquidation-model .n-table-change table{
     table-layout:fixed;
+    width:100%;
+    margin-top:0;
+    border-collapse:separate;
+    border-spacing:0;
+    font-size:12px;
+    color:#475569;
   }
   .liquidation-model .n-table-change thead tr.group th{
     text-align:center;
     padding-left:0;
     padding-right:0;
+    background:#f7faff;
+    color:#6b7280;
+    font-weight:700;
+    padding:10px 12px;
+    border-bottom:1px solid #e3eaf7;
+    border-left:0;
+    border-right:0;
+    white-space:nowrap;
+  }
+  .liquidation-model .n-table-change thead tr.group th:not(:first-child){
+    border-left:1px solid #e3eaf7;
   }
   .liquidation-model .n-table-change thead tr.group th:first-child{
     text-align:left;
     padding-left:12px;
     padding-right:12px;
+    border-top-left-radius:10px;
+    border-left:1px solid #e3eaf7;
+  }
+  .liquidation-model .n-table-change thead tr.group th:last-child{
+    border-top-right-radius:10px;
+    border-right:1px solid #e3eaf7;
   }
   .liquidation-model #nolv-analysis thead tr.group th{
     text-align:center;
@@ -488,6 +608,23 @@ gap: 0px;
   }
   .liquidation-model #nolv-analysis thead tr.columns th{
     text-align:center;
+    background:#f7faff;
+    color:#6b7280;
+    font-weight:700;
+    padding:10px 12px;
+    border-bottom:1px solid #e3eaf7;
+    border-left:0;
+    border-right:0;
+    white-space:nowrap;
+  }
+  .liquidation-model #nolv-analysis thead tr.columns th:first-child{
+    border-left:1px solid #e3eaf7;
+  }
+  .liquidation-model #nolv-analysis thead tr.columns th:last-child{
+    border-right:1px solid #e3eaf7;
+  }
+  .liquidation-model #nolv-analysis thead tr.columns th:not(:first-child){
+    border-left:1px solid #e3eaf7;
   }
   .liquidation-model #nolv-analysis tbody td.num,
   .liquidation-model #nolv-analysis tfoot td.num{
@@ -495,6 +632,42 @@ gap: 0px;
   }
   .liquidation-model #nolv-analysis table{
     table-layout:fixed;
+    width:100%;
+    margin-top:0;
+    border-collapse:separate;
+    border-spacing:0;
+    font-size:12px;
+    color:#475569;
+    background:#fff;
+  }
+  .liquidation-model .table-wrap#nolv-analysis-table-wrap{
+    border:1px solid #e3eaf7;
+    border-radius:12px;
+    background:#fff;
+    overflow:auto;
+    padding:0;
+  }
+  .liquidation-model #nolv-analysis thead tr.group th{
+    background:#f7faff;
+    color:#6b7280;
+    font-weight:700;
+    padding:10px 12px;
+    border-bottom:1px solid #e3eaf7;
+    border-left:0;
+    border-right:0;
+    white-space:nowrap;
+  }
+  .liquidation-model #nolv-analysis thead tr.group th:not(:last-child){
+    border-right:1px solid #e3eaf7;
+  }
+  .liquidation-model #nolv-analysis thead tr.group th:first-child{
+    border-top-left-radius:10px;
+    text-align:left;
+    border-left:1px solid #e3eaf7;
+  }
+  .liquidation-model #nolv-analysis thead tr.group th:last-child{
+    border-top-right-radius:10px;
+    border-right:1px solid #e3eaf7;
   }
   .liquidation-model #nolv-analysis .nolv-heading td{
     font-weight:700;
@@ -514,11 +687,16 @@ gap: 0px;
   .liquidation-model #nolv-analysis .nolv-heading td,
   .liquidation-model #nolv-analysis .nolv-subheading td{
     padding:10px 12px;
-    border-bottom:1px solid var(--line);
+    border-bottom:1px solid #e3eaf7;
+    border-left:1px solid #e3eaf7;
+    border-right:1px solid #e3eaf7;
   }
   .liquidation-model #nolv-analysis .nolv-total td{
-    font-weight:700;
+    font-weight:500;
     color:#0f172a;
+    background:#f7faff;
+    border-left:1px solid #e3eaf7;
+    border-right:1px solid #e3eaf7;
   }
   .liquidation-model #nolv-analysis .nolv-total-light td{
     background:#f7f9fc;
@@ -538,6 +716,117 @@ gap: 0px;
     padding:3px;
     border:none;
     background:#ffffff;
+  }
+  .liquidation-model #nolv-analysis tbody td{
+    padding:10px 12px;
+    border-bottom:1px solid #eef2fb;
+    color:#65758B;
+    font-weight:600;
+    text-align:center;
+    white-space:nowrap;
+    background:#fff;
+    border-left:0;
+    border-right:0;
+  }
+  .liquidation-model #nolv-analysis tbody td:first-child{
+    text-align:left;
+    border-left:1px solid #e3eaf7;
+  }
+  .liquidation-model #nolv-analysis tbody td:last-child{
+    border-right:1px solid #e3eaf7;
+  }
+  .liquidation-model #nolv-analysis tbody tr:last-child td{
+    border-bottom:1px solid #e3eaf7;
+  }
+  .liquidation-model #nolv-analysis tfoot td{
+    background:#f7faff;
+    border-top:1px solid #e3eaf7;
+    border-left:0;
+    border-right:0;
+    font-weight:500;
+    color:#0b1220;
+    padding:10px 12px;
+    text-align:center;
+  }
+  .liquidation-model #nolv-analysis tfoot td:first-child{
+    text-align:left;
+    border-bottom-left-radius:10px;
+    border-left:1px solid #e3eaf7;
+  }
+  .liquidation-model #nolv-analysis tfoot td:last-child{
+    border-right:1px solid #e3eaf7;
+    border-bottom-right-radius:10px;
+  }
+  .liquidation-model .table-wrap.n-table-change{
+    border:1px solid #e3eaf7;
+    border-radius:12px;
+    background:#fff;
+    overflow:auto;
+    padding:0;
+  }
+  .liquidation-model .n-table-change thead tr.columns th{
+    background:#f7faff;
+    color:#6b7280;
+    font-weight:700;
+    padding:10px 12px;
+    border-bottom:1px solid #e3eaf7;
+    border-left:0;
+    border-right:0;
+    white-space:nowrap;
+  }
+  .liquidation-model .n-table-change thead tr.columns th:first-child{
+    text-align:left;
+    border-top-left-radius:0;
+    border-left:1px solid #e3eaf7;
+  }
+  .liquidation-model .n-table-change thead tr.columns th:last-child{
+    border-top-right-radius:0;
+    border-right:1px solid #e3eaf7;
+  }
+  .liquidation-model .n-table-change tbody td{
+    padding:10px 12px;
+    border-bottom:1px solid #eef2fb;
+    color:#65758B;
+    font-weight:600;
+    text-align:center;
+    white-space:nowrap;
+    background:#fff;
+  }
+  .liquidation-model .n-table-change tbody td:first-child{
+    text-align:left;
+    border-left:1px solid #e3eaf7;
+  }
+  .liquidation-model .n-table-change tbody td:last-child{
+    border-right:1px solid #e3eaf7;
+  }
+  .liquidation-model .n-table-change tbody tr:last-child td{
+    border-bottom:1px solid #e3eaf7;
+  }
+  .liquidation-model .n-table-change tbody tr.total td{
+    background:#f7faff;
+    color:#0b1220;
+    font-weight:500;
+    border-left:1px solid #e3eaf7;
+    border-right:1px solid #e3eaf7;
+  }
+  .liquidation-model .n-table-change tfoot td{
+    background:#f7faff;
+    border-top:1px solid #e3eaf7;
+    border-left:0;
+    border-right:0;
+    font-weight:700;
+    color:#0b1220;
+    padding:10px 12px;
+    text-align:center;
+  }
+  .liquidation-model .n-table-change tfoot td:first-child{
+    text-align:left;
+    border-bottom-left-radius:10px;
+    border-left:1px solid #e3eaf7;
+  }
+  .liquidation-model .n-table-change tfoot td:last-child{
+    border-bottom-right-radius:10px;
+    border-right:1px solid #e3eaf7;
   }
 
 /* .n-table-change th{text-align: center!important;} */
