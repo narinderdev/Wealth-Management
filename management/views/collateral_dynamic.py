@@ -4535,6 +4535,7 @@ def _finished_goals_context(
             raw_entries.append(
                 {
                     "category": category,
+                    "available": available,
                     "inline_amount": inline_value,
                     "inline_pct": inline_pct_value,
                     "excess_amount": excess_value,
@@ -4545,14 +4546,30 @@ def _finished_goals_context(
         raw_entries.sort(key=lambda entry: entry["inline_amount"], reverse=True)
 
         for entry in raw_entries:
-            inline_amount = _format_currency(entry["inline_amount"])
+            inline_amount_value = entry["inline_amount"]
+            excess_amount_value = entry["excess_amount"]
+            inline_pct_value = entry["inline_pct"]
+            excess_pct_value = entry["excess_pct"]
+            available_value = entry["available"]
+            total_amount_value = inline_amount_value + excess_amount_value
+            total_pct_value = None
+            if available_value:
+                total_pct_value = total_amount_value / available_value
+            elif inline_pct_value is not None and excess_pct_value is not None:
+                total_pct_value = inline_pct_value + excess_pct_value
+            if total_pct_value is not None and total_pct_value > Decimal("1"):
+                total_pct_value = Decimal("1")
+
+            inline_amount = _format_currency(inline_amount_value)
             inline_pct = (
-                _format_pct(entry["inline_pct"]) if entry["inline_pct"] is not None else "—"
+                _format_pct(inline_pct_value) if inline_pct_value is not None else "—"
             )
-            excess_amount = _format_currency(entry["excess_amount"])
+            excess_amount = _format_currency(excess_amount_value)
             excess_pct = (
-                _format_pct(entry["excess_pct"]) if entry["excess_pct"] is not None else "—"
+                _format_pct(excess_pct_value) if excess_pct_value is not None else "—"
             )
+            total_amount = _format_currency(total_amount_value)
+            total_pct = _format_pct(total_pct_value) if total_pct_value is not None else "—"
             inline_excess_by_category.append(
                 {
                     "category": entry["category"],
@@ -4568,6 +4585,8 @@ def _finished_goals_context(
                     "no_sales_pct": excess_pct,
                     "excess_total_amount": excess_amount,
                     "excess_total_pct": excess_pct,
+                    "total_amount": total_amount,
+                    "total_pct": total_pct,
                 }
             )
 
@@ -4577,6 +4596,12 @@ def _finished_goals_context(
         excess_total_pct = (
             _format_pct(total_excess / total_available) if total_available else "—"
         )
+        total_amount_value = total_inline + total_excess
+        total_pct_value = (
+            (total_amount_value / total_available) if total_available else None
+        )
+        if total_pct_value is not None and total_pct_value > Decimal("1"):
+            total_pct_value = Decimal("1")
         inline_excess_totals = {
             "new_amount": _format_currency(total_inline),
             "new_pct": inline_total_pct,
@@ -4590,6 +4615,8 @@ def _finished_goals_context(
             "no_sales_pct": excess_total_pct,
             "excess_total_amount": _format_currency(total_excess),
             "excess_total_pct": excess_total_pct,
+            "total_amount": _format_currency(total_amount_value),
+            "total_pct": _format_pct(total_pct_value) if total_pct_value is not None else "—",
         }
     else:
         sample_categories = [
@@ -4623,6 +4650,8 @@ def _finished_goals_context(
                     "no_sales_pct": sample_pct,
                     "excess_total_amount": sample_amount,
                     "excess_total_pct": sample_pct,
+                    "total_amount": sample_amount,
+                    "total_pct": sample_pct,
                 }
             )
         inline_excess_totals = {
@@ -4638,6 +4667,8 @@ def _finished_goals_context(
             "no_sales_pct": sample_pct,
             "excess_total_amount": sample_amount,
             "excess_total_pct": sample_pct,
+            "total_amount": sample_amount,
+            "total_pct": sample_pct,
         }
 
     TOP_SKU_LIMIT = 20

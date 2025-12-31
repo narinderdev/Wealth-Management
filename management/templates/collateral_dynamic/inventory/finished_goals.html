@@ -872,6 +872,8 @@
           <col class="col-percent" />
           <col class="col-dollar" />
           <col class="col-percent" />
+          <col class="col-dollar" />
+          <col class="col-percent" />
         </colgroup>
         <thead>
           <tr>
@@ -882,8 +884,11 @@
             <th colspan="2">52+ Week</th>
             <th colspan="2">No Sales</th>
             <th colspan="2">Total Excess</th>
+            <th colspan="2">Total</th>
           </tr>
           <tr>
+            <th>$</th>
+            <th>% Of Cat.</th>
             <th>$</th>
             <th>% Of Cat.</th>
             <th>$</th>
@@ -914,9 +919,11 @@
               <td class="numC">{{ row.no_sales_pct }}</td>
               <td class="numC">{{ row.excess_total_amount }}</td>
               <td class="numC">{{ row.excess_total_pct }}</td>
+              <td class="numC">{{ row.total_amount }}</td>
+              <td class="numC">{{ row.total_pct }}</td>
             </tr>
           {% empty %}
-            <tr><td colspan="13" class="numC">No category analysis available.</td></tr>
+            <tr><td colspan="15" class="numC">No category analysis available.</td></tr>
           {% endfor %}
         </tbody>
         {% if finished_goals_inline_excess_totals %}
@@ -935,6 +942,8 @@
               <td class="numC">{{ finished_goals_inline_excess_totals.no_sales_pct }}</td>
               <td class="numC">{{ finished_goals_inline_excess_totals.excess_total_amount }}</td>
               <td class="numC">{{ finished_goals_inline_excess_totals.excess_total_pct }}</td>
+              <td class="numC">{{ finished_goals_inline_excess_totals.total_amount }}</td>
+              <td class="numC">{{ finished_goals_inline_excess_totals.total_pct }}</td>
             </tr>
           </tfoot>
         {% endif %}
