@@ -788,6 +788,19 @@ def _week_summary_context(borrower):
         else:
             cash_rows = list(cash_qs.order_by("id"))
 
+    actual_date = None
+    if cashflow_rows:
+        actual_date = cashflow_rows[0].date or cashflow_report_date
+    elif cash_rows:
+        actual_date = cash_rows[0].date or cashflow_report_date
+
+    cw_rows_date = latest_cw.date if latest_cw and latest_cw.date else None
+    if actual_date:
+        aligned_cw_rows = list(cw_qs.filter(date=actual_date).order_by("category", "id"))
+        if aligned_cw_rows:
+            cw_rows = aligned_cw_rows
+            cw_rows_date = actual_date
+
     report_date_candidates = []
     if latest_forecast:
         report_date_candidates.append(latest_forecast.as_of_date or latest_forecast.period)
@@ -816,10 +829,56 @@ def _week_summary_context(borrower):
             return _to_decimal(row.projected)
         return None
 
-    stat_values = {}
+    def _row_field_value(row, field="x"):
+        if not row:
+            return None
+        value = getattr(row, field, None)
+        return _to_decimal(value) if value is not None else None
+
+    def _stat_value_from_cash_rows(rows, keywords, field="x"):
+        return _row_field_value(_find_variance_row(rows, keywords), field)
+
+    cw_stat_values = {}
     for label, keywords in summary_map:
         row = _find_variance_row(cw_rows, keywords)
-        stat_values[label] = _stat_value_from_row(row)
+        cw_stat_values[label] = _stat_value_from_row(row)
+
+    receipts_row = _find_variance_row(cashflow_rows, ["total receipts", "total receipt"])
+    if not receipts_row:
+        receipts_row = _find_variance_row(cashflow_rows, ["total collections", "collections", "collection"])
+
+    disbursement_row = _find_variance_row(cashflow_rows, ["total disbursements", "total disbursement"])
+    if not disbursement_row:
+        disbursement_row = _find_variance_row(cashflow_rows, ["disbursements", "disbursement"])
+    if not disbursement_row:
+        disbursement_row = _find_variance_row(
+            cashflow_rows, ["operating disbursements", "non-operating disbursements"]
+        )
+
+    beginning_cash = _stat_value_from_cash_rows(cash_rows, ["beginning cash"])
+    if beginning_cash is None:
+        beginning_cash = _stat_value_from_cash_rows(cashflow_rows, ["beginning cash"])
+
+    ending_cash = _stat_value_from_cash_rows(cash_rows, ["ending cash"])
+    if ending_cash is None:
+        ending_cash = _stat_value_from_cash_rows(cashflow_rows, ["ending cash"])
+
+    cashflow_stat_values = {
+        "Beginning Cash": beginning_cash,
+        "Total Receipts": _row_field_value(receipts_row),
+        "Total Disbursement": _row_field_value(disbursement_row),
+        "Net Cash Flow": _stat_value_from_cash_rows(cashflow_rows, ["net cash flow"]),
+        "Ending Cash": ending_cash,
+    }
+
+    use_cw_values = bool(cw_rows)
+    if actual_date and cw_rows_date and cw_rows_date != actual_date:
+        use_cw_values = False
+
+    stat_values = {}
+    for label in ("Beginning Cash", "Total Receipts", "Total Disbursement", "Net Cash Flow", "Ending Cash"):
+        cw_val = cw_stat_values.get(label) if use_cw_values else None
+        stat_values[label] = cw_val if cw_val is not None else cashflow_stat_values.get(label)
 
     def _stat_delta(label, keywords):
         row = _find_variance_row(cw_rows, keywords)
@@ -843,15 +902,10 @@ def _week_summary_context(borrower):
         text = f"{symbol} {value}" if symbol else value
         return text, delta_class
 
-    def _sum_present(values):
-        total = Decimal("0")
-        has_value = False
-        for val in values:
-            if val is None:
-                continue
-            total += _to_decimal(val)
-            has_value = True
-        return total if has_value else None
+    def _stat_delta_safe(label, keywords):
+        if not use_cw_values:
+            return None, ""
+        return _stat_delta(label, keywords)
 
     sorted_forecast_rows = _sort_forecast_rows(forecast_rows)
     column_entries, ordered_forecast_rows = _prepare_column_entries(sorted_forecast_rows)
@@ -880,43 +934,16 @@ def _week_summary_context(borrower):
         else None
     )
 
-    base_beginning = (
-        _to_decimal(getattr(base_forecast_row, "available_collateral", None))
-        if base_forecast_row and getattr(base_forecast_row, "available_collateral", None) is not None
-        else None
-    )
-    base_receipts = (
-        _sum_present([getattr(base_forecast_row, "net_sales", None), getattr(base_forecast_row, "ar", None)])
-        if base_forecast_row
-        else None
-    )
-    base_disbursements = (
-        _to_decimal(getattr(base_forecast_row, "loan_balance", None))
-        if base_forecast_row and getattr(base_forecast_row, "loan_balance", None) is not None
-        else None
-    )
-
-    if stat_values.get("Total Receipts") is None and base_receipts is not None:
-        stat_values["Total Receipts"] = base_receipts
-
-    if stat_values.get("Total Disbursement") is None and base_disbursements is not None:
-        stat_values["Total Disbursement"] = base_disbursements
-
-    if stat_values.get("Beginning Cash") is None and base_beginning is not None:
-        stat_values["Beginning Cash"] = base_beginning
-
     receipts_val = stat_values.get("Total Receipts")
     disbursement_val = stat_values.get("Total Disbursement")
     net_cash_val = stat_values.get("Net Cash Flow")
-    if net_cash_val is None and (receipts_val is not None or disbursement_val is not None):
-        net_cash_val = (receipts_val or Decimal("0")) - (disbursement_val or Decimal("0"))
+    if net_cash_val is None and receipts_val is not None and disbursement_val is not None:
+        net_cash_val = receipts_val - disbursement_val
         stat_values["Net Cash Flow"] = net_cash_val
 
     if stat_values.get("Ending Cash") is None:
         if stat_values.get("Beginning Cash") is not None and stat_values.get("Net Cash Flow") is not None:
             stat_values["Ending Cash"] = stat_values["Beginning Cash"] + stat_values["Net Cash Flow"]
-        elif base_beginning is not None:
-            stat_values["Ending Cash"] = base_beginning
 
     stats = [
         {"label": label, "value": _format_money(stat_values.get(label))}
@@ -984,34 +1011,6 @@ def _week_summary_context(borrower):
         if not has_positive and not has_negative:
             return None
         return positive - negative
-
-    def _build_forecast_stats(row):
-        if not row:
-            return None
-        beginning = _value_for_field(row, "available_collateral")
-        receipts = _sum_fields(row, ["net_sales"])
-        disbursements = _value_for_field(row, "loan_balance")
-        net_cash_flow = _difference_fields(row, ["net_sales"], ["loan_balance"])
-        if beginning is not None and net_cash_flow is not None:
-            ending = beginning + net_cash_flow
-        elif net_cash_flow is not None:
-            ending = net_cash_flow
-        else:
-            ending = beginning
-        return [
-            {"label": "Beginning Cash", "value": _format_money(beginning)},
-            {"label": "Total Receipts", "value": _format_money(receipts)},
-            {"label": "Total Disbursement", "value": _format_money(disbursements)},
-            {"label": "Net Cash Flow", "value": _format_money(net_cash_flow)},
-            {"label": "Ending Cash", "value": _format_money(ending)},
-        ]
-
-    def _has_valid_stat(stat):
-        return stat.get("value") not in (None, "$—", "—")
-
-    fallback_stats = _build_forecast_stats(base_forecast_row)
-    if fallback_stats and not any(_has_valid_stat(stat) for stat in stats):
-        stats = fallback_stats
 
     def _section_row(label):
         return {
@@ -1234,12 +1233,6 @@ def _week_summary_context(borrower):
                 "Net Cash Flow",
             ]
         ]
-
-    actual_date = None
-    if cashflow_rows:
-        actual_date = cashflow_rows[0].date or cashflow_report_date
-    elif cash_rows:
-        actual_date = cash_rows[0].date or cashflow_report_date
 
     if actual_date:
         cashflow_actual_label = f"Actual<br/>{_format_date(actual_date)}"
@@ -1588,6 +1581,12 @@ def _week_summary_context(borrower):
         ]
     )
 
+    ending_delta, ending_delta_class = _stat_delta_safe("Ending Cash", ["ending cash"])
+    receipts_delta, receipts_delta_class = _stat_delta_safe("Total Receipts", ["total receipts"])
+    disbursement_delta, disbursement_delta_class = _stat_delta_safe(
+        "Total Disbursement", ["total disbursement", "total disbursements"]
+    )
+
     context.update(
         {
             "stats": stats,
@@ -1597,27 +1596,27 @@ def _week_summary_context(borrower):
             "summary_cards": [
                 {
                     "label": "Ending Cash",
-                    "value": next((s["value"] for s in stats if s["label"] == "Ending Cash"), "—"),
-                    "delta": _stat_delta("Ending Cash", ["ending cash"])[0],
-                    "delta_class": _stat_delta("Ending Cash", ["ending cash"])[1],
+                    "value": next((s["value"] for s in stats if s["label"] == "Ending Cash"), "-"),
+                    "delta": ending_delta,
+                    "delta_class": ending_delta_class,
                 },
                 {
                     "label": "Total Receipts",
-                    "value": next((s["value"] for s in stats if s["label"] == "Total Receipts"), "—"),
-                    "delta": _stat_delta("Total Receipts", ["total receipts"])[0],
-                    "delta_class": _stat_delta("Total Receipts", ["total receipts"])[1],
+                    "value": next((s["value"] for s in stats if s["label"] == "Total Receipts"), "-"),
+                    "delta": receipts_delta,
+                    "delta_class": receipts_delta_class,
                 },
                 {
                     "label": "Total Disbursement",
-                    "value": next((s["value"] for s in stats if s["label"] == "Total Disbursement"), "—"),
-                    "delta": _stat_delta("Total Disbursement", ["total disbursement", "total disbursements"])[0],
-                    "delta_class": _stat_delta("Total Disbursement", ["total disbursement", "total disbursements"])[1],
+                    "value": next((s["value"] for s in stats if s["label"] == "Total Disbursement"), "-"),
+                    "delta": disbursement_delta,
+                    "delta_class": disbursement_delta_class,
                 },
             ],
             "forecast_updated_label": _format_date(report_date) if report_date else "—",
             "snapshot_summary": snapshot_summary,
-            "period_label": _format_date(actual_date or report_date)
-            if actual_date or report_date
+            "period_label": _format_date(actual_date or cw_rows_date or report_date)
+            if actual_date or cw_rows_date or report_date
             else None,
             "top_spend": _collect_top_spend(cw_rows),
             "top_receipts": _collect_top_receipts(
