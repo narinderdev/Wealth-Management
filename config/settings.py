@@ -87,7 +87,6 @@ DATABASES = {
     'PORT': '5432',  # default PostgreSQL port
   }
 }
-##### LOCAL POSTGRESQL DATABASE CONFIGURATION
 
 # Password validation
 # https://docs.djangoproject.com/en/3.2/ref/settings/#auth-password-validators
@@ -137,9 +136,9 @@ STATIC_URL = '/static/'  # URL to access static files
 STATIC_ROOT = os.path.join(BASE_DIR, 'static')
 
 # Directory for additional static files (this is your management/static folder)
-STATICFILES_DIRS = [
-    os.path.join(BASE_DIR, 'management/static'),  # Correct path for additional static files
-]
+# STATICFILES_DIRS = [
+#     os.path.join(BASE_DIR, 'management/static'),  # Correct path for additional static files
+# ]
 
 
 
