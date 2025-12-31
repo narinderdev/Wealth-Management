@@ -733,13 +733,13 @@
       <section class="section">
         <div class="section-head">
           <img src="{% static 'images/borrowing_icon.svg' %}" alt="Current Update Icon" class="current-update-icon" />
-          <div class="section-title">Liquidity Forecast</div>
+          <div class="section-title"> <h2 class="main-head">Liquidity Forecast</h2></div>
         </div>
         <div class="snapshot-card">
           <div class="snapshot-head">
             <img src="{% static 'images/borrowing_icon.svg' %}" alt="Snapshot Icon" class="snapshot-icon" />
             <div class="snapshot-title">
-              <span>Snapshot Overview</span>
+              <h2 class="main-head">Snapshot Overview</span>
             </div>
           </div>
 
@@ -766,11 +766,12 @@
       <section class="section">
         <div class="section-head">
            <img src="{% static 'images/borrowing_icon.svg' %}" alt="Snapshot Icon" class="snapshot-icon" />
-          <div class="section-title">Sales and Gross Margin Forecast</div>
+          <div class="section-title"> <h2 class="main-head">Sales and Gross Margin Forecast</h2></div>
         </div>
 
         <div class="snapshot">
-          <div class="label"><span><img src="{% static 'images/borrowing_icon.svg' %}" alt="Snapshot Icon" class="snapshot-icon" /></span>Snapshot Overview</div>
+          <div class="label"><span><img src="{% static 'images/borrowing_icon.svg' %}" alt="Snapshot Icon" class="snapshot-icon" /></span> <h2 class="main-head">Snapshot Overview
+</h2></div>
           {% if not forecast_snapshots.sales_gm or forecast_snapshots.sales_gm == snapshot_empty_message %}
             {% include "shared/empty_state.html" with type="empty" title="No snapshot summary" message="No sales & gross margin snapshot available for this borrower yet." action_label="Add Snapshot Summary" action_url=admin_snapshot_url %}
           {% else %}
@@ -790,11 +791,11 @@
       <section class="section">
         <div class="section-head">
           <img src="{% static 'images/borrowing_icon.svg' %}" alt="Snapshot Icon" class="snapshot-icon" />
-          <div class="section-title">Accounts Receivable Forecast</div>
+          <div class="section-title"><h2 class="main-head">Accounts Receivable Forecast</h2></div>
         </div>
 
         <div class="snapshot">
-          <div class="label"><img src="{% static 'images/borrowing_icon.svg' %}" alt="Snapshot Icon" class="snapshot-icon" />Snapshot Overview</div>
+          <div class="label"><img src="{% static 'images/borrowing_icon.svg' %}" alt="Snapshot Icon" class="snapshot-icon" /><h2 class="main-head">Snapshot Overview</h2></div>
           {% if not forecast_snapshots.ar or forecast_snapshots.ar == snapshot_empty_message %}
             {% include "shared/empty_state.html" with type="empty" title="No snapshot summary" message="No accounts receivable snapshot available for this borrower yet." action_label="Add Snapshot Summary" action_url=admin_snapshot_url %}
           {% else %}
@@ -811,11 +812,11 @@
       <section class="section">
         <div class="section-head">
           <img src="{% static 'images/borrowing_icon.svg' %}" alt="" class="snapshot-icon" />
-          <div class="section-title">Inventory Forecast</div>
+          <div class="section-title"><h2 class="main-head">Inventory Forecast</h2></div>
         </div>
 
         <div class="snapshot">
-          <div class="label"><img src="{% static 'images/borrowing_icon.svg' %}" alt="" class="snapshot-icon" />Snapshot Overview</div>
+          <div class="label"><img src="{% static 'images/borrowing_icon.svg' %}" alt="" class="snapshot-icon" /><h2 class="main-head">Snapshot Overview</h2></div>
           {% if not forecast_snapshots.inventory or forecast_snapshots.inventory == snapshot_empty_message %}
             {% include "shared/empty_state.html" with type="empty" title="No snapshot summary" message="No inventory snapshot available for this borrower yet." action_label="Add Snapshot Summary" action_url=admin_snapshot_url %}
           {% else %}
@@ -1062,7 +1063,7 @@
              <img src="{% static 'images/borrowing_icon.svg' %}"
           alt="Current Update Icon"
           class="current-update-icon" />
-              ${cfg.title}
+              <h2 class="main-head">${cfg.title}</h2>
             </div>
             <div class="legend" aria-label="legend">
               <div class="litem"><span class="swatch"></span>${cfg.pastLabel || "Actual"}</div>
@@ -1332,7 +1333,7 @@
              <img src="{% static 'images/borrowing_icon.svg' %}" 
           alt="Current Update Icon"
           class="current-update-icon" />
-              ${cfg.title}
+              <h2 class="main-head">${cfg.title}</h2>
             </div>
             <div class="legend" aria-label="legend">
               <div class="litem"><span class="swatch"></span>Actual</div>

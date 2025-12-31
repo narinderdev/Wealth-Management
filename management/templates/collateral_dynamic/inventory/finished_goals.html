@@ -693,7 +693,7 @@
       alt="Available Inventory Icon"
       class="current-update-icon"
     />
-    <span>Available Inventory Breakdown</span>
+    <h2 class="main-head">Available Inventory Breakdown</span>
   </div>
 
   <div class="stat-grid">
@@ -734,7 +734,7 @@
     <img src="{% static 'images/borrowing_icon.svg' %}" 
           alt="Current Update Icon"
           class="current-update-icon" />
-          <span >Ineligible Details</span>
+          <h2 class="main-head">Ineligible Details</span>
     </diV>
           
       <div class="table-wrap">
@@ -769,7 +769,7 @@
      <img src="{% static 'images/borrowing_icon.svg' %}" 
           alt="Current Update Icon"
           class="current-update-icon" />
-      Sales and Gross Margin
+     <h2 class="main-head">Sales and Gross Margin</h2> 
    </div>
    
     <div class="section-body sales-grid">
@@ -778,7 +778,7 @@
           <img src="{% static 'images/borrowing_icon.svg' %}" 
           alt="Current Update Icon"
           class="current-update-icon" />
-          Key Insights
+         <h2 class="main-head">Key Insights</h2> 
         </div>
         <div class="stat-grid">
           {% for metric in finished_goals_sales_insights %}
@@ -837,7 +837,7 @@
        <img src="{% static 'images/borrowing_icon.svg' %}" 
           alt="Current Update Icon"
           class="current-update-icon" />
-      In-line vs Excess Analysis
+      <h2 class="main-head">In-line vs Excess Analysis</h2>
       </div>
       
     <div class="section-body">
@@ -853,7 +853,7 @@
       <img src="{% static 'images/borrowing_icon.svg' %}" 
           alt="Current Update Icon"
           class="current-update-icon" />
-      In-Line/Excess by Category
+     <h2 class="main-head">In-Line/Excess by Category</h2> 
     </div>
     <!-- <div class="divider"></div> -->
     <div class="table-scroll">
@@ -947,7 +947,7 @@
       <img src="{% static 'images/borrowing_icon.svg' %}" 
           alt="Current Update Icon"
           class="current-update-icon" />
-      In-Line Category Analysis
+      <h2 class="main-head">In-Line Category Analysis</h2>
     </div>
     <div class="table-scroll">
       <table class="data" aria-label="In-Line Category Analysis">
@@ -992,7 +992,7 @@
       <img src="{% static 'images/borrowing_icon.svg' %}" 
           alt="Current Update Icon"
           class="current-update-icon" />
-      Top Sku Analysis
+      <h2 class="main-head">Top Sku Analysis</h2>
     </div>
     <div class="table-scroll">
       <table class="sku" aria-label="Top SKU Analysis">
@@ -1097,7 +1097,7 @@
     if (!c.values || c.values.length < 2 || !c.labels || c.labels.length < 2) {
       el.innerHTML = `
         <div class="card-head">
-          ${c.title}
+          <h2 class="main-head">${c.title}</h2>
         </div>
         <div class="card-pad">No data available.</div>
       `;
@@ -1178,7 +1178,7 @@
 
     el.innerHTML = `
       <div class="card-head">
-        ${c.title}
+        <h2 class="main-head">${c.title}</h2>
       </div>
       <div class="chart-wrap">
         <div class="fg-chart" style="--fg-w:${W}; --fg-h:${H};">
@@ -1219,8 +1219,7 @@
     if (!c.values || c.values.length < 1 || !c.labels || c.labels.length < 1) {
       el.innerHTML = `
         <div class="card-head">
-         
-          ${c.title}
+          <h2 class="main-head">${c.title}</h2>
         </div>
         <div class="card-pad">No data available.</div>
       `;
@@ -1303,7 +1302,7 @@
 
     el.innerHTML = `
       <div class="card-head">
-        ${c.title}
+        <h2 class="main-head">${c.title}</h2>
       </div>
       <div class="chart-wrap">
         <div class="fg-chart" style="--fg-w:${W}; --fg-h:${H};">
