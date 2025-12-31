@@ -14,6 +14,7 @@ from .models import (
     AvailabilityForecastRow,
     Borrower,
     BorrowerReport,
+    CashForecastRow,
     CashFlowForecastRow,
     CollateralLimitsRow,
     CollateralOverviewRow,
@@ -1074,6 +1075,69 @@ class AvailabilityForecastForm(BorrowerModelForm):
         widgets = {
             "date": forms.DateInput(attrs={"type": "date"}),
         }
+        labels = {
+            "x": "Actual",
+        }
+
+
+class CashForecastForm(BorrowerModelForm):
+    required_fields = ("borrower", "date", "category", "x")
+
+    class Meta:
+        model = CashForecastRow
+        fields = [
+            "borrower",
+            "report",
+            "date",
+            "category",
+            "x",
+            "week_1",
+            "week_2",
+            "week_3",
+            "week_4",
+            "week_5",
+            "week_6",
+            "week_7",
+            "week_8",
+            "week_9",
+            "week_10",
+            "week_11",
+            "week_12",
+            "week_13",
+        ]
+        widgets = {
+            "date": forms.DateInput(attrs={"type": "date"}),
+        }
+        labels = {
+            "x": "Actual",
+            "report": "Borrower Report",
+        }
+
+    def __init__(self, *args, **kwargs):
+        super().__init__(*args, **kwargs)
+        if "report" in self.fields:
+            self.fields["report"].queryset = (
+                BorrowerReport.objects.select_related("borrower", "borrower__company")
+                .order_by("borrower__company__company", "-report_date")
+            )
+
+    def clean(self):
+        cleaned_data = super().clean()
+        borrower = cleaned_data.get("borrower")
+        report = cleaned_data.get("report")
+
+        if report and borrower and report.borrower_id != borrower.id:
+            self.add_error("report", "Selected report must match the borrower.")
+
+        if borrower and not report and not self.instance.pk:
+            latest_report = (
+                BorrowerReport.objects.filter(borrower=borrower)
+                .order_by("-report_date", "-created_at", "-id")
+                .first()
+            )
+            if latest_report:
+                cleaned_data["report"] = latest_report
+        return cleaned_data
 
 
 class CashFlowForecastForm(StyledModelForm):

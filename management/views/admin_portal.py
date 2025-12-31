@@ -11,7 +11,9 @@ from django.template.loader import select_template
 from management.forms import (
     ARMetricsForm,
     AgingCompositionForm,
+    AvailabilityForecastForm,
     BorrowerForm,
+    CashForecastForm,
     CashFlowForecastForm,
     CollateralLimitsForm,
     CollateralOverviewForm,
@@ -51,8 +53,10 @@ from management.forms import (
 from management.models import (
     ARMetricsRow,
     AgingCompositionRow,
+    AvailabilityForecastRow,
     Borrower,
     BorrowerReport,
+    CashForecastRow,
     CashFlowForecastRow,
     CollateralLimitsRow,
     CollateralOverviewRow,
@@ -249,6 +253,16 @@ COMPONENT_REGISTRY = {
         "template": "admin/components/cashFlow.html",
         "nav_key": "liquidation_cash_flow",
     },
+    "cashForecast": {
+        "title": "Cash Forecast",
+        "template": "admin/components/cashForecast.html",
+        "nav_key": "cash_forecast",
+    },
+    "availabilityForecast": {
+        "title": "Availability Forecast",
+        "template": "admin/components/availabilityForecast.html",
+        "nav_key": "availability_forecast",
+    },
     "nolvTable": {
         "title": "NOLV Table",
         "template": "admin/components/nolvTable.html",
@@ -333,13 +347,24 @@ COMPONENT_REGISTRY = {
 class ModelComponentHandler:
     page_size = 15
 
-    def __init__(self, *, slug, model, form_class, ordering=None, select_related=None, filters=None):
+    def __init__(
+        self,
+        *,
+        slug,
+        model,
+        form_class,
+        ordering=None,
+        select_related=None,
+        filters=None,
+        require_borrower=False,
+    ):
         self.slug = slug
         self.model = model
         self.form_class = form_class
         self.ordering = ordering or ["-created_at"]
         self.select_related = select_related or []
         self.filters = filters or []
+        self.require_borrower = require_borrower
 
     def build_filters(self, request, queryset):
         filter_defs = []
@@ -461,6 +486,8 @@ class ModelComponentHandler:
         edit_form = None
         edit_instance = None
         edit_id = request.GET.get("edit")
+        borrower_id = request.GET.get("borrower")
+        borrower_selected = bool(borrower_id)
         data_list = []
         db_error = None
         table_ready = True
@@ -472,6 +499,8 @@ class ModelComponentHandler:
 
         qs = self.get_queryset()
         qs = self.apply_global_borrower_filter(request, qs)
+        if self.require_borrower and not borrower_selected:
+            qs = qs.none()
         filter_defs = []
         if table_ready:
             try:
@@ -528,6 +557,8 @@ class ModelComponentHandler:
             "page_obj": page_obj,
             "page_query": page_query,
             "page_query_prefix": page_query_prefix,
+            "borrower_selected": borrower_selected,
+            "borrower_id": borrower_id,
         }
 
 
@@ -986,6 +1017,54 @@ HANDLERS = {
                 "field": "report__report_date",
                 "label_format": "%b %Y",
                 "month_year": True,
+            },
+            {
+                "param": "entry_date",
+                "label": "Entry Date",
+                "field": "date",
+                "label_format": "%b %Y",
+                "month_year": True,
+            },
+            {"param": "category", "label": "Category", "field": "category"},
+        ],
+    ),
+    "cashForecast": ModelComponentHandler(
+        slug="cashForecast",
+        model=CashForecastRow,
+        form_class=CashForecastForm,
+        ordering=["-date", "category"],
+        select_related=["borrower", "borrower__company", "report"],
+        require_borrower=True,
+        filters=[
+            {
+                "param": "borrower",
+                "label": "Borrower",
+                "field": "borrower__id",
+                "queryset": Borrower.objects.select_related("company").order_by("company__company", "primary_contact"),
+            },
+            {
+                "param": "entry_date",
+                "label": "Entry Date",
+                "field": "date",
+                "label_format": "%b %Y",
+                "month_year": True,
+            },
+            {"param": "category", "label": "Category", "field": "category"},
+        ],
+    ),
+    "availabilityForecast": ModelComponentHandler(
+        slug="availabilityForecast",
+        model=AvailabilityForecastRow,
+        form_class=AvailabilityForecastForm,
+        ordering=["-date", "category"],
+        select_related=["borrower", "borrower__company"],
+        require_borrower=True,
+        filters=[
+            {
+                "param": "borrower",
+                "label": "Borrower",
+                "field": "borrower__id",
+                "queryset": Borrower.objects.select_related("company").order_by("company__company", "primary_contact"),
             },
             {
                 "param": "entry_date",

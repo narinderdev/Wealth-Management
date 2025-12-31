@@ -1385,7 +1385,7 @@
           </div>
         </section>
 
-        <section class="sidebar-section sidebar-collapsible is-open{% if current_nav == 'liquidation_cash_flow' %} has-active{% endif %}" data-collapsible>
+        <section class="sidebar-section sidebar-collapsible is-open{% if current_nav == 'liquidation_cash_flow' or current_nav == 'cash_forecast' or current_nav == 'availability_forecast' %} has-active{% endif %}" data-collapsible>
           <button class="section-trigger" type="button" aria-expanded="true" aria-controls="sidebar-cash-flow-panel">
             <span class="label-left">
               <span class="ico" aria-hidden="true">
@@ -1403,6 +1403,8 @@
             </span>
           </button>
           <div class="sidebar-children" id="sidebar-cash-flow-panel">
+            <a class="sidebar-sub-link{% if current_nav == 'cash_forecast' %} active{% endif %}" href="{% url 'admin_component' 'cashForecast' %}" data-entity="cashForecast">Cash Forecast</a>
+            <a class="sidebar-sub-link{% if current_nav == 'availability_forecast' %} active{% endif %}" href="{% url 'admin_component' 'availabilityForecast' %}" data-entity="availabilityForecast">Availability Forecast</a>
             <a class="sidebar-sub-link{% if current_nav == 'liquidation_cash_flow' %} active{% endif %}" href="{% url 'admin_component' 'cashFlow' %}" data-entity="cashFlow">13-Week Cash Flow</a>
           </div>
         </section>
