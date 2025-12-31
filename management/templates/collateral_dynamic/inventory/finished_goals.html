@@ -540,21 +540,51 @@
   border-radius:12px;
   box-shadow:none;
 }
+.finished-goals .inline-excess-table{
+  border-collapse:separate;
+  border-spacing:0;
+}
+.finished-goals .inline-excess-table thead th,
+.finished-goals .inline-excess-table tbody td,
+.finished-goals .inline-excess-table tfoot td{
+  border:0;
+}
+.finished-goals .inline-excess-table thead th{
+  border:0 !important;
+  border-radius:0;
+}
+.finished-goals .inline-excess-table tbody td,
+.finished-goals .inline-excess-table tfoot td{
+  border:0 !important;
+}
+.finished-goals .inline-excess-table tbody td{
+  border-bottom:1px solid #e6edf7 !important;
+}
+.finished-goals .inline-excess-table tbody tr:last-child td{
+  border-bottom:0 !important;
+}
 .finished-goals .inline-excess-table thead th:first-child{
-  border-left:1px solid #e3eaf7;
+  border-left:1px solid #e3eaf7 !important;
   border-top-left-radius:10px;
 }
 .finished-goals .inline-excess-table thead th:last-child{
-  border-right:1px solid #e3eaf7;
+  border-right:1px solid #e3eaf7 !important;
   border-top-right-radius:10px;
+}
+.finished-goals .inline-excess-table thead tr:last-child th{
+  border-bottom:1px solid #e6edf7 !important;
+}
+.finished-goals .inline-excess-table thead tr:not(:first-child) th:first-child{
+  border-left:0 !important;
+  border-top-left-radius:0;
 }
 .finished-goals .inline-excess-table tbody td:first-child,
 .finished-goals .inline-excess-table tfoot td:first-child{
-  border-left:1px solid #e3eaf7;
+  border-left:1px solid #e3eaf7 !important;
 }
 .finished-goals .inline-excess-table tbody td:last-child,
 .finished-goals .inline-excess-table tfoot td:last-child{
-  border-right:1px solid #e3eaf7;
+  border-right:1px solid #e3eaf7 !important;
 }
 .finished-goals .table-card.inline-style{
   border:1px solid #e6edf7;
@@ -587,7 +617,7 @@
 }
 .finished-goals .table-card.inline-style thead th:first-child{
   text-align:left;
-  border-left:1px solid #e3eaf7;
+  /* border-left:1px solid #e3eaf7; */
   border-top-left-radius:10px;
 }
 .finished-goals .table-card.inline-style thead th:last-child{
@@ -628,16 +658,25 @@
 .finished-goals .table-card.inline-style tfoot td:first-child{
   text-align:left;
 }
-  .finished-goals table.sku{width:100%;border-collapse:collapse;font-size:12px;min-width:880px;color:#344054;}
-  .finished-goals table.sku thead th{padding:8px 10px;border-bottom:1px solid var(--border);white-space:nowrap;}
-  .finished-goals table.sku thead tr:first-child th{background:#f7faff;color:#475467;font-weight:800;text-align:center;}
-  .finished-goals table.sku thead tr:first-child th.center{text-align:center;}
-  .finished-goals table.sku thead tr:last-child th{background:#f7faff;color:#667085;font-weight:700;text-align:center;}
-  .finished-goals table.sku thead th.center{text-align:center;}
-  .finished-goals table.sku thead tr:first-child th:first-child{text-align:left;}
-  .finished-goals table.sku thead .sep-left{border-left:1px solid var(--border);}
-  .finished-goals table.sku tbody td{padding:8px 10px;border-bottom:1px solid rgba(230,234,242,.65);white-space:nowrap;color:#65758B;text-align:center;}
-  .finished-goals table.sku tbody .sep-left{border-left:0;}
+.finished-goals table.sku{width:100%;border-collapse:collapse;font-size:12px;min-width:880px;color:#344054;}
+.finished-goals table.sku thead th{
+  padding:8px 10px;
+  border-bottom:1px solid var(--border);
+  white-space:nowrap;
+  border-left:0;
+  border-right:0;
+}
+.finished-goals table.sku thead tr:first-child th{background:#f7faff;color:#475467;font-weight:800;text-align:center;}
+.finished-goals table.sku thead tr:first-child th.center{text-align:center;}
+.finished-goals table.sku thead tr:last-child th{background:#f7faff;color:#667085;font-weight:700;text-align:center;}
+.finished-goals table.sku thead th.center{text-align:center;}
+.finished-goals table.sku thead tr:first-child th:first-child{text-align:left;}
+.finished-goals table.sku thead tr:first-child th{
+  border-bottom:0;
+}
+.finished-goals table.sku thead .sep-left{border-left:0;}
+.finished-goals table.sku tbody td{padding:8px 10px;border-bottom:1px solid rgba(230,234,242,.65);white-space:nowrap;color:#65758B;text-align:center;}
+.finished-goals table.sku tbody .sep-left{border-left:0;}
   .finished-goals table.sku tbody td:first-child{text-align:left;}
   .finished-goals table.sku tbody tr:last-child td{border-bottom:none;}
   .finished-goals table.sku tfoot td{text-align:center;}
@@ -1012,25 +1051,25 @@
           class="current-update-icon" />
       <h2 class="main-head">Top Sku Analysis</h2>
     </div>
-    <div class="table-scroll">
-      <table class="sku" aria-label="Top SKU Analysis">
-        <thead>
-          <tr>
-            <th rowspan="2">Item Number</th>
-            <th rowspan="2">Category</th>
-            <th rowspan="2">Description</th>
-            <th colspan="2" class="group-header">Inventory</th>
-            <th colspan="4" class="group-header">Sales Metrics</th>
-          </tr>
-          <tr>
-            <th class="center">Cost</th>
-            <th class="center">% of Total</th>
-            <th class="sep-left">COGS</th>
-            <th>GM</th>
-            <th>GM%</th>
-            <th>WOS</th>
-          </tr>
-        </thead>
+  <div class="table-scroll">
+    <table class="sku" aria-label="Top SKU Analysis">
+      <thead>
+        <tr>
+          <th rowspan="2">Item Number</th>
+          <th rowspan="2">Category</th>
+          <th rowspan="2">Description</th>
+          <th colspan="2" class="group-header">Inventory</th>
+          <th colspan="4" class="group-header">Sales Metrics</th>
+        </tr>
+        <tr>
+          <th class="center">Cost</th>
+          <th class="center">% of Total</th>
+          <th class="sep-left">COGS</th>
+          <th>GM</th>
+          <th>GM%</th>
+          <th>WOS</th>
+        </tr>
+      </thead>
         <tbody>
           {% for row in finished_goals_top_skus %}
             <tr>
