@@ -1,3 +1,4 @@
+import json
 import math
 from collections import OrderedDict, defaultdict
 from datetime import timedelta
@@ -5,6 +6,7 @@ from datetime import timedelta
 from decimal import Decimal, InvalidOperation, ROUND_HALF_UP
 
 from django.contrib.auth.decorators import login_required
+from django.core.serializers.json import DjangoJSONEncoder
 from django.shortcuts import redirect, render
 from django.utils import timezone
 from django.urls import reverse
@@ -1432,6 +1434,10 @@ def summary_view(request):
         min(max(risk_profile_score / Decimal("5"), Decimal("0")), Decimal("1")) * 100
     )
 
+    net_series_payload = _series_payload(net_timeseries)
+    outstanding_series_payload = _series_payload(outstanding_timeseries)
+    availability_series_payload = _series_payload(availability_timeseries)
+
     context = {
         "borrower_summary": borrower_summary,
         "collateral_rows": collateral_data,
@@ -1443,9 +1449,12 @@ def summary_view(request):
         "net_chart": net_chart,
         "outstanding_chart": outstanding_chart,
         "availability_chart": availability_chart,
-        "net_series": _series_payload(net_timeseries),
-        "outstanding_series": _series_payload(outstanding_timeseries),
-        "availability_series": _series_payload(availability_timeseries),
+        "net_series": net_series_payload,
+        "outstanding_series": outstanding_series_payload,
+        "availability_series": availability_series_payload,
+        "net_series_json": json.dumps(net_series_payload, cls=DjangoJSONEncoder),
+        "outstanding_series_json": json.dumps(outstanding_series_payload, cls=DjangoJSONEncoder),
+        "availability_series_json": json.dumps(availability_series_payload, cls=DjangoJSONEncoder),
         "net_has_data": net_has_data,
         "outstanding_has_data": outstanding_has_data,
         "availability_has_data": availability_has_data,

@@ -1190,7 +1190,7 @@ color: #65758B;
           <div class="chart-card chart-card--blue">
             {% if net_has_data %}
               <div class="panel-chart">
-                <canvas id="netChart" width="220" height="140" aria-label="Net Collateral chart" role="img"></canvas>
+                <canvas id="netChart" width="220" height="140" aria-label="Net Collateral chart" role="img" data-series="{{ net_series_json|escape }}"></canvas>
               </div>
             {% else %}
               {% include "shared/empty_state.html" with type="empty" title="No data available" message="Net collateral history is not available yet." %}
@@ -1217,7 +1217,7 @@ color: #65758B;
           <div class="chart-card chart-card--purple">
             {% if outstanding_has_data %}
               <div class="panel-chart">
-                <canvas id="outstandingChart" width="220" height="140" aria-label="Outstanding Balance chart" role="img"></canvas>
+                <canvas id="outstandingChart" width="220" height="140" aria-label="Outstanding Balance chart" role="img" data-series="{{ outstanding_series_json|escape }}"></canvas>
               </div>
             {% else %}
               {% include "shared/empty_state.html" with type="empty" title="No data available" message="Outstanding balance history is not available yet." %}
@@ -1244,7 +1244,7 @@ color: #65758B;
           <div class="chart-card chart-card--green">
             {% if availability_has_data %}
               <div class="panel-chart">
-                <canvas id="availabilityChart" width="220" height="140" aria-label="Availability chart" role="img"></canvas>
+                <canvas id="availabilityChart" width="220" height="140" aria-label="Availability chart" role="img" data-series="{{ availability_series_json|escape }}"></canvas>
               </div>
             {% else %}
               {% include "shared/empty_state.html" with type="empty" title="No data available" message="Availability history is not available yet." %}

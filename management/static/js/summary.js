@@ -128,13 +128,12 @@ onReady(() => {
   initChartTooltips();
   initRiskTooltip();
 
-  const parseChartData = (id) => {
-    const el = document.getElementById(id);
-    if (!el) return null;
-    const raw = (el.textContent || '').trim();
+  const parseJsonString = (raw) => {
     if (!raw) return null;
+    const trimmed = raw.trim();
+    if (!trimmed) return null;
     try {
-      const parsed = JSON.parse(raw);
+      const parsed = JSON.parse(trimmed);
       if (typeof parsed === 'string') {
         return JSON.parse(parsed);
       }
@@ -142,6 +141,13 @@ onReady(() => {
     } catch (error) {
       return null;
     }
+  };
+
+  const parseChartData = (id, fallbackRaw) => {
+    const el = document.getElementById(id);
+    const scriptData = el ? parseJsonString(el.textContent || '') : null;
+    if (scriptData) return scriptData;
+    return parseJsonString(fallbackRaw || '');
   };
 
   const coerceNumber = (value) => {
@@ -186,7 +192,7 @@ onReady(() => {
 
   const initKpiChart = (canvasId, dataId, color) => {
     const canvas = document.getElementById(canvasId);
-    const data = parseChartData(dataId);
+    const data = parseChartData(dataId, canvas?.dataset.series);
     if (!canvas || !data || !Array.isArray(data.values) || !data.values.length) return;
     if (typeof Chart === 'undefined') return;
 
