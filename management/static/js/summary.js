@@ -1,4 +1,12 @@
-document.addEventListener('DOMContentLoaded', () => {
+const onReady = (callback) => {
+  if (document.readyState === 'loading') {
+    document.addEventListener('DOMContentLoaded', callback);
+  } else {
+    callback();
+  }
+};
+
+onReady(() => {
   const initLegacyToggles = () => {
     const toggles = document.querySelectorAll('.row-toggle');
     if (!toggles.length) return;
@@ -123,11 +131,31 @@ document.addEventListener('DOMContentLoaded', () => {
   const parseChartData = (id) => {
     const el = document.getElementById(id);
     if (!el) return null;
+    const raw = (el.textContent || '').trim();
+    if (!raw) return null;
     try {
-      return JSON.parse(el.textContent);
+      const parsed = JSON.parse(raw);
+      if (typeof parsed === 'string') {
+        return JSON.parse(parsed);
+      }
+      return parsed;
     } catch (error) {
       return null;
     }
+  };
+
+  const coerceNumber = (value) => {
+    if (value === null || value === undefined) return null;
+    if (typeof value === 'number') {
+      return Number.isFinite(value) ? value : null;
+    }
+    if (typeof value === 'string') {
+      const cleaned = value.replace(/[$,]/g, '');
+      const parsed = Number(cleaned);
+      return Number.isFinite(parsed) ? parsed : null;
+    }
+    const parsed = Number(value);
+    return Number.isFinite(parsed) ? parsed : null;
   };
 
   const formatCurrency = (value) => {
@@ -140,7 +168,7 @@ document.addEventListener('DOMContentLoaded', () => {
   };
 
   const buildAxisBounds = (values) => {
-    const filtered = values.filter((val) => val !== null && val !== undefined);
+    const filtered = values.filter((val) => Number.isFinite(val));
     if (!filtered.length) return null;
     let min = Math.min(...filtered);
     let max = Math.max(...filtered);
@@ -159,18 +187,22 @@ document.addEventListener('DOMContentLoaded', () => {
   const initKpiChart = (canvasId, dataId, color) => {
     const canvas = document.getElementById(canvasId);
     const data = parseChartData(dataId);
-    if (!canvas || !data || !data.values || !data.values.length) return;
+    if (!canvas || !data || !Array.isArray(data.values) || !data.values.length) return;
     if (typeof Chart === 'undefined') return;
 
-    const bounds = buildAxisBounds(data.values);
+    const chartValues = data.values.map(coerceNumber);
+    const hasValues = chartValues.some((val) => Number.isFinite(val));
+    if (!hasValues) return;
+
+    const bounds = buildAxisBounds(chartValues);
     const ctx = canvas.getContext('2d');
     new Chart(ctx, {
       type: 'line',
       data: {
-        labels: data.labels,
+        labels: Array.isArray(data.labels) ? data.labels : [],
         datasets: [
           {
-            data: data.values,
+            data: chartValues,
             borderColor: color,
             backgroundColor: color,
             borderWidth: 2,
