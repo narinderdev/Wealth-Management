@@ -572,7 +572,10 @@ line-height: 50px;
 
             {% if metric.delta %}
               <div class="delta {{ metric.delta_class }}">
-                <span>{{ metric.delta }}</span>
+                <span>
+                  {% if metric.symbol %}{{ metric.symbol }}{% endif %}
+                  {{ metric.delta }}
+                </span>
               </div>
             {% endif %}
           </div>

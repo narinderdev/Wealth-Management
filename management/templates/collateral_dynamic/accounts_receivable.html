@@ -1220,8 +1220,7 @@
     }
     .no-border{border: none,!important;}
     .collateral-dynamic .ar-section .swatch.past{background:#1b2a55;}
-    .collateral-dynamic .ar-section .swatch.current{background:var(--blue-2);}
-    .collateral-dynamic .ar-section .swatch.current{background:#6d82ff;}
+    .collateral-dynamic .ar-section .swatch.current{background:#8fb6ff;}
     .collateral-dynamic .ar-section table{
       width:100%;
       border-collapse:separate;
@@ -2269,7 +2268,7 @@
             responsive: true,
             maintainAspectRatio: false,
             plugins: {
-              legend: { position: "top", labels: { boxWidth: 10 } },
+              legend: { display: false },
               tooltip: {
                 callbacks: {
                   label: (context) => `${context.dataset.label}: ${formatCurrency(context.parsed.y)}`,

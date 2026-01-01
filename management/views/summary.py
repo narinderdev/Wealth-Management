@@ -1,4 +1,5 @@
 import json
+import logging
 import math
 from collections import OrderedDict, defaultdict
 from datetime import timedelta
@@ -26,6 +27,26 @@ from management.models import (
     RiskSubfactorsRow,
     SnapshotSummaryRow,
 )
+
+logger = logging.getLogger(__name__)
+
+INVENTORY_CATEGORY_CONFIG = [
+    {
+        "key": "finished_goods",
+        "label": "Finished Goods",
+        "match": ("finished", "finished goods", "finish goods", "finish-goods", "fg"),
+    },
+    {
+        "key": "raw_materials",
+        "label": "Raw Materials",
+        "match": ("raw", "raw materials", "raw-materials", "raw_material"),
+    },
+    {
+        "key": "work_in_progress",
+        "label": "Work-in-Progress",
+        "match": ("work", "work in progress", "work-in-progress", "wip"),
+    },
+]
 
 
 def _format_currency(value):
@@ -57,6 +78,18 @@ def _format_pct(value):
         pct *= Decimal("100")
 
     return f"{pct:.1f}%"
+
+
+def compute_inventory_breakdown(total, ineligible, available=None):
+    total_value = abs(_to_decimal(total))
+    ineligible_value = -abs(_to_decimal(ineligible))
+    if available is None:
+        available_value = total_value + ineligible_value
+    else:
+        available_value = abs(_to_decimal(available))
+    if available_value < 0:
+        available_value = Decimal("0")
+    return total_value, ineligible_value, available_value
 
 
 def _normalize_pct(value):
@@ -849,6 +882,69 @@ def _weighted_collateral_pct(rows, value_fn, weight_field="eligible_collateral")
     return None
 
 
+def _matches_inventory_category(row, keywords):
+    text = " ".join(
+        filter(
+            None,
+            [
+                (row.sub_type or "").strip().lower(),
+                (row.main_type or "").strip().lower(),
+            ],
+        )
+    )
+    return any(keyword in text for keyword in keywords)
+
+
+def _aggregate_collateral_rows(rows, limit_map=None):
+    def resolved_rate(row):
+        return _resolve_rate_limit(row, limit_map) or row.rate_limit
+
+    beginning = _sum_collateral_field(rows, "beginning_collateral")
+    ineligibles_raw = _sum_collateral_field(rows, "ineligibles")
+    ineligibles = None
+    if rows:
+        derived_values = []
+        for row in rows:
+            value = _collateral_ineligible_value(row)
+            if value is not None:
+                derived_values.append(value)
+        if derived_values:
+            ineligibles = sum(derived_values, Decimal("0"))
+    eligible = _sum_collateral_field(rows, "eligible_collateral")
+    pre_reserve = _sum_collateral_field(rows, "pre_reserve_collateral")
+    reserves = _sum_collateral_field(rows, "reserves")
+    net = _sum_collateral_field(rows, "net_collateral")
+
+    raw = {
+        "beginning_collateral": beginning,
+        "ineligibles_raw": ineligibles_raw,
+        "ineligibles": ineligibles,
+        "eligible_collateral": eligible,
+        "nolv_pct": _weighted_collateral_pct(rows, lambda row: row.nolv_pct),
+        "dilution_rate": _weighted_collateral_pct(rows, lambda row: row.dilution_rate),
+        "advanced_rate": _weighted_collateral_pct(rows, lambda row: row.advanced_rate),
+        "rate_limit": _weighted_collateral_pct(rows, resolved_rate),
+        "utilized_rate": _weighted_collateral_pct(rows, lambda row: row.utilized_rate),
+        "pre_reserve_collateral": pre_reserve,
+        "reserves": reserves,
+        "net_collateral": net,
+    }
+    formatted = {
+        "beginning_collateral": _format_currency(beginning),
+        "ineligibles": _format_currency(ineligibles),
+        "eligible_collateral": _format_currency(eligible),
+        "nolv_pct": _format_pct(raw["nolv_pct"]),
+        "dilution_rate": _format_pct(raw["dilution_rate"]),
+        "advanced_rate": _format_pct(raw["advanced_rate"]),
+        "rate_limit": _format_pct(raw["rate_limit"]),
+        "utilized_rate": _format_pct(raw["utilized_rate"]),
+        "pre_reserve_collateral": _format_currency(pre_reserve),
+        "reserves": _format_currency(reserves),
+        "net_collateral": _format_currency(net),
+    }
+    return raw, formatted
+
+
 def _build_collateral_parent_payload(label, rows, limit_map=None):
     def resolved_rate(row):
         return _resolve_rate_limit(row, limit_map) or row.rate_limit
@@ -940,6 +1036,99 @@ def _build_collateral_tree(collateral_rows, limit_map=None):
         tree.append(node)
 
     return tree
+
+
+def get_inventory_breakdown(borrower, start_date=None, end_date=None, *, limit_map=None):
+    if not borrower:
+        return {
+            "report_date": None,
+            "range_start": start_date,
+            "range_end": end_date,
+            "rows": [],
+            "totals": {},
+            "formatted_totals": {},
+            "categories": {},
+        }
+
+    collateral_qs = CollateralOverviewRow.objects.filter(borrower=borrower)
+    if start_date and end_date:
+        collateral_qs = collateral_qs.filter(created_at__date__range=(start_date, end_date))
+
+    latest_time = collateral_qs.aggregate(time=Max("created_at"))["time"]
+    report_date = latest_time.date() if latest_time else None
+    collateral_rows = (
+        list(collateral_qs.filter(created_at__date=report_date)) if report_date else []
+    )
+    inventory_rows = [
+        row for row in collateral_rows if row.main_type and "inventory" in row.main_type.lower()
+    ]
+
+    if limit_map is None:
+        limit_map = _build_limit_map(CollateralLimitsRow.objects.filter(borrower=borrower))
+
+    totals_raw, totals_formatted = _aggregate_collateral_rows(inventory_rows, limit_map=limit_map)
+    total_value, ineligible_value, available_value = compute_inventory_breakdown(
+        totals_raw.get("beginning_collateral"),
+        totals_raw.get("ineligibles_raw", totals_raw.get("ineligibles")),
+    )
+    eligible_value = _to_decimal(totals_raw.get("eligible_collateral"))
+    if eligible_value and available_value != eligible_value:
+        logger.warning(
+            "inventory_breakdown_mismatch total=%s ineligible=%s available=%s eligible=%s",
+            total_value,
+            ineligible_value,
+            available_value,
+            eligible_value,
+        )
+    categories = {}
+    for category in INVENTORY_CATEGORY_CONFIG:
+        category_rows = [
+            row for row in inventory_rows if _matches_inventory_category(row, category["match"])
+        ]
+        raw, formatted = _aggregate_collateral_rows(category_rows, limit_map=limit_map)
+        categories[category["key"]] = {
+            "label": category["label"],
+            "raw": raw,
+            "formatted": formatted,
+        }
+
+    raw_rows_payload = [
+        {
+            "id": row.id,
+            "main_type": row.main_type,
+            "sub_type": row.sub_type,
+            "beginning_collateral": str(row.beginning_collateral),
+            "eligible_collateral": str(row.eligible_collateral),
+            "ineligibles": str(row.ineligibles),
+            "net_collateral": str(row.net_collateral),
+        }
+        for row in inventory_rows
+    ]
+    logger.info(
+        "inventory_breakdown borrower_id=%s report_date=%s range_start=%s range_end=%s report_id=%s",
+        borrower.id,
+        report_date,
+        start_date,
+        end_date,
+        None,
+    )
+    logger.info("inventory_breakdown raw_rows=%s", raw_rows_payload)
+    logger.info(
+        "inventory_breakdown totals_raw=%s totals_formatted=%s categories=%s",
+        totals_raw,
+        totals_formatted,
+        {key: value["formatted"] for key, value in categories.items()},
+    )
+
+    return {
+        "report_date": report_date,
+        "range_start": start_date,
+        "range_end": end_date,
+        "rows": inventory_rows,
+        "totals": totals_raw,
+        "formatted_totals": totals_formatted,
+        "categories": categories,
+    }
 
 
 def _risk_direction(score):
@@ -1406,12 +1595,25 @@ def summary_view(request):
         else None
     )
 
-    inventory_rows = [
-        row for row in collateral_rows if row.main_type and "inventory" in row.main_type.lower()
-    ]
-    inventory_eligible = sum((_to_decimal(row.eligible_collateral) for row in inventory_rows), Decimal("0"))
-    inventory_ineligible = sum((_to_decimal(row.ineligibles) for row in inventory_rows), Decimal("0"))
-    inventory_total_base = inventory_eligible + inventory_ineligible
+    inventory_breakdown = get_inventory_breakdown(
+        borrower,
+        range_start,
+        range_end,
+        limit_map=limit_map,
+    )
+    inventory_rows = inventory_breakdown["rows"]
+    inventory_totals = inventory_breakdown.get("totals", {})
+    inventory_eligible = (
+        _to_decimal(inventory_totals.get("eligible_collateral")) if inventory_totals else Decimal("0")
+    )
+    inventory_ineligible = (
+        _to_decimal(inventory_totals.get("ineligibles")) if inventory_totals else Decimal("0")
+    )
+    inventory_total_base = (
+        _to_decimal(inventory_totals.get("beginning_collateral"))
+        if inventory_totals
+        else inventory_eligible + inventory_ineligible
+    )
     inventory_ratio = (inventory_ineligible / inventory_total_base) if inventory_total_base else None
 
     composite_latest = (
@@ -1465,6 +1667,14 @@ def summary_view(request):
         "summary_selected_range": normalized_range,
         "summary_division_options": division_options,
         "summary_selected_division": normalized_division,
+        "inventory_category_totals": {
+            key: {
+                "label": value["label"],
+                "raw": value["raw"],
+                "formatted": value["formatted"],
+            }
+            for key, value in inventory_breakdown.get("categories", {}).items()
+        },
     }
     return render(request, "dashboard/summary.html", context)
 

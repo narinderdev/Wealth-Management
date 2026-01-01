@@ -1,7 +1,9 @@
 from datetime import datetime, date
 from decimal import Decimal
 
+from django.contrib.auth import get_user_model
 from django.test import TestCase
+from django.urls import reverse
 from django.utils import timezone
 
 from .forms import (
@@ -12,6 +14,7 @@ from .forms import (
 )
 from .models import ARMetricsRow, Borrower, CollateralOverviewRow, Company
 from .views.summary import _delta_payload, get_kpi_timeseries
+from .views.summary import compute_inventory_breakdown
 
 
 class FormValidationTests(TestCase):
@@ -181,3 +184,114 @@ class SummaryKpiTests(TestCase):
 
         self.assertEqual(series["labels"], ["01/24", "02/24"])
         self.assertEqual(series["values"], [Decimal("150.00"), Decimal("200.00")])
+
+
+class InventoryBreakdownConsistencyTests(TestCase):
+    def setUp(self):
+        self.company = Company.objects.create(company="Acme Corp")
+        self.borrower = Borrower.objects.create(
+            company=self.company,
+            primary_contact="Owner",
+            update_interval="Monthly",
+        )
+        user_model = get_user_model()
+        self.user = user_model.objects.create_user(username="tester", password="pass1234")
+        self.client.force_login(self.user)
+
+    def _set_created_at(self, row, year, month, day):
+        dt = timezone.make_aware(datetime(year, month, day, 12, 0, 0))
+        row.__class__.objects.filter(pk=row.pk).update(created_at=dt)
+        row.refresh_from_db()
+
+    def test_inventory_category_totals_match_summary_and_inventory_pages(self):
+        fg = CollateralOverviewRow.objects.create(
+            borrower=self.borrower,
+            main_type="Inventory",
+            sub_type="Finished Goods",
+            eligible_collateral="1000.00",
+            ineligibles="100.00",
+            net_collateral="900.00",
+        )
+        rm = CollateralOverviewRow.objects.create(
+            borrower=self.borrower,
+            main_type="Inventory",
+            sub_type="Raw Materials",
+            eligible_collateral="700.00",
+            ineligibles="50.00",
+            net_collateral="650.00",
+        )
+        wip = CollateralOverviewRow.objects.create(
+            borrower=self.borrower,
+            main_type="Inventory",
+            sub_type="Work In Progress",
+            eligible_collateral="500.00",
+            ineligibles="25.00",
+            net_collateral="475.00",
+        )
+        for row in (fg, rm, wip):
+            self._set_created_at(row, 2024, 6, 15)
+
+        summary_response = self.client.get(
+            reverse("dashboard"),
+            {"borrower_id": self.borrower.id},
+        )
+        inventory_response = self.client.get(
+            reverse("collateral_dynamic"),
+            {"section": "inventory", "inventory_tab": "summary", "borrower_id": self.borrower.id},
+        )
+
+        summary_totals = summary_response.context["inventory_category_totals"]
+        inventory_totals = inventory_response.context["inventory_category_totals"]
+
+        for key in ("finished_goods", "raw_materials", "work_in_progress"):
+            self.assertEqual(
+                summary_totals[key]["raw"]["eligible_collateral"],
+                inventory_totals[key]["raw"]["eligible_collateral"],
+            )
+
+    def test_inventory_breakdown_helper_signs(self):
+        total, ineligible, available = compute_inventory_breakdown("8427622", "1531374", "6896248")
+        self.assertEqual(total, Decimal("8427622"))
+        self.assertEqual(ineligible, Decimal("-1531374"))
+        self.assertEqual(available, Decimal("6896248"))
+
+    def test_inventory_metrics_use_signed_ineligible(self):
+        rows = [
+            ("Finished Goods", "1100.00", "100.00", "1000.00"),
+            ("Raw Materials", "750.00", "50.00", "700.00"),
+            ("Work In Progress", "525.00", "25.00", "500.00"),
+        ]
+        for label, eligible, ineligible, net in rows:
+            row = CollateralOverviewRow.objects.create(
+                borrower=self.borrower,
+                main_type="Inventory",
+                sub_type=label,
+                beginning_collateral=eligible,
+                eligible_collateral=net,
+                ineligibles=ineligible,
+                net_collateral=net,
+            )
+            self._set_created_at(row, 2024, 6, 15)
+
+        response = self.client.get(
+            reverse("collateral_dynamic"),
+            {"section": "inventory", "inventory_tab": "summary", "borrower_id": self.borrower.id},
+        )
+
+        def parse_currency(value):
+            cleaned = value.replace("$", "").replace(",", "").strip()
+            return Decimal(cleaned)
+
+        def assert_metric(metric_list):
+            metrics = {item["label"]: item["value"] for item in metric_list}
+            total = parse_currency(metrics["Total Inventory"])
+            ineligible = parse_currency(metrics["Ineligible Inventory"])
+            available = parse_currency(metrics["Available Inventory"])
+            self.assertGreaterEqual(total, 0)
+            self.assertLessEqual(ineligible, 0)
+            self.assertGreaterEqual(available, 0)
+            self.assertEqual(available, total + ineligible)
+
+        assert_metric(response.context["finished_goals_metrics"])
+        assert_metric(response.context["raw_materials_metrics"])
+        assert_metric(response.context["work_in_progress_metrics"])

@@ -1,9 +1,10 @@
 import json
+import logging
 import math
 from collections import OrderedDict
 from datetime import date, datetime, timedelta
 
-from decimal import Decimal, ROUND_DOWN
+from decimal import Decimal, ROUND_DOWN, ROUND_HALF_UP
 
 from django.contrib.auth.decorators import login_required
 from django.shortcuts import redirect, render
@@ -48,10 +49,15 @@ from management.views.summary import (
     _format_date,
     _safe_str,
     _to_decimal,
+    compute_inventory_breakdown,
+    get_inventory_breakdown,
+    INVENTORY_CATEGORY_CONFIG,
     get_snapshot_summary_map,
     get_borrower_status_context,
     get_preferred_borrower,
 )
+
+logger = logging.getLogger(__name__)
 
 
 @login_required(login_url="login")
@@ -1660,28 +1666,17 @@ MONTH_POSITIONS = [80, 135, 190, 245, 300, 355, 410, 465, 520, 575, 630, 685]
 TREND_X_POSITIONS = [80, 140, 200, 260, 320, 380, 440, 500, 560, 620, 680]
 CIRCUMFERENCE = Decimal(str(2 * math.pi * 52))
 
+CATEGORY_STYLES = {
+    "finished_goods": {"bar_class": "navy", "color": "#116BFD"},
+    "raw_materials": {"bar_class": "mid", "color": "#0753B2"},
+    "work_in_progress": {"bar_class": "bright", "color": "#CADFEF"},
+}
 CATEGORY_CONFIG = [
     {
-        "key": "finished_goods",
-        "label": "Finished Goods",
-        "match": ("finished", "finished goods", "finish goods", "finish-goods", "fg"),
-        "bar_class": "navy",
-        "color": "#116BFD",
-    },
-    {
-        "key": "raw_materials",
-        "label": "Raw Materials",
-        "match": ("raw", "raw materials", "raw-materials", "raw_material"),
-        "bar_class": "mid",
-        "color": "#0753B2",
-    },
-    {
-        "key": "work_in_progress",
-        "label": "Work-in-Progress",
-        "match": ("work", "work in progress", "work-in-progress", "wip"),
-        "bar_class": "bright",
-        "color": "#CADFEF",
-    },
+        **category,
+        **CATEGORY_STYLES.get(category["key"], {}),
+    }
+    for category in INVENTORY_CATEGORY_CONFIG
 ]
 
 def _build_spark_points(values, width=260, height=64, padding=10):
@@ -1811,6 +1806,46 @@ def _empty_summary_entry(label):
         "pct_available": "—",
     }
 
+
+def _normalize_ineligible_detail_rows(rows, target_total):
+    if not rows:
+        return rows
+    total = abs(_to_decimal(target_total))
+    if total <= 0:
+        return rows
+    values = [row.get("_amount_value", Decimal("0")) for row in rows]
+    sum_values = sum(values, Decimal("0"))
+    if sum_values <= 0:
+        return rows
+    if abs(sum_values - total) > Decimal("0.01"):
+        logger.warning(
+            "ineligible_detail_mismatch target_total=%s detail_sum=%s",
+            total,
+            sum_values,
+        )
+    scale = total / sum_values
+    normalized = []
+    running_total = Decimal("0")
+    for idx, row in enumerate(rows):
+        if idx == len(rows) - 1:
+            amount = total - running_total
+        else:
+            amount = (row.get("_amount_value", Decimal("0")) * scale).quantize(
+                Decimal("0.01"),
+                rounding=ROUND_HALF_UP,
+            )
+            running_total += amount
+        pct = (amount / total) if total else Decimal("0")
+        normalized.append(
+            {
+                "reason": row["reason"],
+                "amount": _format_currency(amount),
+                "pct": _format_pct(pct),
+                "_amount_value": amount,
+            }
+        )
+    return normalized
+
 RAW_CATEGORY_DEFINITIONS = [
     ("Metal Coils & Sheet", ["coil", "sheet", "metal"]),
     ("Lumber Components", ["lumber", "wood"]),
@@ -1842,20 +1877,20 @@ def _inventory_state(borrower, start_date=None, end_date=None):
     if not borrower:
         return None
 
-    collateral_qs = CollateralOverviewRow.objects.filter(borrower=borrower)
-    if start_date and end_date:
-        collateral_qs = collateral_qs.filter(created_at__date__range=(start_date, end_date))
-    collateral_rows = list(collateral_qs.order_by("id"))
-    inventory_rows = [
-        row for row in collateral_rows if row.main_type and "inventory" in row.main_type.lower()
-    ]
+    breakdown = get_inventory_breakdown(borrower, start_date, end_date)
+    inventory_rows = breakdown.get("rows", [])
     if not inventory_rows:
         return None
 
-    inventory_total = Decimal("0")
-    inventory_ineligible = Decimal("0")
-    inventory_ineligible_raw = Decimal("0")
-    inventory_net_total = Decimal("0")
+    totals = breakdown.get("totals") or {}
+    ineligible_source = totals.get("ineligibles_raw", totals.get("ineligibles"))
+    inventory_total, inventory_ineligible, inventory_available_total = compute_inventory_breakdown(
+        totals.get("beginning_collateral"),
+        ineligible_source,
+        totals.get("eligible_collateral"),
+    )
+    inventory_ineligible_raw = inventory_ineligible
+    inventory_net_total = inventory_available_total
 
     category_metrics = {
         category["key"]: {
@@ -1876,19 +1911,14 @@ def _inventory_state(borrower, start_date=None, end_date=None):
 
     for row in inventory_rows:
         eligible = _to_decimal(row.eligible_collateral)
-        inventory_total += eligible
-        ineligible_amount = _to_decimal(row.ineligibles)
-        inventory_ineligible_raw += ineligible_amount
-        inventory_ineligible += abs(ineligible_amount)
         net_collateral = _to_decimal(row.net_collateral)
-        inventory_net_total += net_collateral
         for category in CATEGORY_CONFIG:
             if _matches_category(row, category["match"]):
                 metrics = category_metrics[category["key"]]
                 metrics["eligible"] += eligible
                 row_beginning = _to_decimal(row.beginning_collateral)
                 metrics["beginning"] += row_beginning
-                metrics["net"] += net_collateral
+                metrics["net"] += eligible
                 metrics["pre_reserve"] += _to_decimal(row.pre_reserve_collateral)
                 metrics["reserves"] += _to_decimal(row.reserves)
                 metrics["has_data"] = True
@@ -1901,7 +1931,7 @@ def _inventory_state(borrower, start_date=None, end_date=None):
                     metrics["trend_denominator"] += row_beginning
                 break
 
-    # Use net collateral as the available inventory figure so it aligns with collateral composition.
+    # Use computed available inventory (total + ineligible) so signs remain consistent.
     inventory_available_total = inventory_net_total
 
     return {
@@ -1912,6 +1942,7 @@ def _inventory_state(borrower, start_date=None, end_date=None):
         "inventory_net_total": inventory_net_total,
         "inventory_available_total": inventory_available_total,
         "category_metrics": category_metrics,
+        "category_totals": breakdown.get("categories", {}),
     }
 
 
@@ -2000,6 +2031,7 @@ def _inventory_context(borrower, snapshot_text=None):
         "inventory_mix": empty_mix,
         "inventory_breakdown": empty_breakdown,
         "inventory_donut_segments": [],
+        "inventory_category_totals": {},
         "inventory_mix_trend_chart": {
             "columns": [],
             "y_ticks": [],
@@ -2025,6 +2057,7 @@ def _inventory_context(borrower, snapshot_text=None):
     inventory_available_total = state["inventory_available_total"]
     inventory_rows = state["inventory_rows"]
     category_metrics = state["category_metrics"]
+    category_totals = state.get("category_totals", {})
 
     inventory_available_display = _format_currency(inventory_available_total)
     ineligible_display = _format_currency(inventory_ineligible_raw)
@@ -2079,9 +2112,14 @@ def _inventory_context(borrower, snapshot_text=None):
             if metrics["trend_denominator"] > 0
             else None
         )
-        available_value = metrics["net"]
-        gross_value = metrics["pre_reserve"] if metrics["pre_reserve"] is not None else metrics["net"]
+        available_value = metrics["eligible"]
+        gross_value = available_value
         liquidation_amount = _to_decimal(metrics["reserves"]) if metrics["reserves"] is not None else Decimal("0")
+        if liquidation_amount < 0:
+            liquidation_amount = -liquidation_amount
+        net_value = gross_value - liquidation_amount
+        if net_value < 0:
+            net_value = Decimal("0")
 
         inventory_breakdown.append(
             {
@@ -2091,8 +2129,8 @@ def _inventory_context(borrower, snapshot_text=None):
                 "gross_pct": _format_cost_pct(gross_value, available_value),
                 "liquidation_value": _format_currency(liquidation_amount),
                 "liquidation_pct": _format_cost_pct(liquidation_amount, available_value),
-                "net_value": _format_currency(metrics["net"]),
-                "net_pct": _format_cost_pct(metrics["net"], available_value),
+                "net_value": _format_currency(net_value),
+                "net_pct": _format_cost_pct(net_value, available_value),
             }
         )
         metrics["trend_pct"] = trend_pct or Decimal("0")
@@ -2159,15 +2197,18 @@ def _inventory_context(borrower, snapshot_text=None):
 
     category_keys = [category["key"] for category in CATEGORY_CONFIG]
     history_map = OrderedDict()
+    label_map = {}
     for row in inventory_rows:
         created_at = getattr(row, "created_at", None)
         if not created_at:
             continue
         date_key = created_at.date()
+        label = created_at.strftime("%b %Y")
+        label_map[label] = date_key
         for category in CATEGORY_CONFIG:
             if _matches_category(row, category["match"]):
                 bucket = history_map.setdefault(
-                    date_key, {key: Decimal("0") for key in category_keys}
+                    label, {key: Decimal("0") for key in category_keys}
                 )
                 bucket[category["key"]] += _to_decimal(row.eligible_collateral)
                 break
@@ -2175,10 +2216,12 @@ def _inventory_context(borrower, snapshot_text=None):
     series_values = {key: [] for key in category_keys}
     series_labels = []
     if len(history_map) > 1:
-        sorted_dates = sorted(history_map.keys())[-12:]
-        for date_key in sorted_dates:
-            bucket = history_map[date_key]
-            series_labels.append(date_key.strftime("%b %Y"))
+        sorted_labels = [
+            label for label, _ in sorted(label_map.items(), key=lambda item: item[1])
+        ][-12:]
+        for label in sorted_labels:
+            bucket = history_map.get(label, {})
+            series_labels.append(label)
             for key in category_keys:
                 series_values[key].append(bucket.get(key, Decimal("0")))
     else:
@@ -2297,53 +2340,63 @@ def _inventory_context(borrower, snapshot_text=None):
     chart_top = Decimal("22")
     chart_height = chart_bottom - chart_top
 
-    pct_values = []
-    pct_labels = {}
-    for category in CATEGORY_CONFIG:
-        metrics = category_metrics[category["key"]]
-        eligible = metrics.get("eligible") or Decimal("0")
-        pct_ratio = (metrics["net"] / eligible) if eligible else Decimal("0")
-        pct_ratio = max(pct_ratio, Decimal("0"))
-        pct_values.append(pct_ratio)
-        pct_labels[category["key"]] = _format_pct(pct_ratio)
+    def _format_axis_label(label):
+        if not label:
+            return ""
+        parts = label.split()
+        if len(parts) >= 2:
+            return f"{parts[0]} {parts[1][-2:]}"
+        return label
 
-    if pct_values:
-        min_pct = min(pct_values)
-        max_pct = max(pct_values)
-        pct_range = max_pct - min_pct
-        padding = max(pct_range * Decimal("0.05"), Decimal("0.05"))
-        axis_min_pct = max(min_pct - padding, Decimal("0"))
-        axis_max_pct = min(max_pct + padding, Decimal("1"))
-        if axis_max_pct <= axis_min_pct:
-            axis_max_pct = axis_min_pct + Decimal("0.10")
-            axis_max_pct = min(axis_max_pct, Decimal("1"))
-    else:
-        axis_min_pct = Decimal("0")
-        axis_max_pct = Decimal("1")
+    trend_labels = series_labels or TREND_LABELS
+    trend_positions = TREND_X_POSITIONS[: len(trend_labels)]
+    if len(trend_positions) < len(trend_labels):
+        last_x = trend_positions[-1] if trend_positions else TREND_X_POSITIONS[0]
+        step = TREND_X_POSITIONS[1] - TREND_X_POSITIONS[0]
+        while len(trend_positions) < len(trend_labels):
+            last_x += step
+            trend_positions.append(last_x)
 
-    axis_range_pct = axis_max_pct - axis_min_pct if axis_max_pct != axis_min_pct else Decimal("1")
+    series_value_map = {key: [Decimal("0")] * len(trend_labels) for key in category_keys}
+    for idx, label in enumerate(trend_labels):
+        month_key = label.replace("\n", " ")
+        month_values = history_map.get(month_key, {})
+        for key in category_keys:
+            series_value_map[key][idx] = _to_decimal(month_values.get(key, Decimal("0")))
 
     for category in CATEGORY_CONFIG:
-        pct_ratio = Decimal("0")
-        for cat, value in zip(CATEGORY_CONFIG, pct_values):
-            if cat["key"] == category["key"]:
-                pct_ratio = value
-                break
-        pct_ratio = max(min(pct_ratio, axis_max_pct), axis_min_pct)
-        normalized = (pct_ratio - axis_min_pct) / axis_range_pct if axis_range_pct else Decimal("0")
-        y_value = chart_bottom - (normalized * chart_height)
-        y_value = max(min(y_value, chart_bottom), chart_top)
+        series = series_value_map.get(category["key"], [])
+        if series:
+            min_pct = min(series)
+            max_pct = max(series)
+            pct_range = max_pct - min_pct
+            padding = max(pct_range * Decimal("0.05"), Decimal("0.05"))
+            axis_min_pct = max(min_pct - padding, Decimal("0"))
+            axis_max_pct = min(max_pct + padding, Decimal("1"))
+            if axis_max_pct <= axis_min_pct:
+                axis_max_pct = axis_min_pct + Decimal("0.10")
+                axis_max_pct = min(axis_max_pct, Decimal("1"))
+        else:
+            axis_min_pct = Decimal("0")
+            axis_max_pct = Decimal("1")
+
+        axis_range_pct = axis_max_pct - axis_min_pct if axis_max_pct != axis_min_pct else Decimal("1")
         points = []
         points_list = []
-        for idx, x in enumerate(TREND_X_POSITIONS):
-            value_label = TREND_LABELS[idx] if idx < len(TREND_LABELS) else f"Point {idx+1}"
+        for idx, x in enumerate(trend_positions):
+            pct_ratio = series[idx] if idx < len(series) else Decimal("0")
+            pct_ratio = max(min(pct_ratio, axis_max_pct), axis_min_pct)
+            normalized = (pct_ratio - axis_min_pct) / axis_range_pct if axis_range_pct else Decimal("0")
+            y_value = chart_bottom - (normalized * chart_height)
+            y_value = max(min(y_value, chart_bottom), chart_top)
+            label = _format_axis_label(trend_labels[idx]) if idx < len(trend_labels) else f"Point {idx+1}"
             points.append(f"{x},{float(y_value):.1f}")
             points_list.append(
                 {
                     "x": x,
                     "y": float(y_value),
-                    "label": value_label,
-                    "value": pct_labels.get(category["key"], _format_pct(pct_ratio)),
+                    "label": label,
+                    "value": _format_pct(pct_ratio),
                 }
             )
         inventory_trend_series.append(
@@ -2354,14 +2407,30 @@ def _inventory_context(borrower, snapshot_text=None):
             }
         )
 
+    trend_label_payload = []
+    for idx, label in enumerate(trend_labels):
+        x = trend_positions[idx] if idx < len(trend_positions) else None
+        if x is None:
+            continue
+        parts = label.split()
+        trend_label_payload.append(
+            {
+                "x": x,
+                "month": parts[0] if parts else label,
+                "year": parts[1] if len(parts) > 1 else "",
+            }
+        )
+
     return {
         "snapshot_text": resolved_snapshot,
         "inventory_available_display": inventory_available_display,
         "inventory_mix": inventory_mix,
         "inventory_breakdown": inventory_breakdown,
         "inventory_donut_segments": donut_segments,
+        "inventory_category_totals": category_totals,
         "inventory_mix_trend_chart": inventory_mix_trend_chart,
         "inventory_trend_series": inventory_trend_series,
+        "inventory_trend_labels": trend_label_payload,
     }
 
 def _accounts_receivable_context(borrower, range_key="today", division="all", snapshot_summary=None):
@@ -3621,21 +3690,15 @@ def _finished_goals_context(
     inventory_net_total = state["inventory_net_total"]
     category_metrics = state["category_metrics"]
     inventory_rows = state["inventory_rows"]
-
-    metrics_qs = FGInventoryMetricsRow.objects.filter(borrower=borrower)
-    fg_type_qs = metrics_qs.filter(inventory_type__icontains="finished")
-    if fg_type_qs.exists():
-        metrics_qs = fg_type_qs
-    metrics_qs = _apply_division_filter(metrics_qs)
-    metrics_qs = _apply_date_filter_or_latest(metrics_qs, "as_of_date")
-    metrics_row = metrics_qs.order_by("-as_of_date", "-created_at", "-id").first()
-    if metrics_row:
-        inventory_total = _to_decimal(metrics_row.total_inventory)
-        inventory_ineligible_display = _to_decimal(metrics_row.ineligible_inventory)
-        inventory_ineligible = abs(inventory_ineligible_display)
-        inventory_available_total = inventory_total - inventory_ineligible
-        if inventory_available_total < 0:
-            inventory_available_total = Decimal("0")
+    category_totals = state.get("category_totals", {}).get("finished_goods", {})
+    category_raw = category_totals.get("raw", {}) if category_totals else {}
+    if category_raw:
+        inventory_total, inventory_ineligible, inventory_available_total = compute_inventory_breakdown(
+            category_raw.get("beginning_collateral"),
+            category_raw.get("ineligibles_raw", category_raw.get("ineligibles")),
+            category_raw.get("eligible_collateral"),
+        )
+        inventory_ineligible_display = inventory_ineligible
         inventory_net_total = inventory_available_total
 
     ar_row = (
@@ -3650,15 +3713,13 @@ def _finished_goals_context(
     ineligible_pct = (
         (inventory_ineligible / inventory_total) if inventory_total else Decimal("0")
     )
-    total_quality = (
-        (inventory_net_total / inventory_total) if inventory_total else Decimal("0")
-    )
+    total_quality = available_pct
 
     total_delta = (
         (total_quality - Decimal("0.8")) * Decimal("100") if inventory_total else None
     )
     ineligible_delta = (
-        (Decimal("0.2") - ineligible_pct) * Decimal("100") if inventory_total else None
+        (ineligible_pct - Decimal("0.2")) * Decimal("100") if inventory_total else None
     )
     available_delta = (
         (available_pct - Decimal("0.5")) * Decimal("100") if inventory_total else None
@@ -3685,6 +3746,7 @@ def _finished_goals_context(
         )
 
     ineligible_detail_rows = []
+    total_ineligible = Decimal("0")
     ineligible_qs = FGIneligibleDetailRow.objects.filter(borrower=borrower)
     ineligible_division_qs = _apply_division_filter(ineligible_qs)
     ineligible_filtered_qs = _apply_date_filter(ineligible_division_qs, "date")
@@ -3716,6 +3778,7 @@ def _finished_goals_context(
                     "reason": label,
                     "amount": _format_currency(amount),
                     "pct": _format_pct(pct),
+                    "_amount_value": amount,
                 }
             )
     elif inventory_ineligible:
@@ -3738,8 +3801,14 @@ def _finished_goals_context(
                     "reason": label,
                     "amount": _format_currency(amount),
                     "pct": _format_pct(pct),
+                    "_amount_value": amount,
                 }
             )
+    target_ineligible_total = abs(_to_decimal(total_ineligible)) if total_ineligible else total_ineligible
+    ineligible_detail_rows = _normalize_ineligible_detail_rows(
+        ineligible_detail_rows,
+        target_ineligible_total,
+    )
 
     def _dec_or_none(value):
         if value is None:
@@ -4314,70 +4383,46 @@ def _finished_goals_context(
 
     inventory_trend_labels = []
     inventory_trend_values = []
-    metrics_trend_rows = (
-        metrics_qs.exclude(as_of_date__isnull=True)
-        .order_by("as_of_date", "id")
-    )
-    metrics_trend_map = OrderedDict()
-    for row in metrics_trend_rows:
-        dt = row.as_of_date
-        if not dt:
+    inventory_rows_all = CollateralOverviewRow.objects.filter(
+        borrower=borrower,
+        main_type__icontains="inventory",
+    ).exclude(created_at__isnull=True)
+    inventory_rows_all = _apply_date_filter(inventory_rows_all, "created_at")
+    inventory_rows_all = inventory_rows_all.order_by("created_at", "id")
+    inventory_trend_map = OrderedDict()
+    for row in inventory_rows_all:
+        if not _matches_category(row, CATEGORY_CONFIG[0]["match"]):
             continue
+        dt = row.created_at.date()
         key = (dt.year, dt.month)
-        if key not in metrics_trend_map:
-            metrics_trend_map[key] = Decimal("0")
-        metrics_trend_map[key] += _to_decimal(row.available_inventory)
-    if metrics_trend_map:
-        latest_year = max(year for year, _ in metrics_trend_map.keys())
+        if key not in inventory_trend_map:
+            inventory_trend_map[key] = Decimal("0")
+        inventory_trend_map[key] += _to_decimal(row.eligible_collateral)
+
+    if inventory_trend_map:
+        latest_year = max(year for year, _ in inventory_trend_map.keys())
         inventory_trend_labels, inventory_trend_values = _build_year_series(
-            metrics_trend_map,
+            inventory_trend_map,
             latest_year,
             scale=trend_scale,
         )
     else:
-        inventory_rows_all = CollateralOverviewRow.objects.filter(
-            borrower=borrower,
-            main_type__icontains="inventory",
-        ).exclude(created_at__isnull=True)
-        inventory_rows_all = _apply_date_filter(inventory_rows_all, "created_at")
-        inventory_rows_all = inventory_rows_all.order_by("created_at", "id")
-        inventory_trend_map = OrderedDict()
-        for row in inventory_rows_all:
-            dt = row.created_at.date()
-            key = (dt.year, dt.month)
-            if key not in inventory_trend_map:
-                inventory_trend_map[key] = {"eligible": Decimal("0"), "total": Decimal("0")}
-            inventory_trend_map[key]["eligible"] += _to_decimal(row.eligible_collateral)
-            inventory_trend_map[key]["total"] += _to_decimal(row.beginning_collateral)
+        def _month_label(idx, total):
+            base = date.today().replace(day=1)
+            offset = total - idx - 1
+            month = base.month - offset
+            year = base.year
+            while month <= 0:
+                month += 12
+                year -= 1
+            return date(year, month, 1).strftime("%b\n%Y")
 
-        if inventory_trend_map:
-            latest_year = max(year for year, _ in inventory_trend_map.keys())
-            series_map = {
-                key: totals["eligible"]
-                for key, totals in inventory_trend_map.items()
-            }
-            inventory_trend_labels, inventory_trend_values = _build_year_series(
-                series_map,
-                latest_year,
-                scale=trend_scale,
-            )
-        else:
-            def _month_label(idx, total):
-                base = date.today().replace(day=1)
-                offset = total - idx - 1
-                month = base.month - offset
-                year = base.year
-                while month <= 0:
-                    month += 12
-                    year -= 1
-                return date(year, month, 1).strftime("%b\n%Y")
-
-            base_value = float(inventory_available_total / trend_scale) if inventory_available_total else 0.0
-            for idx in range(12):
-                inventory_trend_labels.append(_month_label(idx, 12))
-                variation = math.sin(idx / 2.0) * 0.06
-                value = max(0.0, base_value * (1 + variation))
-                inventory_trend_values.append(value)
+        base_value = float(inventory_available_total / trend_scale) if inventory_available_total else 0.0
+        for idx in range(12):
+            inventory_trend_labels.append(_month_label(idx, 12))
+            variation = math.sin(idx / 2.0) * 0.06
+            value = max(0.0, base_value * (1 + variation))
+            inventory_trend_values.append(value)
 
     if len(inventory_trend_values) < 2:
         def _month_label(idx, total):
@@ -5064,17 +5109,31 @@ def _raw_materials_context(borrower, range_key="today", division="all"):
     raw_rows = _filter_inventory_rows_by_key(state, "raw_materials")
     inventory_rows = raw_rows or state["inventory_rows"]
 
-    raw_total = sum(_to_decimal(row.beginning_collateral) for row in raw_rows) if raw_rows else Decimal("0")
-    raw_available = sum(_to_decimal(row.eligible_collateral) for row in raw_rows) if raw_rows else Decimal("0")
-    raw_ineligible_raw = sum(_to_decimal(row.ineligibles) for row in raw_rows) if raw_rows else Decimal("0")
-    raw_ineligible = sum(abs(_to_decimal(row.ineligibles)) for row in raw_rows) if raw_rows else Decimal("0")
-    if raw_ineligible <= 0 and raw_total:
-        raw_ineligible = max(raw_total - raw_available, Decimal("0"))
+    category_totals = state.get("category_totals", {}).get("raw_materials", {})
+    category_raw = category_totals.get("raw", {}) if category_totals else {}
+    if category_raw:
+        raw_total, raw_ineligible, raw_available = compute_inventory_breakdown(
+            category_raw.get("beginning_collateral"),
+            category_raw.get("ineligibles_raw", category_raw.get("ineligibles")),
+            category_raw.get("eligible_collateral"),
+        )
+        raw_ineligible_raw = raw_ineligible
+    else:
+        raw_total, raw_ineligible, raw_available = compute_inventory_breakdown(
+            sum((_to_decimal(row.beginning_collateral) for row in raw_rows), Decimal("0")),
+            sum((_to_decimal(row.ineligibles) for row in raw_rows), Decimal("0")),
+            sum((_to_decimal(row.eligible_collateral) for row in raw_rows), Decimal("0")),
+        )
+        raw_ineligible_raw = raw_ineligible
 
     inventory_total = raw_total if raw_rows else state["inventory_total"]
     inventory_available_total = raw_available if raw_rows else state["inventory_available_total"]
     inventory_ineligible = raw_ineligible if raw_rows else state["inventory_ineligible"]
-    inventory_ineligible_display = raw_ineligible_raw if raw_rows else state.get("inventory_ineligible_raw", inventory_ineligible)
+    inventory_ineligible_display = (
+        raw_ineligible_raw
+        if raw_rows
+        else state.get("inventory_ineligible_raw", inventory_ineligible)
+    )
     category_metrics = state["category_metrics"]
 
     available_pct = (
@@ -5127,6 +5186,8 @@ def _raw_materials_context(borrower, range_key="today", division="all"):
         )
 
     ineligible_detail = []
+    total_ineligible = Decimal("0")
+    total_ineligible = Decimal("0")
     rm_ineligible_qs = RMIneligibleOverviewRow.objects.filter(borrower=borrower)
     if normalized_division != "all":
         rm_ineligible_qs = rm_ineligible_qs.filter(division__iexact=normalized_division)
@@ -5162,6 +5223,7 @@ def _raw_materials_context(borrower, range_key="today", division="all"):
                     "reason": label,
                     "amount": _format_currency(amount),
                     "pct": _format_pct(pct),
+                    "_amount_value": amount,
                 }
             )
     else:
@@ -5184,14 +5246,21 @@ def _raw_materials_context(borrower, range_key="today", division="all"):
 
         for label, _ in REASON_ORDER:
             amount = reason_map.get(label, Decimal("0"))
-            pct = (amount / inventory_ineligible) if inventory_ineligible else Decimal("0")
+            pct = (amount / abs(total_ineligible)) if total_ineligible else Decimal("0")
             ineligible_detail.append(
                 {
                     "reason": label.replace("-", " ").title(),
                     "amount": _format_currency(amount),
                     "pct": _format_pct(pct),
+                    "_amount_value": amount,
                 }
             )
+
+    target_ineligible_total = abs(_to_decimal(total_ineligible)) if total_ineligible else total_ineligible
+    ineligible_detail = _normalize_ineligible_detail_rows(
+        ineligible_detail,
+        target_ineligible_total,
+    )
 
     category_rows = []
     top10_row = _empty_summary_entry("Top 10 Total")
@@ -5709,24 +5778,29 @@ def _work_in_progress_context(borrower, range_key="today", division="all"):
     if not wip_rows:
         return base_context
 
-    total_beginning = Decimal("0")
-    total_available = Decimal("0")
-    total_ineligible = Decimal("0")
-    for row in wip_rows:
-        beginning = _to_decimal(row.beginning_collateral)
-        eligible = _to_decimal(row.eligible_collateral)
-        total_beginning += beginning
-        total_available += eligible
-        total_ineligible += max(beginning - eligible, Decimal("0"))
+    category_totals = state.get("category_totals", {}).get("work_in_progress", {})
+    category_raw = category_totals.get("raw", {}) if category_totals else {}
+    if category_raw:
+        total_inventory, total_ineligible, total_available = compute_inventory_breakdown(
+            category_raw.get("beginning_collateral"),
+            category_raw.get("ineligibles_raw", category_raw.get("ineligibles")),
+            category_raw.get("eligible_collateral"),
+        )
+    else:
+        total_inventory, total_ineligible, total_available = compute_inventory_breakdown(
+            sum((_to_decimal(row.beginning_collateral) for row in wip_rows), Decimal("0")),
+            sum((_to_decimal(row.ineligibles) for row in wip_rows), Decimal("0")),
+            sum((_to_decimal(row.eligible_collateral) for row in wip_rows), Decimal("0")),
+        )
 
-    available_pct = (total_available / total_beginning) if total_beginning else Decimal("0")
+    available_pct = (total_available / total_inventory) if total_inventory else Decimal("0")
     available_delta = available_pct - Decimal("0.5")
 
     metric_defs = [
         {
             "label": "Total Inventory",
-            "value": _format_currency(total_beginning),
-            "delta": -abs(available_delta * Decimal("100")) if total_beginning else None,
+            "value": _format_currency(total_inventory),
+            "delta": -abs(available_delta * Decimal("100")) if total_inventory else None,
             "delta_class": "danger",
             "symbol": "▼",
         },
@@ -5797,6 +5871,7 @@ def _work_in_progress_context(borrower, range_key="today", division="all"):
             ("In Transit", in_transit),
             ("Damaged/Non Saleable", damaged),
         ]
+        total_ineligible = total_ineligible_row
         for label, amount in reason_fields:
             pct = (amount / total_ineligible_row) if total_ineligible_row else Decimal("0")
             ineligible_detail.append(
@@ -5804,12 +5879,13 @@ def _work_in_progress_context(borrower, range_key="today", division="all"):
                     "reason": label,
                     "amount": _format_currency(amount),
                     "pct": _format_pct(pct),
+                    "_amount_value": amount,
                 }
             )
     else:
         reason_map = {label: Decimal("0") for label, _ in REASON_ORDER}
         for row in wip_rows:
-            amount = _to_decimal(row.ineligibles)
+            amount = abs(_to_decimal(row.ineligibles))
             if amount <= 0:
                 continue
             text = " ".join(filter(None, [(row.sub_type or ""), (row.main_type or "")]))
@@ -5819,14 +5895,21 @@ def _work_in_progress_context(borrower, range_key="today", division="all"):
                     break
         for label, _ in REASON_ORDER:
             amount = reason_map.get(label, Decimal("0"))
-            pct = (amount / total_ineligible) if total_ineligible else Decimal("0")
+            pct = (amount / abs(total_ineligible)) if total_ineligible else Decimal("0")
             ineligible_detail.append(
                 {
                     "reason": label.replace("-", " ").title(),
                     "amount": _format_currency(amount),
                     "pct": _format_pct(pct),
+                    "_amount_value": amount,
                 }
             )
+
+    target_ineligible_total = abs(_to_decimal(total_ineligible)) if total_ineligible else total_ineligible
+    ineligible_detail = _normalize_ineligible_detail_rows(
+        ineligible_detail,
+        target_ineligible_total,
+    )
 
     category_rows = []
     top10_row = _empty_summary_entry("Top 10 Total")

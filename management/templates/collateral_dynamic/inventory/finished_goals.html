@@ -759,7 +759,14 @@
 
         {% if metric.delta %}
           <div class="delta {{ metric.delta_class }}">
-            <span>{{ metric.delta }}</span>
+            <span>
+              {% if metric.delta_class == "good" %}
+                ▲
+              {% elif metric.delta_class == "bad" %}
+                ▼
+              {% endif %}
+              {{ metric.delta }}
+            </span>
           </div>
         {% endif %}
       </div>
