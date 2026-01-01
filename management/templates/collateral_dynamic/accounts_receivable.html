@@ -818,10 +818,26 @@
       border-radius:10px;
       overflow:visible;
     }
+    .collateral-dynamic .borrowing-base-chart .bb-chart{
+      height:140px;
+      --chart-width:260;
+      --chart-height:140;
+    }
     .collateral-dynamic .chart-box{
       position:relative;
       width:100%;
       aspect-ratio:var(--chart-width) / var(--chart-height);
+    }
+    .collateral-dynamic .aging-composition-chart{
+      height:240px;
+    }
+    .collateral-dynamic .ar-trend-chart .chart-box{
+      height:190px;
+      --chart-width:520;
+      --chart-height:190;
+    }
+    .collateral-dynamic .ar-ineligible-chart{
+      height:260px;
     }
     .collateral-dynamic .chart-canvas{
       position:absolute;
@@ -836,6 +852,11 @@
       z-index:3;
       width:100%;
       height:100%;
+    }
+    .collateral-dynamic .chart-box canvas{
+      width:100% !important;
+      height:100% !important;
+      display:block;
     }
     .collateral-dynamic .chart-layer.is-static{
       pointer-events:none;
@@ -1687,43 +1708,15 @@
                           </div>
                         </div>
                         <div class="borrowing-base-chart chart-wrap ar-chart">
-                          <div class="chart-box bb-chart"
-                            style="--chart-width:260; --chart-height:140; --axis-left:{{ kpi.chart.grid.left }}; --axis-right:{{ kpi.chart.grid.right }}; --axis-top:{{ kpi.chart.grid.top }}; --axis-bottom:{{ kpi.chart.grid.bottom }};">
-                            <div class="chart-layer line-layer"
-                              data-chart-width="260"
-                              data-chart-height="140"
-                              data-line-color="{{ line_color }}"
-                              data-line-source="dots"
-                              data-line-points="{{ kpi.chart.points }}"
-                              aria-hidden="true"></div>
-                            <div class="chart-layer is-static">
-                              {% for tick in kpi.chart.y_ticks %}
-                                <span class="chart-grid-line h" style="--y: {{ tick.y }}"></span>
-                              {% endfor %}
-                              {% for x in kpi.chart.x_grid %}
-                                <span class="chart-grid-line v" style="--x: {{ x }}"></span>
-                              {% endfor %}
-                            </div>
-                            <div class="chart-layer-bar is-static label-layer">
-                              {% for tick in kpi.chart.y_ticks %}
-                                <span class="chart-axis-label y end" style="--x: {{ kpi.chart.label_x }}; --y: {{ tick.y }}">{{ tick.label }}</span>
-                              {% endfor %}
-                              {% for label in kpi.chart.x_labels %}
-                                <span class="chart-axis-label x" style="--x: {{ label.x }}; --y: {{ kpi.chart.label_y }}">{{ label.text }}</span>
-                              {% endfor %}
-                            </div>
-                            <div class="chart-layer-bar">
-                              {% for dot in kpi.chart.dots %}
-                                <span class="chart-dot" style="--x: {{ dot.cx }}; --y: {{ dot.cy }}; --dot-color: {{ line_color }};"></span>
-                                <span class="chart-hit ar-tip"
-                                  style="--x: {{ dot.cx }}; --y: {{ dot.cy }};"
-                                  data-label="{{ dot.label }}"
-                                  data-series="{{ kpi.label }}"
-                                  data-value="{{ dot.value }}"></span>
-                              {% endfor %}
-                            </div>
+                          <div class="chart-box bb-chart">
+                            <canvas
+                              class="ar-kpi-chart"
+                              width="260"
+                              height="140"
+                              data-chart="{{ kpi.chart_payload_json|escape }}"
+                              aria-label="{{ kpi.label }} chart"
+                              role="img"></canvas>
                           </div>
-                          <div class="chart-tooltip" aria-hidden="true"></div>
                         </div>
                       </div>
                     {% empty %}
@@ -1740,13 +1733,8 @@
                           </div>
                         </div>
                         <div class="borrowing-base-chart chart-wrap">
-                          <div class="chart-box bb-chart"
-                            style="--chart-width:260; --chart-height:140; --axis-left:20; --axis-right:240; --axis-top:20; --axis-bottom:120;">
-                            <div class="chart-layer line-layer"
-                              data-chart-width="260"
-                              data-chart-height="140"
-                              data-line-source="dots"
-                              aria-hidden="true"></div>
+                          <div class="chart-box bb-chart">
+                            <span class="chart-empty">No chart data</span>
                           </div>
                         </div>
                       </div>
@@ -1778,38 +1766,13 @@
 
                       <div class="chart-wrap ar-chart">
                         <div class="chart-box aging-composition-chart" aria-label="Aging composition bar chart">
-                          <div class="chart-layer is-static" style="height: 400px;">
-                            <span class="chart-grid-line v axis-line" style="--x: 40"></span>
-                            <span class="chart-grid-line h axis-line" style="--y: 160"></span>
-                            <span class="chart-grid-line h" style="--y: 125"></span>
-                            <span class="chart-grid-line h" style="--y: 90"></span>
-                            <span class="chart-grid-line h" style="--y: 55"></span>
-                            <span class="chart-grid-line h" style="--y: 20"></span>
-                          </div>
-                          <div class="chart-layer is-static label-layer" style="height: 400px;" >
-                            <span class="chart-axis-label y" style="--x: 10; --y: 143">$20</span>
-                            <span class="chart-axis-label y" style="--x: 10; --y: 113">$40</span>
-                            <span class="chart-axis-label y" style="--x: 10; --y: 83">$60</span>
-                            <span class="chart-axis-label y" style="--x: 10; --y: 53">$80</span>
-                          </div>
-                          <div class="chart-layer-bar" style="height: 400px;">
-                            {% for bucket in ar_aging_chart_buckets %}
-                              <div class="aging-bar ar-tip"
-                                style="--x: {{ bucket.x }}; --y: {{ bucket.y }}; --bar-width: {{ bucket.width }}; --bar-height: {{ bucket.height }}; --bar-color: {{ bucket.color }};"
-                                data-label="{{ bucket.label }}"
-                                data-value="{{ bucket.percent_display }}"
-                                data-extra="{{ bucket.amount_display }}"></div>
-                              <span class="aging-percent" style="--x: {{ bucket.text_x }}; --y: {{ bucket.percent_y }}">{{ bucket.percent_display }}</span>
-                              <span class="aging-label" style="--x: {{ bucket.text_x }}; --y: {{ bucket.label_y }}">{{ bucket.label_primary }}</span>
-                              {% if bucket.label_secondary %}
-                                <span class="aging-label secondary" style="--x: {{ bucket.text_x }}; --y: {{ bucket.label_secondary_y }}">{{ bucket.label_secondary }}</span>
-                              {% endif %}
-                            {% empty %}
-                              <span class="chart-empty">No aging data</span>
-                            {% endfor %}
-                          </div>
+                          <canvas
+                            class="ar-aging-chart"
+                            width="480"
+                            height="240"
+                            data-chart="{{ ar_aging_chart_json|escape }}"
+                            role="img"></canvas>
                         </div>
-                        <div class="chart-tooltip" aria-hidden="true"></div>
                       </div>
                     </div>
 
@@ -1830,45 +1793,13 @@
 
                       <div class="chart-wrap ar-chart ar-trend-chart">
                         <div class="chart-box" aria-label="Current vs Past Due stacked bar chart">
-                          <div class="chart-layer is-static">
-                            {% for tick in ar_current_vs_past_due_trend.ticks %}
-                              <span class="chart-grid-line h" style="--y: {{ tick.y|floatformat:1 }}"></span>
-                            {% endfor %}
-                            <span class="chart-grid-line h axis-line" style="--y: 140"></span>
-                          </div>
-                          <div class="chart-layer is-static label-layer">
-                            {% for tick in ar_current_vs_past_due_trend.ticks %}
-                              <span class="chart-axis-label y" style="--x: 10; --y: {{ tick.y|add:'3'|floatformat:1 }}">{{ tick.label }}</span>
-                            {% endfor %}
-                            {% for label in ar_current_vs_past_due_trend.labels %}
-                              <span class="chart-axis-label x stack center" style="--x: {{ label.x }}; --y: 176">
-                                <span>{{ label.month }}</span>
-                                {% if label.year %}
-                                  <span>{{ label.year }}</span>
-                                {% endif %}
-                              </span>
-                            {% endfor %}
-                          </div>
-                          <div class="chart-layer">
-                            {% if ar_current_vs_past_due_trend.bars %}
-                              {% for bar in ar_current_vs_past_due_trend.bars %}
-                                <div class="trend-bar past ar-tip"
-                                  style="--x: {{ bar.x }}; --y: {{ bar.past_due_y }}; --bar-width: {{ bar.width }}; --bar-height: {{ bar.past_due_height }};"
-                                  data-label="{{ bar.label }}"
-                                  data-series="Past Due"
-                                  data-value="{{ bar.past_due_value }}"></div>
-                                <div class="trend-bar current ar-tip"
-                                  style="--x: {{ bar.x }}; --y: {{ bar.current_y }}; --bar-width: {{ bar.width }}; --bar-height: {{ bar.current_height }};"
-                                  data-label="{{ bar.label }}"
-                                  data-series="Current"
-                                  data-value="{{ bar.current_value }}"></div>
-                              {% endfor %}
-                            {% else %}
-                              <span class="chart-empty">No trend data</span>
-                            {% endif %}
-                          </div>
+                          <canvas
+                            class="ar-trend-chart-canvas"
+                            width="520"
+                            height="190"
+                            data-chart="{{ ar_current_vs_past_due_json|escape }}"
+                            role="img"></canvas>
                         </div>
-                        <div class="chart-tooltip" aria-hidden="true"></div>
                       </div>
                     </div>
                   </div>
@@ -2022,48 +1953,13 @@
 
                       <div class="ar-graph chart-wrap ar-chart">
                         <div class="chart-box ar-ineligible-chart" aria-label="Ineligible AR trend line chart">
-                          <div class="chart-layer line-layer"
-                            data-chart-width="520"
-                            data-chart-height="260"
-                            data-line-color="#0b5bd3"
-                            data-line-source="dot-layout"
-                            data-line-points="{{ ar_ineligible_trend.points }}"
-                            aria-hidden="true"></div>
-                          <div class="chart-layer is-static">
-                            <span class="chart-grid-line v axis-line" style="--x: 60"></span>
-                            {% for tick in ar_ineligible_trend.ticks %}
-                              <span class="chart-grid-line h {% if forloop.last %}axis-line{% endif %}" style="--y: {{ tick.y|floatformat:1 }}"></span>
-                            {% endfor %}
-                          </div>
-                          <div class="chart-layer is-static label-layer">
-                            {% for tick in ar_ineligible_trend.ticks %}
-                              <span class="chart-axis-label y" style="--x: 28; --y: {{ tick.y|add:'4'|floatformat:1 }}">{{ tick.label }}</span>
-                            {% endfor %}
-                          </div>
-                          <div class="chart-layer">
-                            {% if ar_ineligible_trend.points %}
-                              {% for dot in ar_ineligible_trend.dots %}
-                                <span class="chart-dot" style="--x: {{ dot.cx }}; --y: {{ dot.cy }}; --dot-color: #0b5bd3;"></span>
-                                <span class="chart-hit ar-tip"
-                                  style="--x: {{ dot.cx }}; --y: {{ dot.cy }};"
-                                  data-label="{{ dot.label }}"
-                                  data-value="{{ dot.value }}"></span>
-                              {% endfor %}
-                              {% for label in ar_ineligible_trend.labels %}
-                                <span class="chart-axis-label x start stack" style="--x: {{ label.x }}; --y: 234">
-                                  <span>{{ label.month }}</span>
-                                  {% if label.year %}
-                                    <span class="chart-axis-year">{{ label.year }}</span>
-                                  {% endif %}
-                                </span>
-                              {% endfor %}
-                            {% else %}
-                              <span class="chart-empty">No ineligible trend data</span>
-                            {% endif %}
-                            <span class="chart-axis-title">% of Accounts Receivable</span>
-                          </div>
+                          <canvas
+                            class="ar-ineligible-chart-canvas"
+                            width="520"
+                            height="260"
+                            data-chart="{{ ar_ineligible_trend_json|escape }}"
+                            role="img"></canvas>
                         </div>
-                        <div class="chart-tooltip" aria-hidden="true"></div>
                       </div>
 
                     </div>
@@ -2196,195 +2092,256 @@
     </div>
   </div>
 
-  {{ ar_ineligible_trend|json_script:"arIneligibleTrendData" }}
+  <div id="chartjs-fallback" data-src="{% static 'js/chart.min.js' %}" hidden></div>
+  <script src="https://cdn.jsdelivr.net/npm/chart.js" onerror="this.onerror=null;this.src='{% static 'js/chart.min.js' %}';"></script>
   <script>
-(function(){
-  function updateAgingCompositionMetrics(){
-    var charts = document.querySelectorAll(".aging-composition-chart");
-    if(!charts.length) return;
-    charts.forEach(function(chart){
-      var rect = chart.getBoundingClientRect();
-      if(rect.width && rect.height){
-        chart.style.setProperty("--chart-width", rect.width.toFixed(2));
-        chart.style.setProperty("--chart-height", rect.height.toFixed(2));
-      }
-    });
-  }
-  window.addEventListener("resize", updateAgingCompositionMetrics);
-  document.addEventListener("DOMContentLoaded", updateAgingCompositionMetrics);
-  updateAgingCompositionMetrics();
-})();
+    (function(){
+      const formatCurrency = (value) => {
+        if (value === null || value === undefined) return "";
+        const abs = Math.abs(value);
+        if (abs >= 1_000_000_000) return `$${(value / 1_000_000_000).toFixed(1)}B`;
+        if (abs >= 1_000_000) return `$${(value / 1_000_000).toFixed(1)}M`;
+        if (abs >= 1_000) return `$${Math.round(value / 1_000)}k`;
+        return `$${Math.round(value).toLocaleString()}`;
+      };
+      const formatAxis = (type, value) => {
+        if (type === "days") return `${Math.round(value)}`;
+        if (type === "percent") return `${value.toFixed(1)}%`;
+        if (type === "currency_millions") return `$${value.toFixed(1)}M`;
+        return formatCurrency(value);
+      };
+      const loadChartJs = (callback) => {
+        if (typeof Chart !== "undefined") {
+          callback();
+          return;
+        }
+        const fallback = document.getElementById("chartjs-fallback");
+        const src = fallback ? fallback.dataset.src : null;
+        if (!src) return;
+        const script = document.createElement("script");
+        script.src = src;
+        script.onload = callback;
+        document.head.appendChild(script);
+      };
 
-(function(){
-      let arTrendLogged = false;
-      function parseLinePoints(raw, baseWidth, baseHeight, actualWidth, actualHeight){
-        if(!raw) return [];
-        const safeBaseWidth = baseWidth || actualWidth || 1;
-        const safeBaseHeight = baseHeight || actualHeight || 1;
-        return raw.trim().split(/\s+/).map(pair=>{
-          const parts = pair.split(",");
-          const x = parseFloat(parts[0]);
-          const y = parseFloat(parts[1]);
-          if(Number.isNaN(x) || Number.isNaN(y)){
+      const parseJsonSafe = (raw) => {
+        if (!raw) return null;
+        const cleaned = raw.trim();
+        if (!cleaned) return null;
+        if (cleaned[0] !== "{" && cleaned[0] !== "[") {
+          const unescaped = cleaned
+            .replace(/&quot;/g, '"')
+            .replace(/&#x27;/g, "'")
+            .replace(/&amp;/g, "&");
+          if (unescaped[0] !== "{" && unescaped[0] !== "[") {
             return null;
           }
-          return {
-            x: (x / safeBaseWidth) * actualWidth,
-            y: (y / safeBaseHeight) * actualHeight,
-          };
-        }).filter(Boolean);
-      }
-      function pointsFromDots(chartBox){
-        if(!chartBox) return [];
-        const dots = chartBox.querySelectorAll(".chart-dot");
-        const boxRect = chartBox.getBoundingClientRect();
-        return Array.from(dots).map(dot=>{
-          const rect = dot.getBoundingClientRect();
-          const x = (rect.left + rect.width / 2 - boxRect.left);
-          const y = (rect.top + rect.height / 2 - boxRect.top);
-          if(Number.isNaN(x) || Number.isNaN(y)){
-            return null;
-          }
-          return {x,y};
-        }).filter(Boolean);
-      }
-      function getBaseDimension(chartBox, layer, key){
-        const datasetKey = `chart${key.charAt(0).toUpperCase()}${key.slice(1)}`;
-        const datasetValue = layer.dataset[datasetKey] || chartBox.dataset[datasetKey];
-        if(datasetValue) return parseFloat(datasetValue);
-        const computed = getComputedStyle(chartBox).getPropertyValue(`--chart-${key}`);
-        if(computed) return parseFloat(computed);
-        return 0;
-      }
-      function renderLineSegments(layer, points, color){
-        layer.innerHTML = "";
-        if(color){
-          layer.style.setProperty("--line-color", color);
+          return JSON.parse(unescaped);
         }
-        for(let i = 0; i < points.length - 1; i++){
-          const start = points[i];
-          const end = points[i + 1];
-          const dx = end.x - start.x;
-          const dy = end.y - start.y;
-          const length = Math.hypot(dx, dy);
-          if(!length) continue;
-          const angle = Math.atan2(dy, dx) * (180 / Math.PI);
-          const segment = document.createElement("span");
-          segment.className = "chart-line-segment";
-          segment.style.width = `${length}px`;
-          segment.style.left = `${start.x}px`;
-          segment.style.top = `${start.y}px`;
-          segment.style.transform = `translateY(-50%) rotate(${angle}deg)`;
-          layer.appendChild(segment);
-        }
-      }
-      let resizeObserver;
-      let resizeScheduled = false;
-      function observeChartResize(){
-        if(resizeObserver || !("ResizeObserver" in window)) return;
-        resizeObserver = new ResizeObserver(()=>{
-          if(resizeScheduled) return;
-          resizeScheduled = true;
-          window.requestAnimationFrame(()=>{
-            resizeScheduled = false;
-            drawLineCharts();
+        return JSON.parse(cleaned);
+      };
+
+      const initKpiCharts = () => {
+        document.querySelectorAll(".ar-kpi-chart").forEach((canvas) => {
+          const data = parseJsonSafe(canvas.dataset.chart);
+          if (!data) return;
+          const ctx = canvas.getContext("2d");
+          new Chart(ctx, {
+            type: "line",
+            data: {
+              labels: data.labels,
+              datasets: [{
+                data: data.values,
+                borderColor: data.color || "#0b5bd3",
+                backgroundColor: data.color || "#0b5bd3",
+                borderWidth: 2,
+                pointRadius: 3,
+                pointHoverRadius: 4,
+                tension: 0.25,
+                spanGaps: true,
+              }],
+            },
+            options: {
+              responsive: true,
+              maintainAspectRatio: false,
+              plugins: {
+                legend: { display: false },
+                tooltip: {
+                  callbacks: {
+                    label: (context) => formatAxis(data.axis, context.parsed.y),
+                  },
+                },
+              },
+              scales: {
+                x: { grid: { color: "#E7ECF5" }, ticks: { color: "#98A2B3" } },
+                y: {
+                  grid: { color: "#E7ECF5" },
+                  ticks: {
+                    color: "#98A2B3",
+                    callback: (value) => formatAxis(data.axis, value),
+                  },
+                },
+              },
+            },
           });
         });
-        document.querySelectorAll(".chart-box").forEach(box=>{
-          resizeObserver.observe(box);
+      };
+
+      const initAgingChart = () => {
+        const canvas = document.querySelector(".ar-aging-chart");
+        const data = canvas ? parseJsonSafe(canvas.dataset.chart) : null;
+        if (!data) return;
+        const ctx = canvas.getContext("2d");
+        new Chart(ctx, {
+          type: "bar",
+          data: {
+            labels: data.labels,
+            datasets: [{
+              data: data.values,
+              backgroundColor: data.colors,
+              borderRadius: 6,
+            }],
+          },
+          options: {
+            responsive: true,
+            maintainAspectRatio: false,
+            plugins: {
+              legend: { display: false },
+              tooltip: {
+                callbacks: {
+                  label: (context) => `${context.parsed.y.toFixed(1)}%`,
+                },
+              },
+            },
+            scales: {
+              x: { grid: { display: false }, ticks: { color: "#98A2B3" } },
+              y: {
+                beginAtZero: true,
+                max: 100,
+                grid: { color: "#E7ECF5" },
+                ticks: {
+                  color: "#98A2B3",
+                  callback: (value) => `${value}%`,
+                },
+              },
+            },
+          },
         });
-      }
-      function drawLineCharts(){
-        document.querySelectorAll(".chart-layer.line-layer").forEach(layer=>{
-          const chartBox = layer.closest(".chart-box");
-          if(!chartBox) return;
-          const actualWidth = chartBox.clientWidth;
-          const actualHeight = chartBox.clientHeight;
-          if(!actualWidth || !actualHeight) return;
-          const baseWidth = getBaseDimension(chartBox, layer, "width") || actualWidth;
-          const baseHeight = getBaseDimension(chartBox, layer, "height") || actualHeight;
-          let points = [];
-          if(layer.dataset.lineSource === "dot-layout" || layer.dataset.lineSource === "dots"){
-            points = pointsFromDots(chartBox);
-          } else {
-            points = parseLinePoints(layer.dataset.linePoints, baseWidth, baseHeight, actualWidth, actualHeight);
-          }
-          if(!points.length){
-            layer.innerHTML = "";
-            return;
-          }
-          renderLineSegments(layer, points, layer.dataset.lineColor || "#0b5bd3");
+      };
+
+      const initTrendChart = () => {
+        const canvas = document.querySelector(".ar-trend-chart-canvas");
+        const data = canvas ? parseJsonSafe(canvas.dataset.chart) : null;
+        if (!data) return;
+        const ctx = canvas.getContext("2d");
+        new Chart(ctx, {
+          type: "bar",
+          data: {
+            labels: data.labels,
+            datasets: [
+              {
+                label: "Past Due",
+                data: data.past_due,
+                backgroundColor: "#1b2a55",
+                borderRadius: { topLeft: 0, topRight: 0, bottomLeft: 10, bottomRight: 10 },
+                borderSkipped: false,
+                barThickness: 12,
+                maxBarThickness: 14,
+                barPercentage: 0.6,
+                categoryPercentage: 0.7,
+                stack: "total",
+              },
+              {
+                label: "Current",
+                data: data.current,
+                backgroundColor: "#8fb6ff",
+                borderRadius: { topLeft: 10, topRight: 10, bottomLeft: 0, bottomRight: 0 },
+                borderSkipped: false,
+                barThickness: 12,
+                maxBarThickness: 14,
+                barPercentage: 0.6,
+                categoryPercentage: 0.7,
+                stack: "total",
+              },
+            ],
+          },
+          options: {
+            responsive: true,
+            maintainAspectRatio: false,
+            plugins: {
+              legend: { position: "top", labels: { boxWidth: 10 } },
+              tooltip: {
+                callbacks: {
+                  label: (context) => `${context.dataset.label}: ${formatCurrency(context.parsed.y)}`,
+                },
+              },
+            },
+            scales: {
+              x: { stacked: true, grid: { display: false }, ticks: { color: "#98A2B3" } },
+              y: {
+                stacked: true,
+                grid: { color: "#E7ECF5" },
+                ticks: { color: "#98A2B3", callback: (value) => formatCurrency(value) },
+              },
+            },
+          },
         });
-      }
-      function positionTooltip(wrap, event){
-        const rect = wrap.getBoundingClientRect();
-        const x = event.clientX - rect.left;
-        const y = event.clientY - rect.top;
-        return {x,y};
-      }
-      function attachArTooltips(){
-        document.querySelectorAll(".ar-chart").forEach(chart=>{
-          const tooltip = chart.querySelector(".chart-tooltip");
-          if(!tooltip) return;
-          const targets = chart.querySelectorAll(".ar-tip");
-          const show = (event)=>{
-            const target = event.currentTarget;
-            const label = (target.dataset.label||"").replace(/\n/g," ");
-            const series = target.dataset.series||"";
-            const value = target.dataset.value||"";
-            const extra = target.dataset.extra||"";
-            const title = series ? `${label} • ${series}` : label;
-            tooltip.innerHTML = `<strong>${value}</strong><span>${title}</span>${extra ? `<span>${extra}</span>` : ""}`;
-            const {x,y} = positionTooltip(chart, event);
-            tooltip.style.left = `${Math.max(12, Math.min(chart.clientWidth-12, x))}px`;
-            tooltip.style.top = `${Math.max(18, Math.min(chart.clientHeight-12, y-12))}px`;
-            tooltip.classList.add("is-visible");
-          };
-          const hide = ()=>tooltip.classList.remove("is-visible");
-          targets.forEach(target=>{
-            target.style.cursor = "pointer";
-            target.addEventListener("mousemove", show);
-            target.addEventListener("mouseenter", show);
-            target.addEventListener("mouseleave", hide);
-            target.addEventListener("blur", hide);
-          });
+      };
+
+      const initIneligibleTrend = () => {
+        const canvas = document.querySelector(".ar-ineligible-chart-canvas");
+        const data = canvas ? parseJsonSafe(canvas.dataset.chart) : null;
+        if (!data) return;
+        const ctx = canvas.getContext("2d");
+        new Chart(ctx, {
+          type: "line",
+          data: {
+            labels: data.labels,
+            datasets: [{
+              data: data.values,
+              borderColor: "#0b5bd3",
+              backgroundColor: "#0b5bd3",
+              borderWidth: 2,
+              pointRadius: 3,
+              pointHoverRadius: 4,
+              tension: 0.25,
+            }],
+          },
+          options: {
+            responsive: true,
+            maintainAspectRatio: false,
+            plugins: {
+              legend: { display: false },
+              tooltip: {
+                callbacks: {
+                  label: (context) => `${context.parsed.y.toFixed(1)}%`,
+                },
+              },
+            },
+            scales: {
+              x: { grid: { color: "#E7ECF5" }, ticks: { color: "#98A2B3" } },
+              y: {
+                min: data.axis_min,
+                max: data.axis_max,
+                grid: { color: "#E7ECF5" },
+                ticks: { color: "#98A2B3", callback: (value) => `${value.toFixed(1)}%` },
+              },
+            },
+          },
         });
-      }
-      function logArIneligibleTrendData(){
-        if(arTrendLogged) return;
-        const dataEl = document.getElementById("arIneligibleTrendData");
-        if(!dataEl) return;
-        try{
-          const data = JSON.parse(dataEl.textContent);
-          console.info("[AR Ineligible Trend] series", {
-            values: data.series_values || [],
-            labels: data.series_labels || [],
-            axisMin: data.axis_min,
-            axisMax: data.axis_max,
-            ticks: data.ticks || [],
-          });
-          arTrendLogged = true;
-        } catch (error){
-          console.warn("[AR Ineligible Trend] failed to parse chart data", error);
-        }
-      }
-      if(document.readyState === "loading"){
-        document.addEventListener("DOMContentLoaded", ()=>{
-          attachArTooltips();
-          drawLineCharts();
-          observeChartResize();
-          logArIneligibleTrendData();
-        });
+      };
+
+      const initAll = () => {
+        initKpiCharts();
+        initAgingChart();
+        initTrendChart();
+        initIneligibleTrend();
+      };
+
+      if (document.readyState === "loading") {
+        document.addEventListener("DOMContentLoaded", () => loadChartJs(initAll));
       } else {
-        attachArTooltips();
-        drawLineCharts();
-        observeChartResize();
-        logArIneligibleTrendData();
-        let resizeTimer;
-        window.addEventListener("resize", ()=>{
-          window.clearTimeout(resizeTimer);
-          resizeTimer = window.setTimeout(drawLineCharts, 120);
-        });
+        loadChartJs(initAll);
       }
     })();
   </script>

@@ -2384,6 +2384,9 @@ def _accounts_receivable_context(borrower, range_key="today", division="all", sn
             "axis_min": 0.0,
             "axis_max": 100.0,
         },
+        "ar_aging_chart_json": json.dumps({"labels": [], "values": [], "colors": []}),
+        "ar_current_vs_past_due_json": json.dumps({"labels": [], "current": [], "past_due": []}),
+        "ar_ineligible_trend_json": json.dumps({"labels": [], "values": [], "axis_min": 0, "axis_max": 100}),
         "ar_concentration_rows": [],
         "ar_ado_rows": [],
         "ar_dso_rows": [],
@@ -2698,6 +2701,8 @@ def _accounts_receivable_context(borrower, range_key="today", division="all", sn
             },
             "label_x": left - 18,
             "label_y": round(baseline_y + 20, 1),
+            "series_values": values,
+            "series_labels": labels,
         }
 
     def _delta_payload(current, previous):
@@ -2721,14 +2726,14 @@ def _accounts_receivable_context(borrower, range_key="today", division="all", sn
     previous_snapshot = history[-2] if len(history) > 1 else None
     kpi_specs = [
         {
-            "label": "Balance",
+            "label": "Available Account Receivable",
             "key": "total_balance",
             "formatter": lambda value: _format_currency(_to_decimal(value)),
             "chart_formatter": lambda value: _format_currency_millions(value),
             "scale": Decimal("1000000"),
             "axis_formatter": _format_axis_currency_millions,
             "pad_ratio": 0.14,
-            "color": "var(--blue-3)",
+            "color": "#2F6BFF",
             "icon": "images/balance.svg",
             "improvement_on_increase": True,
         },
@@ -2740,7 +2745,7 @@ def _accounts_receivable_context(borrower, range_key="today", division="all", sn
             "axis_formatter": _format_axis_days,
             "pad_ratio": 0.18,
             "clamp_min": 0,
-            "color": "var(--purple)",
+            "color": "#7C3AED",
             "icon": "images/sales_outstanding.svg",
             "improvement_on_increase": False,
         },
@@ -2752,7 +2757,7 @@ def _accounts_receivable_context(borrower, range_key="today", division="all", sn
             "axis_formatter": _format_axis_pct,
             "pad_ratio": 0.2,
             "clamp_min": 0,
-            "color": "var(--teal)",
+            "color": "#13B26B",
             "icon": "images/total_pastdue_icon.svg",
             "improvement_on_increase": False,
         },
@@ -2814,6 +2819,17 @@ def _accounts_receivable_context(borrower, range_key="today", division="all", sn
                 "symbol": delta["symbol"] if delta else "",
                 "delta_class": delta["delta_class"] if delta else "",
                 "chart": chart,
+                "chart_payload_json": json.dumps(
+                    {
+                        "labels": chart["series_labels"],
+                        "values": chart["series_values"],
+                        "axis": "currency_millions" if spec["key"] == "total_balance" else "days"
+                        if spec["key"] == "avg_dso"
+                        else "percent",
+                        "color": spec.get("color"),
+                        "label": spec["label"],
+                    }
+                ),
             }
         )
 
@@ -2906,6 +2922,7 @@ def _accounts_receivable_context(borrower, range_key="today", division="all", sn
                 "width": float(bar_width),
                 "color": bucket["color"],
                 "percent_display": _format_pct(percent_ratio),
+                "percent_value": ratio_float * 100,
                 "amount_display": _format_currency(amount),
                 "label": bucket["label"],
                 "label_primary": label_primary,
@@ -3180,16 +3197,18 @@ def _accounts_receivable_context(borrower, range_key="today", division="all", sn
             "pct": _format_pct(Decimal("1")),
         }
 
+    monthly_trend_rows = {}
+    for row in ineligible_trend_rows:
+        if row.ineligible_pct_of_ar is None or not row.date:
+            continue
+        key = (row.date.year, row.date.month)
+        monthly_trend_rows[key] = row
     trend_points = []
     trend_texts = []
-    for row in ineligible_trend_rows:
-        if row.ineligible_pct_of_ar is None:
-            continue
+    for _, row in sorted(monthly_trend_rows.items()):
         value = float(_to_decimal(row.ineligible_pct_of_ar) * Decimal("100"))
         trend_points.append(value)
-        label_date = row.date
-        label = label_date.strftime("%b %y") if label_date else f"Point {row.id}"
-        trend_texts.append(label)
+        trend_texts.append(row.date.strftime("%b %y"))
     max_trend = 12
     if len(trend_points) > max_trend:
         trend_points = trend_points[-max_trend:]
@@ -3256,6 +3275,23 @@ def _accounts_receivable_context(borrower, range_key="today", division="all", sn
             }
         )
     trend_chart["dots"] = trend_dots
+
+    aging_chart_payload = {
+        "labels": [bucket["label_primary"] for bucket in aging_buckets],
+        "values": [bucket["percent_value"] for bucket in aging_buckets],
+        "colors": [bucket["color"] for bucket in aging_buckets],
+    }
+    trend_chart_payload = {
+        "labels": [entry["label"] for entry in history],
+        "current": [float(_to_decimal(entry.get("total_current_amt"))) for entry in history],
+        "past_due": [float(_to_decimal(entry.get("total_past_due_amt"))) for entry in history],
+    }
+    ineligible_trend_payload = {
+        "labels": trend_chart["series_labels"],
+        "values": trend_chart["series_values"],
+        "axis_min": trend_chart["axis_min"],
+        "axis_max": trend_chart["axis_max"],
+    }
 
     TOP_CUSTOMER_COUNT = 20
     concentration_entries = []
@@ -3357,6 +3393,9 @@ def _accounts_receivable_context(borrower, range_key="today", division="all", sn
             "labels": trend_chart["labels"],
             "ticks": trend_chart.get("ticks", []),
         },
+        "ar_aging_chart_json": json.dumps(aging_chart_payload),
+        "ar_current_vs_past_due_json": json.dumps(trend_chart_payload),
+        "ar_ineligible_trend_json": json.dumps(ineligible_trend_payload),
         "ar_concentration_rows": concentration_entries,
         "ar_ado_rows": ado_entries,
         "ar_dso_rows": dso_entries,
