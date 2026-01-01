@@ -278,6 +278,291 @@ def _normalize_series(values, target_len, fallback_value):
     return values
 
 
+def _format_series_label(date_value):
+    if not date_value:
+        return None
+    if isinstance(date_value, tuple):
+        year, month = date_value
+    else:
+        year = date_value.year
+        month = date_value.month
+    return f"{month:02d}/{str(year)[-2:]}"
+
+
+def _limit_series_points(pairs, max_points):
+    if max_points and len(pairs) > max_points:
+        return pairs[-max_points:]
+    return pairs
+
+
+def _previous_month(month_key):
+    year, month = month_key
+    if month == 1:
+        return (year - 1, 12)
+    return (year, month - 1)
+
+
+def _recent_months(end_month, count):
+    months = []
+    current = end_month
+    for _ in range(count):
+        months.append(current)
+        current = _previous_month(current)
+    return list(reversed(months))
+
+
+def _fill_month_series(month_map, max_points):
+    if not month_map:
+        return [], []
+    end_month = max(month_map.keys())
+    months = _recent_months(end_month, max_points)
+    values = []
+    last_value = None
+    for month_key in months:
+        value = month_map.get(month_key)
+        if value is None:
+            value = last_value
+        else:
+            last_value = value
+        values.append(value)
+    if values and values[0] is None:
+        first_value = next((val for val in values if val is not None), None)
+        if first_value is not None:
+            values = [first_value if val is None else val for val in values]
+    return months, values
+
+
+def _fill_values_for_months(month_map, months):
+    values = []
+    last_value = None
+    for month_key in months:
+        value = month_map.get(month_key)
+        if value is None:
+            value = last_value
+        else:
+            last_value = value
+        values.append(value)
+    if values and values[0] is None:
+        first_value = next((val for val in values if val is not None), None)
+        if first_value is not None:
+            values = [first_value if val is None else val for val in values]
+    return values
+
+
+def _align_series_to_months(series, months):
+    month_map = {
+        month_key: value
+        for month_key, value in zip(series.get("dates", []), series.get("values", []))
+    }
+    aligned_values = _fill_values_for_months(month_map, months)
+    return {
+        "labels": [_format_series_label(month_key) for month_key in months],
+        "values": aligned_values,
+        "latest_value": aligned_values[-1] if aligned_values else None,
+        "previous_value": aligned_values[-2] if len(aligned_values) > 1 else None,
+        "dates": months,
+        "source": series.get("source"),
+        "raw_values": series.get("raw_values", []),
+        "raw_dates": series.get("raw_dates", []),
+    }
+
+
+def _availability_from_aligned(net_values, out_values):
+    values = []
+    for net_value, out_value in zip(net_values, out_values):
+        if net_value is None or out_value is None:
+            values.append(None)
+            continue
+        available = net_value - out_value
+        if available < Decimal("0"):
+            available = Decimal("0")
+        values.append(available)
+    if values and values[0] is None:
+        first_value = next((val for val in values if val is not None), None)
+        if first_value is not None:
+            values = [first_value if val is None else val for val in values]
+    return values
+
+
+def _build_net_collateral_series(borrower, range_start=None, range_end=None, max_points=5):
+    qs = CollateralOverviewRow.objects.filter(borrower=borrower).exclude(created_at__isnull=True)
+    qs = _apply_date_filter(qs, "created_at__date", range_start, range_end)
+    qs = qs.order_by("created_at", "id")
+    grouped = OrderedDict()
+    for row in qs:
+        date_key = row.created_at.date()
+        grouped.setdefault(date_key, []).append(row)
+    month_totals = {}
+    for date_key, rows in grouped.items():
+        total = _sum_collateral_field(rows, "net_collateral")
+        if total is None:
+            continue
+        month_key = (date_key.year, date_key.month)
+        existing = month_totals.get(month_key)
+        if not existing or date_key > existing["date"]:
+            month_totals[month_key] = {"date": date_key, "value": total}
+    raw_pairs = [
+        (month_key, month_totals[month_key]["value"])
+        for month_key in sorted(month_totals.keys())
+    ]
+    raw_months = [month_key for month_key, _ in raw_pairs]
+    raw_values = [value for _, value in raw_pairs]
+    month_map = {
+        month_key: entry["value"] for month_key, entry in month_totals.items()
+    }
+    months, values = _fill_month_series(month_map, max_points)
+    labels = [_format_series_label(month_key) for month_key in months]
+    return {
+        "labels": labels,
+        "values": values,
+        "latest_value": values[-1] if values else None,
+        "previous_value": values[-2] if len(values) > 1 else None,
+        "dates": months,
+        "raw_values": raw_values,
+        "raw_dates": raw_months,
+    }
+
+
+def _build_outstanding_balance_series(
+    borrower,
+    range_start=None,
+    range_end=None,
+    division="all",
+    max_points=5,
+):
+    qs = ARMetricsRow.objects.filter(borrower=borrower)
+    if division != "all":
+        qs = qs.filter(division__iexact=division)
+    qs = _apply_date_filter(qs, "as_of_date", range_start, range_end)
+    qs = qs.order_by("as_of_date", "created_at", "id")
+    latest_per_date = {}
+    for row in qs:
+        if row.as_of_date is None:
+            continue
+        latest_per_date[row.as_of_date] = row
+    month_totals = {}
+    for date_key in sorted(latest_per_date.keys()):
+        row = latest_per_date[date_key]
+        if row.balance is None:
+            continue
+        month_key = (date_key.year, date_key.month)
+        existing = month_totals.get(month_key)
+        if not existing or date_key > existing["date"]:
+            month_totals[month_key] = {"date": date_key, "value": _to_decimal(row.balance)}
+    raw_pairs = [
+        (month_key, month_totals[month_key]["value"])
+        for month_key in sorted(month_totals.keys())
+    ]
+    raw_months = [month_key for month_key, _ in raw_pairs]
+    raw_values = [value for _, value in raw_pairs]
+    month_map = {
+        month_key: entry["value"] for month_key, entry in month_totals.items()
+    }
+    months, values = _fill_month_series(month_map, max_points)
+    labels = [_format_series_label(month_key) for month_key in months]
+    return {
+        "labels": labels,
+        "values": values,
+        "latest_value": values[-1] if values else None,
+        "previous_value": values[-2] if len(values) > 1 else None,
+        "dates": months,
+        "raw_values": raw_values,
+        "raw_dates": raw_months,
+    }
+
+
+def get_kpi_timeseries(
+    metric_name,
+    borrower,
+    range_start=None,
+    range_end=None,
+    division="all",
+    max_points=5,
+):
+    if metric_name == "net":
+        series = _build_net_collateral_series(borrower, range_start, range_end, max_points)
+        series["source"] = "collateral"
+        return series
+    if metric_name == "outstanding":
+        series = _build_outstanding_balance_series(
+            borrower,
+            range_start,
+            range_end,
+            division=division,
+            max_points=max_points,
+        )
+        series["source"] = "ar"
+        return series
+    if metric_name == "availability":
+        net_series = _build_net_collateral_series(
+            borrower, range_start, range_end, max_points * 2
+        )
+        outstanding_series = _build_outstanding_balance_series(
+            borrower,
+            range_start,
+            range_end,
+            division=division,
+            max_points=max_points * 2,
+        )
+        net_map = {
+            month_key: value
+            for month_key, value in zip(net_series["dates"], net_series["values"])
+        }
+        out_map = {
+            month_key: value
+            for month_key, value in zip(outstanding_series["dates"], outstanding_series["values"])
+        }
+        months = net_series["dates"]
+        if months:
+            months = _recent_months(max(months), max_points)
+        out_values = _fill_values_for_months(out_map, months)
+
+        values = []
+        for month_key, out_value in zip(months, out_values):
+            net_value = net_map.get(month_key)
+            if net_value is None or out_value is None:
+                values.append(None)
+                continue
+            available = net_value - out_value
+            if available < Decimal("0"):
+                available = Decimal("0")
+            values.append(available)
+        if values and values[0] is None:
+            first_value = next((val for val in values if val is not None), None)
+            if first_value is not None:
+                values = [first_value if val is None else val for val in values]
+        labels = [_format_series_label(month_key) for month_key in months] if months else []
+        raw_net_map = {
+            month_key: value
+            for month_key, value in zip(net_series.get("raw_dates", []), net_series.get("raw_values", []))
+        }
+        raw_out_map = {
+            month_key: value
+            for month_key, value in zip(outstanding_series.get("raw_dates", []), outstanding_series.get("raw_values", []))
+        }
+        raw_months = sorted(set(raw_net_map.keys()) & set(raw_out_map.keys()))
+        raw_values = []
+        for month_key in raw_months:
+            net_value = raw_net_map.get(month_key)
+            out_value = raw_out_map.get(month_key)
+            if net_value is None or out_value is None:
+                continue
+            available = net_value - out_value
+            if available < Decimal("0"):
+                available = Decimal("0")
+            raw_values.append(available)
+        return {
+            "labels": labels,
+            "values": values,
+            "latest_value": values[-1] if values else None,
+            "previous_value": values[-2] if len(values) > 1 else None,
+            "source": "derived",
+            "raw_values": raw_values,
+            "raw_dates": raw_months,
+        }
+    raise ValueError(f"Unknown KPI metric: {metric_name}")
+
+
 def _build_line_series(values, labels, series_label=None, width=220, height=140):
     values = [float(_to_decimal(val)) for val in values] if values else [0.0]
     labels = labels or [f"{idx + 1:02d}" for idx in range(len(values))]
@@ -299,16 +584,17 @@ def _build_line_series(values, labels, series_label=None, width=220, height=140)
     top = 12
     bottom = 12
     tick_count = 5
-    value_range = max_value - min_value
-    raw_step = value_range / max(1, tick_count - 1)
+    axis_min = 0 if min_value >= 0 else min_value
+    raw_step = (max_value - axis_min) / max(1, tick_count - 1)
     if raw_step <= 0:
-        raw_step = max(max_value, 1.0) / max(1, tick_count - 1)
+        raw_step = max(max_value - axis_min, 1.0) / max(1, tick_count - 1)
     step_value = _nice_step(raw_step if raw_step > 0 else 1.0)
-    axis_min = 0
-    axis_max = math.ceil(max_value / step_value) * step_value
-    axis_max = max(axis_max, step_value * (tick_count - 1))
-    if axis_max <= axis_min:
-        axis_max = axis_min + step_value * (tick_count - 1 or 1)
+    if min_value < 0:
+        axis_min = math.floor(min_value / step_value) * step_value
+    axis_max = axis_min + step_value * (tick_count - 1)
+    if axis_max < max_value:
+        axis_max = math.ceil(max_value / step_value) * step_value
+        axis_min = axis_max - step_value * (tick_count - 1)
 
     axis_range = axis_max - axis_min if axis_max != axis_min else 1.0
 
@@ -471,18 +757,19 @@ def _build_limit_map(limit_rows):
     return limit_map
 
 
-def _collateral_row_payload(row, limit_map=None):
-    def _display_ineligible(row_obj):
-        has_ineligible = getattr(row_obj, "ineligibles", None) is not None
-        has_beginning = getattr(row_obj, "beginning_collateral", None) is not None
-        has_eligible = getattr(row_obj, "eligible_collateral", None) is not None
-        if has_ineligible:
-            return abs(_to_decimal(row_obj.ineligibles))
-        if has_beginning and has_eligible:
-            return abs(_to_decimal(row_obj.beginning_collateral) - _to_decimal(row_obj.eligible_collateral))
-        return None
+def _collateral_ineligible_value(row_obj):
+    has_ineligible = getattr(row_obj, "ineligibles", None) is not None
+    has_beginning = getattr(row_obj, "beginning_collateral", None) is not None
+    has_eligible = getattr(row_obj, "eligible_collateral", None) is not None
+    if has_ineligible:
+        return abs(_to_decimal(row_obj.ineligibles))
+    if has_beginning and has_eligible:
+        return abs(_to_decimal(row_obj.beginning_collateral) - _to_decimal(row_obj.eligible_collateral))
+    return None
 
-    ineligible_value = _display_ineligible(row)
+
+def _collateral_row_payload(row, limit_map=None):
+    ineligible_value = _collateral_ineligible_value(row)
 
     return {
         "label": _safe_str(row.main_type),
@@ -556,15 +843,9 @@ def _build_collateral_parent_payload(label, rows, limit_map=None):
     if rows:
         derived_values = []
         for row in rows:
-            has_ineligible = getattr(row, "ineligibles", None) is not None
-            has_beginning = getattr(row, "beginning_collateral", None) is not None
-            has_eligible = getattr(row, "eligible_collateral", None) is not None
-            if has_ineligible:
-                derived_values.append(abs(_to_decimal(row.ineligibles)))
-            elif has_beginning and has_eligible:
-                derived_values.append(
-                    abs(_to_decimal(row.beginning_collateral) - _to_decimal(row.eligible_collateral))
-                )
+            value = _collateral_ineligible_value(row)
+            if value is not None:
+                derived_values.append(value)
         if derived_values:
             ineligibles = sum(derived_values, Decimal("0"))
     eligible = _sum_collateral_field(rows, "eligible_collateral")
@@ -826,8 +1107,13 @@ def summary_view(request):
     )
     limit_rows = list(CollateralLimitsRow.objects.filter(borrower=borrower))
     limit_map = _build_limit_map(limit_rows)
-    net_total = sum((_to_decimal(row.net_collateral) for row in collateral_rows), Decimal("0"))
-    ineligibles_total = sum((_to_decimal(row.ineligibles) for row in collateral_rows), Decimal("0"))
+    net_total = _sum_collateral_field(collateral_rows, "net_collateral")
+    ineligibles_values = [
+        value for row in collateral_rows
+        for value in [_collateral_ineligible_value(row)]
+        if value is not None
+    ]
+    ineligibles_total = sum(ineligibles_values, Decimal("0")) if ineligibles_values else None
 
     ar_qs = ARMetricsRow.objects.filter(borrower=borrower)
     if normalized_division != "all":
@@ -849,28 +1135,105 @@ def summary_view(request):
     outstanding_value = (
         _to_decimal(ar_row.balance) if ar_row and ar_row.balance is not None else None
     )
-    availability_value = net_total - (outstanding_value if outstanding_value is not None else Decimal("0"))
-    if availability_value < Decimal("0"):
-        availability_value = Decimal("0")
+    availability_value = None
+    if net_total is not None and outstanding_value is not None:
+        availability_value = net_total - outstanding_value
+        if availability_value < Decimal("0"):
+            availability_value = Decimal("0")
+
+    chart_points = 5
+    net_timeseries = get_kpi_timeseries(
+        "net",
+        borrower,
+        range_start=range_start,
+        range_end=range_end,
+        max_points=chart_points,
+    )
+    outstanding_timeseries = get_kpi_timeseries(
+        "outstanding",
+        borrower,
+        range_start=range_start,
+        range_end=range_end,
+        division=normalized_division,
+        max_points=chart_points,
+    )
+    availability_timeseries = get_kpi_timeseries(
+        "availability",
+        borrower,
+        range_start=range_start,
+        range_end=range_end,
+        division=normalized_division,
+        max_points=chart_points,
+    )
+
+    base_months = net_timeseries.get("dates") or outstanding_timeseries.get("dates") or []
+    if base_months:
+        base_months = _recent_months(max(base_months), chart_points)
+    if base_months and net_timeseries.get("values"):
+        net_timeseries = _align_series_to_months(net_timeseries, base_months)
+    if base_months and outstanding_timeseries.get("values"):
+        outstanding_timeseries = _align_series_to_months(outstanding_timeseries, base_months)
+    if base_months and net_timeseries.get("values") and outstanding_timeseries.get("values"):
+        availability_values = _availability_from_aligned(
+            net_timeseries["values"],
+            outstanding_timeseries["values"],
+        )
+        availability_timeseries = {
+            "labels": [_format_series_label(month_key) for month_key in base_months],
+            "values": availability_values,
+            "latest_value": availability_values[-1] if availability_values else None,
+            "previous_value": availability_values[-2] if len(availability_values) > 1 else None,
+            "dates": base_months,
+            "source": "derived",
+        }
+
+    net_source = net_timeseries.get("source", "collateral")
+    outstanding_source = outstanding_timeseries.get("source", "ar")
+    availability_source = availability_timeseries.get("source", "derived")
+
+    net_kpi_value = net_timeseries["latest_value"]
+    outstanding_kpi_value = outstanding_timeseries["latest_value"]
+    availability_kpi_value = availability_timeseries["latest_value"]
+    net_has_data = net_kpi_value is not None
+    outstanding_has_data = outstanding_kpi_value is not None
+    availability_has_data = availability_kpi_value is not None
+
+    if net_has_data and outstanding_has_data:
+        availability_kpi_value = net_kpi_value - outstanding_kpi_value
+        if availability_kpi_value < Decimal("0"):
+            availability_kpi_value = Decimal("0")
+        availability_has_data = True
+
+    net_detail = (
+        f"Ineligibles { _format_currency(ineligibles_total) } across {len(collateral_rows)} rows"
+        if net_source == "collateral"
+        else "Collateral history"
+    )
+    outstanding_detail = (
+        f"As of {ar_row.as_of_date.strftime('%m/%d/%Y')}"
+        if outstanding_source == "ar" and ar_row and ar_row.as_of_date
+        else "Awaiting AR snapshot"
+    )
+    availability_detail = "Derived from net collateral and outstanding balance"
 
     insights = {
         "net": {
-            "amount": _format_currency(net_total),
-            "detail": f"Ineligibles { _format_currency(ineligibles_total) } across {len(collateral_rows)} rows",
+            "amount": _format_currency(net_kpi_value) if net_has_data else "No data available",
+            "detail": (
+                net_detail if net_has_data else "No data available"
+            ),
         },
         "outstanding": {
-            "amount": _format_currency(outstanding_value),
-            "detail": f"As of {ar_row.as_of_date.strftime('%m/%d/%Y')}" if ar_row and ar_row.as_of_date else "Awaiting AR snapshot",
+            "amount": _format_currency(outstanding_kpi_value) if outstanding_has_data else "No data available",
+            "detail": (
+                outstanding_detail if outstanding_has_data else "No data available"
+            ),
         },
         "availability": {
-            "amount": _format_currency(
-                availability_value if collateral_rows or outstanding_value is not None else None
-            ),
-            "detail": f"{len(collateral_rows)} collateral entries",
+            "amount": _format_currency(availability_kpi_value) if availability_has_data else "No data available",
+            "detail": availability_detail if availability_has_data else "No data available",
         },
     }
-
-    chart_points = 5
 
     # Use most recent forecast rows so Borrowing Base KPIs match the forecast sheet.
     forecast_rows = list(
@@ -952,18 +1315,13 @@ def summary_view(request):
                 collateral_range_qs.filter(created_at=previous_collateral_time)
             )
 
-    previous_net_total = sum(
-        (_to_decimal(row.net_collateral) for row in previous_collateral_rows),
-        Decimal("0"),
-    )
+    previous_net_total = _sum_collateral_field(previous_collateral_rows, "net_collateral")
     previous_outstanding_value = (
         _to_decimal(ar_prev_row.balance) if ar_prev_row and ar_prev_row.balance is not None else None
     )
     previous_availability_value = None
-    if previous_collateral_rows or previous_outstanding_value is not None:
-        previous_availability_value = previous_net_total - (
-            previous_outstanding_value if previous_outstanding_value is not None else Decimal("0")
-        )
+    if previous_net_total is not None and previous_outstanding_value is not None:
+        previous_availability_value = previous_net_total - previous_outstanding_value
         if previous_availability_value < Decimal("0"):
             previous_availability_value = Decimal("0")
 
@@ -980,125 +1338,57 @@ def summary_view(request):
         previous_availability_value,
     )
 
-    collateral_history = list(
-        _apply_date_filter(
-            CollateralOverviewRow.objects.filter(borrower=borrower)
-            .exclude(created_at__isnull=True),
-            "created_at__date",
-            range_start,
-            range_end,
-        )
-        .order_by("-created_at")[:200]
-    )
-    collateral_labels = []
-    net_series = []
-    if collateral_history:
-        buckets = {}
-        for row in collateral_history:
-            date_key = row.created_at.date()
-            bucket = buckets.setdefault(
-                date_key,
-                {"net": Decimal("0"), "eligible": Decimal("0"), "ineligible": Decimal("0")},
-            )
-            bucket["net"] += _to_decimal(row.net_collateral)
-            bucket["eligible"] += _to_decimal(row.eligible_collateral)
-            bucket["ineligible"] += _to_decimal(row.ineligibles)
-        for date_key in sorted(buckets.keys())[-chart_points:]:
-            bucket = buckets[date_key]
-            net_series.append(bucket["net"])
-            collateral_labels.append(date_key.strftime("%m/%d"))
+    net_series = net_timeseries["values"]
+    outstanding_series = outstanding_timeseries["values"]
+    availability_series = availability_timeseries["values"]
     net_series_raw = list(net_series)
-
-    ar_rows = list(
-        ar_qs.order_by("-as_of_date", "-created_at")[:chart_points]
-    )
-    ar_labels = []
-    outstanding_series = []
-    if ar_rows:
-        for idx, row in enumerate(reversed(ar_rows)):
-            date_value = row.as_of_date or (row.created_at.date() if row.created_at else None)
-            ar_labels.append(date_value.strftime("%m/%d") if date_value else f"{idx + 1:02d}")
-            outstanding_series.append(_to_decimal(row.balance))
     outstanding_series_raw = list(outstanding_series)
+    availability_series_raw = list(availability_series)
 
-    label_source = forecast_chart_labels or collateral_labels or ar_labels
-    base_labels = _normalize_labels(label_source, chart_points)
-
-    if forecast_chart_labels and latest_forecast:
-        net_fallback = getattr(latest_forecast, "available_collateral", None)
-        if net_fallback is None:
-            net_fallback = net_total
-        outstanding_fallback = getattr(latest_forecast, "loan_balance", None)
-        if outstanding_fallback is None:
-            outstanding_fallback = (
-                ar_row.balance if ar_row and ar_row.balance is not None else Decimal("0")
-            )
-
-        net_series = _normalize_series(forecast_net_series, chart_points, net_fallback)
-        outstanding_series = _normalize_series(
-            forecast_outstanding_series,
-            chart_points,
-            outstanding_fallback,
-        )
-    else:
-        net_series = _normalize_series(net_series, chart_points, net_total)
-        outstanding_fallback = (
-            outstanding_value if outstanding_value is not None else Decimal("0")
-        )
-        outstanding_series = _normalize_series(
-            outstanding_series,
-            chart_points,
-            outstanding_fallback,
-        )
-
-    availability_series = []
-    for net_val, out_val in zip(net_series, outstanding_series):
-        net_clean = _to_decimal(net_val) if net_val is not None else Decimal("0")
-        out_clean = _to_decimal(out_val) if out_val is not None else Decimal("0")
-        avail_val = net_clean - out_clean
-        if avail_val < Decimal("0"):
-            avail_val = Decimal("0")
-        availability_series.append(avail_val)
-
-    availability_series_raw = []
-    pair_count = min(len(net_series_raw), len(outstanding_series_raw))
-    if pair_count:
-        for net_val, out_val in zip(net_series_raw[-pair_count:], outstanding_series_raw[-pair_count:]):
-            net_clean = _to_decimal(net_val) if net_val is not None else Decimal("0")
-            out_clean = _to_decimal(out_val) if out_val is not None else Decimal("0")
-            avail_val = net_clean - out_clean
-            if avail_val < Decimal("0"):
-                avail_val = Decimal("0")
-            availability_series_raw.append(avail_val)
-
-    def _recent_delta(series):
-        if not series or len(series) < 2:
+    def _series_delta(series):
+        if not series:
             return None
-        return _delta_payload(series[-1], series[-2])
+        cleaned = [val for val in series if val is not None]
+        if len(cleaned) < 2:
+            return None
+        return _delta_payload(cleaned[-1], cleaned[-2])
 
-    def _apply_recent_delta(metric_key, series):
-        delta_val = _recent_delta(series)
-        if delta_val is not None:
-            insights[metric_key]["delta"] = delta_val
-
-    _apply_recent_delta("net", net_series_raw)
-    _apply_recent_delta("outstanding", outstanding_series_raw)
-    _apply_recent_delta("availability", availability_series_raw)
-
-    net_chart = _build_line_series(
-        net_series,
-        base_labels,
-        series_label="Net Collateral",
+    insights["net"]["delta"] = (
+        _series_delta(net_timeseries.get("raw_values")) if net_has_data else None
     )
-    outstanding_chart = _build_line_series(
-        outstanding_series,
-        base_labels,
-        series_label="Outstanding Balance",
+    insights["outstanding"]["delta"] = (
+        _series_delta(outstanding_timeseries.get("raw_values")) if outstanding_has_data else None
     )
-    availability_chart = _build_line_series(
-        availability_series,
-        base_labels,
-        series_label="Availability",
+    insights["availability"]["delta"] = (
+        _series_delta(availability_timeseries.get("raw_values")) if availability_has_data else None
+    )
+
+    net_chart = (
+        _build_line_series(
+            net_series,
+            net_timeseries["labels"],
+            series_label="Net Collateral",
+        )
+        if net_has_data
+        else None
+    )
+    outstanding_chart = (
+        _build_line_series(
+            outstanding_series,
+            outstanding_timeseries["labels"],
+            series_label="Outstanding Balance",
+        )
+        if outstanding_has_data
+        else None
+    )
+    availability_chart = (
+        _build_line_series(
+            availability_series,
+            availability_timeseries["labels"],
+            series_label="Availability",
+        )
+        if availability_has_data
+        else None
     )
 
     inventory_rows = [
@@ -1140,6 +1430,9 @@ def summary_view(request):
         "net_chart": net_chart,
         "outstanding_chart": outstanding_chart,
         "availability_chart": availability_chart,
+        "net_has_data": net_has_data,
+        "outstanding_has_data": outstanding_has_data,
+        "availability_has_data": availability_has_data,
         "risk_profile_value": f"{risk_profile_score:.1f}",
         "risk_profile_detail": risk_profile_detail,
         "risk_profile_position": f"{risk_profile_position:.0f}",

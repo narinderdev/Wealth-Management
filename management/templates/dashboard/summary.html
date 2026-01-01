@@ -1179,36 +1179,40 @@ color: #65758B;
           </div>
 
           <div class="chart-card chart-card--blue">
-            <div class="panel-chart">
-              <div class="chart-tooltip" aria-hidden="true"></div>
-              <svg viewBox="0 0 220 140" preserveAspectRatio="none">
-                <rect class="panel-bg" x="0" y="0" width="220" height="140" rx="0"></rect>
-                <g class="panel-grid">
+            {% if net_chart %}
+              <div class="panel-chart">
+                <div class="chart-tooltip" aria-hidden="true"></div>
+                <svg viewBox="0 0 220 140" preserveAspectRatio="none">
+                  <rect class="panel-bg" x="0" y="0" width="220" height="140" rx="0"></rect>
+                  <g class="panel-grid">
+                    {% for tick in net_chart.y_ticks %}
+                      <line x1="{{ net_chart.grid.left }}" y1="{{ tick.y }}" x2="{{ net_chart.grid.right }}" y2="{{ tick.y }}"></line>
+                    {% endfor %}
+                    {% for x in net_chart.x_grid %}
+                      <line x1="{{ x }}" y1="{{ net_chart.grid.top }}" x2="{{ x }}" y2="{{ net_chart.grid.bottom }}"></line>
+                    {% endfor %}
+                  </g>
+                  <polyline class="panel-line panel-line--blue" points="{{ net_chart.points }}"/>
+                  <g class="panel-dots">
+                    {% for point in net_chart.points_list %}
+                    <circle cx="{{ point.x }}" cy="{{ point.y }}" r="2.2"
+                      data-label="{{ point.label }}"
+                      data-value="{{ point.value }}"/>
+                    {% endfor %}
+                  </g>
+                <g class="panel-axis">
                   {% for tick in net_chart.y_ticks %}
-                    <line x1="{{ net_chart.grid.left }}" y1="{{ tick.y }}" x2="{{ net_chart.grid.right }}" y2="{{ tick.y }}"></line>
+                    <text x="{{ net_chart.label_x }}" y="{{ tick.y|add:3 }}" text-anchor="start">{{ tick.label }}</text>
                   {% endfor %}
-                  {% for x in net_chart.x_grid %}
-                    <line x1="{{ x }}" y1="{{ net_chart.grid.top }}" x2="{{ x }}" y2="{{ net_chart.grid.bottom }}"></line>
+                  {% for label in net_chart.x_labels %}
+                    <text x="{{ label.x }}" y="{{ net_chart.label_y }}" text-anchor="middle">{{ label.text }}</text>
                   {% endfor %}
-                </g>
-                <polyline class="panel-line panel-line--blue" points="{{ net_chart.points }}"/>
-                <g class="panel-dots">
-                  {% for point in net_chart.points_list %}
-                  <circle cx="{{ point.x }}" cy="{{ point.y }}" r="2.2"
-                    data-label="{{ point.label }}"
-                    data-value="{{ point.value }}"/>
-                  {% endfor %}
-                </g>
-              <g class="panel-axis">
-                {% for tick in net_chart.y_ticks %}
-                  <text x="{{ net_chart.label_x }}" y="{{ tick.y|add:3 }}" text-anchor="start">{{ tick.label }}</text>
-                {% endfor %}
-                {% for label in net_chart.x_labels %}
-                  <text x="{{ label.x }}" y="{{ net_chart.label_y }}" text-anchor="middle">{{ label.text }}</text>
-                {% endfor %}
-                </g>
-              </svg>
-            </div>
+                  </g>
+                </svg>
+              </div>
+            {% else %}
+              {% include "shared/empty_state.html" with type="empty" title="No data available" message="Net collateral history is not available yet." %}
+            {% endif %}
           </div>
         </div>
 
@@ -1229,36 +1233,40 @@ color: #65758B;
           </div>
 
           <div class="chart-card chart-card--purple">
-            <div class="panel-chart">
-              <div class="chart-tooltip" aria-hidden="true"></div>
-              <svg viewBox="0 0 220 140" preserveAspectRatio="none">
-                <rect class="panel-bg" x="0" y="0" width="220" height="140" rx="0"></rect>
-                <g class="panel-grid">
+            {% if outstanding_chart %}
+              <div class="panel-chart">
+                <div class="chart-tooltip" aria-hidden="true"></div>
+                <svg viewBox="0 0 220 140" preserveAspectRatio="none">
+                  <rect class="panel-bg" x="0" y="0" width="220" height="140" rx="0"></rect>
+                  <g class="panel-grid">
+                    {% for tick in outstanding_chart.y_ticks %}
+                      <line x1="{{ outstanding_chart.grid.left }}" y1="{{ tick.y }}" x2="{{ outstanding_chart.grid.right }}" y2="{{ tick.y }}"></line>
+                    {% endfor %}
+                    {% for x in outstanding_chart.x_grid %}
+                      <line x1="{{ x }}" y1="{{ outstanding_chart.grid.top }}" x2="{{ x }}" y2="{{ outstanding_chart.grid.bottom }}"></line>
+                    {% endfor %}
+                  </g>
+                  <polyline class="panel-line panel-line--purple" points="{{ outstanding_chart.points }}"/>
+                  <g class="panel-dots">
+                    {% for point in outstanding_chart.points_list %}
+                    <circle cx="{{ point.x }}" cy="{{ point.y }}" r="2.2"
+                      data-label="{{ point.label }}"
+                      data-value="{{ point.value }}"/>
+                    {% endfor %}
+                  </g>
+                <g class="panel-axis">
                   {% for tick in outstanding_chart.y_ticks %}
-                    <line x1="{{ outstanding_chart.grid.left }}" y1="{{ tick.y }}" x2="{{ outstanding_chart.grid.right }}" y2="{{ tick.y }}"></line>
+                    <text x="{{ outstanding_chart.label_x }}" y="{{ tick.y|add:3 }}" text-anchor="start">{{ tick.label }}</text>
                   {% endfor %}
-                  {% for x in outstanding_chart.x_grid %}
-                    <line x1="{{ x }}" y1="{{ outstanding_chart.grid.top }}" x2="{{ x }}" y2="{{ outstanding_chart.grid.bottom }}"></line>
+                  {% for label in outstanding_chart.x_labels %}
+                    <text x="{{ label.x }}" y="{{ outstanding_chart.label_y }}" text-anchor="middle">{{ label.text }}</text>
                   {% endfor %}
-                </g>
-                <polyline class="panel-line panel-line--purple" points="{{ outstanding_chart.points }}"/>
-                <g class="panel-dots">
-                  {% for point in outstanding_chart.points_list %}
-                  <circle cx="{{ point.x }}" cy="{{ point.y }}" r="2.2"
-                    data-label="{{ point.label }}"
-                    data-value="{{ point.value }}"/>
-                  {% endfor %}
-                </g>
-              <g class="panel-axis">
-                {% for tick in outstanding_chart.y_ticks %}
-                  <text x="{{ outstanding_chart.label_x }}" y="{{ tick.y|add:3 }}" text-anchor="start">{{ tick.label }}</text>
-                {% endfor %}
-                {% for label in outstanding_chart.x_labels %}
-                  <text x="{{ label.x }}" y="{{ outstanding_chart.label_y }}" text-anchor="middle">{{ label.text }}</text>
-                {% endfor %}
-                </g>
-              </svg>
-            </div>
+                  </g>
+                </svg>
+              </div>
+            {% else %}
+              {% include "shared/empty_state.html" with type="empty" title="No data available" message="Outstanding balance history is not available yet." %}
+            {% endif %}
           </div>
         </div>
 
@@ -1279,36 +1287,40 @@ color: #65758B;
           </div>
 
           <div class="chart-card chart-card--green">
-            <div class="panel-chart">
-              <div class="chart-tooltip" aria-hidden="true"></div>
-              <svg viewBox="0 0 220 140" preserveAspectRatio="none">
-                <rect class="panel-bg" x="0" y="0" width="220" height="140" rx="0"></rect>
-                <g class="panel-grid">
-                  {% for tick in availability_chart.y_ticks %}
-                    <line x1="{{ availability_chart.grid.left }}" y1="{{ tick.y }}" x2="{{ availability_chart.grid.right }}" y2="{{ tick.y }}"></line>
-                  {% endfor %}
-                  {% for x in availability_chart.x_grid %}
-                    <line x1="{{ x }}" y1="{{ availability_chart.grid.top }}" x2="{{ x }}" y2="{{ availability_chart.grid.bottom }}"></line>
-                  {% endfor %}
-                </g>
-                <polyline class="panel-line panel-line--green" points="{{ availability_chart.points }}"/>
-                <g class="panel-dots">
-                  {% for point in availability_chart.points_list %}
-                  <circle cx="{{ point.x }}" cy="{{ point.y }}" r="2.2"
-                    data-label="{{ point.label }}"
-                    data-value="{{ point.value }}"/>
-                  {% endfor %}
-                </g>
-                <g class="panel-axis">
-                  {% for tick in availability_chart.y_ticks %}
-                    <text x="{{ availability_chart.label_x }}" y="{{ tick.y|add:3 }}" text-anchor="start">{{ tick.label }}</text>
-                  {% endfor %}
-                  {% for label in availability_chart.x_labels %}
-                    <text x="{{ label.x }}" y="{{ availability_chart.label_y }}" text-anchor="middle">{{ label.text }}</text>
-                  {% endfor %}
-                </g>
-              </svg>
-            </div>
+            {% if availability_chart %}
+              <div class="panel-chart">
+                <div class="chart-tooltip" aria-hidden="true"></div>
+                <svg viewBox="0 0 220 140" preserveAspectRatio="none">
+                  <rect class="panel-bg" x="0" y="0" width="220" height="140" rx="0"></rect>
+                  <g class="panel-grid">
+                    {% for tick in availability_chart.y_ticks %}
+                      <line x1="{{ availability_chart.grid.left }}" y1="{{ tick.y }}" x2="{{ availability_chart.grid.right }}" y2="{{ tick.y }}"></line>
+                    {% endfor %}
+                    {% for x in availability_chart.x_grid %}
+                      <line x1="{{ x }}" y1="{{ availability_chart.grid.top }}" x2="{{ x }}" y2="{{ availability_chart.grid.bottom }}"></line>
+                    {% endfor %}
+                  </g>
+                  <polyline class="panel-line panel-line--green" points="{{ availability_chart.points }}"/>
+                  <g class="panel-dots">
+                    {% for point in availability_chart.points_list %}
+                    <circle cx="{{ point.x }}" cy="{{ point.y }}" r="2.2"
+                      data-label="{{ point.label }}"
+                      data-value="{{ point.value }}"/>
+                    {% endfor %}
+                  </g>
+                  <g class="panel-axis">
+                    {% for tick in availability_chart.y_ticks %}
+                      <text x="{{ availability_chart.label_x }}" y="{{ tick.y|add:3 }}" text-anchor="start">{{ tick.label }}</text>
+                    {% endfor %}
+                    {% for label in availability_chart.x_labels %}
+                      <text x="{{ label.x }}" y="{{ availability_chart.label_y }}" text-anchor="middle">{{ label.text }}</text>
+                    {% endfor %}
+                  </g>
+                </svg>
+              </div>
+            {% else %}
+              {% include "shared/empty_state.html" with type="empty" title="No data available" message="Availability history is not available yet." %}
+            {% endif %}
           </div>
         </div>
       </div>

@@ -1,4 +1,8 @@
+from datetime import datetime, date
+from decimal import Decimal
+
 from django.test import TestCase
+from django.utils import timezone
 
 from .forms import (
     AgingCompositionForm,
@@ -6,7 +10,8 @@ from .forms import (
     CollateralOverviewForm,
     CompanyForm,
 )
-from .models import Borrower, Company
+from .models import ARMetricsRow, Borrower, CollateralOverviewRow, Company
+from .views.summary import _delta_payload, get_kpi_timeseries
 
 
 class FormValidationTests(TestCase):
@@ -16,16 +21,21 @@ class FormValidationTests(TestCase):
     def test_company_form_requires_name(self):
         form = CompanyForm(
             data={
-                "company": "",
-                "industry": "Manufacturing",
-                "primary_naics": "",
-                "website": "",
-                "email": "admin@example.com",
-                "password": "secret123",
+                "specific_individual": "",
+                "specific_individual_id": "",
+                "lender_name": "",
+                "lender_identifier": "",
+                "email": "",
+                "password": "",
             }
         )
         self.assertFalse(form.is_valid())
-        self.assertIn("company", form.errors)
+        self.assertIn("specific_individual", form.errors)
+        self.assertIn("specific_individual_id", form.errors)
+        self.assertIn("lender_name", form.errors)
+        self.assertIn("lender_identifier", form.errors)
+        self.assertIn("email", form.errors)
+        self.assertIn("password", form.errors)
 
     def test_borrower_form_requires_contact_method(self):
         form = BorrowerForm(
@@ -90,3 +100,84 @@ class FormValidationTests(TestCase):
         self.assertFalse(form.is_valid())
         self.assertIn("main_type", form.errors)
         self.assertIn("sub_type", form.errors)
+
+
+class SummaryKpiTests(TestCase):
+    def setUp(self):
+        self.company = Company.objects.create(company="Acme Corp")
+        self.borrower = Borrower.objects.create(
+            company=self.company,
+            primary_contact="Owner",
+            update_interval="Monthly",
+        )
+
+    def _set_created_at(self, row, year, month, day):
+        dt = timezone.make_aware(datetime(year, month, day, 12, 0, 0))
+        row.__class__.objects.filter(pk=row.pk).update(created_at=dt)
+        row.refresh_from_db()
+
+    def test_availability_series_uses_net_minus_outstanding(self):
+        net_row = CollateralOverviewRow.objects.create(
+            borrower=self.borrower,
+            main_type="Inventory",
+            sub_type="FG",
+            net_collateral="100.00",
+        )
+        self._set_created_at(net_row, 2024, 1, 15)
+        ARMetricsRow.objects.create(
+            borrower=self.borrower,
+            as_of_date=date(2024, 1, 31),
+            balance="30.00",
+        )
+
+        availability = get_kpi_timeseries(
+            "availability",
+            self.borrower,
+            range_start=date(2024, 1, 1),
+            range_end=date(2024, 1, 31),
+            max_points=1,
+        )
+
+        self.assertEqual(availability["labels"], ["01/24"])
+        self.assertEqual(availability["values"], [Decimal("70.00")])
+
+    def test_percent_change_formula(self):
+        delta = _delta_payload("110", "100")
+        self.assertIsNotNone(delta)
+        self.assertEqual(delta["value"], "10.00%")
+        self.assertEqual(delta["symbol"], "▲")
+        self.assertEqual(delta["class"], "up")
+
+    def test_series_labels_are_unique_and_sorted(self):
+        first = CollateralOverviewRow.objects.create(
+            borrower=self.borrower,
+            main_type="Inventory",
+            sub_type="FG",
+            net_collateral="100.00",
+        )
+        second = CollateralOverviewRow.objects.create(
+            borrower=self.borrower,
+            main_type="Inventory",
+            sub_type="RM",
+            net_collateral="150.00",
+        )
+        third = CollateralOverviewRow.objects.create(
+            borrower=self.borrower,
+            main_type="Inventory",
+            sub_type="WIP",
+            net_collateral="200.00",
+        )
+        self._set_created_at(first, 2024, 1, 5)
+        self._set_created_at(second, 2024, 1, 20)
+        self._set_created_at(third, 2024, 2, 10)
+
+        series = get_kpi_timeseries(
+            "net",
+            self.borrower,
+            range_start=date(2024, 1, 1),
+            range_end=date(2024, 2, 28),
+            max_points=2,
+        )
+
+        self.assertEqual(series["labels"], ["01/24", "02/24"])
+        self.assertEqual(series["values"], [Decimal("150.00"), Decimal("200.00")])
