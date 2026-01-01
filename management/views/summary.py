@@ -651,6 +651,19 @@ def _build_line_series(values, labels, series_label=None, width=220, height=140)
     }
 
 
+def _series_payload(timeseries):
+    values = []
+    for value in timeseries.get("values", []):
+        if value is None:
+            values.append(None)
+        else:
+            values.append(float(_to_decimal(value)))
+    return {
+        "labels": timeseries.get("labels", []),
+        "values": values,
+    }
+
+
 def _delta_payload(current, previous):
     if current is None or previous is None:
         return None
@@ -1430,6 +1443,9 @@ def summary_view(request):
         "net_chart": net_chart,
         "outstanding_chart": outstanding_chart,
         "availability_chart": availability_chart,
+        "net_series": _series_payload(net_timeseries),
+        "outstanding_series": _series_payload(outstanding_timeseries),
+        "availability_series": _series_payload(availability_timeseries),
         "net_has_data": net_has_data,
         "outstanding_has_data": outstanding_has_data,
         "availability_has_data": availability_has_data,

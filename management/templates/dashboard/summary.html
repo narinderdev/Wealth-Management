@@ -238,6 +238,15 @@
     .summary-grid .table-card--collateral2{
       margin-top:0;
     }
+    .panel-chart{
+      height:140px;
+      width:100%;
+    }
+    .panel-chart canvas{
+      width:100% !important;
+      height:100% !important;
+      display:block;
+    }
     .card{
       background:var(--card);
       border:1px solid var(--border);
@@ -1179,36 +1188,9 @@ color: #65758B;
           </div>
 
           <div class="chart-card chart-card--blue">
-            {% if net_chart %}
+            {% if net_has_data %}
               <div class="panel-chart">
-                <div class="chart-tooltip" aria-hidden="true"></div>
-                <svg viewBox="0 0 220 140" preserveAspectRatio="none">
-                  <rect class="panel-bg" x="0" y="0" width="220" height="140" rx="0"></rect>
-                  <g class="panel-grid">
-                    {% for tick in net_chart.y_ticks %}
-                      <line x1="{{ net_chart.grid.left }}" y1="{{ tick.y }}" x2="{{ net_chart.grid.right }}" y2="{{ tick.y }}"></line>
-                    {% endfor %}
-                    {% for x in net_chart.x_grid %}
-                      <line x1="{{ x }}" y1="{{ net_chart.grid.top }}" x2="{{ x }}" y2="{{ net_chart.grid.bottom }}"></line>
-                    {% endfor %}
-                  </g>
-                  <polyline class="panel-line panel-line--blue" points="{{ net_chart.points }}"/>
-                  <g class="panel-dots">
-                    {% for point in net_chart.points_list %}
-                    <circle cx="{{ point.x }}" cy="{{ point.y }}" r="2.2"
-                      data-label="{{ point.label }}"
-                      data-value="{{ point.value }}"/>
-                    {% endfor %}
-                  </g>
-                <g class="panel-axis">
-                  {% for tick in net_chart.y_ticks %}
-                    <text x="{{ net_chart.label_x }}" y="{{ tick.y|add:3 }}" text-anchor="start">{{ tick.label }}</text>
-                  {% endfor %}
-                  {% for label in net_chart.x_labels %}
-                    <text x="{{ label.x }}" y="{{ net_chart.label_y }}" text-anchor="middle">{{ label.text }}</text>
-                  {% endfor %}
-                  </g>
-                </svg>
+                <canvas id="netChart" width="220" height="140" aria-label="Net Collateral chart" role="img"></canvas>
               </div>
             {% else %}
               {% include "shared/empty_state.html" with type="empty" title="No data available" message="Net collateral history is not available yet." %}
@@ -1233,36 +1215,9 @@ color: #65758B;
           </div>
 
           <div class="chart-card chart-card--purple">
-            {% if outstanding_chart %}
+            {% if outstanding_has_data %}
               <div class="panel-chart">
-                <div class="chart-tooltip" aria-hidden="true"></div>
-                <svg viewBox="0 0 220 140" preserveAspectRatio="none">
-                  <rect class="panel-bg" x="0" y="0" width="220" height="140" rx="0"></rect>
-                  <g class="panel-grid">
-                    {% for tick in outstanding_chart.y_ticks %}
-                      <line x1="{{ outstanding_chart.grid.left }}" y1="{{ tick.y }}" x2="{{ outstanding_chart.grid.right }}" y2="{{ tick.y }}"></line>
-                    {% endfor %}
-                    {% for x in outstanding_chart.x_grid %}
-                      <line x1="{{ x }}" y1="{{ outstanding_chart.grid.top }}" x2="{{ x }}" y2="{{ outstanding_chart.grid.bottom }}"></line>
-                    {% endfor %}
-                  </g>
-                  <polyline class="panel-line panel-line--purple" points="{{ outstanding_chart.points }}"/>
-                  <g class="panel-dots">
-                    {% for point in outstanding_chart.points_list %}
-                    <circle cx="{{ point.x }}" cy="{{ point.y }}" r="2.2"
-                      data-label="{{ point.label }}"
-                      data-value="{{ point.value }}"/>
-                    {% endfor %}
-                  </g>
-                <g class="panel-axis">
-                  {% for tick in outstanding_chart.y_ticks %}
-                    <text x="{{ outstanding_chart.label_x }}" y="{{ tick.y|add:3 }}" text-anchor="start">{{ tick.label }}</text>
-                  {% endfor %}
-                  {% for label in outstanding_chart.x_labels %}
-                    <text x="{{ label.x }}" y="{{ outstanding_chart.label_y }}" text-anchor="middle">{{ label.text }}</text>
-                  {% endfor %}
-                  </g>
-                </svg>
+                <canvas id="outstandingChart" width="220" height="140" aria-label="Outstanding Balance chart" role="img"></canvas>
               </div>
             {% else %}
               {% include "shared/empty_state.html" with type="empty" title="No data available" message="Outstanding balance history is not available yet." %}
@@ -1287,36 +1242,9 @@ color: #65758B;
           </div>
 
           <div class="chart-card chart-card--green">
-            {% if availability_chart %}
+            {% if availability_has_data %}
               <div class="panel-chart">
-                <div class="chart-tooltip" aria-hidden="true"></div>
-                <svg viewBox="0 0 220 140" preserveAspectRatio="none">
-                  <rect class="panel-bg" x="0" y="0" width="220" height="140" rx="0"></rect>
-                  <g class="panel-grid">
-                    {% for tick in availability_chart.y_ticks %}
-                      <line x1="{{ availability_chart.grid.left }}" y1="{{ tick.y }}" x2="{{ availability_chart.grid.right }}" y2="{{ tick.y }}"></line>
-                    {% endfor %}
-                    {% for x in availability_chart.x_grid %}
-                      <line x1="{{ x }}" y1="{{ availability_chart.grid.top }}" x2="{{ x }}" y2="{{ availability_chart.grid.bottom }}"></line>
-                    {% endfor %}
-                  </g>
-                  <polyline class="panel-line panel-line--green" points="{{ availability_chart.points }}"/>
-                  <g class="panel-dots">
-                    {% for point in availability_chart.points_list %}
-                    <circle cx="{{ point.x }}" cy="{{ point.y }}" r="2.2"
-                      data-label="{{ point.label }}"
-                      data-value="{{ point.value }}"/>
-                    {% endfor %}
-                  </g>
-                  <g class="panel-axis">
-                    {% for tick in availability_chart.y_ticks %}
-                      <text x="{{ availability_chart.label_x }}" y="{{ tick.y|add:3 }}" text-anchor="start">{{ tick.label }}</text>
-                    {% endfor %}
-                    {% for label in availability_chart.x_labels %}
-                      <text x="{{ label.x }}" y="{{ availability_chart.label_y }}" text-anchor="middle">{{ label.text }}</text>
-                    {% endfor %}
-                  </g>
-                </svg>
+                <canvas id="availabilityChart" width="220" height="140" aria-label="Availability chart" role="img"></canvas>
               </div>
             {% else %}
               {% include "shared/empty_state.html" with type="empty" title="No data available" message="Availability history is not available yet." %}
@@ -1372,5 +1300,10 @@ color: #65758B;
 {% endblock %}
 
 {% block extra_scripts %}
+  {{ net_series|json_script:"net-chart-data" }}
+  {{ outstanding_series|json_script:"outstanding-chart-data" }}
+  {{ availability_series|json_script:"availability-chart-data" }}
+  <div id="chartjs-fallback" data-src="{% static 'js/chart.min.js' %}" hidden></div>
+  <script src="https://cdn.jsdelivr.net/npm/chart.js" onerror="this.onerror=null;this.src='{% static 'js/chart.min.js' %}';"></script>
   <script src="{% static 'js/summary.js' %}"></script>
 {% endblock %}

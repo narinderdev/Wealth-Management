@@ -119,4 +119,117 @@ document.addEventListener('DOMContentLoaded', () => {
 
   initChartTooltips();
   initRiskTooltip();
+
+  const parseChartData = (id) => {
+    const el = document.getElementById(id);
+    if (!el) return null;
+    try {
+      return JSON.parse(el.textContent);
+    } catch (error) {
+      return null;
+    }
+  };
+
+  const formatCurrency = (value) => {
+    if (value === null || value === undefined) return '';
+    const abs = Math.abs(value);
+    if (abs >= 1_000_000_000) return `$${(value / 1_000_000_000).toFixed(1)}B`;
+    if (abs >= 1_000_000) return `$${(value / 1_000_000).toFixed(1)}M`;
+    if (abs >= 1_000) return `$${Math.round(value / 1_000)}k`;
+    return `$${Math.round(value).toLocaleString()}`;
+  };
+
+  const buildAxisBounds = (values) => {
+    const filtered = values.filter((val) => val !== null && val !== undefined);
+    if (!filtered.length) return null;
+    let min = Math.min(...filtered);
+    let max = Math.max(...filtered);
+    if (min === max) {
+      const padding = Math.abs(min) * 0.1 || 1;
+      min -= padding;
+      max += padding;
+    } else {
+      const pad = Math.max(Math.abs(max - min) * 0.1, 1);
+      min -= pad;
+      max += pad;
+    }
+    return { min, max };
+  };
+
+  const initKpiChart = (canvasId, dataId, color) => {
+    const canvas = document.getElementById(canvasId);
+    const data = parseChartData(dataId);
+    if (!canvas || !data || !data.values || !data.values.length) return;
+    if (typeof Chart === 'undefined') return;
+
+    const bounds = buildAxisBounds(data.values);
+    const ctx = canvas.getContext('2d');
+    new Chart(ctx, {
+      type: 'line',
+      data: {
+        labels: data.labels,
+        datasets: [
+          {
+            data: data.values,
+            borderColor: color,
+            backgroundColor: color,
+            borderWidth: 2,
+            pointRadius: 3,
+            pointHoverRadius: 4,
+            tension: 0.25,
+            spanGaps: true,
+          },
+        ],
+      },
+      options: {
+        responsive: true,
+        maintainAspectRatio: false,
+        plugins: {
+          legend: { display: false },
+          tooltip: {
+            callbacks: {
+              label: (context) => formatCurrency(context.parsed.y),
+            },
+          },
+        },
+        scales: {
+          x: {
+            grid: { color: '#E7ECF5' },
+            ticks: { color: '#98A2B3' },
+          },
+          y: {
+            grid: { color: '#E7ECF5' },
+            ticks: {
+              color: '#98A2B3',
+              callback: (value) => formatCurrency(value),
+            },
+            min: bounds ? bounds.min : undefined,
+            max: bounds ? bounds.max : undefined,
+          },
+        },
+      },
+    });
+  };
+
+  const loadChartJs = (callback) => {
+    if (typeof Chart !== 'undefined') {
+      callback();
+      return;
+    }
+    const fallback = document.getElementById('chartjs-fallback');
+    const src = fallback ? fallback.dataset.src : null;
+    if (!src) return;
+    const script = document.createElement('script');
+    script.src = src;
+    script.onload = callback;
+    document.head.appendChild(script);
+  };
+
+  const initKpiCharts = () => {
+    initKpiChart('netChart', 'net-chart-data', '#2F6BFF');
+    initKpiChart('outstandingChart', 'outstanding-chart-data', '#7C3AED');
+    initKpiChart('availabilityChart', 'availability-chart-data', '#13B26B');
+  };
+
+  loadChartJs(initKpiCharts);
 });
