@@ -32,4 +32,5 @@ media/
 *.njsproj
 *.sln
 
-management/migrations 
+management/migrations static/
+management/static/_backup_admin_*/
