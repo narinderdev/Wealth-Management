@@ -1549,22 +1549,31 @@ def summary_view(request):
     outstanding_series_raw = list(outstanding_series)
     availability_series_raw = list(availability_series)
 
-    def _series_delta(series):
-        if not series:
+    def _series_delta(timeseries):
+        if not timeseries:
             return None
-        cleaned = [val for val in series if val is not None]
+        raw_series = timeseries.get("raw_values") or []
+        aligned_series = timeseries.get("values") or []
+        candidate = raw_series if len(raw_series) >= 2 else aligned_series
+        cleaned = [val for val in candidate if val is not None]
         if len(cleaned) < 2:
             return None
         return _delta_payload(cleaned[-1], cleaned[-2])
 
     insights["net"]["delta"] = (
-        _series_delta(net_timeseries.get("raw_values")) if net_has_data else None
+        _series_delta(net_timeseries) if net_has_data else None
     )
     insights["outstanding"]["delta"] = (
-        _series_delta(outstanding_timeseries.get("raw_values")) if outstanding_has_data else None
+        _series_delta(outstanding_timeseries) if outstanding_has_data else None
     )
+    availability_series_for_delta = availability_timeseries
+    if base_months and net_timeseries.get("values") and outstanding_timeseries.get("values"):
+        availability_series_for_delta = {
+            **availability_timeseries,
+            "raw_values": availability_values,
+        }
     insights["availability"]["delta"] = (
-        _series_delta(availability_timeseries.get("raw_values")) if availability_has_data else None
+        _series_delta(availability_series_for_delta) if availability_has_data else None
     )
 
     net_chart = (
