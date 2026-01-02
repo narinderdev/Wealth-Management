@@ -327,7 +327,7 @@ COMPONENT_REGISTRY = {
         "value_format": "currency",
     },
     "forecast": {
-        "title": "Forecast",
+        "title": "Collateral/Sales/GM",
         "template": "admin/components/forecast.html",
         "nav_key": "forecast",
     },

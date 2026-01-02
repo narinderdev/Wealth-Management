@@ -1363,7 +1363,7 @@
           </div>
         </section>
 
-        <section class="sidebar-section sidebar-collapsible is-open{% if current_nav == 'forecast_ar' or current_nav == 'forecast_fg' or current_nav == 'forecast_rm' or current_nav == 'forecast_wos' or current_nav == 'forecast_wip' %} has-active{% endif %}" data-collapsible>
+        <section class="sidebar-section sidebar-collapsible is-open{% if current_nav == 'forecast_ar' or current_nav == 'forecast_fg' or current_nav == 'forecast_rm' or current_nav == 'forecast_wos' or current_nav == 'forecast_wip' or current_nav == 'forecast' %} has-active{% endif %}" data-collapsible>
           <button class="section-trigger" type="button" aria-expanded="true" aria-controls="sidebar-forecast-assets">
             <span class="label-left">
               <span class="ico" aria-hidden="true">
@@ -1386,6 +1386,7 @@
             <a class="sidebar-sub-link{% if current_nav == 'forecast_rm' %} active{% endif %}" href="{% url 'admin_component' 'forecastRawMaterials' %}" data-entity="forecastRawMaterials">Raw Materials</a>
             <a class="sidebar-sub-link{% if current_nav == 'forecast_wos' %} active{% endif %}" href="{% url 'admin_component' 'forecastWeeksOfSupply' %}" data-entity="forecastWeeksOfSupply">Weeks of Supply</a>
             <a class="sidebar-sub-link{% if current_nav == 'forecast_wip' %} active{% endif %}" href="{% url 'admin_component' 'forecastWorkInProcess' %}" data-entity="forecastWorkInProcess">Work-In-Process</a>
+            <a class="sidebar-sub-link{% if current_nav == 'forecast' %} active{% endif %}" href="{% url 'admin_component' 'forecast' %}" data-entity="forecast">Collateral/Sales/GM</a>
           </div>
         </section>
 
@@ -1437,28 +1438,6 @@
             <a class="sidebar-sub-link{% if current_nav == 'reports_borrowing_base' %} active{% endif %}" href="{% url 'admin_component' 'borrowingBaseReport' %}" data-entity="borrowingBaseReport">Borrowing Base Report</a>
             <a class="sidebar-sub-link{% if current_nav == 'reports_complete_analysis' %} active{% endif %}" href="{% url 'admin_component' 'completeAnalysisReport' %}" data-entity="completeAnalysisReport">Complete Analysis Report</a>
             <a class="sidebar-sub-link{% if current_nav == 'reports_cash_flow' %} active{% endif %}" href="{% url 'admin_component' 'cashFlowReport' %}" data-entity="cashFlowReport">Cash Flow Report</a>
-          </div>
-        </section>
-
-        <section class="sidebar-section sidebar-collapsible is-open{% if current_nav == 'forecast' %} has-active{% endif %}" data-collapsible>
-          <button class="section-trigger" type="button" aria-expanded="true" aria-controls="sidebar-collateral-panel">
-            <span class="label-left">
-              <span class="ico" aria-hidden="true">
-                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
-                  <path d="M4 17 10 11l4 4 6-8" stroke-linecap="round" stroke-linejoin="round" />
-                  <path d="M14 7h6v6" stroke-linecap="round" stroke-linejoin="round" />
-                </svg>
-              </span>
-              <span>Collateral/Sales/GM</span>
-            </span>
-            <span class="chevron" aria-hidden="true">
-              <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
-                <path d="M6 9l6 6 6-6" stroke-linecap="round" stroke-linejoin="round" />
-              </svg>
-            </span>
-          </button>
-          <div class="sidebar-children" id="sidebar-collateral-panel">
-            <a class="sidebar-sub-link{% if current_nav == 'forecast' %} active{% endif %}" href="{% url 'admin_component' 'forecast' %}" data-entity="forecast">Forecast</a>
           </div>
         </section>
 
