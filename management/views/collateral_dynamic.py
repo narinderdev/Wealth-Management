@@ -6409,6 +6409,14 @@ def _other_collateral_context(borrower, snapshot_summary=None):
             return Decimal("0")
         return olv_value * Decimal("0.96")
 
+    def _format_pct_2dp(value):
+        if value is None:
+            return "—"
+        pct = _to_decimal(value)
+        if pct <= Decimal("1"):
+            pct *= Decimal("100")
+        return f"{pct:.2f}%"
+
     def _aggregate_estimated(rows):
         total_fmv = Decimal("0")
         total_olv = Decimal("0")
@@ -6504,13 +6512,13 @@ def _other_collateral_context(borrower, snapshot_summary=None):
         olv = _to_decimal(row.orderly_liquidation_value)
         estimated_fmv = _row_estimated_fmv(row, fmv)
         estimated_olv = _row_estimated_olv(row, olv)
-        variance_amount = fmv - estimated_fmv
+        variance_amount = estimated_fmv - fmv
         variance_pct = (
-            variance_amount / estimated_fmv if estimated_fmv else Decimal("0")
+            variance_amount / fmv if fmv else Decimal("0")
         )
-        variance_olv_amount = olv - estimated_olv
+        variance_olv_amount = estimated_olv - olv
         variance_olv_pct = (
-            variance_olv_amount / estimated_olv if estimated_olv else Decimal("0")
+            variance_olv_amount / olv if olv else Decimal("0")
         )
         value_analysis_rows.append(
             {
@@ -6522,9 +6530,9 @@ def _other_collateral_context(borrower, snapshot_summary=None):
                 "estimated_fmv": _format_currency(estimated_fmv),
                 "estimated_olv": _format_currency(estimated_olv),
                 "variance_amount": _format_currency(variance_amount),
-                "variance_pct": _format_pct(variance_pct),
+                "variance_pct": _format_pct_2dp(variance_pct),
                 "variance_olv_amount": _format_currency(variance_olv_amount),
-                "variance_olv_pct": _format_pct(variance_olv_pct),
+                "variance_olv_pct": _format_pct_2dp(variance_olv_pct),
             }
         )
         asset_rows.append(
