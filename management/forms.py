@@ -749,10 +749,14 @@ class FGInlineExcessByCategoryForm(BorrowerModelForm):
             "as_of_date",
             "category",
             "fg_available",
+            "new_dollars",
+            "new_pct",
             "inline_dollars",
             "inline_pct",
             "excess_dollars",
             "excess_pct",
+            "no_sales_dollars",
+            "no_sales_pct",
         ]
         widgets = {
             "as_of_date": forms.DateInput(attrs={"type": "date"}),

@@ -1,3 +1,5 @@
+from decimal import Decimal
+
 from django.conf import settings
 from django.contrib.auth.hashers import check_password, make_password
 from django.core.validators import FileExtensionValidator
@@ -616,10 +618,20 @@ class FGInlineExcessByCategoryRow(TimeStampedModel):
     as_of_date = models.DateField(null=True, blank=True)  # AsOfDate
     category = models.CharField(max_length=255, null=True, blank=True)  # Category
     fg_available = MoneyField()  # FG_Available
+    new_dollars = MoneyField()  # New_Dollars
+    new_pct = PctField()  # New_Pct
     inline_dollars = MoneyField()  # Inline_Dollars
     inline_pct = PctField()  # Inline_Pct
     excess_dollars = MoneyField()  # Excess_Dollars
     excess_pct = PctField()  # Excess_Pct
+    no_sales_dollars = MoneyField()  # NoSales_Dollars
+    no_sales_pct = PctField()  # NoSales_Pct
+    total_inline_dollars = MoneyField()  # TotalInline_Dollars
+    total_inline_pct = PctField()  # TotalInline_Pct
+    total_excess_dollars = MoneyField()  # TotalExcess_Dollars
+    total_excess_pct = PctField()  # TotalExcess_Pct
+    total_dollars = MoneyField()  # Total_Dollars
+    total_pct = PctField()  # Total_Pct
     borrower = models.ForeignKey(
         "Borrower",
         on_delete=models.CASCADE,
@@ -630,6 +642,85 @@ class FGInlineExcessByCategoryRow(TimeStampedModel):
 
     class Meta:
         db_table = 'fg_inline_excess_by_category'
+
+    def save(self, *args, **kwargs):
+        def to_dec(value):
+            if value is None:
+                return Decimal("0")
+            if isinstance(value, Decimal):
+                return value
+            try:
+                return Decimal(str(value))
+            except Exception:
+                return Decimal("0")
+
+        new_amount = to_dec(self.new_dollars)
+        inline_amount = to_dec(self.inline_dollars)
+        excess_amount = to_dec(self.excess_dollars)
+        no_sales_amount = to_dec(self.no_sales_dollars)
+
+        total_inline = new_amount + inline_amount
+        total_excess = excess_amount + no_sales_amount
+        total_amount = total_inline + total_excess
+
+        def pct_of_total(amount):
+            if total_amount <= 0:
+                return Decimal("0")
+            return amount / total_amount
+
+        self.total_inline_dollars = total_inline
+        self.total_excess_dollars = total_excess
+        self.total_dollars = total_amount
+
+        self.new_pct = pct_of_total(new_amount)
+        self.inline_pct = pct_of_total(inline_amount)
+        self.excess_pct = pct_of_total(excess_amount)
+        self.no_sales_pct = pct_of_total(no_sales_amount)
+        self.total_inline_pct = pct_of_total(total_inline)
+        self.total_excess_pct = pct_of_total(total_excess)
+        self.total_pct = Decimal("1") if total_amount > 0 else Decimal("0")
+
+        super().save(*args, **kwargs)
+
+    def _to_dec(self, value):
+        if value is None:
+            return Decimal("0")
+        if isinstance(value, Decimal):
+            return value
+        try:
+            return Decimal(str(value))
+        except Exception:
+            return Decimal("0")
+
+    def computed_total_inline_dollars(self):
+        return self._to_dec(self.new_dollars) + self._to_dec(self.inline_dollars)
+
+    def computed_total_excess_dollars(self):
+        return self._to_dec(self.excess_dollars) + self._to_dec(self.no_sales_dollars)
+
+    def computed_total_dollars(self):
+        return self.computed_total_inline_dollars() + self.computed_total_excess_dollars()
+
+    def _pct_of_total(self, amount):
+        total = self.computed_total_dollars()
+        if total <= 0:
+            return Decimal("0")
+        return amount / total
+
+    def computed_total_pct(self):
+        return Decimal("1") if self.computed_total_dollars() > 0 else Decimal("0")
+
+    def computed_new_pct(self):
+        return self._pct_of_total(self._to_dec(self.new_dollars))
+
+    def computed_inline_pct(self):
+        return self._pct_of_total(self._to_dec(self.inline_dollars))
+
+    def computed_excess_pct(self):
+        return self._pct_of_total(self._to_dec(self.excess_dollars))
+
+    def computed_no_sales_pct(self):
+        return self._pct_of_total(self._to_dec(self.no_sales_dollars))
 
 
 # -------------------------

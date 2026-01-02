@@ -207,10 +207,12 @@ def _ensure_inline_excess_rows(borrower: Borrower, as_of: date) -> None:
             as_of_date=as_of,
             category=row["category"],
             fg_available=row["available"],
+            new_dollars=_d("0"),
             inline_dollars=row["inline"],
             inline_pct=row["inline"] / row["available"] if row["available"] else _d("0"),
             excess_dollars=row["excess"],
             excess_pct=row["excess"] / row["available"] if row["available"] else _d("0"),
+            no_sales_dollars=_d("0"),
         )
 
 

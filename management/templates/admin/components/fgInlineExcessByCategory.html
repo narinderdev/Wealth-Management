@@ -14,17 +14,30 @@
       <table class="admin-table">
         <thead>
           <tr>
-            <th>Borrower</th>
-            <th>Borrower ID</th>
-            <th>Division</th>
-            <th>As Of Date</th>
-            <th>Category</th>
-            <th>FG Available</th>
-            <th>Inline $</th>
-            <th>Inline %</th>
-            <th>Excess $</th>
-            <th>Excess %</th>
-            <th></th>
+            <th rowspan="2">Borrower</th>
+            <th rowspan="2">Borrower ID</th>
+            <th rowspan="2">Division</th>
+            <th rowspan="2">As Of Date</th>
+            <th rowspan="2">Category</th>
+            <th rowspan="2">FG Available</th>
+            <th colspan="2">New</th>
+            <th colspan="2">Inline</th>
+            <th colspan="2">Excess</th>
+            <th colspan="2">No Sales</th>
+            <th colspan="2">Total</th>
+            <th rowspan="2"></th>
+          </tr>
+          <tr>
+            <th>$</th>
+            <th>%</th>
+            <th>$</th>
+            <th>%</th>
+            <th>$</th>
+            <th>%</th>
+            <th>$</th>
+            <th>%</th>
+            <th>$</th>
+            <th>%</th>
           </tr>
         </thead>
         <tbody>
@@ -36,10 +49,16 @@
               <td>{{ row.as_of_date|date:"Y-m-d"|default:"—" }}</td>
               <td>{{ row.category|default:"—" }}</td>
               <td>{{ row.fg_available|default:"—" }}</td>
+              <td>{{ row.new_dollars|default:"—" }}</td>
+              <td>{{ row.new_pct|default_if_none:row.computed_new_pct }}</td>
               <td>{{ row.inline_dollars|default:"—" }}</td>
-              <td>{{ row.inline_pct|default:"—" }}</td>
+              <td>{{ row.inline_pct|default_if_none:row.computed_inline_pct }}</td>
               <td>{{ row.excess_dollars|default:"—" }}</td>
-              <td>{{ row.excess_pct|default:"—" }}</td>
+              <td>{{ row.excess_pct|default_if_none:row.computed_excess_pct }}</td>
+              <td>{{ row.no_sales_dollars|default:"—" }}</td>
+              <td>{{ row.no_sales_pct|default_if_none:row.computed_no_sales_pct }}</td>
+              <td>{{ row.total_dollars|default_if_none:row.computed_total_dollars }}</td>
+              <td>{{ row.total_pct|default_if_none:row.computed_total_pct }}</td>
               <td class="table-actions">
                 <a class="link" href="{% url 'admin_component' component_meta.slug %}?edit={{ row.pk }}">Edit</a>
                 <form method="post" class="inline-form" onsubmit="return confirm('Delete this row?');">
@@ -51,7 +70,7 @@
               </td>
             </tr>
           {% empty %}
-            <tr><td colspan="11">No FG inline excess by category data.</td></tr>
+            <tr><td colspan="17">No FG inline excess by category data.</td></tr>
           {% endfor %}
         </tbody>
       </table>

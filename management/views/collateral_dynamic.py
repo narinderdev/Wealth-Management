@@ -4862,13 +4862,19 @@ def _finished_goals_context(
             available = _to_decimal(row.fg_available)
             inline_amount = _to_decimal(row.inline_dollars)
             excess_amount = _to_decimal(row.excess_dollars)
-            new_amount = Decimal("0")
-            no_sales_amount = Decimal("0")
+            new_amount = _to_decimal(getattr(row, "new_dollars", None))
+            no_sales_amount = _to_decimal(getattr(row, "no_sales_dollars", None))
             inline_0_52_amount = inline_amount
-            total_inline = new_amount + inline_0_52_amount
+            total_inline = _to_decimal(getattr(row, "total_inline_dollars", None))
+            if total_inline == 0:
+                total_inline = new_amount + inline_0_52_amount
             week_52_amount = excess_amount
-            total_excess = week_52_amount + no_sales_amount
-            total_amount = total_inline + total_excess
+            total_excess = _to_decimal(getattr(row, "total_excess_dollars", None))
+            if total_excess == 0:
+                total_excess = week_52_amount + no_sales_amount
+            total_amount = _to_decimal(getattr(row, "total_dollars", None))
+            if total_amount == 0:
+                total_amount = total_inline + total_excess
 
             if available and total_amount != available:
                 logger.warning(
