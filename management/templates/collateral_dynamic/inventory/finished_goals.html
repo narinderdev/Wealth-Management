@@ -1156,9 +1156,22 @@
     const spans = lines.map(line => `<span>${line}</span>`).join("");
     return `<span class="fg-axis-label ${cls}" style="--x:${xPct}; --y:${yPct};">${spans}</span>`;
   }
+  function computePaddedBounds(values, padPct = 0.10){
+    const filtered = values.filter((val) => Number.isFinite(val));
+    if (!filtered.length) return null;
+    let min = Math.min(...filtered);
+    let max = Math.max(...filtered);
+    if (min === max) {
+      const padding = Math.abs(max) * padPct || 1;
+      return { min: min - padding, max: max + padding };
+    }
+    const range = max - min;
+    const pad = Math.max(range * padPct, 1);
+    return { min: min - pad, max: max + pad };
+  }
 
   function renderLine(el,c){
-    if (!c.values || c.values.length < 2 || !c.labels || c.labels.length < 2) {
+    if (!c.values || c.values.length < 1 || !c.labels || c.labels.length < 1) {
       el.innerHTML = `
         <div class="card-head">
           <h2 class="main-head">${c.title}</h2>
@@ -1175,8 +1188,13 @@
     const plotW = W-pad.l-pad.r, plotH = H-pad.t-pad.b;
 
     const customTicks = Array.isArray(c.yTickValues) && c.yTickValues.length > 1;
-    let min = (c.yMin !== undefined && c.yMin !== null) ? c.yMin : Math.min(...c.values);
-    let max = (c.yMax !== undefined && c.yMax !== null) ? c.yMax : Math.max(...c.values);
+    const bounds = computePaddedBounds(c.values);
+    let min = (c.yMin !== undefined && c.yMin !== null) ? c.yMin : (bounds ? bounds.min : Math.min(...c.values));
+    let max = (c.yMax !== undefined && c.yMax !== null) ? c.yMax : (bounds ? bounds.max : Math.max(...c.values));
+    const dataMin = Math.min(...c.values);
+    if (dataMin >= 0 && min < 0) {
+      min = 0;
+    }
     if (customTicks) {
       if (c.yMin === undefined || c.yMin === null) {
         min = Math.min(...c.yTickValues);
@@ -1184,17 +1202,15 @@
       if (c.yMax === undefined || c.yMax === null) {
         max = Math.max(...c.yTickValues);
       }
-    } else if (c.yMin === undefined || c.yMax === undefined) {
-      const range = (max-min)||1;
-      min -= range*0.15; max += range*0.15;
     }
     const range = (max-min)||1;
 
-    const x = i => pad.l + (i/(c.labels.length-1))*plotW;
+    const xDenominator = Math.max(1, c.labels.length - 1);
+    const x = i => pad.l + (i / xDenominator) * plotW;
     const y = v => pad.t + (1-(v-min)/range)*plotH;
 
     const pts = c.values.map((v,i)=>[x(i),y(v)]);
-    const ticks = c.yTicks||5;
+    const ticks = c.yTicks||6;
     const yTicks = customTicks ? c.yTickValues.map((val)=>({
       val:Number(val),
       yy:y(Number(val)),

@@ -766,19 +766,41 @@ line-height: 50px;
   function pathFrom(pts){
     return pts.map((p,i)=> (i===0?`M ${p[0]} ${p[1]}`:`L ${p[0]} ${p[1]}`)).join(" ");
   }
+  function computePaddedBounds(values, padPct = 0.10){
+    const filtered = values.filter((val) => Number.isFinite(val));
+    if (!filtered.length) return null;
+    let min = Math.min(...filtered);
+    let max = Math.max(...filtered);
+    if (min === max) {
+      const padding = Math.abs(max) * padPct || 1;
+      return { min: min - padding, max: max + padding };
+    }
+    const range = max - min;
+    const pad = Math.max(range * padPct, 1);
+    return { min: min - pad, max: max + pad };
+  }
   function renderLine(el,c){
+    if (!c.values || c.values.length < 1 || !c.labels || c.labels.length < 1) {
+      el.innerHTML = `
+        <div class="chart-wrap">
+          <div class="card-pad">No data available.</div>
+        </div>
+      `;
+      return;
+    }
     const W = 1040, H = 320;
     const pad = {l:80,r:30,t:20,b:60};
     const plotW = W-pad.l-pad.r, plotH = H-pad.t-pad.b;
-    let min = Math.min(...c.values);
-    let max = Math.max(...c.values);
-    if (max - min < 10) {
-      const padding = 5;
-      min -= padding;
-      max += padding;
+    const bounds = computePaddedBounds(c.values);
+    let min = bounds ? bounds.min : Math.min(...c.values);
+    let max = bounds ? bounds.max : Math.max(...c.values);
+    const dataMin = Math.min(...c.values);
+    if (dataMin >= 0 && min < 0) {
+      min = 0;
     }
     const range = max - min || 1;
-    const x = i => pad.l + (i/(c.labels.length-1))*plotW;
+    const xDenominator = Math.max(1, c.labels.length - 1);
+    const x = i => pad.l + (i / xDenominator) * plotW;
     const y = v => {
       const ratio = (v - min) / range;
       return pad.t + (1 - ratio) * plotH;
@@ -794,18 +816,12 @@ line-height: 50px;
     const yTickLines = yTicks.map(t=>`
       <line x1="${pad.l}" y1="${t.yy}" x2="${W-pad.r}" y2="${t.yy}" stroke="#e7eef7" stroke-width="1"></line>
     `).join("");
-    const yLabelSet = new Set();
     const yTickLabels = yTicks.map(t=>{
       const label = fmtY(t.val,c,yDecimals);
-      if (yLabelSet.has(label)) return "";
-      yLabelSet.add(label);
       return `<text x="55" y="${t.yy+4}" fill="#94a3b8" font-size="12" font-weight="400" text-anchor="end">${label}</text>`;
     }).join("");
-    const xLabelSet = new Set();
     const xLabels = c.labels.map((lab,i)=>{
       const label = String(lab);
-      if (xLabelSet.has(label)) return "";
-      xLabelSet.add(label);
       return `<text x="${x(i)}" y="${H-20}" text-anchor="middle">${label}</text>`;
     }).join("");
     el.innerHTML = `

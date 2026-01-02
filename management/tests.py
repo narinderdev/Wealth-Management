@@ -12,9 +12,17 @@ from .forms import (
     CollateralOverviewForm,
     CompanyForm,
 )
-from .models import ARMetricsRow, Borrower, CollateralOverviewRow, Company
+from .models import (
+    ARMetricsRow,
+    Borrower,
+    CollateralOverviewRow,
+    Company,
+    FGInlineExcessByCategoryRow,
+    HistoricalTop20SKUsRow,
+)
 from .views.summary import _delta_payload, get_kpi_timeseries
 from .views.summary import compute_inventory_breakdown
+from .views.collateral_dynamic import _finished_goals_context
 
 
 class FormValidationTests(TestCase):
@@ -295,3 +303,94 @@ class InventoryBreakdownConsistencyTests(TestCase):
         assert_metric(response.context["finished_goals_metrics"])
         assert_metric(response.context["raw_materials_metrics"])
         assert_metric(response.context["work_in_progress_metrics"])
+
+    def test_inline_excess_by_category_totals(self):
+        FGInlineExcessByCategoryRow.objects.create(
+            borrower=self.borrower,
+            category="Cabinets",
+            fg_available="1000.00",
+            inline_dollars="700.00",
+            inline_pct="70.0",
+            excess_dollars="300.00",
+            excess_pct="30.0",
+        )
+        FGInlineExcessByCategoryRow.objects.create(
+            borrower=self.borrower,
+            category="Doors",
+            fg_available="2000.00",
+            inline_dollars="1200.00",
+            inline_pct="60.0",
+            excess_dollars="800.00",
+            excess_pct="40.0",
+        )
+
+        response = self.client.get(
+            reverse("collateral_dynamic"),
+            {"section": "inventory", "inventory_tab": "finished_goods", "borrower_id": self.borrower.id},
+        )
+
+        rows = response.context["finished_goals_inline_excess_by_category"]
+        totals = response.context["finished_goals_inline_excess_totals"]
+
+        def parse_currency(value):
+            cleaned = value.replace("$", "").replace(",", "").strip()
+            return Decimal(cleaned)
+
+        row_total = sum(parse_currency(row["total_amount"]) for row in rows)
+        self.assertEqual(row_total, parse_currency(totals["total_amount"]))
+
+        for row in rows:
+            self.assertEqual(
+                parse_currency(row["inline_total_amount"]),
+                parse_currency(row["new_amount"]) + parse_currency(row["inline_0_52_amount"]),
+            )
+            self.assertEqual(
+                parse_currency(row["excess_total_amount"]),
+                parse_currency(row["week_52_amount"]) + parse_currency(row["no_sales_amount"]),
+            )
+
+
+class TopSkuLatestMonthTests(TestCase):
+    def setUp(self):
+        self.company = Company.objects.create(company="Acme Corp")
+        self.borrower = Borrower.objects.create(
+            company=self.company,
+            primary_contact="Owner",
+            update_interval="Monthly",
+        )
+        CollateralOverviewRow.objects.create(
+            borrower=self.borrower,
+            main_type="Inventory",
+            sub_type="Finished Goods",
+            beginning_collateral="1000.00",
+            eligible_collateral="900.00",
+            ineligibles="100.00",
+        )
+
+    def test_finished_goods_top_sku_uses_latest_month_only(self):
+        HistoricalTop20SKUsRow.objects.create(
+            borrower=self.borrower,
+            as_of_date=date(2024, 1, 31),
+            item_number="100",
+            category="Cabinets",
+            description="Older SKU",
+            cost="100.00",
+            cogs="40.00",
+            gm="60.00",
+        )
+        HistoricalTop20SKUsRow.objects.create(
+            borrower=self.borrower,
+            as_of_date=date(2024, 2, 29),
+            item_number="100",
+            category="Cabinets",
+            description="Latest SKU",
+            cost="50.00",
+            cogs="20.00",
+            gm="30.00",
+        )
+
+        context = _finished_goals_context(self.borrower, range_key="today", division="all")
+        top_skus = context["finished_goals_top_skus"]
+
+        self.assertEqual(len(top_skus), 1)
+        self.assertEqual(top_skus[0]["cost"], "$50.00")

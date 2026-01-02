@@ -2109,6 +2109,22 @@
         if (type === "currency_millions") return `$${value.toFixed(1)}M`;
         return formatCurrency(value);
       };
+      const buildAxisBounds = (values) => {
+        const filtered = values.filter((val) => Number.isFinite(val));
+        if (!filtered.length) return null;
+        let min = Math.min(...filtered);
+        let max = Math.max(...filtered);
+        if (min === max) {
+          const padding = Math.abs(min) * 0.1 || 1;
+          min -= padding;
+          max += padding;
+        } else {
+          const pad = Math.max(Math.abs(max - min) * 0.1, 1);
+          min -= pad;
+          max += pad;
+        }
+        return { min, max };
+      };
       const loadChartJs = (callback) => {
         if (typeof Chart !== "undefined") {
           callback();
@@ -2144,6 +2160,7 @@
         document.querySelectorAll(".ar-kpi-chart").forEach((canvas) => {
           const data = parseJsonSafe(canvas.dataset.chart);
           if (!data) return;
+          const bounds = buildAxisBounds(data.values || []);
           const ctx = canvas.getContext("2d");
           new Chart(ctx, {
             type: "line",
@@ -2179,6 +2196,8 @@
                     color: "#98A2B3",
                     callback: (value) => formatAxis(data.axis, value),
                   },
+                  suggestedMin: bounds ? bounds.min : undefined,
+                  suggestedMax: bounds ? bounds.max : undefined,
                 },
               },
             },
@@ -2291,6 +2310,7 @@
         const canvas = document.querySelector(".ar-ineligible-chart-canvas");
         const data = canvas ? parseJsonSafe(canvas.dataset.chart) : null;
         if (!data) return;
+        const bounds = buildAxisBounds(data.values || []);
         const ctx = canvas.getContext("2d");
         new Chart(ctx, {
           type: "line",
@@ -2320,8 +2340,8 @@
             scales: {
               x: { grid: { color: "#E7ECF5" }, ticks: { color: "#98A2B3" } },
               y: {
-                min: data.axis_min,
-                max: data.axis_max,
+                suggestedMin: bounds ? bounds.min : data.axis_min,
+                suggestedMax: bounds ? bounds.max : data.axis_max,
                 grid: { color: "#E7ECF5" },
                 ticks: { color: "#98A2B3", callback: (value) => `${value.toFixed(1)}%` },
               },

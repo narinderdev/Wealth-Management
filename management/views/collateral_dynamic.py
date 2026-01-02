@@ -33,6 +33,7 @@ from management.models import (
     MachineryEquipmentRow,
     RMCategoryHistoryRow,
     RMTop20HistoryRow,
+    RMInventoryMetricsRow,
     NOLVTableRow,
     RMIneligibleOverviewRow,
     RiskSubfactorsRow,
@@ -40,6 +41,7 @@ from management.models import (
     SnapshotSummaryRow,
     WIPCategoryHistoryRow,
     WIPIneligibleOverviewRow,
+    WIPInventoryMetricsRow,
     WIPTop20HistoryRow,
 )
 from management.views.summary import (
@@ -1987,6 +1989,55 @@ def _format_item_number_value(value):
     return f"{dec.normalize():f}"
 
 
+def _month_sequence_from(latest_date, count=12):
+    if not latest_date:
+        return []
+    months = []
+    year = latest_date.year
+    month = latest_date.month
+    for _ in range(count):
+        months.append(date(year, month, 1))
+        month -= 1
+        if month == 0:
+            month = 12
+            year -= 1
+    return list(reversed(months))
+
+
+def _build_metric_month_map(qs, value_field):
+    month_latest = {}
+    for row in qs:
+        dt = row.as_of_date
+        if not dt:
+            continue
+        key = (dt.year, dt.month)
+        latest = month_latest.get(key)
+        if latest is None or dt > latest[0]:
+            month_latest[key] = (dt, row)
+    month_map = {
+        key: _to_decimal(getattr(row, value_field))
+        for key, (dt, row) in month_latest.items()
+    }
+    latest_date = max((dt for dt, _ in month_latest.values()), default=None)
+    return month_map, latest_date
+
+
+def _build_metric_series(qs, value_field, *, label_format="%b %Y", months=12, scale=None):
+    month_map, latest_date = _build_metric_month_map(qs, value_field)
+    if not month_map or not latest_date:
+        return [], []
+    labels = []
+    values = []
+    for month_date in _month_sequence_from(latest_date, months):
+        key = (month_date.year, month_date.month)
+        value = month_map.get(key, Decimal("0"))
+        if scale:
+            value = value / scale
+        labels.append(month_date.strftime(label_format))
+        values.append(float(value))
+    return labels, values
+
+
 def _format_compact_currency(value):
     if value is None:
         return "—"
@@ -2046,6 +2097,7 @@ def _inventory_context(borrower, snapshot_text=None):
         "inventory_trend_series": [],
     }
 
+    normalized_division = "all"
     state = _inventory_state(borrower)
     if not state:
         return context
@@ -2198,46 +2250,91 @@ def _inventory_context(borrower, snapshot_text=None):
     category_keys = [category["key"] for category in CATEGORY_CONFIG]
     history_map = OrderedDict()
     label_map = {}
-    for row in inventory_rows:
-        created_at = getattr(row, "created_at", None)
-        if not created_at:
-            continue
-        date_key = created_at.date()
-        label = created_at.strftime("%b %Y")
-        label_map[label] = date_key
-        for category in CATEGORY_CONFIG:
-            if _matches_category(row, category["match"]):
-                bucket = history_map.setdefault(
-                    label, {key: Decimal("0") for key in category_keys}
-                )
-                bucket[category["key"]] += _to_decimal(row.eligible_collateral)
-                break
+    fg_qs = FGInventoryMetricsRow.objects.filter(borrower=borrower)
+    rm_qs = RMInventoryMetricsRow.objects.filter(borrower=borrower)
+    wip_qs = WIPInventoryMetricsRow.objects.filter(borrower=borrower)
+    fg_map, fg_latest = _build_metric_month_map(fg_qs, "available_inventory")
+    rm_map, rm_latest = _build_metric_month_map(rm_qs, "available_inventory")
+    wip_map, wip_latest = _build_metric_month_map(wip_qs, "available_inventory")
+    latest_dates = [dt for dt in (fg_latest, rm_latest, wip_latest) if dt]
+    latest_date = max(latest_dates) if latest_dates else None
+
+    if latest_date:
+        for month_date in _month_sequence_from(latest_date, 12):
+            label = month_date.strftime("%b %Y")
+            label_map[label] = month_date
+            history_map[label] = {
+                "finished_goods": fg_map.get((month_date.year, month_date.month), Decimal("0")),
+                "raw_materials": rm_map.get((month_date.year, month_date.month), Decimal("0")),
+                "work_in_progress": wip_map.get((month_date.year, month_date.month), Decimal("0")),
+            }
 
     series_values = {key: [] for key in category_keys}
     series_labels = []
-    if len(history_map) > 1:
-        sorted_labels = [
-            label for label, _ in sorted(label_map.items(), key=lambda item: item[1])
-        ][-12:]
-        for label in sorted_labels:
+    if history_map:
+        latest_date = max(label_map.values())
+        months = []
+        year = latest_date.year
+        month = latest_date.month
+        for _ in range(12):
+            months.append(date(year, month, 1))
+            month -= 1
+            if month == 0:
+                month = 12
+                year -= 1
+        months = list(reversed(months))
+        for month_date in months:
+            label = month_date.strftime("%b %Y")
             bucket = history_map.get(label, {})
             series_labels.append(label)
             for key in category_keys:
                 series_values[key].append(bucket.get(key, Decimal("0")))
-    else:
-        base_values = {
-            key: category_metrics[key]["eligible"] for key in category_keys
-        }
-        synthetic_months = _iter_months(date.today(), 12)
-        for idx, month_date in enumerate(synthetic_months):
-            series_labels.append(month_date.strftime("%b %Y"))
-            for key_index, key in enumerate(category_keys):
-                base = base_values[key]
-                factor = 1 + (math.sin((idx + key_index) * 0.6) * 0.08) + ((idx % 4) - 1.5) * 0.01
-                value = base * Decimal(str(factor))
-                if value < 0:
-                    value = Decimal("0")
-                series_values[key].append(value)
+
+    def _pct_ratio(value):
+        if value is None:
+            return Decimal("0")
+        try:
+            pct = Decimal(value)
+        except Exception:
+            try:
+                pct = Decimal(str(value))
+            except Exception:
+                return Decimal("0")
+        return (pct / Decimal("100")) if pct > 1 else pct
+
+    net_recovery_map = {}
+    net_recovery_latest = None
+    net_recovery_rows = NOLVTableRow.objects.filter(borrower=borrower)
+    if normalized_division != "all":
+        net_recovery_rows = net_recovery_rows.filter(division__iexact=normalized_division)
+    net_recovery_rows = net_recovery_rows.exclude(date__isnull=True).order_by("date", "id")
+    latest_per_month = {}
+    for row in net_recovery_rows:
+        label = (row.line_item or "").strip().lower()
+        if "net recovery" not in label and "net orderly liquidated value" not in label:
+            continue
+        row_date = row.date
+        month_key = (row_date.year, row_date.month)
+        latest = latest_per_month.get(month_key)
+        if latest is None or row_date > latest[0]:
+            latest_per_month[month_key] = (row_date, row)
+    if latest_per_month:
+        net_recovery_latest = max(dt for dt, _ in latest_per_month.values())
+        for month_date in _month_sequence_from(net_recovery_latest, 12):
+            key = (month_date.year, month_date.month)
+            row = latest_per_month.get(key, (None, None))[1]
+            if row is None:
+                net_recovery_map[key] = {
+                    "finished_goods": Decimal("0"),
+                    "raw_materials": Decimal("0"),
+                    "work_in_progress": Decimal("0"),
+                }
+                continue
+            net_recovery_map[key] = {
+                "finished_goods": _pct_ratio(row.fg_pct_cost),
+                "raw_materials": _pct_ratio(row.rm_pct_cost),
+                "work_in_progress": _pct_ratio(row.wip_pct_cost),
+            }
 
     totals = []
     for idx in range(len(series_labels)):
@@ -2245,6 +2342,15 @@ def _inventory_context(borrower, snapshot_text=None):
     max_total = max(totals) if totals else Decimal("1")
     if max_total <= 0:
         max_total = Decimal("1")
+    if totals:
+        latest_total = totals[-1]
+        if inventory_available_total and latest_total != inventory_available_total:
+            logger.warning(
+                "inventory_trend_latest_mismatch borrower_id=%s latest_total=%s inventory_available=%s",
+                borrower.id,
+                latest_total,
+                inventory_available_total,
+            )
 
     tick_count = 4
     step_value = Decimal(str(_nice_step(float(max_total) / max(1, tick_count - 1))))
@@ -2348,7 +2454,12 @@ def _inventory_context(borrower, snapshot_text=None):
             return f"{parts[0]} {parts[1][-2:]}"
         return label
 
-    trend_labels = series_labels or TREND_LABELS
+    net_recovery_labels = []
+    if net_recovery_latest:
+        net_recovery_labels = [
+            month.strftime("%b %Y") for month in _month_sequence_from(net_recovery_latest, 12)
+        ]
+    trend_labels = net_recovery_labels or series_labels or TREND_LABELS
     trend_positions = TREND_X_POSITIONS[: len(trend_labels)]
     if len(trend_positions) < len(trend_labels):
         last_x = trend_positions[-1] if trend_positions else TREND_X_POSITIONS[0]
@@ -2360,7 +2471,16 @@ def _inventory_context(borrower, snapshot_text=None):
     series_value_map = {key: [Decimal("0")] * len(trend_labels) for key in category_keys}
     for idx, label in enumerate(trend_labels):
         month_key = label.replace("\n", " ")
-        month_values = history_map.get(month_key, {})
+        parts = month_key.split()
+        month_values = {}
+        if len(parts) >= 2 and net_recovery_map:
+            try:
+                month_date = datetime.strptime(f"{parts[0]} {parts[1]}", "%b %Y").date()
+                month_values = net_recovery_map.get((month_date.year, month_date.month), {})
+            except Exception:
+                month_values = {}
+        if not month_values:
+            month_values = history_map.get(month_key, {})
         for key in category_keys:
             series_value_map[key][idx] = _to_decimal(month_values.get(key, Decimal("0")))
 
@@ -2431,6 +2551,10 @@ def _inventory_context(borrower, snapshot_text=None):
         "inventory_mix_trend_chart": inventory_mix_trend_chart,
         "inventory_trend_series": inventory_trend_series,
         "inventory_trend_labels": trend_label_payload,
+        "inventory_available_trend": {
+            "labels": series_labels,
+            "values": [float(value) for value in totals],
+        },
     }
 
 def _accounts_receivable_context(borrower, range_key="today", division="all", snapshot_summary=None):
@@ -4383,85 +4507,31 @@ def _finished_goals_context(
 
     inventory_trend_labels = []
     inventory_trend_values = []
-    inventory_rows_all = CollateralOverviewRow.objects.filter(
-        borrower=borrower,
-        main_type__icontains="inventory",
-    ).exclude(created_at__isnull=True)
-    inventory_rows_all = _apply_date_filter(inventory_rows_all, "created_at")
-    inventory_rows_all = inventory_rows_all.order_by("created_at", "id")
-    inventory_trend_map = OrderedDict()
-    for row in inventory_rows_all:
-        if not _matches_category(row, CATEGORY_CONFIG[0]["match"]):
-            continue
-        dt = row.created_at.date()
-        key = (dt.year, dt.month)
-        if key not in inventory_trend_map:
-            inventory_trend_map[key] = Decimal("0")
-        inventory_trend_map[key] += _to_decimal(row.eligible_collateral)
-
-    if inventory_trend_map:
-        latest_year = max(year for year, _ in inventory_trend_map.keys())
-        inventory_trend_labels, inventory_trend_values = _build_year_series(
-            inventory_trend_map,
-            latest_year,
-            scale=trend_scale,
-        )
-    else:
-        def _month_label(idx, total):
-            base = date.today().replace(day=1)
-            offset = total - idx - 1
-            month = base.month - offset
-            year = base.year
-            while month <= 0:
-                month += 12
-                year -= 1
-            return date(year, month, 1).strftime("%b\n%Y")
-
-        base_value = float(inventory_available_total / trend_scale) if inventory_available_total else 0.0
-        for idx in range(12):
-            inventory_trend_labels.append(_month_label(idx, 12))
-            variation = math.sin(idx / 2.0) * 0.06
-            value = max(0.0, base_value * (1 + variation))
-            inventory_trend_values.append(value)
-
-    if len(inventory_trend_values) < 2:
-        def _month_label(idx, total):
-            base = date.today().replace(day=1)
-            offset = total - idx - 1
-            month = base.month - offset
-            year = base.year
-            while month <= 0:
-                month += 12
-                year -= 1
-            return date(year, month, 1).strftime("%b\n%Y")
-
-        base_value = float(inventory_available_total / trend_scale) if inventory_available_total else 0.0
-        inventory_trend_labels = [_month_label(idx, 12) for idx in range(12)]
-        inventory_trend_values = [
-            max(0.0, base_value * (1 + math.sin(idx / 2.0) * 0.06))
-            for idx in range(12)
-        ]
+    fg_metrics_qs = FGInventoryMetricsRow.objects.filter(borrower=borrower)
+    fg_metrics_qs = _apply_division_filter(fg_metrics_qs)
+    fg_metrics_qs = _apply_date_filter_or_latest(fg_metrics_qs, "as_of_date")
+    inventory_trend_labels, inventory_trend_values = _build_metric_series(
+        fg_metrics_qs,
+        "available_inventory",
+        label_format="%b\n%Y",
+        months=12,
+        scale=trend_scale,
+    )
 
     trend_values_clean = [value for value in inventory_trend_values if value is not None]
     trend_min = min(trend_values_clean) if trend_values_clean else 0
     trend_max = max(trend_values_clean) if trend_values_clean else 0
-    pad_ratio = (
-        inventory_trend_pad_ratio
-        if inventory_trend_pad_ratio in (0.05, 0.1, 0.10)
-        else 0.10
-    )
     if trend_values_clean:
         if trend_min == trend_max:
-            pad = abs(trend_min) * pad_ratio
-            if pad == 0:
-                pad = 1.0
+            pad = abs(trend_min) * 0.10 or 1.0
             trend_y_min = trend_min - pad
             trend_y_max = trend_max + pad
         else:
-            trend_y_min = trend_min - (abs(trend_min) * pad_ratio)
-            trend_y_max = trend_max + (abs(trend_max) * pad_ratio)
+            pad = (trend_max - trend_min) * 0.10
+            trend_y_min = trend_min - pad
+            trend_y_max = trend_max + pad
             if trend_y_max <= trend_y_min:
-                trend_y_max = trend_y_min + max(1.0, abs(trend_max) * pad_ratio)
+                trend_y_max = trend_y_min + max(1.0, abs(trend_max) * 0.10)
     else:
         trend_y_min = 0
         trend_y_max = 1
@@ -4651,169 +4721,85 @@ def _finished_goals_context(
     inline_excess_by_category = []
     inline_excess_totals = {}
     if inline_excess_rows:
-        category_totals = OrderedDict()
-        total_available = Decimal("0")
-        total_inline = Decimal("0")
-        total_excess = Decimal("0")
-        for row in inline_excess_rows:
-            category = (row.category or "Category").strip()
-            if category not in category_totals:
-                category_totals[category] = {
-                    "available": Decimal("0"),
-                    "inline": Decimal("0"),
-                    "excess": Decimal("0"),
-                }
-            category_totals[category]["available"] += _to_decimal(row.fg_available)
-            category_totals[category]["inline"] += _to_decimal(row.inline_dollars)
-            category_totals[category]["excess"] += _to_decimal(row.excess_dollars)
-            total_available += _to_decimal(row.fg_available)
-            total_inline += _to_decimal(row.inline_dollars)
-            total_excess += _to_decimal(row.excess_dollars)
-
-        raw_entries = []
-        for category, totals in category_totals.items():
-            available = totals["available"]
-            inline_value = totals["inline"]
-            excess_value = totals["excess"]
-            inline_pct_value = (inline_value / available) if available else None
-            excess_pct_value = (excess_value / available) if available else None
-            raw_entries.append(
-                {
-                    "category": category,
-                    "available": available,
-                    "inline_amount": inline_value,
-                    "inline_pct": inline_pct_value,
-                    "excess_amount": excess_value,
-                    "excess_pct": excess_pct_value,
-                }
-            )
-
-        raw_entries.sort(key=lambda entry: entry["inline_amount"], reverse=True)
-
-        for entry in raw_entries:
-            inline_amount_value = entry["inline_amount"]
-            excess_amount_value = entry["excess_amount"]
-            inline_pct_value = entry["inline_pct"]
-            excess_pct_value = entry["excess_pct"]
-            available_value = entry["available"]
-            total_amount_value = inline_amount_value + excess_amount_value
-            total_pct_value = None
-            if available_value:
-                total_pct_value = total_amount_value / available_value
-            elif inline_pct_value is not None and excess_pct_value is not None:
-                total_pct_value = inline_pct_value + excess_pct_value
-            if total_pct_value is not None and total_pct_value > Decimal("1"):
-                total_pct_value = Decimal("1")
-
-            inline_amount = _format_currency(inline_amount_value)
-            inline_pct = (
-                _format_pct(inline_pct_value) if inline_pct_value is not None else "—"
-            )
-            excess_amount = _format_currency(excess_amount_value)
-            excess_pct = (
-                _format_pct(excess_pct_value) if excess_pct_value is not None else "—"
-            )
-            total_amount = _format_currency(total_amount_value)
-            total_pct = _format_pct(total_pct_value) if total_pct_value is not None else "—"
-            inline_excess_by_category.append(
-                {
-                    "category": entry["category"],
-                    "new_amount": inline_amount,
-                    "new_pct": inline_pct,
-                    "inline_0_52_amount": inline_amount,
-                    "inline_0_52_pct": inline_pct,
-                    "inline_total_amount": inline_amount,
-                    "inline_total_pct": inline_pct,
-                    "week_52_amount": excess_amount,
-                    "week_52_pct": excess_pct,
-                    "no_sales_amount": excess_amount,
-                    "no_sales_pct": excess_pct,
-                    "excess_total_amount": excess_amount,
-                    "excess_total_pct": excess_pct,
-                    "total_amount": total_amount,
-                    "total_pct": total_pct,
-                }
-            )
-
-        inline_total_pct = (
-            _format_pct(total_inline / total_available) if total_available else "—"
-        )
-        excess_total_pct = (
-            _format_pct(total_excess / total_available) if total_available else "—"
-        )
-        total_amount_value = total_inline + total_excess
-        total_pct_value = (
-            (total_amount_value / total_available) if total_available else None
-        )
-        if total_pct_value is not None and total_pct_value > Decimal("1"):
-            total_pct_value = Decimal("1")
-        inline_excess_totals = {
-            "new_amount": _format_currency(total_inline),
-            "new_pct": inline_total_pct,
-            "inline_0_52_amount": _format_currency(total_inline),
-            "inline_0_52_pct": inline_total_pct,
-            "inline_total_amount": _format_currency(total_inline),
-            "inline_total_pct": inline_total_pct,
-            "week_52_amount": _format_currency(total_excess),
-            "week_52_pct": excess_total_pct,
-            "no_sales_amount": _format_currency(total_excess),
-            "no_sales_pct": excess_total_pct,
-            "excess_total_amount": _format_currency(total_excess),
-            "excess_total_pct": excess_total_pct,
-            "total_amount": _format_currency(total_amount_value),
-            "total_pct": _format_pct(total_pct_value) if total_pct_value is not None else "—",
+        totals = {
+            "new": Decimal("0"),
+            "inline_0_52": Decimal("0"),
+            "inline_total": Decimal("0"),
+            "week_52": Decimal("0"),
+            "no_sales": Decimal("0"),
+            "excess_total": Decimal("0"),
+            "total": Decimal("0"),
         }
-    else:
-        sample_categories = [
-            "Cabinets",
-            "Doors",
-            "Flooring Products",
-            "Moulding & Trim",
-            "Decking",
-            "Roofing",
-            "Windows",
-            "Hardware",
-            "Insulation",
-            "Tools",
-            "Others",
-        ]
-        sample_amount = "$976"
-        sample_pct = "75.0%"
-        for category in sample_categories:
+        for row in inline_excess_rows:
+            available = _to_decimal(row.fg_available)
+            inline_amount = _to_decimal(row.inline_dollars)
+            excess_amount = _to_decimal(row.excess_dollars)
+            new_amount = Decimal("0")
+            no_sales_amount = Decimal("0")
+            inline_0_52_amount = inline_amount
+            total_inline = new_amount + inline_0_52_amount
+            week_52_amount = excess_amount
+            total_excess = week_52_amount + no_sales_amount
+            total_amount = total_inline + total_excess
+
+            if available and total_amount != available:
+                logger.warning(
+                    "inline_excess_total_mismatch row_id=%s category=%s total=%s available=%s",
+                    row.id,
+                    row.category,
+                    total_amount,
+                    available,
+                )
+
+            def _pct(value, base):
+                return (value / base) if base else None
+
             inline_excess_by_category.append(
                 {
-                    "category": category,
-                    "new_amount": sample_amount,
-                    "new_pct": sample_pct,
-                    "inline_0_52_amount": sample_amount,
-                    "inline_0_52_pct": sample_pct,
-                    "inline_total_amount": sample_amount,
-                    "inline_total_pct": sample_pct,
-                    "week_52_amount": sample_amount,
-                    "week_52_pct": sample_pct,
-                    "no_sales_amount": sample_amount,
-                    "no_sales_pct": sample_pct,
-                    "excess_total_amount": sample_amount,
-                    "excess_total_pct": sample_pct,
-                    "total_amount": sample_amount,
-                    "total_pct": sample_pct,
+                    "category": (row.category or "Category").strip(),
+                    "new_amount": _format_currency(new_amount),
+                    "new_pct": _format_pct(_pct(new_amount, total_amount)),
+                    "inline_0_52_amount": _format_currency(inline_0_52_amount),
+                    "inline_0_52_pct": _format_pct(_pct(inline_0_52_amount, total_amount)),
+                    "inline_total_amount": _format_currency(total_inline),
+                    "inline_total_pct": _format_pct(_pct(total_inline, total_amount)),
+                    "week_52_amount": _format_currency(week_52_amount),
+                    "week_52_pct": _format_pct(_pct(week_52_amount, total_amount)),
+                    "no_sales_amount": _format_currency(no_sales_amount),
+                    "no_sales_pct": _format_pct(_pct(no_sales_amount, total_amount)),
+                    "excess_total_amount": _format_currency(total_excess),
+                    "excess_total_pct": _format_pct(_pct(total_excess, total_amount)),
+                    "total_amount": _format_currency(total_amount),
+                    "total_pct": _format_pct(_pct(total_amount, total_amount)),
                 }
             )
+
+            totals["new"] += new_amount
+            totals["inline_0_52"] += inline_0_52_amount
+            totals["inline_total"] += total_inline
+            totals["week_52"] += week_52_amount
+            totals["no_sales"] += no_sales_amount
+            totals["excess_total"] += total_excess
+            totals["total"] += total_amount
+
+        def _total_pct(value):
+            return _format_pct((value / totals["total"]) if totals["total"] else None)
+
         inline_excess_totals = {
-            "new_amount": sample_amount,
-            "new_pct": sample_pct,
-            "inline_0_52_amount": sample_amount,
-            "inline_0_52_pct": sample_pct,
-            "inline_total_amount": sample_amount,
-            "inline_total_pct": sample_pct,
-            "week_52_amount": sample_amount,
-            "week_52_pct": sample_pct,
-            "no_sales_amount": sample_amount,
-            "no_sales_pct": sample_pct,
-            "excess_total_amount": sample_amount,
-            "excess_total_pct": sample_pct,
-            "total_amount": sample_amount,
-            "total_pct": sample_pct,
+            "new_amount": _format_currency(totals["new"]),
+            "new_pct": _total_pct(totals["new"]),
+            "inline_0_52_amount": _format_currency(totals["inline_0_52"]),
+            "inline_0_52_pct": _total_pct(totals["inline_0_52"]),
+            "inline_total_amount": _format_currency(totals["inline_total"]),
+            "inline_total_pct": _total_pct(totals["inline_total"]),
+            "week_52_amount": _format_currency(totals["week_52"]),
+            "week_52_pct": _total_pct(totals["week_52"]),
+            "no_sales_amount": _format_currency(totals["no_sales"]),
+            "no_sales_pct": _total_pct(totals["no_sales"]),
+            "excess_total_amount": _format_currency(totals["excess_total"]),
+            "excess_total_pct": _total_pct(totals["excess_total"]),
+            "total_amount": _format_currency(totals["total"]),
+            "total_pct": _total_pct(totals["total"]),
         }
 
     TOP_SKU_LIMIT = 20
@@ -4821,22 +4807,12 @@ def _finished_goals_context(
     sku_query = HistoricalTop20SKUsRow.objects.filter(borrower=borrower)
     sku_query = _apply_division_filter(sku_query)
     sku_query = _apply_date_filter_or_latest(sku_query, "as_of_date")
-    sku_rows = []
-    sku_dated = sku_query.exclude(as_of_date__isnull=True)
-    if sku_dated.exists():
-        if start_date and end_date:
-            sku_rows = list(
-                sku_dated.filter(as_of_date__range=(start_date, end_date))
-            )
-        if not sku_rows:
-            latest_date = sku_dated.order_by("-as_of_date").values_list("as_of_date", flat=True).first()
-            if latest_date:
-                fallback_start = latest_date - timedelta(days=364)
-                sku_rows = list(
-                    sku_dated.filter(as_of_date__range=(fallback_start, latest_date))
-                )
-    if not sku_rows:
-        sku_rows = list(sku_query.order_by("-created_at", "-id"))
+    sku_query, _ = _filter_to_latest_month(
+        sku_query,
+        "as_of_date",
+        fallback_field="created_at",
+    )
+    sku_rows = list(sku_query.order_by("item_number", "id"))
 
     if sku_rows:
         sku_totals = OrderedDict()
@@ -4919,42 +4895,6 @@ def _finished_goals_context(
             "gm": _format_currency(total_gm),
         }
     else:
-        sample_desc = [
-            "Premium Maple W...",
-            "Solid Core Interior Door",
-            "6-Panel Exterior Door",
-            "Engineered Hardwood",
-            "Laminate Flooring Bundle",
-            "Bamboo Flooring",
-            "Single Hung Window",
-            "Double Hung Window",
-            "Ceramic Tile 12x24",
-            "Concrete Mix Bag",
-            "Asphalt Shingles",
-            "Synthetic Underlay...",
-            "Roof Ridge Vent",
-            "Decorative Trim 8ft",
-            "Colonial Baseboard",
-            "Shoe Moulding 4ft",
-            "Composite Deck Board",
-            "Pressure-Treated W...",
-            "Outdoor Trim",
-            "Bamboo Plank Flooring",
-        ]
-        for desc in sample_desc[:TOP_SKU_LIMIT]:
-            top_sku_rows.append(
-                {
-                    "item_number": "128986",
-                    "category": "Cabinets",
-                    "description": desc,
-                    "cost": "32",
-                    "pct_of_total": "0.1%",
-                    "cogs": "1,175",
-                    "gm": "525",
-                    "gm_pct": "30.9%",
-                    "wos": "4.2",
-                }
-            )
         finished_goals_top_sku_total = None
 
     share_labels = ["Current","1–30","31–60","61–90","91–120","120+"]
@@ -5450,35 +5390,39 @@ def _raw_materials_context(borrower, range_key="today", division="all"):
     sku_other_row = _empty_summary_entry("Other items")
     sku_grand_total = _empty_summary_entry("Total")
 
+    def _filter_latest_month(qs, field_name, fallback_field=None):
+        latest_value = (
+            qs.exclude(**{f"{field_name}__isnull": True})
+            .order_by(f"-{field_name}")
+            .values_list(field_name, flat=True)
+            .first()
+        )
+        filter_field = field_name
+        if latest_value is None and fallback_field:
+            latest_value = (
+                qs.exclude(**{f"{fallback_field}__isnull": True})
+                .order_by(f"-{fallback_field}")
+                .values_list(fallback_field, flat=True)
+                .first()
+            )
+            filter_field = fallback_field if latest_value is not None else field_name
+        if latest_value is None:
+            return qs
+        month_start = latest_value.replace(day=1)
+        next_month = (month_start.replace(day=28) + timedelta(days=4)).replace(day=1)
+        month_end = next_month - timedelta(days=1)
+        if filter_field == fallback_field:
+            return qs.filter(**{f"{filter_field}__date__range": (month_start, month_end)})
+        return qs.filter(**{f"{filter_field}__range": (month_start, month_end)})
+
     sku_base_qs = RMTop20HistoryRow.objects.filter(borrower=borrower)
     if normalized_division != "all":
         sku_base_qs = sku_base_qs.filter(division__iexact=normalized_division)
     sku_qs = sku_base_qs
     if start_date and end_date:
-        range_qs = sku_base_qs.filter(as_of_date__range=(start_date, end_date))
-        if range_qs.exists():
-            sku_qs = range_qs
-    sku_rows = []
-    sku_dated = sku_qs.exclude(as_of_date__isnull=True)
-    if sku_dated.exists():
-        if start_date and end_date:
-            dated_in_range = sku_dated.filter(as_of_date__range=(start_date, end_date))
-            if dated_in_range.exists():
-                latest_date = (
-                    dated_in_range.order_by("-as_of_date")
-                    .values_list("as_of_date", flat=True)
-                    .first()
-                )
-                if latest_date:
-                    sku_rows = list(dated_in_range.filter(as_of_date=latest_date))
-        if not sku_rows:
-            latest_date = (
-                sku_dated.order_by("-as_of_date").values_list("as_of_date", flat=True).first()
-            )
-            if latest_date:
-                sku_rows = list(sku_dated.filter(as_of_date=latest_date))
-    if not sku_rows:
-        sku_rows = list(sku_qs)
+        sku_qs = sku_qs.filter(as_of_date__range=(start_date, end_date))
+    sku_qs = _filter_latest_month(sku_qs, "as_of_date", fallback_field="created_at")
+    sku_rows = list(sku_qs)
 
     if sku_rows:
         sku_totals = OrderedDict()
@@ -5684,35 +5628,22 @@ def _raw_materials_context(borrower, range_key="today", division="all"):
 
     raw_skus = raw_skus[:20]
 
-    def _line_values(base, length=13):
-        values = []
-        for idx in range(length):
-            variation = math.sin(idx / 2.0) * 0.04
-            val = max(0.0, base * (1 + variation))
-            values.append(val)
-        return values
-
-    base_value = float(inventory_available_total) if inventory_available_total else 0.0
-    chart_values = _line_values(base_value)
+    rm_metrics_qs = RMInventoryMetricsRow.objects.filter(borrower=borrower)
+    if normalized_division != "all":
+        rm_metrics_qs = rm_metrics_qs.filter(division__iexact=normalized_division)
+    if start_date and end_date:
+        rm_metrics_qs = rm_metrics_qs.filter(as_of_date__range=(start_date, end_date))
+    series_labels, chart_values = _build_metric_series(
+        rm_metrics_qs,
+        "available_inventory",
+        label_format="%b %Y",
+        months=12,
+    )
     chart_config = {
         "rawInventoryTrend": {
             "type": "line",
             "title": "Inventory Trend",
-            "labels": [
-                "Feb 2024",
-                "Mar 2024",
-                "Apr 2024",
-                "May 2024",
-                "Jun 2024",
-                "Jul 2024",
-                "Aug 2024",
-                "Sep 2024",
-                "Oct 2024",
-                "Nov 2024",
-                "Dec 2024",
-                "Jan 2025",
-                "Feb 2025",
-            ],
+            "labels": series_labels,
             "values": chart_values,
             "yPrefix": "$ ",
             "ySuffix": "M",
@@ -6027,7 +5958,6 @@ def _work_in_progress_context(borrower, range_key="today", division="all"):
             item.pop("_available_value", None)
 
     available_denominator = total_available if total_available > 0 else Decimal("0")
-    available_denominator = total_available if total_available > 0 else Decimal("0")
     raw_skus = []
     top20_total = _empty_summary_entry("Top 20 Total")
     sku_base_qs = WIPTop20HistoryRow.objects.filter(borrower=borrower)
@@ -6035,23 +5965,35 @@ def _work_in_progress_context(borrower, range_key="today", division="all"):
         sku_base_qs = sku_base_qs.filter(division__iexact=normalized_division)
     sku_qs = sku_base_qs
     if start_date and end_date:
-        range_qs = sku_base_qs.filter(as_of_date__range=(start_date, end_date))
-        if range_qs.exists():
-            sku_qs = range_qs
-    sku_rows = []
-    sku_dated = sku_qs.exclude(as_of_date__isnull=True)
-    if sku_dated.exists():
-        if start_date and end_date:
-            sku_rows = list(sku_dated.filter(as_of_date__range=(start_date, end_date)))
-        if not sku_rows:
-            latest_date = sku_dated.order_by("-as_of_date").values_list("as_of_date", flat=True).first()
-            if latest_date:
-                fallback_start = latest_date - timedelta(days=364)
-                sku_rows = list(
-                    sku_dated.filter(as_of_date__range=(fallback_start, latest_date))
-                )
-    if not sku_rows:
-        sku_rows = list(sku_qs)
+        sku_qs = sku_qs.filter(as_of_date__range=(start_date, end_date))
+
+    def _filter_latest_month(qs, field_name, fallback_field=None):
+        latest_value = (
+            qs.exclude(**{f"{field_name}__isnull": True})
+            .order_by(f"-{field_name}")
+            .values_list(field_name, flat=True)
+            .first()
+        )
+        filter_field = field_name
+        if latest_value is None and fallback_field:
+            latest_value = (
+                qs.exclude(**{f"{fallback_field}__isnull": True})
+                .order_by(f"-{fallback_field}")
+                .values_list(fallback_field, flat=True)
+                .first()
+            )
+            filter_field = fallback_field if latest_value is not None else field_name
+        if latest_value is None:
+            return qs
+        month_start = latest_value.replace(day=1)
+        next_month = (month_start.replace(day=28) + timedelta(days=4)).replace(day=1)
+        month_end = next_month - timedelta(days=1)
+        if filter_field == fallback_field:
+            return qs.filter(**{f"{filter_field}__date__range": (month_start, month_end)})
+        return qs.filter(**{f"{filter_field}__range": (month_start, month_end)})
+
+    sku_qs = _filter_latest_month(sku_qs, "as_of_date", fallback_field="created_at")
+    sku_rows = list(sku_qs)
 
     if sku_rows:
         sku_totals = OrderedDict()
@@ -6185,44 +6127,7 @@ def _work_in_progress_context(borrower, range_key="today", division="all"):
             ),
         }
     else:
-        sku_rows = sorted(
-            wip_rows,
-            key=lambda row: _to_decimal(row.eligible_collateral),
-            reverse=True,
-        )
-        top20_rows = sku_rows[:20]
-        top20_amount = Decimal("0")
-        top20_available = Decimal("0")
-        for row in top20_rows:
-            eligible = _to_decimal(row.eligible_collateral)
-            beginning = _to_decimal(row.beginning_collateral)
-            pct_available = (eligible / beginning) if beginning else Decimal("0")
-            units = max(int(eligible), 0)
-            value_per_unit = eligible / units if units else Decimal("0")
-            raw_skus.append(
-                {
-                    "item_number": f"RM-{row.id}",
-                    "category": row.main_type or "Inventory",
-                    "description": row.sub_type or row.main_type or "Work-in-Progress",
-                    "amount": _format_currency(beginning),
-                    "units": f"{units:,}" if units else "—",
-                    "per_unit": f"${value_per_unit:.2f}" if units else "—",
-                    "pct_available": _format_pct(pct_available),
-                    "status": "Current" if _to_decimal(row.net_collateral) >= 0 else "At Risk",
-                }
-            )
-            top20_amount += beginning
-            top20_available += eligible
-
-        top20_total = {
-            "label": "Top 20 Total",
-            "total": _format_currency(top20_amount),
-            "ineligible": _format_currency(max(top20_amount - top20_available, Decimal("0"))),
-            "available": _format_currency(top20_available),
-            "pct_available": _format_pct(
-                (top20_available / top20_amount) if top20_amount else Decimal("0")
-            ),
-        }
+        top20_total = _empty_summary_entry("Top 20 Total")
 
     raw_skus = raw_skus[:20]
 
@@ -6231,35 +6136,22 @@ def _work_in_progress_context(borrower, range_key="today", division="all"):
     sku_other_row = base_context["work_in_progress_top_skus_other"]
     sku_grand_total = base_context["work_in_progress_top_skus_total"]
 
-    def _line_values(base, length=13):
-        values = []
-        for idx in range(length):
-            variation = math.sin(idx / 2.0) * 0.04
-            val = max(0.0, base * (1 + variation))
-            values.append(val)
-        return values
-
-    base_value = float(total_available) if total_available else 0.0
-    chart_values = _line_values(base_value)
+    wip_metrics_qs = WIPInventoryMetricsRow.objects.filter(borrower=borrower)
+    if normalized_division != "all":
+        wip_metrics_qs = wip_metrics_qs.filter(division__iexact=normalized_division)
+    if start_date and end_date:
+        wip_metrics_qs = wip_metrics_qs.filter(as_of_date__range=(start_date, end_date))
+    series_labels, chart_values = _build_metric_series(
+        wip_metrics_qs,
+        "available_inventory",
+        label_format="%b %Y",
+        months=12,
+    )
     chart_config = {
         "workInventoryTrend": {
             "type": "line",
             "title": "Inventory Trend",
-            "labels": [
-                "May 2019",
-                "Jun 2019",
-                "Jul 2019",
-                "Aug 2019",
-                "Sep 2019",
-                "Oct 2019",
-                "Nov 2019",
-                "Dec 2019",
-                "Jan 2020",
-                "Feb 2020",
-                "Mar 2020",
-                "Apr 2020",
-                "May 2020",
-            ],
+            "labels": series_labels,
             "values": chart_values,
             "yPrefix": "$ ",
             "ySuffix": "M",
