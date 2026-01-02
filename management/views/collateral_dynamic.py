@@ -34,6 +34,7 @@ from management.models import (
     RMCategoryHistoryRow,
     RMTop20HistoryRow,
     RMInventoryMetricsRow,
+    RawMaterialRecoveryRow,
     NOLVTableRow,
     RMIneligibleOverviewRow,
     RiskSubfactorsRow,
@@ -43,6 +44,7 @@ from management.models import (
     WIPIneligibleOverviewRow,
     WIPInventoryMetricsRow,
     WIPTop20HistoryRow,
+    WIPRecoveryRow,
 )
 from management.views.summary import (
     _build_borrower_summary,
@@ -2302,38 +2304,164 @@ def _inventory_context(borrower, snapshot_text=None):
                 return Decimal("0")
         return (pct / Decimal("100")) if pct > 1 else pct
 
+    def _clamp_pct(value):
+        if value is None:
+            return Decimal("0")
+        if value < 0:
+            return Decimal("0")
+        if value > 1:
+            return Decimal("1")
+        return value
+
     net_recovery_map = {}
     net_recovery_latest = None
-    net_recovery_rows = NOLVTableRow.objects.filter(borrower=borrower)
+
+    fg_recovery_rows = FGGrossRecoveryHistoryRow.objects.filter(borrower=borrower).exclude(
+        as_of_date__isnull=True
+    )
+    rm_recovery_rows = RawMaterialRecoveryRow.objects.filter(borrower=borrower).exclude(
+        date__isnull=True
+    )
+    wip_recovery_rows = WIPRecoveryRow.objects.filter(borrower=borrower).exclude(
+        date__isnull=True
+    )
     if normalized_division != "all":
-        net_recovery_rows = net_recovery_rows.filter(division__iexact=normalized_division)
-    net_recovery_rows = net_recovery_rows.exclude(date__isnull=True).order_by("date", "id")
-    latest_per_month = {}
-    for row in net_recovery_rows:
+        fg_recovery_rows = fg_recovery_rows.filter(division__iexact=normalized_division)
+        rm_recovery_rows = rm_recovery_rows.filter(division__iexact=normalized_division)
+        wip_recovery_rows = wip_recovery_rows.filter(division__iexact=normalized_division)
+
+    def _aggregate_fg_month_map(rows):
+        month_totals = {}
+        latest_date = None
+        for row in rows:
+            dt = row.as_of_date
+            if not dt:
+                continue
+            key = (dt.year, dt.month)
+            entry = month_totals.setdefault(key, {"cost": Decimal("0"), "gross": Decimal("0")})
+            entry["cost"] += _to_decimal(row.cost)
+            entry["gross"] += _to_decimal(row.gross_recovery)
+            if latest_date is None or dt > latest_date:
+                latest_date = dt
+        month_map = {}
+        for key, totals in month_totals.items():
+            cost = totals["cost"]
+            gross = totals["gross"]
+            pct = (gross / cost) if cost else Decimal("0")
+            month_map[key] = _clamp_pct(pct)
+        return month_map, latest_date
+
+    def _aggregate_recovery_month_map(rows):
+        month_totals = {}
+        latest_date = None
+        for row in rows:
+            dt = row.date
+            if not dt:
+                continue
+            key = (dt.year, dt.month)
+            entry = month_totals.setdefault(key, {"available": Decimal("0"), "gross": Decimal("0")})
+            entry["available"] += _to_decimal(row.available_inventory)
+            entry["gross"] += _to_decimal(row.gross_recovery)
+            if latest_date is None or dt > latest_date:
+                latest_date = dt
+        month_map = {}
+        for key, totals in month_totals.items():
+            available = totals["available"]
+            gross = totals["gross"]
+            pct = (gross / available) if available else Decimal("0")
+            month_map[key] = _clamp_pct(pct)
+        return month_map, latest_date
+
+    fg_map, fg_latest = _aggregate_fg_month_map(fg_recovery_rows)
+    rm_map, rm_latest = _aggregate_recovery_month_map(rm_recovery_rows)
+    wip_map, wip_latest = _aggregate_recovery_month_map(wip_recovery_rows)
+
+    fg_metrics_map, _ = _build_metric_month_map(
+        FGInventoryMetricsRow.objects.filter(borrower=borrower),
+        "available_inventory",
+    )
+    rm_metrics_map, _ = _build_metric_month_map(
+        RMInventoryMetricsRow.objects.filter(borrower=borrower),
+        "available_inventory",
+    )
+    wip_metrics_map, _ = _build_metric_month_map(
+        WIPInventoryMetricsRow.objects.filter(borrower=borrower),
+        "available_inventory",
+    )
+
+    nolv_rows = NOLVTableRow.objects.filter(borrower=borrower)
+    if normalized_division != "all":
+        nolv_rows = nolv_rows.filter(division__iexact=normalized_division)
+    nolv_rows = nolv_rows.exclude(date__isnull=True).order_by("date", "id")
+    nolv_latest_per_month = {}
+    for row in nolv_rows:
         label = (row.line_item or "").strip().lower()
         if "net recovery" not in label and "net orderly liquidated value" not in label:
             continue
         row_date = row.date
         month_key = (row_date.year, row_date.month)
-        latest = latest_per_month.get(month_key)
+        latest = nolv_latest_per_month.get(month_key)
         if latest is None or row_date > latest[0]:
-            latest_per_month[month_key] = (row_date, row)
-    if latest_per_month:
-        net_recovery_latest = max(dt for dt, _ in latest_per_month.values())
+            nolv_latest_per_month[month_key] = (row_date, row)
+    nolv_latest = max((dt for dt, _ in nolv_latest_per_month.values()), default=None)
+
+    latest_dates = [dt for dt in (fg_latest, rm_latest, wip_latest, nolv_latest) if dt]
+    net_recovery_latest = max(latest_dates) if latest_dates else None
+
+    if net_recovery_latest:
+        last_known = {
+            "finished_goods": None,
+            "raw_materials": None,
+            "work_in_progress": None,
+        }
         for month_date in _month_sequence_from(net_recovery_latest, 12):
             key = (month_date.year, month_date.month)
-            row = latest_per_month.get(key, (None, None))[1]
-            if row is None:
-                net_recovery_map[key] = {
-                    "finished_goods": Decimal("0"),
-                    "raw_materials": Decimal("0"),
-                    "work_in_progress": Decimal("0"),
+            nolv_row = nolv_latest_per_month.get(key, (None, None))[1]
+            nolv_values = {
+                "finished_goods": None,
+                "raw_materials": None,
+                "work_in_progress": None,
+            }
+            if nolv_row is not None:
+                nolv_values = {
+                    "finished_goods": _clamp_pct(_pct_ratio(nolv_row.fg_pct_cost)),
+                    "raw_materials": _clamp_pct(_pct_ratio(nolv_row.rm_pct_cost)),
+                    "work_in_progress": _clamp_pct(_pct_ratio(nolv_row.wip_pct_cost)),
                 }
-                continue
+                if nolv_values["finished_goods"] in (None, Decimal("0")):
+                    fg_available = fg_metrics_map.get(key)
+                    if fg_available:
+                        nolv_values["finished_goods"] = _clamp_pct(
+                            _to_decimal(nolv_row.fg_usd) / fg_available
+                        )
+                if nolv_values["raw_materials"] in (None, Decimal("0")):
+                    rm_available = rm_metrics_map.get(key)
+                    if rm_available:
+                        nolv_values["raw_materials"] = _clamp_pct(
+                            _to_decimal(nolv_row.rm_usd) / rm_available
+                        )
+                if nolv_values["work_in_progress"] in (None, Decimal("0")):
+                    wip_available = wip_metrics_map.get(key)
+                    if wip_available:
+                        nolv_values["work_in_progress"] = _clamp_pct(
+                            _to_decimal(nolv_row.wip_usd) / wip_available
+                        )
+            fg_val = fg_map.get(key, nolv_values["finished_goods"])
+            rm_val = rm_map.get(key, nolv_values["raw_materials"])
+            wip_val = wip_map.get(key, nolv_values["work_in_progress"])
+            if fg_val is None:
+                fg_val = last_known["finished_goods"] or Decimal("0")
+            if rm_val is None:
+                rm_val = last_known["raw_materials"] or Decimal("0")
+            if wip_val is None:
+                wip_val = last_known["work_in_progress"] or Decimal("0")
+            last_known["finished_goods"] = fg_val
+            last_known["raw_materials"] = rm_val
+            last_known["work_in_progress"] = wip_val
             net_recovery_map[key] = {
-                "finished_goods": _pct_ratio(row.fg_pct_cost),
-                "raw_materials": _pct_ratio(row.rm_pct_cost),
-                "work_in_progress": _pct_ratio(row.wip_pct_cost),
+                "finished_goods": fg_val,
+                "raw_materials": rm_val,
+                "work_in_progress": wip_val,
             }
 
     totals = []

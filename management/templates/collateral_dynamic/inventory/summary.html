@@ -263,7 +263,7 @@
         {% endfor %}
         <g style="font-size:10pt ;fill:#9aa7b8;">
           {% for label in inventory_trend_labels %}
-          <text x="{{ label.x }}" y="230">
+          <text x="{{ label.x }}" y="230" text-anchor="{% if forloop.first %}start{% elif forloop.last %}end{% else %}middle{% endif %}">
             <tspan x="{{ label.x }}" dy="0">{{ label.month }}</tspan>
             {% if label.year %}
               <tspan x="{{ label.x }}" dy="12">{{ label.year }}</tspan>
