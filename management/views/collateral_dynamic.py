@@ -4847,6 +4847,33 @@ def _finished_goals_context(
         fallback_field="created_at",
     )
     inline_excess_rows = list(inline_excess_qs.order_by("category", "id"))
+    aggregated_inline = OrderedDict()
+    for row in inline_excess_rows:
+        category = (row.category or "Category").strip()
+        bucket = aggregated_inline.setdefault(
+            category,
+            {
+                "category": category,
+                "fg_available": Decimal("0"),
+                "inline_dollars": Decimal("0"),
+                "excess_dollars": Decimal("0"),
+                "new_dollars": Decimal("0"),
+                "no_sales_dollars": Decimal("0"),
+                "total_inline_dollars": Decimal("0"),
+                "total_excess_dollars": Decimal("0"),
+                "total_dollars": Decimal("0"),
+            },
+        )
+        bucket["fg_available"] += _to_decimal(row.fg_available)
+        bucket["inline_dollars"] += _to_decimal(row.inline_dollars)
+        bucket["excess_dollars"] += _to_decimal(row.excess_dollars)
+        bucket["new_dollars"] += _to_decimal(getattr(row, "new_dollars", None))
+        bucket["no_sales_dollars"] += _to_decimal(getattr(row, "no_sales_dollars", None))
+        bucket["total_inline_dollars"] += _to_decimal(getattr(row, "total_inline_dollars", None))
+        bucket["total_excess_dollars"] += _to_decimal(getattr(row, "total_excess_dollars", None))
+        bucket["total_dollars"] += _to_decimal(getattr(row, "total_dollars", None))
+    if aggregated_inline:
+        inline_excess_rows = list(aggregated_inline.values())
     inline_excess_by_category = []
     inline_excess_totals = {}
     if inline_excess_rows:
@@ -4860,28 +4887,28 @@ def _finished_goals_context(
             "total": Decimal("0"),
         }
         for row in inline_excess_rows:
-            available = _to_decimal(row.fg_available)
-            inline_amount = _to_decimal(row.inline_dollars)
-            excess_amount = _to_decimal(row.excess_dollars)
-            new_amount = _to_decimal(getattr(row, "new_dollars", None))
-            no_sales_amount = _to_decimal(getattr(row, "no_sales_dollars", None))
+            available = _to_decimal(row.get("fg_available"))
+            inline_amount = _to_decimal(row.get("inline_dollars"))
+            excess_amount = _to_decimal(row.get("excess_dollars"))
+            new_amount = _to_decimal(row.get("new_dollars"))
+            no_sales_amount = _to_decimal(row.get("no_sales_dollars"))
             inline_0_52_amount = inline_amount
-            total_inline = _to_decimal(getattr(row, "total_inline_dollars", None))
+            total_inline = _to_decimal(row.get("total_inline_dollars"))
             if total_inline == 0:
                 total_inline = new_amount + inline_0_52_amount
             week_52_amount = excess_amount
-            total_excess = _to_decimal(getattr(row, "total_excess_dollars", None))
+            total_excess = _to_decimal(row.get("total_excess_dollars"))
             if total_excess == 0:
                 total_excess = week_52_amount + no_sales_amount
-            total_amount = _to_decimal(getattr(row, "total_dollars", None))
+            total_amount = _to_decimal(row.get("total_dollars"))
             if total_amount == 0:
                 total_amount = total_inline + total_excess
 
             if available and total_amount != available:
                 logger.warning(
                     "inline_excess_total_mismatch row_id=%s category=%s total=%s available=%s",
-                    row.id,
-                    row.category,
+                    "aggregate",
+                    row.get("category"),
                     total_amount,
                     available,
                 )
@@ -4891,7 +4918,7 @@ def _finished_goals_context(
 
             inline_excess_by_category.append(
                 {
-                    "category": (row.category or "Category").strip(),
+                    "category": (row.get("category") or "Category").strip(),
                     "new_amount": _format_currency(new_amount),
                     "new_pct": _format_pct(_pct(new_amount, total_amount)),
                     "inline_0_52_amount": _format_currency(inline_0_52_amount),
