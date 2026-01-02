@@ -166,3 +166,15 @@ class FGGrossRecoveryHistoryRowAdmin(BaseBorrowerModelAdmin):
     list_display = ("borrower", "division", "as_of_date", "category", "gross_recovery")
     list_filter = ("division",)
     date_hierarchy = "as_of_date"
+
+
+@admin.register(models.RMCategoryHistoryRow)
+class RMCategoryHistoryRowAdmin(BaseBorrowerModelAdmin):
+    list_display = ("borrower", "date", "category", "total_inventory", "available_inventory")
+    date_hierarchy = "date"
+
+
+@admin.register(models.WIPCategoryHistoryRow)
+class WIPCategoryHistoryRowAdmin(BaseBorrowerModelAdmin):
+    list_display = ("borrower", "date", "category", "total_inventory", "available_inventory")
+    date_hierarchy = "date"
