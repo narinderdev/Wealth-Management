@@ -7936,7 +7936,8 @@ def _liquidation_model_context(borrower):
         def _pct_display(value, base):
             if value is None or base is None or base <= 0:
                 return "—"
-            return _format_pct(value / base)
+            pct_value = (value / base) * Decimal("100")
+            return f"{pct_value:.1f}%"
 
         def _row_amounts(row):
             return {
@@ -8017,8 +8018,8 @@ def _liquidation_model_context(borrower):
             "cost": _format_currency(summary_total_cost),
             "selling": _format_currency(summary_total_selling),
             "gross": _format_currency(summary_total_gross),
-            "pct_cost": _format_pct(summary_total_gross / summary_total_cost) if summary_total_cost else "—",
-            "pct_sp": _format_pct(summary_total_gross / summary_total_selling) if summary_total_selling else "—",
+            "pct_cost": _pct_display(summary_total_gross, summary_total_cost) if summary_total_cost else "—",
+            "pct_sp": _pct_display(summary_total_gross, summary_total_selling) if summary_total_selling else "—",
             "wos": "—",
             "gr_pct": "—",
         }
@@ -8029,8 +8030,8 @@ def _liquidation_model_context(borrower):
             "cost": _format_currency(total_cost),
             "selling": _format_currency(total_selling),
             "gross": _format_currency(total_gross),
-            "pct_cost": _format_pct(pct_cost_value),
-            "pct_sp": _format_pct(pct_sp_value),
+            "pct_cost": _pct_display(total_gross, total_cost) if total_cost else "—",
+            "pct_sp": _pct_display(total_gross, total_selling) if total_selling else "—",
             "wos": "—",
             "gr_pct": "—",
         }
