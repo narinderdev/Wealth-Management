@@ -118,6 +118,8 @@
         { key: 'condition', label: 'Condition' },
         { key: 'fair_market_value', label: 'FMV', format: currencyFormat },
         { key: 'orderly_liquidation_value', label: 'OLV', format: currencyFormat },
+        { key: 'estimated_fair_market_value', label: 'Est. FMV', format: currencyFormat },
+        { key: 'estimated_orderly_liquidation_value', label: 'Est. OLV', format: currencyFormat },
       ],
       fields: [
         { key: 'report_id', label: 'Report ID', type: 'text', required: true },
@@ -139,6 +141,8 @@
         },
         { key: 'fair_market_value', label: 'Fair Market Value', type: 'number' },
         { key: 'orderly_liquidation_value', label: 'Orderly Liquidation Value', type: 'number' },
+        { key: 'estimated_fair_market_value', label: 'Estimated Fair Market Value', type: 'number' },
+        { key: 'estimated_orderly_liquidation_value', label: 'Estimated Orderly Liquidation Value', type: 'number' },
       ],
     },
     agingComposition: {

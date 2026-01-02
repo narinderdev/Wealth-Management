@@ -78,6 +78,8 @@
             <th>Condition</th>
             <th>FMV</th>
             <th>OLV</th>
+            <th>Est. FMV</th>
+            <th>Est. OLV</th>
             <th>Total Assets</th>
             <th>Total FMV</th>
             <th>Total OLV</th>
@@ -95,6 +97,8 @@
               <td>{{ row.condition|default:"—" }}</td>
               <td>{{ row.fair_market_value|default:"—" }}</td>
               <td>{{ row.orderly_liquidation_value|default:"—" }}</td>
+              <td>{{ row.estimated_fair_market_value|default:"—" }}</td>
+              <td>{{ row.estimated_orderly_liquidation_value|default:"—" }}</td>
               <td>{{ row.total_asset_count|default:"—" }}</td>
               <td>{{ row.total_fair_market_value|default:"—" }}</td>
               <td>{{ row.total_orderly_liquidation_value|default:"—" }}</td>
@@ -109,7 +113,7 @@
               </td>
             </tr>
           {% empty %}
-            <tr><td colspan="13">No machinery and equipment records available.</td></tr>
+            <tr><td colspan="15">No machinery and equipment records available.</td></tr>
           {% endfor %}
         </tbody>
       </table>

@@ -9,8 +9,14 @@ from django.db import models
 # =========================
 # Helpers
 # =========================
-def MoneyField():
-    return models.DecimalField(max_digits=20, decimal_places=2, null=True, blank=True)
+def MoneyField(**kwargs):
+    return models.DecimalField(
+        max_digits=20,
+        decimal_places=2,
+        null=kwargs.pop("null", True),
+        blank=kwargs.pop("blank", True),
+        **kwargs,
+    )
 
 def PctField():
     return models.DecimalField(max_digits=12, decimal_places=6, null=True, blank=True)
@@ -247,6 +253,8 @@ class MachineryEquipmentRow(TimeStampedModel):
     condition = models.CharField(max_length=255, null=True, blank=True)  # Condition
     fair_market_value = MoneyField()  # Fair Market Value
     orderly_liquidation_value = models.BigIntegerField(null=True, blank=True)  # Orderly Liquidation Value
+    estimated_fair_market_value = MoneyField(null=True, blank=True)  # Estimated Fair Market Value
+    estimated_orderly_liquidation_value = models.BigIntegerField(null=True, blank=True)  # Estimated Orderly Liquidation Value
     total_asset_count = models.IntegerField(null=True, blank=True)  # Total Asset Count 
     total_fair_market_value = MoneyField()  # Total Fair Market Value 
     total_orderly_liquidation_value = models.BigIntegerField(null=True, blank=True)  # Total Orderly Liquidation Value 

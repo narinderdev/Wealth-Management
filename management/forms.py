@@ -508,6 +508,8 @@ class MachineryEquipmentForm(BorrowerModelForm):
             "condition",
             "fair_market_value",
             "orderly_liquidation_value",
+            "estimated_fair_market_value",
+            "estimated_orderly_liquidation_value",
             "total_asset_count",
             "total_fair_market_value",
             "total_orderly_liquidation_value",

@@ -583,6 +583,8 @@
           <col class="col-condition">
           <col class="col-fmv">
           <col class="col-olv">
+          <col class="col-fmv">
+          <col class="col-olv">
         </colgroup>
         <thead>
           <tr>
@@ -594,6 +596,8 @@
             <th>Condition</th>
             <th class="numR">Fair Market Value</th>
             <th class="numR">Orderly Liquidation Value</th>
+            <th class="numR">Estimated FMV</th>
+            <th class="numR">Estimated OLV</th>
           </tr>
         </thead>
         <tbody>
@@ -607,9 +611,11 @@
               <td>{{ row.condition }}</td>
               <td class="numR">{{ row.fmv }}</td>
               <td class="numR">{{ row.olv }}</td>
+              <td class="numR">{{ row.estimated_fmv }}</td>
+              <td class="numR">{{ row.estimated_olv }}</td>
             </tr>
           {% empty %}
-            <tr class="empty-placeholder"><td colspan="8" class="numR">Asset register data not available.</td></tr>
+            <tr class="empty-placeholder"><td colspan="10" class="numR">Asset register data not available.</td></tr>
           {% endfor %}
         </tbody>
       </table>

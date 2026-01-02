@@ -130,6 +130,8 @@ class MachineryEquipmentRowAdmin(BaseBorrowerModelAdmin):
         "year",
         "fair_market_value",
         "orderly_liquidation_value",
+        "estimated_fair_market_value",
+        "estimated_orderly_liquidation_value",
     )
     list_filter = ("equipment_type",)
 

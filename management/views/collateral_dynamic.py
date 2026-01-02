@@ -6393,10 +6393,35 @@ def _other_collateral_context(borrower, snapshot_summary=None):
         )
         return total_fmv, total_olv
 
+    def _row_estimated_fmv(row, fmv_value):
+        estimated = getattr(row, "estimated_fair_market_value", None)
+        if estimated is not None:
+            return _to_decimal(estimated)
+        if fmv_value is None:
+            return Decimal("0")
+        return fmv_value * Decimal("0.98")
+
+    def _row_estimated_olv(row, olv_value):
+        estimated = getattr(row, "estimated_orderly_liquidation_value", None)
+        if estimated is not None:
+            return _to_decimal(estimated)
+        if olv_value is None:
+            return Decimal("0")
+        return olv_value * Decimal("0.96")
+
+    def _aggregate_estimated(rows):
+        total_fmv = Decimal("0")
+        total_olv = Decimal("0")
+        for row in rows:
+            fmv = _to_decimal(row.fair_market_value)
+            olv = _to_decimal(row.orderly_liquidation_value)
+            total_fmv += _row_estimated_fmv(row, fmv)
+            total_olv += _row_estimated_olv(row, olv)
+        return total_fmv, total_olv
+
     total_fmv, total_olv = _aggregate(latest_rows)
     prev_total_fmv, prev_total_olv = _aggregate(prev_rows) if prev_rows else (None, None)
-    estimated_fmv_total = total_fmv * Decimal("0.97")
-    estimated_olv_total = total_olv * Decimal("0.95")
+    estimated_fmv_total, estimated_olv_total = _aggregate_estimated(latest_rows)
 
     def _delta_payload(label, current, previous, fallback):
         delta = _format_delta(current, previous)
@@ -6477,8 +6502,8 @@ def _other_collateral_context(borrower, snapshot_summary=None):
     for row in equipment_rows:
         fmv = _to_decimal(row.fair_market_value)
         olv = _to_decimal(row.orderly_liquidation_value)
-        estimated_fmv = fmv * Decimal("0.98")
-        estimated_olv = olv * Decimal("0.96")
+        estimated_fmv = _row_estimated_fmv(row, fmv)
+        estimated_olv = _row_estimated_olv(row, olv)
         variance_amount = fmv - estimated_fmv
         variance_pct = (
             variance_amount / estimated_fmv if estimated_fmv else Decimal("0")
@@ -6512,6 +6537,8 @@ def _other_collateral_context(borrower, snapshot_summary=None):
                 "condition": row.condition or "—",
                 "fmv": _format_currency(fmv),
                 "olv": _format_currency(olv),
+                "estimated_fmv": _format_currency(estimated_fmv),
+                "estimated_olv": _format_currency(estimated_olv),
             }
         )
 
@@ -6521,16 +6548,21 @@ def _other_collateral_context(borrower, snapshot_summary=None):
         return str(ts)
 
     month_map = OrderedDict()
+    estimated_month_map = OrderedDict()
     for key in snapshot_keys:
         rows = snapshots[key]
         _, olv = _aggregate(rows)
+        _, estimated_olv = _aggregate_estimated(rows)
         if hasattr(key, "year") and hasattr(key, "month"):
             month_map[(key.year, key.month)] = float(olv)
+            estimated_month_map[(key.year, key.month)] = float(estimated_olv)
         else:
             month_map[key] = float(olv)
+            estimated_month_map[key] = float(estimated_olv)
 
     labels = []
     appraisal_series = []
+    estimated_series = []
     if month_map:
         latest_year = max(year for year, _ in month_map.keys())
         values = []
@@ -6546,28 +6578,49 @@ def _other_collateral_context(borrower, snapshot_summary=None):
                     values[idx] = values[idx - 1]
             labels = [date(latest_year, month, 1).strftime("%b %Y") for month in range(1, 13)]
             appraisal_series = [float(v) for v in values]
+            est_values = [
+                estimated_month_map.get((latest_year, month)) for month in range(1, 13)
+            ]
+            first_est = next((i for i, v in enumerate(est_values) if v is not None), None)
+            if first_est is not None:
+                first_val = est_values[first_est]
+                for idx in range(first_est):
+                    est_values[idx] = first_val
+                for idx in range(first_est + 1, len(est_values)):
+                    if est_values[idx] is None:
+                        est_values[idx] = est_values[idx - 1]
+            estimated_series = [float(v) for v in est_values] if first_est is not None else []
 
     if not labels:
         max_points = 12
         values = []
+        estimated_values = []
         for key in snapshot_keys:
             rows = snapshots[key]
             _, olv = _aggregate(rows)
+            _, estimated_olv = _aggregate_estimated(rows)
             values.append(
                 {
                     "label": _label_from_timestamp(key),
                     "olv": float(olv),
                 }
             )
+            estimated_values.append(
+                {
+                    "label": _label_from_timestamp(key),
+                    "olv": float(estimated_olv),
+                }
+            )
         values = values[-max_points:]
+        estimated_values = estimated_values[-max_points:]
         labels = [entry["label"] for entry in values]
         appraisal_series = [entry["olv"] for entry in values]
+        estimated_series = [entry["olv"] for entry in estimated_values]
 
-    estimated_series = [val * 0.96 for val in appraisal_series]
     chart_config = {
         "title": "Value Trend",
         "labels": labels,
-        "estimated": [float(v) for v in estimated_series],
+        "estimated": [float(v) for v in (estimated_series or [])],
         "appraisal": [float(v) for v in appraisal_series],
     } if labels else base_context["other_collateral_value_trend_config"]
 
