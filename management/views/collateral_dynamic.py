@@ -4933,6 +4933,7 @@ def _finished_goals_context(
                     "excess_total_pct": _format_pct(_pct(total_excess, total_amount)),
                     "total_amount": _format_currency(total_amount),
                     "total_pct": _format_pct(_pct(total_amount, total_amount)),
+                    "_total_value": total_amount,
                 }
             )
 
@@ -4946,6 +4947,13 @@ def _finished_goals_context(
 
         def _total_pct(value):
             return _format_pct((value / totals["total"]) if totals["total"] else None)
+
+        inline_excess_by_category.sort(
+            key=lambda row: row.get("_total_value") or Decimal("0"),
+            reverse=True,
+        )
+        for row in inline_excess_by_category:
+            row.pop("_total_value", None)
 
         inline_excess_totals = {
             "new_amount": _format_currency(totals["new"]),
