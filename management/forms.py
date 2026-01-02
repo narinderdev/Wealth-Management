@@ -33,6 +33,7 @@ from .models import (
     IneligibleOverviewRow,
     IneligibleTrendRow,
     MachineryEquipmentRow,
+    ValueTrendRow,
     NOLVTableRow,
     RawMaterialRecoveryRow,
     ReportUpload,
@@ -514,6 +515,22 @@ class MachineryEquipmentForm(BorrowerModelForm):
             "total_fair_market_value",
             "total_orderly_liquidation_value",
         ]
+
+
+class ValueTrendForm(BorrowerModelForm):
+    required_fields = ("borrower", "date")
+
+    class Meta:
+        model = ValueTrendRow
+        fields = [
+            "borrower",
+            "date",
+            "estimated_olv",
+            "appraised_olv",
+        ]
+        widgets = {
+            "date": forms.DateInput(attrs={"type": "date"}),
+        }
 
 
 class AgingCompositionForm(BorrowerModelForm):

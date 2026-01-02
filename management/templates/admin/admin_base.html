@@ -1215,7 +1215,7 @@
           </div>
         </section>
 
-        <section class="sidebar-section sidebar-collapsible is-open{% if current_nav == 'machinery_equipment' %} has-active{% endif %}" data-collapsible>
+        <section class="sidebar-section sidebar-collapsible is-open{% if current_nav == 'machinery_equipment' or current_nav == 'machinery_value_trend' %} has-active{% endif %}" data-collapsible>
           <button class="section-trigger" type="button" aria-expanded="true" aria-controls="sidebar-machinery-panel">
             <span class="label-left">
               <span class="ico" aria-hidden="true">
@@ -1234,6 +1234,7 @@
           </button>
           <div class="sidebar-children" id="sidebar-machinery-panel">
             <a class="sidebar-sub-link{% if current_nav == 'machinery_equipment' %} active{% endif %}" href="{% url 'admin_component' 'machineryEquipment' %}" data-entity="machineryEquipment">Asset Register</a>
+            <a class="sidebar-sub-link{% if current_nav == 'machinery_value_trend' %} active{% endif %}" href="{% url 'admin_component' 'valueTrend' %}" data-entity="valueTrend">Value Trend</a>
           </div>
         </section>
 

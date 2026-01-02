@@ -136,6 +136,18 @@ class MachineryEquipmentRowAdmin(BaseBorrowerModelAdmin):
     list_filter = ("equipment_type",)
 
 
+@admin.register(models.ValueTrendRow)
+class ValueTrendRowAdmin(BaseBorrowerModelAdmin):
+    list_display = (
+        "borrower",
+        "date",
+        "estimated_olv",
+        "appraised_olv",
+    )
+    list_filter = ("date",)
+    date_hierarchy = "date"
+
+
 @admin.register(models.FGGrossRecoveryHistoryRow)
 class FGGrossRecoveryHistoryRowAdmin(BaseBorrowerModelAdmin):
     list_display = ("borrower", "division", "as_of_date", "category", "gross_recovery")

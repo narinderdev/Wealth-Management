@@ -33,6 +33,7 @@ from management.forms import (
     IneligibleOverviewForm,
     IneligibleTrendForm,
     MachineryEquipmentForm,
+    ValueTrendForm,
     NOLVTableForm,
     RawMaterialRecoveryForm,
     RiskSubfactorsForm,
@@ -77,6 +78,7 @@ from management.models import (
     IneligibleOverviewRow,
     IneligibleTrendRow,
     MachineryEquipmentRow,
+    ValueTrendRow,
     NOLVTableRow,
     RawMaterialRecoveryRow,
     RiskSubfactorsRow,
@@ -129,6 +131,12 @@ COMPONENT_REGISTRY = {
         "title": "Machinery & Equipment",
         "template": "admin/components/machineryEquipment.html",
         "nav_key": "machinery_equipment",
+    },
+    "valueTrend": {
+        "title": "Value Trend",
+        "template": "admin/components/valueTrend.html",
+        "nav_key": "machinery_value_trend",
+        "description": "Maintain estimated and appraised OLV points used in Other Collateral trends.",
     },
     "agingComposition": {
         "title": "Aging Composition",
@@ -667,6 +675,22 @@ HANDLERS = {
             {"param": "equipment_type", "label": "Type", "field": "equipment_type"},
             {"param": "year", "label": "Year", "field": "year"},
             {"param": "condition", "label": "Condition", "field": "condition"},
+        ],
+    ),
+    "valueTrend": ModelComponentHandler(
+        slug="valueTrend",
+        model=ValueTrendRow,
+        form_class=ValueTrendForm,
+        ordering=["-date"],
+        select_related=["borrower", "borrower__company"],
+        filters=[
+            {
+                "param": "borrower",
+                "label": "Borrower",
+                "field": "borrower__id",
+                "queryset": Borrower.objects.select_related("company").order_by("company__company", "primary_contact"),
+            },
+            {"param": "year", "label": "Year", "field": "date__year"},
         ],
     ),
     "agingComposition": ModelComponentHandler(

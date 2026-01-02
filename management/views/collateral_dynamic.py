@@ -31,6 +31,7 @@ from management.models import (
     IneligibleOverviewRow,
     IneligibleTrendRow,
     MachineryEquipmentRow,
+    ValueTrendRow,
     RMCategoryHistoryRow,
     RMTop20HistoryRow,
     RMInventoryMetricsRow,
@@ -6355,10 +6356,42 @@ def _other_collateral_context(borrower, snapshot_summary=None):
     if not borrower:
         return base_context
 
+    def _label_from_timestamp(ts):
+        if hasattr(ts, "strftime"):
+            return ts.strftime("%b %y")
+        return str(ts)
+
+    value_trend_rows = list(
+        ValueTrendRow.objects.filter(borrower=borrower).order_by("date", "id")
+    )
     equipment_rows = list(
         MachineryEquipmentRow.objects.filter(borrower=borrower).order_by("created_at", "id")
     )
     if not equipment_rows:
+        if value_trend_rows:
+            trend_points = []
+            for row in value_trend_rows[-12:]:
+                label_source = row.date or (row.created_at.date() if row.created_at else row.id)
+                trend_points.append(
+                    {
+                        "label": _label_from_timestamp(label_source),
+                        "appraisal": float(_to_decimal(row.appraised_olv)) if row.appraised_olv is not None else None,
+                        "estimated": float(_to_decimal(row.estimated_olv)) if row.estimated_olv is not None else None,
+                    }
+                )
+            labels = [point["label"] for point in trend_points]
+            appraisal_series = [point["appraisal"] for point in trend_points]
+            estimated_series = [point["estimated"] for point in trend_points]
+            chart_config = {
+                "title": "Value Trend",
+                "labels": labels,
+                "estimated": [float(v) for v in (estimated_series or [])],
+                "appraisal": [float(v) for v in appraisal_series],
+            } if labels else base_context["other_collateral_value_trend_config"]
+            return {
+                **base_context,
+                "other_collateral_value_trend_config": chart_config,
+            }
         return base_context
 
     snapshots = OrderedDict()
@@ -6431,32 +6464,38 @@ def _other_collateral_context(borrower, snapshot_summary=None):
     prev_total_fmv, prev_total_olv = _aggregate(prev_rows) if prev_rows else (None, None)
     estimated_fmv_total, estimated_olv_total = _aggregate_estimated(latest_rows)
 
-    def _delta_payload(label, current, previous, fallback):
-        delta = _format_delta(current, previous)
-        if not delta and fallback is not None:
-            delta = _format_delta(current, fallback)
-        if not delta:
+    def _delta_vs_appraisal(label, estimated, appraised):
+        if estimated is None or appraised in (None, 0):
             return None
+        estimated_value = _to_decimal(estimated)
+        appraised_value = _to_decimal(appraised)
+        if appraised_value == 0:
+            return None
+        diff = estimated_value - appraised_value
+        pct = (diff / appraised_value) * Decimal("100")
+        is_positive = pct >= 0
         return {
             "label": label,
-            "symbol": delta["sign"],
-            "value": delta["value"],
-            "delta_class": "good" if delta["is_positive"] else "",
+            "symbol": "▲" if is_positive else "▼",
+            "value": f"{pct:.2f}%",
+            "delta_class": "good" if is_positive else "",
         }
 
-    delta_fmv = _delta_payload("Fair Market Value", total_fmv, prev_total_fmv, estimated_fmv_total)
-    delta_olv = _delta_payload(
-        "Orderly Liquidation Value", total_olv, prev_total_olv, estimated_olv_total
+    delta_fmv = _delta_vs_appraisal("Fair Market Value", estimated_fmv_total, total_fmv)
+    delta_olv = _delta_vs_appraisal(
+        "Orderly Liquidation Value", estimated_olv_total, total_olv
     )
 
-    def _change_value(current, previous, fallback):
-        baseline = previous if previous not in (None, 0) else fallback
-        if baseline is None:
-            return None
-        return current - baseline
-
-    change_fmv = _change_value(total_fmv, prev_total_fmv, estimated_fmv_total)
-    change_olv = _change_value(total_olv, prev_total_olv, estimated_olv_total)
+    change_fmv = (
+        _to_decimal(estimated_fmv_total) - _to_decimal(total_fmv)
+        if estimated_fmv_total is not None and total_fmv is not None
+        else None
+    )
+    change_olv = (
+        _to_decimal(estimated_olv_total) - _to_decimal(total_olv)
+        if estimated_olv_total is not None and total_olv is not None
+        else None
+    )
     change_rows = [
         {
             "label": "Fair Market Value",
@@ -6550,80 +6589,48 @@ def _other_collateral_context(borrower, snapshot_summary=None):
             }
         )
 
-    def _label_from_timestamp(ts):
-        if hasattr(ts, "strftime"):
-            return ts.strftime("%b %y")
-        return str(ts)
-
-    month_map = OrderedDict()
-    estimated_month_map = OrderedDict()
-    for key in snapshot_keys:
-        rows = snapshots[key]
-        _, olv = _aggregate(rows)
-        _, estimated_olv = _aggregate_estimated(rows)
-        if hasattr(key, "year") and hasattr(key, "month"):
-            month_map[(key.year, key.month)] = float(olv)
-            estimated_month_map[(key.year, key.month)] = float(estimated_olv)
-        else:
-            month_map[key] = float(olv)
-            estimated_month_map[key] = float(estimated_olv)
+    max_points = 12
 
     labels = []
     appraisal_series = []
     estimated_series = []
-    if month_map:
-        latest_year = max(year for year, _ in month_map.keys())
-        values = []
-        for month in range(1, 13):
-            values.append(month_map.get((latest_year, month)))
-        first_idx = next((i for i, v in enumerate(values) if v is not None), None)
-        if first_idx is not None:
-            first_val = values[first_idx]
-            for idx in range(first_idx):
-                values[idx] = first_val
-            for idx in range(first_idx + 1, len(values)):
-                if values[idx] is None:
-                    values[idx] = values[idx - 1]
-            labels = [date(latest_year, month, 1).strftime("%b %Y") for month in range(1, 13)]
-            appraisal_series = [float(v) for v in values]
-            est_values = [
-                estimated_month_map.get((latest_year, month)) for month in range(1, 13)
-            ]
-            first_est = next((i for i, v in enumerate(est_values) if v is not None), None)
-            if first_est is not None:
-                first_val = est_values[first_est]
-                for idx in range(first_est):
-                    est_values[idx] = first_val
-                for idx in range(first_est + 1, len(est_values)):
-                    if est_values[idx] is None:
-                        est_values[idx] = est_values[idx - 1]
-            estimated_series = [float(v) for v in est_values] if first_est is not None else []
 
-    if not labels:
-        max_points = 12
-        values = []
-        estimated_values = []
+    if len(value_trend_rows) >= 2:
+        trend_points = []
+        for row in value_trend_rows[-max_points:]:
+            label_source = row.date or (row.created_at.date() if row.created_at else row.id)
+            trend_points.append(
+                {
+                    "label": _label_from_timestamp(label_source),
+                    "appraisal": float(_to_decimal(row.appraised_olv)) if row.appraised_olv is not None else None,
+                    "estimated": float(_to_decimal(row.estimated_olv)) if row.estimated_olv is not None else None,
+                }
+            )
+        labels = [point["label"] for point in trend_points]
+        appraisal_series = [point["appraisal"] for point in trend_points]
+        estimated_series = [point["estimated"] for point in trend_points]
+    else:
+        trend_points = []
         for key in snapshot_keys:
             rows = snapshots[key]
             _, olv = _aggregate(rows)
             _, estimated_olv = _aggregate_estimated(rows)
-            values.append(
+            trend_points.append(
                 {
                     "label": _label_from_timestamp(key),
-                    "olv": float(olv),
+                    "appraisal": float(olv) if olv is not None else None,
+                    "estimated": float(estimated_olv) if estimated_olv is not None else None,
                 }
             )
-            estimated_values.append(
-                {
-                    "label": _label_from_timestamp(key),
-                    "olv": float(estimated_olv),
-                }
-            )
-        values = values[-max_points:]
-        estimated_values = estimated_values[-max_points:]
-        labels = [entry["label"] for entry in values]
-        appraisal_series = [entry["olv"] for entry in values]
-        estimated_series = [entry["olv"] for entry in estimated_values]
+
+        trend_points = [
+            point for point in trend_points
+            if point["appraisal"] is not None or point["estimated"] is not None
+        ][-max_points:]
+
+        labels = [point["label"] for point in trend_points]
+        appraisal_series = [point["appraisal"] for point in trend_points]
+        estimated_series = [point["estimated"] for point in trend_points]
 
     chart_config = {
         "title": "Value Trend",

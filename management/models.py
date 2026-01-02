@@ -271,6 +271,24 @@ class MachineryEquipmentRow(TimeStampedModel):
 
 
 # -------------------------
+# Sheet: Value Trend
+# -------------------------
+class ValueTrendRow(TimeStampedModel):
+    date = models.DateField(null=True, blank=True)  # Date
+    estimated_olv = MoneyField()  # Estimated OLV
+    appraised_olv = MoneyField()  # Appraised OLV
+    borrower = models.ForeignKey(
+        "Borrower",
+        on_delete=models.CASCADE,
+        related_name="value_trend_rows",
+        null=True,
+        blank=True,
+    )
+
+    class Meta:
+        db_table = "value_trend"
+
+# -------------------------
 # Sheet: Aging Composition
 # -------------------------
 class AgingCompositionRow(TimeStampedModel):

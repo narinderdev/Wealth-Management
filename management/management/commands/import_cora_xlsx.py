@@ -18,6 +18,7 @@ from management.models import (
     BorrowerOverviewRow,
     CollateralOverviewRow,
     MachineryEquipmentRow,
+    ValueTrendRow,
     AgingCompositionRow,
     ARMetricsRow,
     Top20ByTotalARRow,
@@ -600,6 +601,7 @@ def run_cora_import(
             [
                 CollateralOverviewRow,
                 MachineryEquipmentRow,
+                ValueTrendRow,
                 AgingCompositionRow,
                 ARMetricsRow,
                 Top20ByTotalARRow,
@@ -674,6 +676,8 @@ def run_cora_import(
     sheet_model_map = {
         "Collateral Overview": CollateralOverviewRow,
         "Machinery & Equipment ": MachineryEquipmentRow,
+        "Value Trend": ValueTrendRow,
+        "Value_Trend": ValueTrendRow,
         "Aging Composition": AgingCompositionRow,
         "AR_Metrics": ARMetricsRow,
         "Top20_By_Total_AR": Top20ByTotalARRow,

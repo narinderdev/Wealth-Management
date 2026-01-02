@@ -145,6 +145,20 @@
         { key: 'estimated_orderly_liquidation_value', label: 'Estimated Orderly Liquidation Value', type: 'number' },
       ],
     },
+    valueTrend: {
+      title: 'Value Trend',
+      columns: [
+        { key: 'date', label: 'Date', format: dateFormat },
+        { key: 'estimated_olv', label: 'Estimated OLV', format: currencyFormat },
+        { key: 'appraised_olv', label: 'Appraised OLV', format: currencyFormat },
+      ],
+      fields: [
+        { key: 'report_id', label: 'Report ID', type: 'text', required: true },
+        { key: 'date', label: 'Date', type: 'date', required: true },
+        { key: 'estimated_olv', label: 'Estimated OLV', type: 'number' },
+        { key: 'appraised_olv', label: 'Appraised OLV', type: 'number' },
+      ],
+    },
     agingComposition: {
       title: 'Aging Composition',
       columns: [
@@ -914,6 +928,22 @@
         orderly_liquidation_value: 631890,
       },
     ],
+    valueTrend: [
+      {
+        id: '1',
+        report_id: '1',
+        date: '2025-09-30',
+        estimated_olv: 19412000,
+        appraised_olv: 20345000,
+      },
+      {
+        id: '2',
+        report_id: '1',
+        date: '2025-10-31',
+        estimated_olv: 18976000,
+        appraised_olv: 19870000,
+      },
+    ],
     agingComposition: [
       {
         id: '1',
@@ -1381,6 +1411,7 @@
     borrowerReports: 'core',
     collateralOverview: 'receivables',
     machineryEquipment: 'receivables',
+    valueTrend: 'receivables',
     agingComposition: 'receivables',
     arMetrics: 'receivables',
     ineligibleTrend: 'receivables',
