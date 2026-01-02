@@ -7601,8 +7601,9 @@ def _liquidation_model_context(borrower):
     operating_totals_row = _build_nolv_row_from_amounts(
         "Total Operating Costs", _sum_nolv_rows(operating_rows)
     )
+    liquidation_cost_rows = payroll_rows + operating_rows + liquidation_rows
     liquidation_totals_row = _build_nolv_row_from_amounts(
-        "Total Liquidation Costs", _sum_nolv_rows(liquidation_rows)
+        "Total Liquidation Costs", _sum_nolv_rows(liquidation_cost_rows)
     )
     liquidation_nolv_sections = [
         {"type": "row", "row": _pick_nolv_row(
