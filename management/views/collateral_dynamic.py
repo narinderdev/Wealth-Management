@@ -7833,7 +7833,100 @@ def _liquidation_model_context(borrower):
         "wos": "—",
         "gr_pct": "—",
     }
-    if history_rows:
+    summary_total_cost = None
+    summary_total_selling = None
+    summary_total_gross = None
+    if history_summary_rows:
+        def _pct_display(value, base):
+            if value is None or base is None or base <= 0:
+                return "—"
+            return _format_pct(value / base)
+
+        def _row_amounts(row):
+            return {
+                "cost": _parse_money(row.get("cost")),
+                "selling": _parse_money(row.get("selling")),
+                "gross": _parse_money(row.get("gross")),
+            }
+
+        inline_rows = [
+            row
+            for row in history_summary_rows
+            if row.get("category") not in {"Total In-Line", "Excess", "Total"}
+        ]
+        total_inline_cost = Decimal("0")
+        total_inline_selling = Decimal("0")
+        total_inline_gross = Decimal("0")
+        for row in inline_rows:
+            amounts = _row_amounts(row)
+            total_inline_cost += amounts["cost"] or Decimal("0")
+            total_inline_selling += amounts["selling"] or Decimal("0")
+            total_inline_gross += amounts["gross"] or Decimal("0")
+
+        excess_row = next(
+            (row for row in history_summary_rows if row.get("category") == "Excess"),
+            None,
+        )
+        excess_amounts = _row_amounts(excess_row) if excess_row else {
+            "cost": Decimal("0"),
+            "selling": Decimal("0"),
+            "gross": Decimal("0"),
+        }
+        excess_cost = excess_amounts["cost"] or Decimal("0")
+        excess_selling = excess_amounts["selling"] or Decimal("0")
+        excess_gross = excess_amounts["gross"] or Decimal("0")
+
+        summary_total_cost = total_inline_cost + excess_cost
+        summary_total_selling = total_inline_selling + excess_selling
+        summary_total_gross = total_inline_gross + excess_gross
+
+        for row in history_summary_rows:
+            amounts = _row_amounts(row)
+            row["pct_cost"] = _pct_display(amounts["gross"], amounts["cost"])
+            row["pct_sp"] = _pct_display(amounts["gross"], amounts["selling"])
+
+        total_inline_row = {
+            "category": "Total In-Line",
+            "cost": _format_currency(total_inline_cost),
+            "selling": _format_currency(total_inline_selling),
+            "gross": _format_currency(total_inline_gross),
+            "pct_cost": _pct_display(total_inline_gross, total_inline_cost),
+            "pct_sp": _pct_display(total_inline_gross, total_inline_selling),
+            "wos": "—",
+            "gr_pct": "—",
+        }
+        total_row = {
+            "category": "Total",
+            "cost": _format_currency(summary_total_cost),
+            "selling": _format_currency(summary_total_selling),
+            "gross": _format_currency(summary_total_gross),
+            "pct_cost": _pct_display(summary_total_gross, summary_total_cost),
+            "pct_sp": _pct_display(summary_total_gross, summary_total_selling),
+            "wos": "—",
+            "gr_pct": "—",
+        }
+
+        def _upsert_history_row(label, new_row):
+            for idx, row in enumerate(history_summary_rows):
+                if row.get("category") == label:
+                    history_summary_rows[idx] = new_row
+                    return
+            history_summary_rows.append(new_row)
+
+        _upsert_history_row("Total In-Line", total_inline_row)
+        _upsert_history_row("Total", total_row)
+
+    if summary_total_cost is not None:
+        history_totals = {
+            "cost": _format_currency(summary_total_cost),
+            "selling": _format_currency(summary_total_selling),
+            "gross": _format_currency(summary_total_gross),
+            "pct_cost": _format_pct(summary_total_gross / summary_total_cost) if summary_total_cost else "—",
+            "pct_sp": _format_pct(summary_total_gross / summary_total_selling) if summary_total_selling else "—",
+            "wos": "—",
+            "gr_pct": "—",
+        }
+    elif history_rows:
         pct_cost_value = total_gross / total_cost if total_cost else None
         pct_sp_value = total_gross / total_selling if total_selling else None
         history_totals = {
@@ -7845,17 +7938,6 @@ def _liquidation_model_context(borrower):
             "wos": "—",
             "gr_pct": "—",
         }
-        total_row_found = False
-        for row in history_summary_rows:
-            if row.get("category") == "Total":
-                row.update(history_totals)
-                row["category"] = "Total"
-                total_row_found = True
-                break
-        if not total_row_found:
-            filled_total = dict(history_totals)
-            filled_total["category"] = "Total"
-            history_summary_rows.append(filled_total)
 
     return {
         "liquidation_summary_metrics": summary_metrics,
