@@ -24,6 +24,7 @@ from management.models import (
     Company,
     CompositeIndexRow,
     ForecastRow,
+    BBCAvailabilityRow,
     RiskSubfactorsRow,
     SnapshotSummaryRow,
 )
@@ -503,6 +504,62 @@ def _build_outstanding_balance_series(
         "dates": months,
         "raw_values": raw_values,
         "raw_dates": raw_months,
+    }
+
+
+def _build_bbc_timeseries(borrower, max_points=5):
+    qs = (
+        BBCAvailabilityRow.objects.filter(borrower=borrower)
+        .exclude(period__isnull=True)
+        .order_by("period", "created_at", "id")
+    )
+    latest_by_period = OrderedDict()
+    for row in qs:
+        latest_by_period[row.period] = row
+    if not latest_by_period:
+        return None
+
+    periods = list(latest_by_period.keys())
+    periods = periods[-max_points:]
+    labels = [period.strftime("%m/%y") for period in periods]
+
+    def _value(row, field_name):
+        value = getattr(row, field_name, None)
+        return _to_decimal(value) if value is not None else None
+
+    def _series(field_name, fallback=None):
+        values = []
+        for period in periods:
+            row = latest_by_period[period]
+            value = _value(row, field_name)
+            if value is None and fallback:
+                value = fallback(row)
+            values.append(value)
+        return {
+            "labels": labels,
+            "values": values,
+            "latest_value": values[-1] if values else None,
+            "previous_value": values[-2] if len(values) > 1 else None,
+            "dates": periods,
+            "raw_values": list(values),
+            "raw_dates": list(periods),
+            "source": "bbc",
+        }
+
+    net_series = _series("net_collateral")
+    outstanding_series = _series("outstanding_balance")
+    availability_series = _series(
+        "availability",
+        fallback=lambda row: (
+            (_value(row, "net_collateral") or Decimal("0"))
+            - (_value(row, "outstanding_balance") or Decimal("0"))
+        ),
+    )
+    return {
+        "net": net_series,
+        "outstanding": outstanding_series,
+        "availability": availability_series,
+        "latest_period": periods[-1] if periods else None,
     }
 
 
@@ -1370,6 +1427,15 @@ def summary_view(request):
         max_points=chart_points,
     )
 
+    bbc_series = _build_bbc_timeseries(borrower, max_points=chart_points)
+    bbc_latest_period = None
+    if bbc_series:
+        net_timeseries = bbc_series["net"]
+        outstanding_timeseries = bbc_series["outstanding"]
+        availability_timeseries = bbc_series["availability"]
+        bbc_latest_period = bbc_series.get("latest_period")
+        base_months = []
+
     base_months = net_timeseries.get("dates") or outstanding_timeseries.get("dates") or []
     if base_months:
         base_months = _recent_months(max(base_months), chart_points)
@@ -1402,23 +1468,35 @@ def summary_view(request):
     outstanding_has_data = outstanding_kpi_value is not None
     availability_has_data = availability_kpi_value is not None
 
-    if net_has_data and outstanding_has_data:
+    if net_has_data and outstanding_has_data and availability_source != "bbc":
         availability_kpi_value = net_kpi_value - outstanding_kpi_value
         if availability_kpi_value < Decimal("0"):
             availability_kpi_value = Decimal("0")
         availability_has_data = True
 
     net_detail = (
-        f"Ineligibles { _format_currency(ineligibles_total) } across {len(collateral_rows)} rows"
-        if net_source == "collateral"
-        else "Collateral history"
+        f"As of {bbc_latest_period.strftime('%m/%d/%Y')}"
+        if net_source == "bbc" and bbc_latest_period
+        else (
+            f"Ineligibles { _format_currency(ineligibles_total) } across {len(collateral_rows)} rows"
+            if net_source == "collateral"
+            else "Collateral history"
+        )
     )
     outstanding_detail = (
-        f"As of {ar_row.as_of_date.strftime('%m/%d/%Y')}"
-        if outstanding_source == "ar" and ar_row and ar_row.as_of_date
-        else "Awaiting AR snapshot"
+        f"As of {bbc_latest_period.strftime('%m/%d/%Y')}"
+        if outstanding_source == "bbc" and bbc_latest_period
+        else (
+            f"As of {ar_row.as_of_date.strftime('%m/%d/%Y')}"
+            if outstanding_source == "ar" and ar_row and ar_row.as_of_date
+            else "Awaiting AR snapshot"
+        )
     )
-    availability_detail = "Derived from net collateral and outstanding balance"
+    availability_detail = (
+        f"As of {bbc_latest_period.strftime('%m/%d/%Y')}"
+        if availability_source == "bbc" and bbc_latest_period
+        else "Derived from net collateral and outstanding balance"
+    )
 
     insights = {
         "net": {

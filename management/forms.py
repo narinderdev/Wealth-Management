@@ -33,6 +33,7 @@ from .models import (
     IneligibleOverviewRow,
     IneligibleTrendRow,
     MachineryEquipmentRow,
+    BBCAvailabilityRow,
     ValueTrendRow,
     NOLVTableRow,
     RawMaterialRecoveryRow,
@@ -516,6 +517,19 @@ class MachineryEquipmentForm(BorrowerModelForm):
             "total_orderly_liquidation_value",
         ]
 
+
+class BBCAvailabilityForm(BorrowerModelForm):
+    required_fields = ("borrower", "period")
+
+    class Meta:
+        model = BBCAvailabilityRow
+        fields = [
+            "borrower",
+            "period",
+            "net_collateral",
+            "outstanding_balance",
+            "availability",
+        ]
 
 class ValueTrendForm(BorrowerModelForm):
     required_fields = ("borrower", "date")

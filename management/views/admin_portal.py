@@ -50,6 +50,7 @@ from management.forms import (
     BorrowingBaseReportForm,
     CompleteAnalysisReportForm,
     CashFlowReportForm,
+    BBCAvailabilityForm,
 )
 from management.models import (
     ARMetricsRow,
@@ -93,6 +94,7 @@ from management.models import (
     WIPInventoryMetricsRow,
     WIPRecoveryRow,
     ReportUpload,
+    BBCAvailabilityRow,
 )
 from management.views.collateral_dynamic import _other_collateral_context
 
@@ -147,6 +149,12 @@ COMPONENT_REGISTRY = {
         "title": "AR Metrics",
         "template": "admin/components/arMetrics.html",
         "nav_key": "accounts_metrics",
+    },
+    "bbcAvailability": {
+        "title": "BBC Availability",
+        "template": "admin/components/bbcAvailability.html",
+        "nav_key": "bbc_availability",
+        "description": "Manage borrowing base availability values and periods.",
     },
     "ineligibleTrend": {
         "title": "Ineligible Trend",
@@ -714,6 +722,23 @@ HANDLERS = {
             },
             {"param": "division", "label": "Division", "field": "division"},
             {"param": "year", "label": "Year", "field": "as_of_date__year"},
+        ],
+    ),
+    "bbcAvailability": ModelComponentHandler(
+        slug="bbcAvailability",
+        model=BBCAvailabilityRow,
+        form_class=BBCAvailabilityForm,
+        ordering=["-period", "-created_at", "-id"],
+        select_related=["borrower", "borrower__company"],
+        filters=[
+            {
+                "param": "borrower",
+                "label": "Borrower",
+                "field": "borrower__id",
+                "queryset": Borrower.objects.select_related("company").order_by("company__company", "primary_contact"),
+            },
+            {"param": "year", "label": "Year", "field": "period__year"},
+            {"param": "month", "label": "Month", "field": "period__month"},
         ],
     ),
     "ineligibleTrend": ModelComponentHandler(

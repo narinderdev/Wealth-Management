@@ -1693,6 +1693,8 @@
                                 <div class="kpi-delta {{ kpi.delta_class }}">
                                   {{ kpi.symbol }} <span>{{ kpi.delta }}</span>
                                 </div>
+                              {% else %}
+                                <div class="kpi-delta">—</div>
                               {% endif %}
                             </div>
                               <img src="{% static kpi.icon|default:'images/balance.svg' %}" alt="{{ kpi.label }} icon" />

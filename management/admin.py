@@ -136,6 +136,19 @@ class MachineryEquipmentRowAdmin(BaseBorrowerModelAdmin):
     list_filter = ("equipment_type",)
 
 
+@admin.register(models.BBCAvailabilityRow)
+class BBCAvailabilityRowAdmin(BaseBorrowerModelAdmin):
+    list_display = (
+        "borrower",
+        "period",
+        "net_collateral",
+        "outstanding_balance",
+        "availability",
+    )
+    list_filter = ("period",)
+    date_hierarchy = "period"
+
+
 @admin.register(models.ValueTrendRow)
 class ValueTrendRowAdmin(BaseBorrowerModelAdmin):
     list_display = (

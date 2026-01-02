@@ -1164,6 +1164,27 @@ class ForecastRow(TimeStampedModel):
     class Meta:
         db_table = 'forecast'
 
+
+# -------------------------
+# Sheet: BBC Availability
+# -------------------------
+class BBCAvailabilityRow(TimeStampedModel):
+    borrower = models.ForeignKey(
+        "Borrower",
+        on_delete=models.CASCADE,
+        related_name="bbc_availability_rows",
+        null=True,
+        blank=True,
+    )
+    period = models.DateField(null=True, blank=True)
+    net_collateral = MoneyField()
+    outstanding_balance = MoneyField()
+    availability = MoneyField()
+
+    class Meta:
+        db_table = "bbc_availability"
+        unique_together = ("borrower", "period")
+
 # -------------------------
 # Sheet: Availability Forecast
 class AvailabilityForecastRow(TimeStampedModel):

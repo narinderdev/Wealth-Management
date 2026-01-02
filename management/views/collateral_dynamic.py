@@ -3092,7 +3092,8 @@ def _accounts_receivable_context(borrower, range_key="today", division="all", sn
         ar_collateral_history[-chart_points:] if ar_collateral_history else []
     )
     for spec in kpi_specs:
-        if spec["key"] == "total_balance" and collateral_chart_history:
+        use_collateral_series = spec["key"] == "total_balance" and collateral_chart_history
+        if use_collateral_series:
             series_values = [_to_decimal(row["total_balance"]) for row in collateral_chart_history]
             spec_labels = [row.get("label") or "" for row in collateral_chart_history]
             if len(spec_labels) < len(series_values):
@@ -3119,11 +3120,10 @@ def _accounts_receivable_context(borrower, range_key="today", division="all", sn
         )
         current_value = current_snapshot[spec["key"]]
         previous_value = previous_snapshot[spec["key"]] if previous_snapshot else None
-        if spec["key"] == "total_balance" and ar_collateral_history:
+        if use_collateral_series:
             current_value = ar_collateral_history[-1]["total_balance"]
-            previous_value = (
-                ar_collateral_history[-2]["total_balance"] if len(ar_collateral_history) > 1 else None
-            )
+            if len(ar_collateral_history) > 1:
+                previous_value = ar_collateral_history[-2]["total_balance"]
             current_snapshot[spec["key"]] = current_value
             if previous_snapshot is not None:
                 previous_snapshot[spec["key"]] = previous_value
