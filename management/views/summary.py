@@ -1809,17 +1809,18 @@ def borrower_portfolio_view(request):
             else []
         )
         net_total = sum((_to_decimal(row.net_collateral) for row in collateral_rows), Decimal("0"))
-        eligible_total = sum((_to_decimal(row.eligible_collateral) for row in collateral_rows), Decimal("0"))
-        ineligibles_total = sum((_to_decimal(row.ineligibles) for row in collateral_rows), Decimal("0"))
-        available_total = eligible_total - ineligibles_total
-        if available_total < Decimal("0"):
-            available_total = Decimal("0")
         ar_row = (
             ARMetricsRow.objects.filter(borrower=borrower)
             .order_by("-as_of_date", "-created_at")
             .first()
         )
-        availability_pct = (available_total / net_total) if net_total else None
+        outstanding_value = (
+            _to_decimal(ar_row.balance)
+            if ar_row and ar_row.balance not in (None, "")
+            else Decimal("0")
+        )
+        available_total = net_total - outstanding_value
+        availability_pct = (available_total / net_total) if net_total else Decimal("0")
         last_updated_dt = (
             latest_collateral_time
             or (ar_row.as_of_date if ar_row and getattr(ar_row, "as_of_date", None) else None)
