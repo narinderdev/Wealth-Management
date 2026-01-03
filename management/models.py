@@ -120,6 +120,14 @@ class Borrower(TimeStampedModel):
             label = self.primary_specific_individual.specific_individual
         return f"{self.company} - {label or 'Borrower'}"
 
+    class Meta:
+        constraints = [
+            models.UniqueConstraint(
+                fields=["company", "primary_contact"],
+                name="unique_borrower_company_contact",
+            )
+        ]
+
 
 # Removed BorrowerUser to ensure Borrower cannot log in
 

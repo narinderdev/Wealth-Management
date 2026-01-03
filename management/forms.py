@@ -254,6 +254,14 @@ class BorrowerForm(StyledModelForm):
                 mismatch = True
             if mismatch:
                 raise forms.ValidationError("Specific Individual, IDs, and lender selections must match.")
+            if company_name and base_company.company:
+                base_name = base_company.company.strip()
+                if base_name and base_name.lower() != company_name.lower():
+                    self.add_error(
+                        "company_name",
+                        "Company name must match the selected company. Clear the selection to create a new company.",
+                    )
+                    raise forms.ValidationError("Company selection does not match the entered company name.")
             cleaned_data["company"] = base_company
         return cleaned_data
 
@@ -420,14 +428,10 @@ class BorrowerForm(StyledModelForm):
         is_new = borrower.pk is None
         self._apply_company_defaults(borrower)
         company_name = (self.cleaned_data.get("company_name") or "").strip()
-        if not borrower.company and company_name:
+        if company_name:
             borrower.company = Company.objects.filter(company__iexact=company_name).first()
             if not borrower.company:
                 borrower.company = Company.objects.create(company=company_name)
-        if company_name and borrower.company:
-            borrower.company.company = company_name
-            if commit:
-                borrower.company.save(update_fields=["company"])
         if commit:
             borrower.save()
             self.save_m2m()
