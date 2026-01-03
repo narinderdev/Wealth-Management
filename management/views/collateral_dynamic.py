@@ -7673,6 +7673,156 @@ def _liquidation_model_context(borrower):
         len(liquidation_nolv_sections) - 1,
         {"type": "row", "row": liquidation_totals_row},
     )
+    if summary_metrics:
+        def _normalize_pct_value(value):
+            if value is None:
+                return None
+            pct_val = _to_decimal(value)
+            if pct_val > Decimal("1"):
+                pct_val = pct_val / Decimal("100")
+            return pct_val
+
+        def _percent_change(current, previous):
+            if current is None or previous is None:
+                return None
+            prev = _to_decimal(previous)
+            curr = _to_decimal(current)
+            if prev == 0:
+                return None
+            return (curr - prev) / abs(prev) * Decimal("100")
+
+        def _delta_payload_value(current, previous):
+            change = _percent_change(current, previous)
+            if change is None:
+                return None
+            is_positive = change >= 0
+            return {
+                "symbol": "▲" if is_positive else "▼",
+                "value": f"{abs(change):.2f}%",
+                "delta_class": "success" if is_positive else "danger",
+            }
+
+        row_map = {}
+        for item in liquidation_nolv_sections:
+            if item.get("type") != "row":
+                continue
+            row = item.get("row") or {}
+            label = row.get("label")
+            if label:
+                row_map[label] = row
+
+        def _row_value(label, key):
+            row = row_map.get(label) or {}
+            return row.get(key)
+
+        summary_overrides = {
+            "Available Inventory": _row_value("Available Inventory at Cost", "total"),
+            "Gross Recovery": _row_value("Gross Recovery", "total"),
+            "Liquidation Costs": _row_value("Total Liquidation Costs", "total"),
+            "Net Recovery": _row_value("Net Recovery", "total_pct"),
+        }
+
+        def _nolv_group_key(entry):
+            if entry.date:
+                return entry.date
+            if entry.created_at:
+                return entry.created_at.date()
+            return entry.id
+
+        nolv_keys = sorted({_nolv_group_key(entry) for entry in nolv_entries}, reverse=True)
+        current_key = nolv_keys[0] if nolv_keys else None
+        previous_key = nolv_keys[1] if len(nolv_keys) > 1 else None
+
+        def _rows_for_key(target_key):
+            if not target_key:
+                return []
+            return [entry for entry in nolv_entries if _nolv_group_key(entry) == target_key]
+
+        def _find_entry(rows, label, aliases=None):
+            if not rows:
+                return None
+            label_keys = [_normalize_label(label)]
+            for alias in aliases or []:
+                label_keys.append(_normalize_label(alias))
+            for entry in rows:
+                if _normalize_label(entry.line_item) in label_keys:
+                    return entry
+            return None
+
+        current_rows = _rows_for_key(current_key)
+        previous_rows = _rows_for_key(previous_key)
+
+        def _entry_total(rows, label, aliases=None):
+            entry = _find_entry(rows, label, aliases=aliases)
+            return _to_decimal(entry.total_usd) if entry else None
+
+        def _entry_pct(rows, label, aliases=None):
+            entry = _find_entry(rows, label, aliases=aliases)
+            return _normalize_pct_value(entry.total_pct_cost) if entry else None
+
+        liquidation_aliases = (
+            payroll_targets
+            + operating_targets
+            + liquidation_targets
+        )
+        liquidation_label_keys = set()
+        for target in liquidation_aliases:
+            liquidation_label_keys.add(_normalize_label(target["label"]))
+            for alias in target.get("aliases", []):
+                liquidation_label_keys.add(_normalize_label(alias))
+
+        def _liquidation_total(rows):
+            if not rows:
+                return None
+            total = Decimal("0")
+            matched = False
+            for entry in rows:
+                if _normalize_label(entry.line_item) in liquidation_label_keys:
+                    total += _to_decimal(entry.total_usd)
+                    matched = True
+            return total if matched else None
+
+        current_values = {
+            "Available Inventory": _entry_total(
+                current_rows,
+                "Available Inventory at Cost",
+                aliases=["Available Inventory", "Inventory at Cost"],
+            ),
+            "Gross Recovery": _entry_total(current_rows, "Gross Recovery"),
+            "Liquidation Costs": _liquidation_total(current_rows),
+            "Net Recovery": _entry_pct(
+                current_rows,
+                "Net Recovery",
+                aliases=["net recovery", "net orderly liquidated value"],
+            ),
+        }
+        previous_values = {
+            "Available Inventory": _entry_total(
+                previous_rows,
+                "Available Inventory at Cost",
+                aliases=["Available Inventory", "Inventory at Cost"],
+            ),
+            "Gross Recovery": _entry_total(previous_rows, "Gross Recovery"),
+            "Liquidation Costs": _liquidation_total(previous_rows),
+            "Net Recovery": _entry_pct(
+                previous_rows,
+                "Net Recovery",
+                aliases=["net recovery", "net orderly liquidated value"],
+            ),
+        }
+
+        for metric in summary_metrics:
+            label = metric.get("label")
+            override = summary_overrides.get(label)
+            if override:
+                metric["value"] = override
+            delta_payload = _delta_payload_value(
+                current_values.get(label),
+                previous_values.get(label),
+            )
+            metric["delta"] = delta_payload["value"] if delta_payload else None
+            metric["symbol"] = delta_payload["symbol"] if delta_payload else ""
+            metric["delta_class"] = delta_payload["delta_class"] if delta_payload else ""
     history_rows = []
     history_summary_rows = []
     total_cost = Decimal("0")

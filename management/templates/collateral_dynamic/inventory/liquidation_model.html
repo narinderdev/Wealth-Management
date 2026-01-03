@@ -214,6 +214,7 @@ line-height: 33.339px; /* 138.462% */
   }
   .liquidation-model .delta.danger{ color:var(--danger); }
   .liquidation-model .delta.success{ color:var(--success); }
+  .liquidation-model .delta.neutral{ color:#94a3b8; }
   .liquidation-model .metric .badge{
     width:38px;
     height:38px;
@@ -476,6 +477,11 @@ padding-top: 0px!important;
   }
   .liquidation-model .acc-body table{
     table-layout: fixed;
+  }
+  .liquidation-model .acc-body table th,
+  .liquidation-model .acc-body table td{
+    font-size:13px;
+    line-height:1.4;
   }
   .liquidation-model .acc-body th:first-child,
   .liquidation-model .acc-body td:first-child{
@@ -893,6 +899,8 @@ gap: 0px;
                   <span aria-hidden="true">{{ metric.symbol }}</span>
                   <span>{{ metric.delta }}</span>
                 </div>
+              {% else %}
+                <div class="delta neutral">—</div>
               {% endif %}
             </div>
             <div class="badge" aria-hidden="true">
