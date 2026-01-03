@@ -2263,36 +2263,27 @@ def _inventory_context(borrower, snapshot_text=None):
     latest_dates = [dt for dt in (fg_latest, rm_latest, wip_latest) if dt]
     latest_date = max(latest_dates) if latest_dates else None
 
-    if latest_date:
-        for month_date in _month_sequence_from(latest_date, 12):
-            label = month_date.strftime("%b %Y")
-            label_map[label] = month_date
-            history_map[label] = {
-                "finished_goods": fg_map.get((month_date.year, month_date.month), Decimal("0")),
-                "raw_materials": rm_map.get((month_date.year, month_date.month), Decimal("0")),
-                "work_in_progress": wip_map.get((month_date.year, month_date.month), Decimal("0")),
-            }
+    def _fill_series(months, month_map):
+        values = []
+        last_value = None
+        for month_date in months:
+            key = (month_date.year, month_date.month)
+            value = month_map.get(key)
+            if value is None:
+                value = last_value if last_value is not None else Decimal("0")
+            else:
+                last_value = value
+            values.append(value)
+        return values
 
     series_values = {key: [] for key in category_keys}
     series_labels = []
-    if history_map:
-        latest_date = max(label_map.values())
-        months = []
-        year = latest_date.year
-        month = latest_date.month
-        for _ in range(12):
-            months.append(date(year, month, 1))
-            month -= 1
-            if month == 0:
-                month = 12
-                year -= 1
-        months = list(reversed(months))
-        for month_date in months:
-            label = month_date.strftime("%b %Y")
-            bucket = history_map.get(label, {})
-            series_labels.append(label)
-            for key in category_keys:
-                series_values[key].append(bucket.get(key, Decimal("0")))
+    if latest_date:
+        months = _month_sequence_from(latest_date, 12)
+        series_labels = [month_date.strftime("%b %Y") for month_date in months]
+        series_values["finished_goods"] = _fill_series(months, fg_map)
+        series_values["raw_materials"] = _fill_series(months, rm_map)
+        series_values["work_in_progress"] = _fill_series(months, wip_map)
 
     def _clamp_pct(value):
         if value is None:
