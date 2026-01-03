@@ -20,7 +20,7 @@ from .models import (
     FGInlineExcessByCategoryRow,
     HistoricalTop20SKUsRow,
 )
-from .views.summary import _delta_payload, get_kpi_timeseries
+from .views.summary import _delta_payload, get_kpi_timeseries, _previous_month
 from .views.summary import compute_inventory_breakdown
 from .views.collateral_dynamic import _finished_goals_context
 
@@ -192,6 +192,16 @@ class SummaryKpiTests(TestCase):
 
         self.assertEqual(series["labels"], ["01/24", "02/24"])
         self.assertEqual(series["values"], [Decimal("150.00"), Decimal("200.00")])
+
+
+class SummaryMonthHelpersTests(TestCase):
+    def test_previous_month_accepts_tuple(self):
+        self.assertEqual(_previous_month((2024, 1)), (2023, 12))
+        self.assertEqual(_previous_month((2024, 5)), (2024, 4))
+
+    def test_previous_month_accepts_date(self):
+        self.assertEqual(_previous_month(date(2024, 1, 15)), date(2023, 12, 15))
+        self.assertEqual(_previous_month(date(2024, 3, 31)), date(2024, 2, 29))
 
 
 class InventoryBreakdownConsistencyTests(TestCase):

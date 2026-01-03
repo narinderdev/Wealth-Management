@@ -1,8 +1,9 @@
+import calendar
 import json
 import logging
 import math
 from collections import OrderedDict, defaultdict
-from datetime import timedelta
+from datetime import date, timedelta
 
 from decimal import Decimal, InvalidOperation, ROUND_HALF_UP
 
@@ -332,10 +333,23 @@ def _limit_series_points(pairs, max_points):
 
 
 def _previous_month(month_key):
-    year, month = month_key
+    if isinstance(month_key, tuple):
+        year, month = month_key
+        if month == 1:
+            return (year - 1, 12)
+        return (year, month - 1)
+    if not isinstance(month_key, date):
+        raise TypeError("month_key must be a (year, month) tuple or date.")
+    year = month_key.year
+    month = month_key.month
+    day = month_key.day
     if month == 1:
-        return (year - 1, 12)
-    return (year, month - 1)
+        year -= 1
+        month = 12
+    else:
+        month -= 1
+    day = min(day, calendar.monthrange(year, month)[1])
+    return month_key.replace(year=year, month=month, day=day)
 
 
 def _recent_months(end_month, count):
