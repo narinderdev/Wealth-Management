@@ -51,6 +51,7 @@ from management.forms import (
     CompleteAnalysisReportForm,
     CashFlowReportForm,
     BBCAvailabilityForm,
+    NetRecoveryTrendForm,
 )
 from management.models import (
     ARMetricsRow,
@@ -95,6 +96,7 @@ from management.models import (
     WIPRecoveryRow,
     ReportUpload,
     BBCAvailabilityRow,
+    NetRecoveryTrendRow,
 )
 from management.views.collateral_dynamic import _other_collateral_context
 
@@ -155,6 +157,12 @@ COMPONENT_REGISTRY = {
         "template": "admin/components/bbcAvailability.html",
         "nav_key": "bbc_availability",
         "description": "Manage borrowing base availability values and periods.",
+    },
+    "netRecoveryTrend": {
+        "title": "Net Recovery Trend",
+        "template": "admin/components/netRecoveryTrend.html",
+        "nav_key": "net_recovery_trend",
+        "description": "Manage monthly net recovery percentages for FG/RM/WIP.",
     },
     "ineligibleTrend": {
         "title": "Ineligible Trend",
@@ -728,6 +736,23 @@ HANDLERS = {
         slug="bbcAvailability",
         model=BBCAvailabilityRow,
         form_class=BBCAvailabilityForm,
+        ordering=["-period", "-created_at", "-id"],
+        select_related=["borrower", "borrower__company"],
+        filters=[
+            {
+                "param": "borrower",
+                "label": "Borrower",
+                "field": "borrower__id",
+                "queryset": Borrower.objects.select_related("company").order_by("company__company", "primary_contact"),
+            },
+            {"param": "year", "label": "Year", "field": "period__year"},
+            {"param": "month", "label": "Month", "field": "period__month"},
+        ],
+    ),
+    "netRecoveryTrend": ModelComponentHandler(
+        slug="netRecoveryTrend",
+        model=NetRecoveryTrendRow,
+        form_class=NetRecoveryTrendForm,
         ordering=["-period", "-created_at", "-id"],
         select_related=["borrower", "borrower__company"],
         filters=[

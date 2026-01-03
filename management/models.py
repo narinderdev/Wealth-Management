@@ -1185,6 +1185,27 @@ class BBCAvailabilityRow(TimeStampedModel):
         db_table = "bbc_availability"
         unique_together = ("borrower", "period")
 
+
+# -------------------------
+# Sheet: Net Recovery Trend
+# -------------------------
+class NetRecoveryTrendRow(TimeStampedModel):
+    borrower = models.ForeignKey(
+        "Borrower",
+        on_delete=models.CASCADE,
+        related_name="net_recovery_trend_rows",
+        null=True,
+        blank=True,
+    )
+    period = models.DateField(null=True, blank=True)
+    fg_net_recovery_pct = models.DecimalField(max_digits=8, decimal_places=2, null=True, blank=True)
+    rm_net_recovery_pct = models.DecimalField(max_digits=8, decimal_places=2, null=True, blank=True)
+    wip_net_recovery_pct = models.DecimalField(max_digits=8, decimal_places=2, null=True, blank=True)
+
+    class Meta:
+        db_table = "net_recovery_trend"
+        unique_together = ("borrower", "period")
+
 # -------------------------
 # Sheet: Availability Forecast
 class AvailabilityForecastRow(TimeStampedModel):

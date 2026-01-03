@@ -34,6 +34,7 @@ from .models import (
     IneligibleTrendRow,
     MachineryEquipmentRow,
     BBCAvailabilityRow,
+    NetRecoveryTrendRow,
     ValueTrendRow,
     NOLVTableRow,
     RawMaterialRecoveryRow,
@@ -531,6 +532,36 @@ class BBCAvailabilityForm(BorrowerModelForm):
             "availability",
         ]
 
+
+class NetRecoveryTrendForm(BorrowerModelForm):
+    required_fields = ("borrower", "period")
+
+    class Meta:
+        model = NetRecoveryTrendRow
+        fields = [
+            "borrower",
+            "period",
+            "fg_net_recovery_pct",
+            "rm_net_recovery_pct",
+            "wip_net_recovery_pct",
+        ]
+
+    def _validate_pct(self, field):
+        value = self.cleaned_data.get(field)
+        if value is None:
+            return value
+        if value < 0 or value > 100:
+            raise forms.ValidationError("Percentage must be between 0 and 100.")
+        return value
+
+    def clean_fg_net_recovery_pct(self):
+        return self._validate_pct("fg_net_recovery_pct")
+
+    def clean_rm_net_recovery_pct(self):
+        return self._validate_pct("rm_net_recovery_pct")
+
+    def clean_wip_net_recovery_pct(self):
+        return self._validate_pct("wip_net_recovery_pct")
 class ValueTrendForm(BorrowerModelForm):
     required_fields = ("borrower", "date")
 

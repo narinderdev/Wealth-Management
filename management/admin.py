@@ -178,3 +178,16 @@ class RMCategoryHistoryRowAdmin(BaseBorrowerModelAdmin):
 class WIPCategoryHistoryRowAdmin(BaseBorrowerModelAdmin):
     list_display = ("borrower", "date", "category", "total_inventory", "available_inventory")
     date_hierarchy = "date"
+
+
+@admin.register(models.NetRecoveryTrendRow)
+class NetRecoveryTrendRowAdmin(BaseBorrowerModelAdmin):
+    list_display = (
+        "borrower",
+        "period",
+        "fg_net_recovery_pct",
+        "rm_net_recovery_pct",
+        "wip_net_recovery_pct",
+    )
+    list_filter = ("period",)
+    date_hierarchy = "period"
