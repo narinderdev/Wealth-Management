@@ -8,7 +8,7 @@ from decimal import Decimal, ROUND_DOWN, ROUND_HALF_UP
 
 from django.contrib.auth.decorators import login_required
 from django.shortcuts import redirect, render
-from django.db.models import Q
+from django.db.models import Q, Max
 
 from management.models import (
     ARMetricsRow,
@@ -93,6 +93,7 @@ def collateral_dynamic_view(request):
         "finished_goals_division",
         request.GET.get("finished_goals_view", "all"),
     )
+    inventory_division = request.GET.get("inventory_division", "all")
     ar_range = request.GET.get("ar_range", "last_12_months")
     ar_division = request.GET.get("ar_division", "all")
     raw_materials_range = request.GET.get("raw_materials_range", "last_12_months")
@@ -136,6 +137,7 @@ def collateral_dynamic_view(request):
         **_inventory_context(
             borrower,
             snapshot_text=snapshot_map.get(SnapshotSummaryRow.SECTION_INVENTORY_SUMMARY),
+            division=inventory_division,
         ),
         **_accounts_receivable_context(
             borrower,
@@ -1880,11 +1882,11 @@ def _matches_category(row, keywords):
     return any(keyword in text for keyword in keywords)
 
 
-def _inventory_state(borrower, start_date=None, end_date=None):
+def _inventory_state(borrower, start_date=None, end_date=None, breakdown=None):
     if not borrower:
         return None
 
-    breakdown = get_inventory_breakdown(borrower, start_date, end_date)
+    breakdown = breakdown or get_inventory_breakdown(borrower, start_date, end_date)
     inventory_rows = breakdown.get("rows", [])
     if not inventory_rows:
         return None
@@ -2009,26 +2011,34 @@ def _month_sequence_from(latest_date, count=12):
     return list(reversed(months))
 
 
-def _build_metric_month_map(qs, value_field):
+def _build_metric_month_map(qs, value_field, *, aggregate=False):
     month_latest = {}
+    month_totals = {}
+    latest_date = None
     for row in qs:
         dt = row.as_of_date
         if not dt:
             continue
         key = (dt.year, dt.month)
+        if latest_date is None or dt > latest_date:
+            latest_date = dt
+        value = _to_decimal(getattr(row, value_field))
+        if aggregate:
+            month_totals[key] = month_totals.get(key, Decimal("0")) + value
+            continue
         latest = month_latest.get(key)
         if latest is None or dt > latest[0]:
-            month_latest[key] = (dt, row)
-    month_map = {
-        key: _to_decimal(getattr(row, value_field))
-        for key, (dt, row) in month_latest.items()
-    }
-    latest_date = max((dt for dt, _ in month_latest.values()), default=None)
+            month_latest[key] = (dt, value)
+    if aggregate:
+        return month_totals, latest_date
+    month_map = {key: value for key, (dt, value) in month_latest.items()}
+    if latest_date is None and month_latest:
+        latest_date = max((dt for dt, _ in month_latest.values()), default=None)
     return month_map, latest_date
 
 
-def _build_metric_series(qs, value_field, *, label_format="%b %Y", months=12, scale=None):
-    month_map, latest_date = _build_metric_month_map(qs, value_field)
+def _build_metric_series(qs, value_field, *, label_format="%b %Y", months=12, scale=None, aggregate=False):
+    month_map, latest_date = _build_metric_month_map(qs, value_field, aggregate=aggregate)
     if not month_map or not latest_date:
         return [], []
     labels = []
@@ -2063,7 +2073,7 @@ def _format_compact_currency(value):
     return _format_currency(val)
 
 
-def _inventory_context(borrower, snapshot_text=None):
+def _inventory_context(borrower, snapshot_text=None, division="all"):
     empty_mix = [
         {"label": item["label"], "percentage_display": "0%", "bar_class": item["bar_class"]}
         for item in CATEGORY_CONFIG
@@ -2099,11 +2109,13 @@ def _inventory_context(borrower, snapshot_text=None):
             "label_x": 48,
             "label_y": 188,
         },
+        "inventory_mix_trend_data": {"labels": [], "series": []},
         "inventory_trend_series": [],
     }
 
-    normalized_division = "all"
-    state = _inventory_state(borrower)
+    normalized_division = _normalize_division(division)
+    breakdown = get_inventory_breakdown(borrower)
+    state = _inventory_state(borrower, breakdown=breakdown)
     if not state:
         return context
 
@@ -2119,16 +2131,43 @@ def _inventory_context(borrower, snapshot_text=None):
     inventory_available_display = _format_currency(inventory_available_total)
     ineligible_display = _format_currency(inventory_ineligible_raw)
 
-    mix_total = inventory_net_total if inventory_net_total > 0 else Decimal("0")
+    report_date = breakdown.get("report_date")
+    collateral_rows = []
+    if borrower:
+        collateral_qs = CollateralOverviewRow.objects.filter(borrower=borrower)
+        if not report_date:
+            latest_time = collateral_qs.aggregate(time=Max("created_at")).get("time")
+            report_date = latest_time.date() if latest_time else None
+        if report_date:
+            collateral_rows = list(collateral_qs.filter(created_at__date=report_date))
+
+    def _is_accounts_receivable(row):
+        label = (row.main_type or "").strip().lower()
+        return (
+            "accounts receivable" in label
+            or label in {"ar", "a/r", "accounts receivables"}
+        )
+
+    ar_rows = [row for row in collateral_rows if _is_accounts_receivable(row)]
+    ar_eligible_total = sum(
+        (_to_decimal(row.eligible_collateral) for row in ar_rows if row.eligible_collateral is not None),
+        Decimal("0"),
+    )
+    if ar_rows:
+        inventory_available_display = _format_currency(ar_eligible_total)
+
+    category_totals = breakdown.get("categories", {})
+    mix_values = {}
+    for category in CATEGORY_CONFIG:
+        entry = category_totals.get(category["key"]) or {}
+        raw = entry.get("raw") or {}
+        mix_values[category["key"]] = _to_decimal(raw.get("eligible_collateral"))
+
+    mix_total = sum(mix_values.values(), Decimal("0"))
 
     inventory_mix = []
     for category in CATEGORY_CONFIG:
-        metrics = category_metrics[category["key"]]
-        if mix_total > 0:
-            pct_ratio = metrics["net"] / mix_total
-        else:
-            pct_ratio = Decimal("0")
-        metrics["mix_pct"] = pct_ratio
+        pct_ratio = (mix_values.get(category["key"], Decimal("0")) / mix_total) if mix_total > 0 else Decimal("0")
         inventory_mix.append(
             {
                 "label": category["label"],
@@ -2192,16 +2231,10 @@ def _inventory_context(borrower, snapshot_text=None):
         )
         metrics["trend_pct"] = trend_pct or Decimal("0")
 
-    category_percentages = {}
-    for category in CATEGORY_CONFIG:
-        metrics = category_metrics[category["key"]]
-        mix_pct = metrics.get("mix_pct", Decimal("0"))
-        category_percentages[category["key"]] = mix_pct
-
     donut_segments = []
     offset = Decimal("0")
     for category in CATEGORY_CONFIG:
-        pct = category_percentages[category["key"]]
+        pct = (mix_values.get(category["key"], Decimal("0")) / mix_total) if mix_total > 0 else Decimal("0")
         dash = pct * CIRCUMFERENCE
         remainder = CIRCUMFERENCE - dash
         donut_segments.append(
@@ -2258,33 +2291,73 @@ def _inventory_context(borrower, snapshot_text=None):
     fg_qs = FGInventoryMetricsRow.objects.filter(borrower=borrower)
     rm_qs = RMInventoryMetricsRow.objects.filter(borrower=borrower)
     wip_qs = WIPInventoryMetricsRow.objects.filter(borrower=borrower)
-    fg_map, fg_latest = _build_metric_month_map(fg_qs, "available_inventory")
-    rm_map, rm_latest = _build_metric_month_map(rm_qs, "available_inventory")
-    wip_map, wip_latest = _build_metric_month_map(wip_qs, "available_inventory")
+
+    def _resolve_division_queryset(qs):
+        if normalized_division != "all":
+            return qs.filter(division__iexact=normalized_division), False
+        all_divisions_qs = qs.filter(
+            Q(division__iexact="all divisions") | Q(division__iexact="all")
+        )
+        if all_divisions_qs.exists():
+            return all_divisions_qs, False
+        return qs, True
+
+    fg_qs, fg_aggregate = _resolve_division_queryset(fg_qs)
+    rm_qs, rm_aggregate = _resolve_division_queryset(rm_qs)
+    wip_qs, wip_aggregate = _resolve_division_queryset(wip_qs)
+
+    fg_map, fg_latest = _build_metric_month_map(
+        fg_qs, "available_inventory", aggregate=fg_aggregate
+    )
+    rm_map, rm_latest = _build_metric_month_map(
+        rm_qs, "available_inventory", aggregate=rm_aggregate
+    )
+    wip_map, wip_latest = _build_metric_month_map(
+        wip_qs, "available_inventory", aggregate=wip_aggregate
+    )
     latest_dates = [dt for dt in (fg_latest, rm_latest, wip_latest) if dt]
     latest_date = max(latest_dates) if latest_dates else None
 
     def _fill_series(months, month_map):
         values = []
-        last_value = None
         for month_date in months:
             key = (month_date.year, month_date.month)
-            value = month_map.get(key)
-            if value is None:
-                value = last_value if last_value is not None else Decimal("0")
-            else:
-                last_value = value
+            value = month_map.get(key, Decimal("0"))
             values.append(value)
         return values
 
     series_values = {key: [] for key in category_keys}
     series_labels = []
+    inventory_mix_trend_data = {"labels": [], "series": []}
     if latest_date:
         months = _month_sequence_from(latest_date, 12)
         series_labels = [month_date.strftime("%b %Y") for month_date in months]
         series_values["finished_goods"] = _fill_series(months, fg_map)
         series_values["raw_materials"] = _fill_series(months, rm_map)
         series_values["work_in_progress"] = _fill_series(months, wip_map)
+        inventory_mix_trend_data = {
+            "labels": series_labels,
+            "series": [
+                {
+                    "key": "finished_goods",
+                    "label": "Finished Goods",
+                    "color": CATEGORY_STYLES["finished_goods"]["color"],
+                    "values": [float(value) for value in series_values["finished_goods"]],
+                },
+                {
+                    "key": "raw_materials",
+                    "label": "Raw Materials",
+                    "color": CATEGORY_STYLES["raw_materials"]["color"],
+                    "values": [float(value) for value in series_values["raw_materials"]],
+                },
+                {
+                    "key": "work_in_progress",
+                    "label": "Work-in-Process",
+                    "color": CATEGORY_STYLES["work_in_progress"]["color"],
+                    "values": [float(value) for value in series_values["work_in_progress"]],
+                },
+            ],
+        }
 
     def _clamp_pct(value):
         if value is None:
@@ -2532,6 +2605,7 @@ def _inventory_context(borrower, snapshot_text=None):
         "inventory_donut_segments": donut_segments,
         "inventory_category_totals": category_totals,
         "inventory_mix_trend_chart": inventory_mix_trend_chart,
+        "inventory_mix_trend_data": inventory_mix_trend_data,
         "inventory_trend_series": inventory_trend_series,
         "inventory_trend_labels": trend_label_payload,
         "inventory_available_trend": {
