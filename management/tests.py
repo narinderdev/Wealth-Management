@@ -88,6 +88,43 @@ class FormValidationTests(TestCase):
         borrower.refresh_from_db()
         self.assertEqual(borrower.company.company, "Acme Borrower")
 
+    def test_borrower_form_does_not_overwrite_company_email(self):
+        company = Company.objects.create(company="Legacy Co", email="legacy@example.com")
+        form = BorrowerForm(
+            data={
+                "company": company.pk,
+                "primary_contact": "New Borrower",
+                "primary_contact_phone": "",
+                "primary_contact_email": "newborrower@example.com",
+                "update_interval": "Monthly",
+            }
+        )
+        self.assertTrue(form.is_valid())
+        borrower = form.save()
+        borrower.refresh_from_db()
+        company.refresh_from_db()
+        self.assertEqual(company.email, "legacy@example.com")
+        self.assertEqual(borrower.company_id, company.id)
+
+    def test_borrower_form_does_not_modify_auth_user_emails(self):
+        User = get_user_model()
+        user_a = User.objects.create_user(username="user_a", email="user_a@example.com", password="pass")
+        user_b = User.objects.create_user(username="user_b", email="user_b@example.com", password="pass")
+        form = BorrowerForm(
+            data={
+                "primary_contact": "Borrower Contact",
+                "primary_contact_phone": "",
+                "primary_contact_email": "borrower@example.com",
+                "update_interval": "Monthly",
+            }
+        )
+        self.assertTrue(form.is_valid())
+        form.save()
+        user_a.refresh_from_db()
+        user_b.refresh_from_db()
+        self.assertEqual(user_a.email, "user_a@example.com")
+        self.assertEqual(user_b.email, "user_b@example.com")
+
     def test_borrower_required_on_metric_forms(self):
         borrower = Borrower.objects.create(company=self.company, primary_contact="Owner", update_interval="Monthly")
         form = AgingCompositionForm(
