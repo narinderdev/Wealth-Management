@@ -1166,7 +1166,29 @@
           </div>
         </section>
 
-        <section class="sidebar-section sidebar-collapsible is-open{% if current_nav == 'accounts' or current_nav == 'collateral_overview' or current_nav == 'accounts_aging' or current_nav == 'accounts_metrics' or current_nav == 'accounts_ineligible_trend' or current_nav == 'accounts_ineligible_overview' or current_nav == 'accounts_concentration' %} has-active{% endif %}" data-collapsible>
+        <section class="sidebar-section sidebar-collapsible is-open{% if current_nav == 'general' or current_nav == 'collateral_overview' or current_nav == 'bbc_availability' %} has-active{% endif %}" data-collapsible>
+          <button class="section-trigger" type="button" aria-expanded="true" aria-controls="sidebar-general-panel">
+            <span class="label-left">
+              <span class="ico" aria-hidden="true">
+                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                  <path d="M12 2v4M12 18v4M4.93 4.93l2.83 2.83M16.24 16.24l2.83 2.83M2 12h4M18 12h4M4.93 19.07l2.83-2.83M16.24 7.76l2.83-2.83" stroke-linecap="round" stroke-linejoin="round"/>
+                </svg>
+              </span>
+              <span>General</span>
+            </span>
+            <span class="chevron" aria-hidden="true">
+              <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                <path d="M6 9l6 6 6-6" stroke-linecap="round" stroke-linejoin="round" />
+              </svg>
+            </span>
+          </button>
+          <div class="sidebar-children" id="sidebar-general-panel">
+            <a class="sidebar-sub-link{% if current_nav == 'collateral_overview' %} active{% endif %}" href="{% url 'admin_component' 'collateralOverview' %}" data-entity="collateralOverview">Collateral Overview</a>
+            <a class="sidebar-sub-link{% if current_nav == 'bbc_availability' %} active{% endif %}" href="{% url 'admin_component' 'bbcAvailability' %}" data-entity="bbcAvailability">BBC Availability</a>
+          </div>
+        </section>
+
+        <section class="sidebar-section sidebar-collapsible is-open{% if current_nav == 'accounts' or current_nav == 'accounts_aging' or current_nav == 'accounts_metrics' or current_nav == 'accounts_ineligible_trend' or current_nav == 'accounts_ineligible_overview' or current_nav == 'accounts_concentration' %} has-active{% endif %}" data-collapsible>
           <button class="section-trigger" type="button" aria-expanded="true" aria-controls="sidebar-accounts-panel">
             <span class="label-left">
               <span class="ico" aria-hidden="true">
@@ -1185,10 +1207,8 @@
             </span>
           </button>
           <div class="sidebar-children" id="sidebar-accounts-panel">
-            <a class="sidebar-sub-link{% if current_nav == 'accounts' or current_nav == 'collateral_overview' %} active{% endif %}" href="{% url 'admin_component' 'collateralOverview' %}" data-entity="collateralOverview">Collateral Overview</a>
             <a class="sidebar-sub-link{% if current_nav == 'accounts_aging' %} active{% endif %}" href="{% url 'admin_component' 'agingComposition' %}" data-entity="agingComposition">Aging Composition</a>
             <a class="sidebar-sub-link{% if current_nav == 'accounts_metrics' %} active{% endif %}" href="{% url 'admin_component' 'arMetrics' %}" data-entity="arMetrics">AR Metrics</a>
-            <a class="sidebar-sub-link{% if current_nav == 'bbc_availability' %} active{% endif %}" href="{% url 'admin_component' 'bbcAvailability' %}" data-entity="bbcAvailability">BBC Availability</a>
             <a class="sidebar-sub-link{% if current_nav == 'accounts_ineligible_trend' %} active{% endif %}" href="{% url 'admin_component' 'ineligibleTrend' %}" data-entity="ineligibleTrend">Ineligible Trend</a>
             <a class="sidebar-sub-link{% if current_nav == 'accounts_ineligible_overview' %} active{% endif %}" href="{% url 'admin_component' 'ineligibleOverview' %}" data-entity="ineligibleOverview">Ineligible Overview</a>
             <a class="sidebar-sub-link{% if current_nav == 'accounts_concentration' %} active{% endif %}" href="{% url 'admin_component' 'concentrationADODSO' %}" data-entity="concentrationADODSO">Concentration ADO/DSO</a>
