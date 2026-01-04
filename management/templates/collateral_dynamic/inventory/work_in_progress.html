@@ -535,18 +535,7 @@ line-height: 50px;
         <svg viewBox="0 0 24 24"><path d="M6 9l6 6 6-6"></path></svg>
       </span>
     </label>
-    <label class="select">
-      <select name="work_in_progress_division" aria-label="Division filter" onchange="this.form.submit()">
-        {% for option in work_in_progress_division_options %}
-          <option value="{{ option.value }}" {% if option.value == work_in_progress_selected_division %}selected{% endif %}>
-            {{ option.label }}
-          </option>
-        {% endfor %}
-      </select>
-      <span class="caret" aria-hidden="true">
-        <svg viewBox="0 0 24 24"><path d="M6 9l6 6 6-6"></path></svg>
-      </span>
-    </label>
+    {% include "collateral_dynamic/inventory/_division_filter.html" with name="work_in_progress_division" options=work_in_progress_division_options selected=work_in_progress_selected_division %}
   </form>
   <div class="grid-2">
     <div class="card summary-card">

@@ -506,18 +506,7 @@ height: 24px;}
         <svg viewBox="0 0 24 24"><path d="M6 9l6 6 6-6"></path></svg>
       </span>
     </label>
-    <label class="select">
-      <select name="raw_materials_division" aria-label="Division filter" onchange="this.form.submit()">
-        {% for option in raw_materials_division_options %}
-          <option value="{{ option.value }}" {% if option.value == raw_materials_selected_division %}selected{% endif %}>
-            {{ option.label }}
-          </option>
-        {% endfor %}
-      </select>
-      <span class="caret" aria-hidden="true">
-        <svg viewBox="0 0 24 24"><path d="M6 9l6 6 6-6"></path></svg>
-      </span>
-    </label>
+    {% include "collateral_dynamic/inventory/_division_filter.html" with name="raw_materials_division" options=raw_materials_division_options selected=raw_materials_selected_division %}
   </form>
 
   <div class="grid-2">

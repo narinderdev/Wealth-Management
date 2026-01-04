@@ -1,0 +1,12 @@
+<label class="select">
+  <select name="{{ name }}" aria-label="{{ aria_label|default:'Division filter' }}" onchange="this.form.submit()">
+    {% for option in options %}
+      <option value="{{ option.value }}" {% if option.value == selected %}selected{% endif %}>
+        {{ option.label }}
+      </option>
+    {% endfor %}
+  </select>
+  <span class="caret" aria-hidden="true">
+    <svg viewBox="0 0 24 24"><path d="M6 9l6 6 6-6"></path></svg>
+  </span>
+</label>

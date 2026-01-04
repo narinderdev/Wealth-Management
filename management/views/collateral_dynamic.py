@@ -2583,26 +2583,9 @@ def _accounts_receivable_context(borrower, range_key="today", division="all", sn
         IneligibleOverviewRow,
         IneligibleTrendRow,
     ]
-    divisions = set()
-    for model in division_sources:
-        for value in (
-            model.objects.filter(borrower=borrower)
-            .exclude(division__isnull=True)
-            .exclude(division__exact="")
-            .values_list("division", flat=True)
-            .distinct()
-        ):
-            cleaned = str(value).strip()
-            if cleaned:
-                divisions.add(cleaned)
+    divisions = _collect_divisions(borrower, division_sources)
     if divisions:
-        base_context["ar_division_options"] = [
-            {"value": "all", "label": "All Divisions"},
-            *(
-                {"value": item, "label": item}
-                for item in sorted(divisions)
-            ),
-        ]
+        base_context["ar_division_options"] = _build_division_options(divisions)
         if normalized_division != "all" and normalized_division not in divisions:
             normalized_division = "all"
             base_context["ar_selected_division"] = normalized_division
@@ -3621,6 +3604,31 @@ def _normalize_division(division):
     return normalized_division
 
 
+def _collect_divisions(borrower, models):
+    divisions = set()
+    for model in models:
+        for value in (
+            model.objects.filter(borrower=borrower)
+            .exclude(division__isnull=True)
+            .exclude(division__exact="")
+            .values_list("division", flat=True)
+            .distinct()
+        ):
+            cleaned = str(value).strip()
+            if not cleaned:
+                continue
+            if cleaned.lower() in {"all", "all divisions", "all_divisions"}:
+                continue
+            divisions.add(cleaned)
+    return sorted(divisions)
+
+
+def _build_division_options(divisions):
+    return [{"value": "all", "label": "All Divisions"}] + [
+        {"value": item, "label": item} for item in divisions
+    ]
+
+
 def _finished_goals_context(
     borrower,
     range_key="today",
@@ -3753,26 +3761,9 @@ def _finished_goals_context(
         SalesGMTrendRow,
         HistoricalTop20SKUsRow,
     ]
-    divisions = set()
-    for model in division_sources:
-        for value in (
-            model.objects.filter(borrower=borrower)
-            .exclude(division__isnull=True)
-            .exclude(division__exact="")
-            .values_list("division", flat=True)
-            .distinct()
-        ):
-            cleaned = str(value).strip()
-            if cleaned:
-                divisions.add(cleaned)
+    divisions = _collect_divisions(borrower, division_sources)
     if divisions:
-        base_context["finished_goals_division_options"] = [
-            {"value": "all", "label": "All Divisions"},
-            *(
-                {"value": item, "label": item}
-                for item in sorted(divisions)
-            ),
-        ]
+        base_context["finished_goals_division_options"] = _build_division_options(divisions)
         if normalized_division != "all" and normalized_division not in divisions:
             normalized_division = "all"
             base_context["finished_goals_selected_division"] = normalized_division
@@ -5046,9 +5037,18 @@ def _raw_materials_context(borrower, range_key="today", division="all"):
         "raw_materials_selected_division": normalized_division,
     }
 
-    if normalized_division != "all":
-        normalized_division = "all"
-        base_context["raw_materials_selected_division"] = normalized_division
+    division_sources = [
+        RMInventoryMetricsRow,
+        RMIneligibleOverviewRow,
+        RMCategoryHistoryRow,
+        RMTop20HistoryRow,
+    ]
+    divisions = _collect_divisions(borrower, division_sources)
+    if divisions:
+        base_context["raw_materials_division_options"] = _build_division_options(divisions)
+        if normalized_division != "all" and normalized_division not in divisions:
+            normalized_division = "all"
+            base_context["raw_materials_selected_division"] = normalized_division
 
     start_date, end_date = _range_dates(normalized_range)
     state = _inventory_state(borrower, start_date, end_date)
@@ -5705,9 +5705,18 @@ def _work_in_progress_context(borrower, range_key="today", division="all"):
         "work_in_progress_selected_division": normalized_division,
     }
 
-    if normalized_division != "all":
-        normalized_division = "all"
-        base_context["work_in_progress_selected_division"] = normalized_division
+    division_sources = [
+        WIPInventoryMetricsRow,
+        WIPIneligibleOverviewRow,
+        WIPCategoryHistoryRow,
+        WIPTop20HistoryRow,
+    ]
+    divisions = _collect_divisions(borrower, division_sources)
+    if divisions:
+        base_context["work_in_progress_division_options"] = _build_division_options(divisions)
+        if normalized_division != "all" and normalized_division not in divisions:
+            normalized_division = "all"
+            base_context["work_in_progress_selected_division"] = normalized_division
 
     start_date, end_date = _range_dates(normalized_range)
     state = _inventory_state(borrower, start_date, end_date)
