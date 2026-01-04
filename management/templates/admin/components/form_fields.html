@@ -15,6 +15,16 @@
             {{ field }}
             <button type="button" class="password-toggle" data-password-toggle>Show</button>
           </div>
+        {% elif input_type == "date" %}
+          <div class="icon-input">
+            {{ field }}
+            <button type="button" class="end-ico calendar-trigger" aria-label="Choose date" data-date-target="{{ field.id_for_label }}">
+              <svg viewBox="0 0 24 24" width="16" height="16" fill="none" aria-hidden="true">
+                <rect x="3" y="5" width="18" height="16" rx="2" stroke="currentColor" stroke-width="2"/>
+                <path d="M8 3v4M16 3v4M3 9h18" stroke="currentColor" stroke-width="2" stroke-linecap="round"/>
+              </svg>
+            </button>
+          </div>
         {% else %}
           {{ field }}
         {% endif %}

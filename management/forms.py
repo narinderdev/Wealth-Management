@@ -1,3 +1,5 @@
+from decimal import Decimal
+
 from django import forms
 
 UPDATE_INTERVAL_CHOICES = [
@@ -535,6 +537,54 @@ class BBCAvailabilityForm(BorrowerModelForm):
             "outstanding_balance",
             "availability",
         ]
+
+    def __init__(self, *args, **kwargs):
+        super().__init__(*args, **kwargs)
+        self.fields["availability_pct"] = forms.DecimalField(
+            label="Availability %",
+            required=False,
+            decimal_places=2,
+            max_digits=12,
+        )
+        period_field = self.fields.get("period")
+        if period_field:
+            period_field.widget = forms.DateInput(attrs={"type": "date"}, format="%Y-%m-%d")
+            period_field.input_formats = ["%Y-%m-%d", "%m/%d/%Y", "%d/%m/%Y"]
+        availability_field = self.fields.get("availability")
+        if availability_field:
+            availability_field.widget.attrs["readonly"] = "readonly"
+        availability_pct_field = self.fields.get("availability_pct")
+        if availability_pct_field:
+            availability_pct_field.widget.attrs["readonly"] = "readonly"
+        if self.instance and self.instance.pk:
+            availability = self.instance.availability
+            net_collateral = self.instance.net_collateral
+            if availability is not None and net_collateral:
+                availability_pct_field.initial = (availability / net_collateral) * Decimal("100")
+            else:
+                availability_pct_field.initial = Decimal("0")
+        self.order_fields(
+            [
+                "borrower",
+                "period",
+                "net_collateral",
+                "outstanding_balance",
+                "availability",
+                "availability_pct",
+            ]
+        )
+
+    def clean(self):
+        cleaned_data = super().clean()
+        net_collateral = cleaned_data.get("net_collateral") or Decimal("0")
+        outstanding_balance = cleaned_data.get("outstanding_balance") or Decimal("0")
+        cleaned_data["availability"] = net_collateral - outstanding_balance
+        cleaned_data["availability_pct"] = (
+            (cleaned_data["availability"] / net_collateral) * Decimal("100")
+            if net_collateral
+            else Decimal("0")
+        )
+        return cleaned_data
 
 
 class NetRecoveryTrendForm(BorrowerModelForm):

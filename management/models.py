@@ -1193,6 +1193,14 @@ class BBCAvailabilityRow(TimeStampedModel):
         db_table = "bbc_availability"
         unique_together = ("borrower", "period")
 
+    @property
+    def availability_pct(self):
+        if self.net_collateral in (None, 0):
+            return None
+        if self.availability is None:
+            return None
+        return (self.availability / self.net_collateral) * Decimal("100")
+
 
 # -------------------------
 # Sheet: Net Recovery Trend

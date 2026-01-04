@@ -19,6 +19,7 @@
             <th>Net Collateral</th>
             <th>Outstanding Balance</th>
             <th>Availability</th>
+            <th>Availability %</th>
             <th></th>
           </tr>
         </thead>
@@ -30,6 +31,7 @@
               <td>{{ row.net_collateral|default:"—" }}</td>
               <td>{{ row.outstanding_balance|default:"—" }}</td>
               <td>{{ row.availability|default:"—" }}</td>
+              <td>{% if row.availability_pct is not None %}{{ row.availability_pct|floatformat:1 }}%{% else %}—{% endif %}</td>
               <td class="table-actions">
                 <a class="link" href="{% url 'admin_component' component_meta.slug %}?edit={{ row.pk }}">Edit</a>
                 <form method="post" class="inline-form" onsubmit="return confirm('Delete this entry?');">
@@ -41,7 +43,7 @@
               </td>
             </tr>
           {% empty %}
-            <tr><td colspan="6">No BBC availability entries recorded.</td></tr>
+            <tr><td colspan="7">No BBC availability entries recorded.</td></tr>
           {% endfor %}
         </tbody>
       </table>
@@ -97,3 +99,52 @@
   </div>
 </div>
 {% endif %}
+
+<script>
+  (function(){
+    function parseAmount(value){
+      var cleaned = String(value || "").replace(/[^0-9.-]/g, "");
+      if (!cleaned || cleaned === "-" || cleaned === ".") {
+        return 0;
+      }
+      var numberValue = Number(cleaned);
+      return isNaN(numberValue) ? 0 : numberValue;
+    }
+
+    function formatAmount(value){
+      if (!isFinite(value)) {
+        return "";
+      }
+      return value.toFixed(2);
+    }
+
+    function attachAvailabilityCalc(form){
+      if (!form) return;
+      var netField = form.querySelector('input[name="net_collateral"]');
+      var outstandingField = form.querySelector('input[name="outstanding_balance"]');
+      var availabilityField = form.querySelector('input[name="availability"]');
+      var availabilityPctField = form.querySelector('input[name="availability_pct"]');
+      if (!netField || !outstandingField || !availabilityField) return;
+
+      function updateAvailability(){
+        var netValue = parseAmount(netField.value);
+        var outstandingValue = parseAmount(outstandingField.value);
+        var availabilityValue = netValue - outstandingValue;
+        availabilityField.value = formatAmount(availabilityValue);
+        if (availabilityPctField) {
+          var pctValue = netValue ? (availabilityValue / netValue) * 100 : 0;
+          availabilityPctField.value = formatAmount(pctValue);
+        }
+      }
+
+      netField.addEventListener("input", updateAvailability);
+      outstandingField.addEventListener("input", updateAvailability);
+      updateAvailability();
+    }
+
+    document.addEventListener("DOMContentLoaded", function(){
+      attachAvailabilityCalc(document.querySelector("#modal-bbc-availability-create form"));
+      attachAvailabilityCalc(document.querySelector("#modal-bbc-availability-edit form"));
+    });
+  })();
+</script>

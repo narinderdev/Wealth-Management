@@ -2019,6 +2019,29 @@
     });
   </script>
   <script>
+    document.addEventListener('DOMContentLoaded', function(){
+      document.querySelectorAll('[data-date-target]').forEach(function(button){
+        var targetId = button.getAttribute('data-date-target');
+        if (!targetId) return;
+        var input = document.getElementById(targetId);
+        if (!input) return;
+        function openPicker(){
+          if (typeof input.showPicker === 'function') {
+            input.showPicker();
+          } else {
+            input.focus();
+          }
+        }
+        button.addEventListener('click', openPicker);
+        input.addEventListener('click', function(){
+          if (typeof input.showPicker === 'function') {
+            input.showPicker();
+          }
+        });
+      });
+    });
+  </script>
+  <script>
     (function(){
       var sidebar = document.querySelector('.sidebar-content') || document.querySelector('.sidebar');
       if (!sidebar || !window.sessionStorage) return;
