@@ -644,6 +644,9 @@ class NetRecoveryTrendForm(BorrowerModelForm):
             "rm_net_recovery_pct",
             "wip_net_recovery_pct",
         ]
+        widgets = {
+            "period": forms.DateInput(attrs={"type": "date"}),
+        }
 
     def _validate_pct(self, field):
         value = self.cleaned_data.get(field)
