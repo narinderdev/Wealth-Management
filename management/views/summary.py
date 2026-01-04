@@ -1727,7 +1727,7 @@ def borrower_portfolio_view(request):
             {
                 "id": borrower.id,
                 "borrower_label": borrower.primary_contact or borrower.company.company or "Borrower",
-                "company_name": borrower.company.company if borrower.company else "—",
+                "company_name": borrower.company_name_display,
                 "contact_name": _safe_str(borrower.primary_contact),
                 "contact_phone": borrower.primary_contact_phone,
                 "contact_email": borrower.primary_contact_email,

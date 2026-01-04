@@ -26,7 +26,7 @@
         <tbody>
           {% for borrower in component_data.list %}
             <tr>
-              <td>{{ borrower.company.company }}</td>
+              <td>{{ borrower.company_name_display }}</td>
               <td>{{ borrower.primary_contact|default:"—" }}</td>
               <td>{{ borrower.primary_contact_email|default:"—" }}</td>
               <td>{{ borrower.primary_contact_phone|default:"—" }}</td>

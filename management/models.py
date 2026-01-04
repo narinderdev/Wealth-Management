@@ -3,6 +3,7 @@ from decimal import Decimal
 from django.conf import settings
 from django.contrib.auth.hashers import check_password, make_password
 from django.core.validators import FileExtensionValidator
+from django.core.exceptions import ObjectDoesNotExist
 from django.db import models
 
 
@@ -114,11 +115,25 @@ class Borrower(TimeStampedModel):
     primary_naics = models.CharField(max_length=255, null=True, blank=True)
     website = models.CharField(max_length=255, null=True, blank=True)
 
+    def _safe_company(self):
+        try:
+            return self.company
+        except ObjectDoesNotExist:
+            return None
+
+    @property
+    def company_name_display(self):
+        company = self._safe_company()
+        if not company:
+            return "—"
+        return company.company or "—"
+
     def __str__(self):
+        company_label = self.company_name_display
         label = self.primary_contact
         if not label and self.primary_specific_individual:
             label = self.primary_specific_individual.specific_individual
-        return f"{self.company} - {label or 'Borrower'}"
+        return f"{company_label} - {label or 'Borrower'}"
 
     class Meta:
         constraints = [
