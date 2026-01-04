@@ -3842,52 +3842,79 @@ def _finished_goals_context(
             normalized_division = "all"
             base_context["finished_goals_selected_division"] = normalized_division
 
-    inventory_total = state["inventory_total"]
-    inventory_available_total = state["inventory_available_total"]
-    inventory_ineligible = state["inventory_ineligible"]
-    inventory_ineligible_display = state.get("inventory_ineligible_raw", inventory_ineligible)
-    inventory_net_total = state["inventory_net_total"]
     category_metrics = state["category_metrics"]
     inventory_rows = state["inventory_rows"]
-    category_totals = state.get("category_totals", {}).get("finished_goods", {})
-    category_raw = category_totals.get("raw", {}) if category_totals else {}
-    if category_raw:
-        inventory_total, inventory_ineligible, inventory_available_total = compute_inventory_breakdown(
-            category_raw.get("beginning_collateral"),
-            category_raw.get("ineligibles_raw", category_raw.get("ineligibles")),
-            category_raw.get("eligible_collateral"),
-        )
-        inventory_ineligible_display = inventory_ineligible
-        inventory_net_total = inventory_available_total
+    def _pct_change_value(current, previous):
+        if current is None or previous in (None, 0):
+            return None
+        current = _to_decimal(current)
+        previous = _to_decimal(previous)
+        if previous == 0:
+            return None
+        return (current - previous) / abs(previous) * Decimal("100")
 
-    ar_row = (
-        ARMetricsRow.objects.filter(borrower=borrower)
-        .order_by("-as_of_date", "-created_at", "-id")
-        .first()
+    metrics_base_qs = (
+        FGInventoryMetricsRow.objects.filter(borrower=borrower)
+        .exclude(as_of_date__isnull=True)
     )
+    aggregate_metrics = False
+    if normalized_division != "all":
+        metrics_base_qs = metrics_base_qs.filter(division__iexact=normalized_division)
+    else:
+        all_division_qs = metrics_base_qs.filter(division__iexact="All Divisions")
+        if not all_division_qs.exists():
+            all_division_qs = metrics_base_qs.filter(division__iexact="All")
+        if all_division_qs.exists():
+            metrics_base_qs = all_division_qs
+        else:
+            aggregate_metrics = True
 
-    available_pct = (
-        (inventory_available_total / inventory_total) if inventory_total else Decimal("0")
+    metrics_qs = _apply_date_filter(metrics_base_qs, "as_of_date")
+    metrics_rows = list(metrics_qs)
+    total_map, _ = _build_metric_month_map(
+        metrics_rows, "total_inventory", aggregate=aggregate_metrics
     )
-    ineligible_pct = (
-        (inventory_ineligible / inventory_total) if inventory_total else Decimal("0")
+    ineligible_map, _ = _build_metric_month_map(
+        metrics_rows, "ineligible_inventory", aggregate=aggregate_metrics
     )
-    total_quality = available_pct
+    available_map, _ = _build_metric_month_map(
+        metrics_rows, "available_inventory", aggregate=aggregate_metrics
+    )
+    month_keys = sorted(set(total_map) | set(ineligible_map) | set(available_map))
+    latest_key = month_keys[-1] if month_keys else None
+    previous_key = month_keys[-2] if len(month_keys) > 1 else None
+    total_current = total_map.get(latest_key) if latest_key else None
+    total_previous = total_map.get(previous_key) if previous_key else None
+    ineligible_current = ineligible_map.get(latest_key) if latest_key else None
+    ineligible_previous = ineligible_map.get(previous_key) if previous_key else None
+    available_current = available_map.get(latest_key) if latest_key else None
+    available_previous = available_map.get(previous_key) if previous_key else None
 
-    total_delta = (
-        (total_quality - Decimal("0.8")) * Decimal("100") if inventory_total else None
+    if available_current is None and total_current is not None and ineligible_current is not None:
+        available_current = total_current - ineligible_current
+    if available_previous is None and total_previous is not None and ineligible_previous is not None:
+        available_previous = total_previous - ineligible_previous
+
+    inventory_total = total_current if total_current is not None else Decimal("0")
+    inventory_ineligible = (
+        abs(_to_decimal(ineligible_current)) if ineligible_current is not None else Decimal("0")
     )
-    ineligible_delta = (
-        (ineligible_pct - Decimal("0.2")) * Decimal("100") if inventory_total else None
+    inventory_ineligible_display = (
+        -abs(_to_decimal(ineligible_current)) if ineligible_current is not None else None
     )
-    available_delta = (
-        (available_pct - Decimal("0.5")) * Decimal("100") if inventory_total else None
+    inventory_available_total = (
+        _to_decimal(available_current) if available_current is not None else Decimal("0")
     )
+    inventory_net_total = inventory_available_total
+
+    total_delta = _pct_change_value(total_current, total_previous)
+    ineligible_delta = _pct_change_value(ineligible_current, ineligible_previous)
+    available_delta = _pct_change_value(available_current, available_previous)
 
     metric_defs = [
-        ("Total Inventory", _format_currency(inventory_total), total_delta),
+        ("Total Inventory", _format_currency(total_current), total_delta),
         ("Ineligible Inventory", _format_currency(inventory_ineligible_display), ineligible_delta),
-        ("Available Inventory", _format_currency(inventory_available_total), available_delta),
+        ("Available Inventory", _format_currency(available_current), available_delta),
     ]
 
     metrics = []
@@ -3904,30 +3931,82 @@ def _finished_goals_context(
             }
         )
 
+    ar_qs = (
+        ARMetricsRow.objects.filter(borrower=borrower)
+        .exclude(as_of_date__isnull=True)
+    )
+    ar_qs = _apply_division_filter(ar_qs)
+    ar_qs = _apply_date_filter_or_latest(ar_qs, "as_of_date")
+    ar_row = ar_qs.order_by("-as_of_date", "-created_at", "-id").first()
+
     ineligible_detail_rows = []
     total_ineligible = Decimal("0")
-    ineligible_qs = FGIneligibleDetailRow.objects.filter(borrower=borrower)
-    ineligible_division_qs = _apply_division_filter(ineligible_qs)
-    ineligible_filtered_qs = _apply_date_filter(ineligible_division_qs, "date")
-    ineligible_row = ineligible_filtered_qs.order_by("-date", "-created_at", "-id").first()
-    if not ineligible_row:
-        ineligible_row = ineligible_division_qs.order_by("-date", "-created_at", "-id").first()
-    if not ineligible_row and normalized_division != "all":
-        ineligible_row = ineligible_qs.order_by("-date", "-created_at", "-id").first()
-    if ineligible_row:
-        total_ineligible = abs(_to_decimal(ineligible_row.total_ineligible))
-        reason_fields = [
-            ("Slow-Moving/Obsolete", "slow_moving_obsolete"),
-            ("Aged", "aged"),
-            ("Off Site", "off_site"),
-            ("Consigned", "consigned"),
-            ("In-Transit", "in_transit"),
-            ("Damaged/Non-Saleable", "damaged_non_saleable"),
-        ]
-        amounts = [
-            (label, abs(_to_decimal(getattr(ineligible_row, field, None))))
-            for label, field in reason_fields
-        ]
+    ineligible_qs = (
+        FGIneligibleDetailRow.objects.filter(borrower=borrower)
+        .exclude(date__isnull=True)
+    )
+    aggregate_ineligible = False
+    if normalized_division != "all":
+        ineligible_qs = ineligible_qs.filter(division__iexact=normalized_division)
+    else:
+        all_division_qs = ineligible_qs.filter(division__iexact="All Divisions")
+        if not all_division_qs.exists():
+            all_division_qs = ineligible_qs.filter(division__iexact="All")
+        if all_division_qs.exists():
+            ineligible_qs = all_division_qs
+        else:
+            aggregate_ineligible = True
+    ineligible_qs = _apply_date_filter(ineligible_qs, "date")
+    latest_ineligible_date = (
+        ineligible_qs.order_by("-date", "-created_at", "-id")
+        .values_list("date", flat=True)
+        .first()
+    )
+    ineligible_rows = (
+        list(ineligible_qs.filter(date=latest_ineligible_date))
+        if latest_ineligible_date
+        else []
+    )
+    if ineligible_rows:
+        if aggregate_ineligible and len(ineligible_rows) > 1:
+            totals = {
+                "slow_moving_obsolete": Decimal("0"),
+                "aged": Decimal("0"),
+                "off_site": Decimal("0"),
+                "consigned": Decimal("0"),
+                "in_transit": Decimal("0"),
+                "damaged_non_saleable": Decimal("0"),
+                "total_ineligible": Decimal("0"),
+            }
+            for row in ineligible_rows:
+                totals["slow_moving_obsolete"] += _to_decimal(row.slow_moving_obsolete)
+                totals["aged"] += _to_decimal(row.aged)
+                totals["off_site"] += _to_decimal(row.off_site)
+                totals["consigned"] += _to_decimal(row.consigned)
+                totals["in_transit"] += _to_decimal(row.in_transit)
+                totals["damaged_non_saleable"] += _to_decimal(row.damaged_non_saleable)
+                totals["total_ineligible"] += _to_decimal(row.total_ineligible)
+            total_ineligible = abs(_to_decimal(totals["total_ineligible"]))
+            reason_fields = [
+                ("Slow/Obsolete", totals["slow_moving_obsolete"]),
+                ("Aged", totals["aged"]),
+                ("Off Site", totals["off_site"]),
+                ("Consigned", totals["consigned"]),
+                ("In Transit", totals["in_transit"]),
+                ("Damaged/Non-Saleable", totals["damaged_non_saleable"]),
+            ]
+        else:
+            ineligible_row = ineligible_rows[0]
+            total_ineligible = abs(_to_decimal(ineligible_row.total_ineligible))
+            reason_fields = [
+                ("Slow/Obsolete", _to_decimal(ineligible_row.slow_moving_obsolete)),
+                ("Aged", _to_decimal(ineligible_row.aged)),
+                ("Off Site", _to_decimal(ineligible_row.off_site)),
+                ("Consigned", _to_decimal(ineligible_row.consigned)),
+                ("In Transit", _to_decimal(ineligible_row.in_transit)),
+                ("Damaged/Non-Saleable", _to_decimal(ineligible_row.damaged_non_saleable)),
+            ]
+        amounts = [(label, abs(value)) for label, value in reason_fields]
         if total_ineligible <= 0:
             total_ineligible = sum(amount for _, amount in amounts)
         for label, amount in amounts:
@@ -3940,33 +4019,16 @@ def _finished_goals_context(
                     "_amount_value": amount,
                 }
             )
-    elif inventory_ineligible:
-        total_ineligible = _to_decimal(inventory_ineligible)
-        if total_ineligible < 0:
-            total_ineligible = -total_ineligible
-        fallback_fields = [
-            ("Slow-Moving/Obsolete", Decimal("0.32")),
-            ("Aged", Decimal("0.2")),
-            ("Off Site", Decimal("0.12")),
-            ("Consigned", Decimal("0.1")),
-            ("In-Transit", Decimal("0.1")),
-            ("Damaged/Non-Saleable", Decimal("0.16")),
-        ]
-        for label, weight in fallback_fields:
-            amount = total_ineligible * weight
-            pct = (amount / total_ineligible) if total_ineligible else Decimal("0")
-            ineligible_detail_rows.append(
-                {
-                    "reason": label,
-                    "amount": _format_currency(amount),
-                    "pct": _format_pct(pct),
-                    "_amount_value": amount,
-                }
-            )
-    target_ineligible_total = abs(_to_decimal(total_ineligible)) if total_ineligible else total_ineligible
+    target_ineligible_total = (
+        inventory_ineligible if inventory_ineligible > 0 else abs(_to_decimal(total_ineligible))
+    )
     ineligible_detail_rows = _normalize_ineligible_detail_rows(
         ineligible_detail_rows,
         target_ineligible_total,
+    )
+    ineligible_detail_rows.sort(
+        key=lambda row: row.get("_amount_value", Decimal("0")),
+        reverse=True,
     )
 
     def _dec_or_none(value):
