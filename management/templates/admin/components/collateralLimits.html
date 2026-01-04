@@ -27,7 +27,7 @@
         <tbody>
           {% for row in component_data.list %}
             <tr>
-              <td>{{ row.borrower.company.company|default:row.borrower|default:"—" }}</td>
+              <td>{{ row.borrower.company_name_display|default:row.borrower|default:"—" }}</td>
               <td>{{ row.division|default:"—" }}</td>
               <td>{{ row.collateral_type|default:"—" }}</td>
               <td>{{ row.collateral_sub_type|default:"—" }}</td>

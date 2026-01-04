@@ -824,7 +824,7 @@ def _build_borrower_summary(borrower):
             "lender": "—",
         }
 
-    company = borrower.company
+    company = borrower.company_safe
     website = company.website if company else None
     if website and not website.startswith(("http://", "https://")):
         website_href = f"https://{website.lstrip('/')}"
@@ -1726,7 +1726,7 @@ def borrower_portfolio_view(request):
         borrower_rows.append(
             {
                 "id": borrower.id,
-                "borrower_label": borrower.primary_contact or borrower.company.company or "Borrower",
+                "borrower_label": borrower.primary_contact or borrower.company_name_display or "Borrower",
                 "company_name": borrower.company_name_display,
                 "contact_name": _safe_str(borrower.primary_contact),
                 "contact_phone": borrower.primary_contact_phone,
@@ -1742,7 +1742,7 @@ def borrower_portfolio_view(request):
         )
 
     current_borrower = get_preferred_borrower(request)
-    company_for_summary = company or (current_borrower.company if current_borrower else None)
+    company_for_summary = company or (current_borrower.company_safe if current_borrower else None)
     company_summary = _build_company_summary(company_for_summary) if company_for_summary else None
 
     context = {

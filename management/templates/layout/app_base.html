@@ -170,7 +170,7 @@ table th{
               <div class="user-meta">
                 {% with borrower=current_user.borrower_profile.borrower %}
                 {% if borrower %}
-                <div class="user-name">{{ borrower.company.company|default:user_display }}</div>
+                <div class="user-name">{{ borrower.company_name_display|default:user_display }}</div>
                 <div class="user-sub">
                   {{ borrower.primary_contact|default:"Contact" }}
                   {% if borrower.primary_contact_phone %}

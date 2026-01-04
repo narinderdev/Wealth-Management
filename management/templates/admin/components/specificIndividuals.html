@@ -23,7 +23,7 @@
         <tbody>
           {% for individual in component_data.list %}
             <tr>
-              <td>{{ individual.borrower.company.company }}</td>
+              <td>{{ individual.borrower.company_name_display }}</td>
               <td>{{ individual.specific_individual|default:"—" }}</td>
               <td>{{ individual.specific_id|default:"—" }}</td>
               <td class="table-actions">

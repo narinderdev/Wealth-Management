@@ -110,7 +110,7 @@ def reports_download(request, report_id):
         raise Http404("Report not found")
     workbook = _build_bbc_workbook(borrower)
     report_date = timestamps[report_id]
-    file_name = f"{borrower.company.company if borrower and borrower.company else 'BBC'} - BBC {report_date or 'latest'}.xlsx"
+    file_name = f"{borrower.company_name_display if borrower else 'BBC'} - BBC {report_date or 'latest'}.xlsx"
     response = FileResponse(
         workbook,
         content_type="application/vnd.openxmlformats-officedocument.spreadsheetml.sheet",
@@ -140,7 +140,7 @@ def _build_bbc_workbook(borrower):
         _write_sheet(
             writer,
             "Borrower Overview",
-            BorrowerOverviewRow.objects.filter(company_id=borrower.company.company_id if borrower.company else None),
+            BorrowerOverviewRow.objects.filter(company_id=borrower.company_id if borrower and borrower.company_id else None),
         )
         _write_sheet(writer, "Collateral Overview", CollateralOverviewRow.objects.filter(borrower=borrower))
         _write_sheet(writer, "AR Metrics", ARMetricsRow.objects.filter(borrower=borrower))
@@ -156,7 +156,7 @@ def reports_generate_bbc(request):
     workbook = _build_bbc_workbook(borrower)
     timestamps = _borrower_report_timestamps(borrower, limit=1)
     latest_timestamp = timestamps[0] if timestamps else None
-    file_name = f"{borrower.company.company if borrower and borrower.company else 'BBC'} - BBC {latest_timestamp or 'latest'}.xlsx"
+    file_name = f"{borrower.company_name_display if borrower else 'BBC'} - BBC {latest_timestamp or 'latest'}.xlsx"
     response = FileResponse(
         workbook,
         content_type="application/vnd.openxmlformats-officedocument.spreadsheetml.sheet",

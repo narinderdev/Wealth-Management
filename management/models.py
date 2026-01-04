@@ -122,8 +122,12 @@ class Borrower(TimeStampedModel):
             return None
 
     @property
+    def company_safe(self):
+        return self._safe_company()
+
+    @property
     def company_name_display(self):
-        company = self._safe_company()
+        company = self.company_safe
         if not company:
             return "—"
         return company.company or "—"

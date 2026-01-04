@@ -27,7 +27,7 @@
         <tbody>
           {% for row in component_data.list %}
             <tr>
-              <td>{{ row.borrower.company.company|default:row.borrower|default:"—" }}</td>
+              <td>{{ row.borrower.company_name_display|default:row.borrower|default:"—" }}</td>
               <td>{{ row.date|date:"Y-m-d"|default:"—" }}</td>
               <td>{{ row.main_category|default:"—" }}</td>
               <td>{{ row.sub_risk|default:"—" }}</td>

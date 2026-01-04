@@ -73,6 +73,21 @@ class FormValidationTests(TestCase):
         )
         self.assertTrue(form.is_valid())
 
+    def test_borrower_form_auto_creates_company(self):
+        form = BorrowerForm(
+            data={
+                "primary_contact": "Acme Borrower",
+                "primary_contact_phone": "",
+                "primary_contact_email": "borrower@example.com",
+                "update_interval": "Monthly",
+            }
+        )
+        self.assertTrue(form.is_valid())
+        borrower = form.save()
+        self.assertIsNotNone(borrower.company_id)
+        borrower.refresh_from_db()
+        self.assertEqual(borrower.company.company, "Acme Borrower")
+
     def test_borrower_required_on_metric_forms(self):
         borrower = Borrower.objects.create(company=self.company, primary_contact="Owner", update_interval="Monthly")
         form = AgingCompositionForm(

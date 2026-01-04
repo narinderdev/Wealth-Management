@@ -47,6 +47,6 @@ class Command(BaseCommand):
             borrower.set_password(raw_password, save=False)
             borrower.save(update_fields=["password"])
             self.stdout.write(
-                f"{borrower.id}\t{borrower.company or '—'}\t"
+                f"{borrower.id}\t{borrower.company_name_display or '—'}\t"
                 f"{borrower.primary_contact_email or '—'}\t{raw_password}"
             )

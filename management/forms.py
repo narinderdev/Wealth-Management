@@ -243,7 +243,7 @@ class BorrowerForm(StyledModelForm):
         if cleaned_data.get("company"):
             selected_companies.append(cleaned_data["company"])
         if not selected_companies and not company_name:
-            raise forms.ValidationError("Select a company or enter a company name.")
+            cleaned_data["company_name"] = cleaned_data.get("primary_contact") or ""
         if selected_companies:
             base_company = selected_companies[0]
             mismatch = False
@@ -300,7 +300,7 @@ class BorrowerForm(StyledModelForm):
 
         initial_company = None
         if not self.is_bound and self.instance.pk and self.instance.company_id:
-            initial_company = self.instance.company
+            initial_company = Company.objects.filter(pk=self.instance.company_id).first()
         elif not self.is_bound and self.initial.get("company"):
             initial_company = self.initial.get("company")
 
@@ -370,7 +370,7 @@ class BorrowerForm(StyledModelForm):
                 field.show_required_hint = True
 
     def _apply_company_defaults(self, borrower):
-        company = borrower.company
+        company = Company.objects.filter(pk=borrower.company_id).first() if borrower.company_id else None
         if not company:
             return
         if not borrower.primary_contact and company.specific_individual:
@@ -382,6 +382,44 @@ class BorrowerForm(StyledModelForm):
         if not borrower.lender_id and company.lender_identifier:
             borrower.lender_id = company.lender_identifier
 
+    def _sync_company_fields(self, borrower, company):
+        company_name = (self.cleaned_data.get("company_name") or "").strip()
+        if company_name:
+            company.company = company_name
+        elif not company.company:
+            fallback = borrower.primary_contact or "Unknown Company"
+            company.company = fallback
+        if borrower.industry:
+            company.industry = borrower.industry
+        if borrower.primary_naics:
+            company.primary_naics = borrower.primary_naics
+        if borrower.website:
+            company.website = borrower.website
+        if borrower.primary_contact_email:
+            company.email = borrower.primary_contact_email
+        if borrower.primary_contact and not company.specific_individual:
+            company.specific_individual = borrower.primary_contact
+        if borrower.lender:
+            company.lender_name = borrower.lender
+        if borrower.lender_id:
+            company.lender_identifier = borrower.lender_id
+        company.save()
+
+    def _find_or_create_company(self, borrower, company_name):
+        company_name = (company_name or "").strip()
+        if company_name:
+            company_qs = Company.objects.filter(company__iexact=company_name)
+            if borrower.lender_id:
+                company_qs = company_qs.filter(lender_identifier=borrower.lender_id)
+            if borrower.lender:
+                company_qs = company_qs.filter(lender_name=borrower.lender)
+            existing = company_qs.first()
+            if existing:
+                return existing
+            return Company.objects.create(company=company_name)
+        fallback_name = borrower.primary_contact or "Unknown Company"
+        return Company.objects.create(company=fallback_name)
+
     def _normalize_specific_id(self, value):
         if value in (None, ""):
             return None
@@ -391,7 +429,7 @@ class BorrowerForm(StyledModelForm):
             return None
 
     def _ensure_primary_specific_individual(self, borrower):
-        company = borrower.company
+        company = Company.objects.filter(pk=borrower.company_id).first() if borrower.company_id else None
         current = borrower.primary_specific_individual
         name = None
         specific_id = None
@@ -428,12 +466,18 @@ class BorrowerForm(StyledModelForm):
     def save(self, commit=True):
         borrower = super().save(commit=False)
         is_new = borrower.pk is None
-        self._apply_company_defaults(borrower)
         company_name = (self.cleaned_data.get("company_name") or "").strip()
-        if company_name:
-            borrower.company = Company.objects.filter(company__iexact=company_name).first()
-            if not borrower.company:
-                borrower.company = Company.objects.create(company=company_name)
+        selected_company = self.cleaned_data.get("company")
+        company = None
+        if borrower.company_id:
+            company = Company.objects.filter(pk=borrower.company_id).first()
+        elif selected_company:
+            company = selected_company
+        if not company:
+            company = self._find_or_create_company(borrower, company_name)
+        borrower.company = company
+        self._sync_company_fields(borrower, company)
+        self._apply_company_defaults(borrower)
         if commit:
             borrower.save()
             self.save_m2m()
