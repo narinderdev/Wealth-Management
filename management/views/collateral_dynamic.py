@@ -8,6 +8,7 @@ from decimal import Decimal, ROUND_DOWN, ROUND_HALF_UP
 
 from django.contrib.auth.decorators import login_required
 from django.shortcuts import redirect, render
+from django.db.models import Q
 
 from management.models import (
     ARMetricsRow,
@@ -2640,69 +2641,66 @@ def _accounts_receivable_context(borrower, range_key="today", division="all", sn
             (total_current / total_amount * Decimal("100")) if total_amount else Decimal("0")
         )
         return {
-            "total_balance": total_balance,
-            "avg_dso": avg_dso,
-            "past_due_pct": past_due_pct,
+            "balance": total_balance,
+            "dso": avg_dso,
+            "pct_past_due": past_due_pct,
             "current_pct": current_pct,
             "total_current_amt": total_current,
             "total_past_due_amt": total_past_due,
         }
 
-    ar_rows = list(
-        _apply_date_filter(
-            _apply_division_filter(ARMetricsRow.objects.filter(borrower=borrower)),
-            "as_of_date",
-        ).order_by("as_of_date", "created_at", "id")
+    ar_metrics_qs = ARMetricsRow.objects.filter(borrower=borrower).exclude(as_of_date__isnull=True)
+    all_divisions_qs = ar_metrics_qs.filter(
+        Q(division__iexact="all divisions") | Q(division__iexact="all")
     )
+    has_all_divisions = all_divisions_qs.exists()
+    if normalized_division != "all":
+        ar_metrics_qs = ar_metrics_qs.filter(division__iexact=normalized_division)
+        aggregate_divisions = False
+    elif has_all_divisions:
+        ar_metrics_qs = all_divisions_qs
+        aggregate_divisions = False
+    else:
+        aggregate_divisions = True
+
+    ar_metrics_qs = _apply_date_filter(ar_metrics_qs, "as_of_date")
+    ar_rows = list(ar_metrics_qs.order_by("as_of_date", "created_at", "id"))
     if not ar_rows:
         return base_context
 
-    grouped = OrderedDict()
+    month_grouped = OrderedDict()
     for row in ar_rows:
-        key = row.as_of_date or (row.created_at and row.created_at.date())
-        if key not in grouped:
-            grouped[key] = []
-        grouped[key].append(row)
+        if not row.as_of_date:
+            continue
+        month_key = (row.as_of_date.year, row.as_of_date.month)
+        month_grouped.setdefault(month_key, []).append(row)
 
     history = []
-    for label_date, rows in grouped.items():
-        payload = _aggregate_ar_rows(rows)
-        if isinstance(label_date, date):
-            formatted_label = label_date.strftime("%b %y")
-        elif hasattr(label_date, "strftime"):
-            formatted_label = label_date.strftime("%b %y")
+    for month_key, rows in month_grouped.items():
+        if aggregate_divisions:
+            payload = _aggregate_ar_rows(rows)
         else:
-            formatted_label = "Snapshot"
-        history.append({**payload, "label": formatted_label})
+            latest_row = rows[-1]
+            payload = {
+                "balance": _to_decimal(latest_row.balance),
+                "dso": _to_decimal(latest_row.dso),
+                "pct_past_due": _to_decimal(latest_row.pct_past_due),
+                "total_current_amt": _to_decimal(latest_row.current_amt),
+                "total_past_due_amt": _to_decimal(latest_row.past_due_amt),
+                "current_pct": None,
+            }
+        label_date = date(month_key[0], month_key[1], 1)
+        history.append({**payload, "label": label_date.strftime("%b %y"), "month_key": month_key})
 
-    if not history:
-        return base_context
+    history.sort(key=lambda item: item["month_key"])
+    for item in history:
+        item.pop("month_key", None)
 
-    max_history = 12
+    max_history = {"last_12_months": 12, "last_6_months": 6, "last_3_months": 3, "last_1_month": 1}.get(
+        normalized_range, 12
+    )
     if len(history) > max_history:
         history = history[-max_history:]
-
-    collateral_ar_qs = (
-        CollateralOverviewRow.objects.filter(borrower=borrower)
-        .exclude(created_at__isnull=True)
-        .order_by("created_at")
-    )
-    if start_date and end_date:
-        collateral_ar_qs = collateral_ar_qs.filter(created_at__date__range=(start_date, end_date))
-    ar_collateral_buckets = OrderedDict()
-    for row in collateral_ar_qs:
-        main_label = (row.main_type or "").lower()
-        if "receivable" not in main_label:
-            continue
-        date_key = row.created_at.date()
-        ar_collateral_buckets.setdefault(date_key, Decimal("0"))
-        ar_collateral_buckets[date_key] += _to_decimal(row.eligible_collateral)
-    ar_collateral_history = [
-        {"label": key.strftime("%m/%d"), "total_balance": total}
-        for key, total in ar_collateral_buckets.items()
-    ]
-    if len(ar_collateral_history) > max_history:
-        ar_collateral_history = ar_collateral_history[-max_history:]
 
     def _format_days(value):
         if value is None:
@@ -2889,7 +2887,7 @@ def _accounts_receivable_context(borrower, range_key="today", division="all", sn
             return None
         diff = (curr - prev) / prev * Decimal("100")
         is_positive = diff >= 0
-        value = f"{abs(diff):.1f}%"
+        value = f"{abs(diff):.2f}%"
         symbol = "▲" if is_positive else "▼"
         return {
             "symbol": symbol,
@@ -2902,7 +2900,7 @@ def _accounts_receivable_context(borrower, range_key="today", division="all", sn
     kpi_specs = [
         {
             "label": "Available Account Receivable",
-            "key": "total_balance",
+            "key": "balance",
             "formatter": lambda value: _format_currency(_to_decimal(value)),
             "chart_formatter": lambda value: _format_currency_millions(value),
             "scale": Decimal("1000000"),
@@ -2914,7 +2912,7 @@ def _accounts_receivable_context(borrower, range_key="today", division="all", sn
         },
         {
             "label": "Days Sales Outstanding",
-            "key": "avg_dso",
+            "key": "dso",
             "formatter": lambda value: _format_days(value),
             "chart_formatter": lambda value: _format_days(value),
             "axis_formatter": _format_axis_days,
@@ -2926,7 +2924,7 @@ def _accounts_receivable_context(borrower, range_key="today", division="all", sn
         },
         {
             "label": "% of total past due",
-            "key": "past_due_pct",
+            "key": "pct_past_due",
             "formatter": lambda value: _format_pct_display(value),
             "chart_formatter": lambda value: _format_pct_display(value),
             "axis_formatter": _format_axis_pct,
@@ -2938,26 +2936,15 @@ def _accounts_receivable_context(borrower, range_key="today", division="all", sn
         },
     ]
     kpis = []
-    chart_points = 7
-    chart_history = history[-chart_points:] if len(history) > chart_points else history[:]
-    chart_labels = [f"{idx + 1:02d}" for idx in range(len(chart_history))]
-    collateral_chart_history = (
-        ar_collateral_history[-chart_points:] if ar_collateral_history else []
-    )
+    chart_history = history
+    chart_labels = [entry.get("label") or f"{idx + 1:02d}" for idx, entry in enumerate(chart_history)]
     for spec in kpi_specs:
-        use_collateral_series = spec["key"] == "total_balance" and collateral_chart_history
-        if use_collateral_series:
-            series_values = [_to_decimal(row["total_balance"]) for row in collateral_chart_history]
-            spec_labels = [row.get("label") or "" for row in collateral_chart_history]
-            if len(spec_labels) < len(series_values):
-                spec_labels += [f"{idx + 1:02d}" for idx in range(len(series_values) - len(spec_labels))]
-        else:
-            series_values = [_to_decimal(row[spec["key"]]) for row in chart_history]
-            spec_labels = chart_labels
+        series_values = [_to_decimal(row.get(spec["key"])) for row in chart_history]
+        spec_labels = chart_labels
         scale = spec.get("scale") or Decimal("1")
         scaled_values = []
         for value in series_values:
-            if spec["key"] == "past_due_pct":
+            if spec["key"] == "pct_past_due":
                 pct_value = _pct_to_points(value)
                 scaled_values.append(float(pct_value) if pct_value is not None else 0.0)
             else:
@@ -2971,15 +2958,8 @@ def _accounts_receivable_context(borrower, range_key="today", division="all", sn
             clamp_min=spec.get("clamp_min"),
             clamp_max=spec.get("clamp_max"),
         )
-        current_value = current_snapshot[spec["key"]]
-        previous_value = previous_snapshot[spec["key"]] if previous_snapshot else None
-        if use_collateral_series:
-            current_value = ar_collateral_history[-1]["total_balance"]
-            if len(ar_collateral_history) > 1:
-                previous_value = ar_collateral_history[-2]["total_balance"]
-            current_snapshot[spec["key"]] = current_value
-            if previous_snapshot is not None:
-                previous_snapshot[spec["key"]] = previous_value
+        current_value = current_snapshot.get(spec["key"])
+        previous_value = previous_snapshot.get(spec["key"]) if previous_snapshot else None
         delta = _delta_payload(
             current_value,
             previous_value,
@@ -2987,7 +2967,7 @@ def _accounts_receivable_context(borrower, range_key="today", division="all", sn
         kpis.append(
             {
                 "label": spec["label"],
-                "value": spec["formatter"](current_snapshot[spec["key"]]),
+                "value": spec["formatter"](current_snapshot.get(spec["key"])),
                 "color": spec["color"],
                 "icon": spec["icon"],
                 "delta": delta["value"] if delta else None,
@@ -2998,8 +2978,8 @@ def _accounts_receivable_context(borrower, range_key="today", division="all", sn
                     {
                         "labels": chart["series_labels"],
                         "values": chart["series_values"],
-                        "axis": "currency_millions" if spec["key"] == "total_balance" else "days"
-                        if spec["key"] == "avg_dso"
+                        "axis": "currency_millions" if spec["key"] == "balance" else "days"
+                        if spec["key"] == "dso"
                         else "percent",
                         "color": spec.get("color"),
                         "label": spec["label"],
@@ -3008,12 +2988,18 @@ def _accounts_receivable_context(borrower, range_key="today", division="all", sn
             }
         )
 
-    aging_rows = list(
-        _apply_date_filter(
-            _apply_division_filter(AgingCompositionRow.objects.filter(borrower=borrower)),
-            "as_of_date",
-        ).order_by("-as_of_date", "-created_at", "-id")
+    aging_qs = AgingCompositionRow.objects.filter(borrower=borrower).exclude(as_of_date__isnull=True)
+    if normalized_division == "all":
+        aging_qs = aging_qs.filter(division__iexact="All Divisions")
+    else:
+        aging_qs = aging_qs.filter(division__iexact=normalized_division)
+    aging_qs = _apply_date_filter(aging_qs, "as_of_date")
+    latest_aging_date = (
+        aging_qs.order_by("-as_of_date", "-created_at", "-id")
+        .values_list("as_of_date", flat=True)
+        .first()
     )
+    aging_rows = list(aging_qs.filter(as_of_date=latest_aging_date)) if latest_aging_date else []
     AGING_BUCKET_DEFS = [
         {"key": "current", "label": "Current", "color": "#1b2a55"},
         {"key": "0-30", "label": "0-30", "color": "rgba(43,111,247,.35)"},
@@ -3028,6 +3014,8 @@ def _accounts_receivable_context(borrower, range_key="today", division="all", sn
         normalized = bucket_label.lower().replace(" ", "")
         if "current" in normalized:
             return "current"
+        if normalized.startswith("1") and "30" in normalized:
+            return "0-30"
         if normalized.startswith("0"):
             return "0-30"
         if normalized.startswith("31") or "31-60" in normalized:
