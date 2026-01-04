@@ -14,7 +14,8 @@ from django.utils import timezone
 from django.urls import reverse
 from django.utils.text import slugify
 
-from django.db.models import Max, Q
+from django.db.models import Max, Q, OuterRef, Subquery
+from django.db.models.functions import TruncMonth
 from django.db.utils import OperationalError, ProgrammingError
 
 from management.models import (
@@ -24,7 +25,6 @@ from management.models import (
     CollateralOverviewRow,
     Company,
     CompositeIndexRow,
-    ForecastRow,
     BBCAvailabilityRow,
     RiskSubfactorsRow,
     SnapshotSummaryRow,
@@ -1407,69 +1407,62 @@ def summary_view(request):
         _collateral_row_payload(row, limit_map=limit_map) for row in collateral_rows
     ]
 
-    outstanding_value = (
-        _to_decimal(ar_row.balance) if ar_row and ar_row.balance is not None else None
-    )
-    availability_value = None
-    if net_total is not None and outstanding_value is not None:
-        availability_value = net_total - outstanding_value
-        if availability_value < Decimal("0"):
-            availability_value = Decimal("0")
-
     chart_points = 5
-    net_timeseries = get_kpi_timeseries(
-        "net",
-        borrower,
-        range_start=range_start,
-        range_end=range_end,
-        max_points=chart_points,
+    bbc_rows = list(
+        BBCAvailabilityRow.objects.filter(borrower=borrower)
+        .exclude(period__isnull=True)
+        .order_by("-period", "-updated_at", "-id")[:chart_points]
     )
-    outstanding_timeseries = get_kpi_timeseries(
-        "outstanding",
-        borrower,
-        range_start=range_start,
-        range_end=range_end,
-        division=normalized_division,
-        max_points=chart_points,
-    )
-    availability_timeseries = get_kpi_timeseries(
-        "availability",
-        borrower,
-        range_start=range_start,
-        range_end=range_end,
-        division=normalized_division,
-        max_points=chart_points,
-    )
+    latest_bbc = bbc_rows[0] if bbc_rows else None
+    previous_bbc = bbc_rows[1] if len(bbc_rows) > 1 else None
+    bbc_rows = list(reversed(bbc_rows))
+    bbc_periods = [row.period for row in bbc_rows]
+    bbc_labels = [_format_series_label(period) for period in bbc_periods]
 
-    bbc_series = _build_bbc_timeseries(borrower, max_points=chart_points)
-    bbc_latest_period = None
-    if bbc_series:
-        net_timeseries = bbc_series["net"]
-        outstanding_timeseries = bbc_series["outstanding"]
-        availability_timeseries = bbc_series["availability"]
-        bbc_latest_period = bbc_series.get("latest_period")
-        base_months = []
+    def _bbc_value(row, field_name):
+        value = getattr(row, field_name, None)
+        return _to_decimal(value) if value is not None else None
 
-    base_months = net_timeseries.get("dates") or outstanding_timeseries.get("dates") or []
-    if base_months:
-        base_months = _recent_months(max(base_months), chart_points)
-    if base_months and net_timeseries.get("values"):
-        net_timeseries = _align_series_to_months(net_timeseries, base_months)
-    if base_months and outstanding_timeseries.get("values"):
-        outstanding_timeseries = _align_series_to_months(outstanding_timeseries, base_months)
-    if base_months and net_timeseries.get("values") and outstanding_timeseries.get("values"):
-        availability_values = _availability_from_aligned(
-            net_timeseries["values"],
-            outstanding_timeseries["values"],
-        )
-        availability_timeseries = {
-            "labels": [_format_series_label(month_key) for month_key in base_months],
-            "values": availability_values,
-            "latest_value": availability_values[-1] if availability_values else None,
-            "previous_value": availability_values[-2] if len(availability_values) > 1 else None,
-            "dates": base_months,
-            "source": "derived",
-        }
+    net_series_values = [_bbc_value(row, "net_collateral") for row in bbc_rows]
+    outstanding_series_values = [_bbc_value(row, "outstanding_balance") for row in bbc_rows]
+    availability_series_values = []
+    for net_value, out_value in zip(net_series_values, outstanding_series_values):
+        if net_value is None or out_value is None:
+            availability_series_values.append(None)
+        else:
+            availability_series_values.append(net_value - out_value)
+
+    net_timeseries = {
+        "labels": bbc_labels,
+        "values": net_series_values,
+        "latest_value": net_series_values[-1] if net_series_values else None,
+        "previous_value": net_series_values[-2] if len(net_series_values) > 1 else None,
+        "dates": bbc_periods,
+        "raw_values": list(net_series_values),
+        "raw_dates": list(bbc_periods),
+        "source": "bbc",
+    }
+    outstanding_timeseries = {
+        "labels": bbc_labels,
+        "values": outstanding_series_values,
+        "latest_value": outstanding_series_values[-1] if outstanding_series_values else None,
+        "previous_value": outstanding_series_values[-2] if len(outstanding_series_values) > 1 else None,
+        "dates": bbc_periods,
+        "raw_values": list(outstanding_series_values),
+        "raw_dates": list(bbc_periods),
+        "source": "bbc",
+    }
+    availability_timeseries = {
+        "labels": bbc_labels,
+        "values": availability_series_values,
+        "latest_value": availability_series_values[-1] if availability_series_values else None,
+        "previous_value": availability_series_values[-2] if len(availability_series_values) > 1 else None,
+        "dates": bbc_periods,
+        "raw_values": list(availability_series_values),
+        "raw_dates": list(bbc_periods),
+        "source": "bbc",
+    }
+    bbc_latest_period = latest_bbc.period if latest_bbc else None
 
     net_source = net_timeseries.get("source", "collateral")
     outstanding_source = outstanding_timeseries.get("source", "ar")
@@ -1531,142 +1524,28 @@ def summary_view(request):
         },
     }
 
-    # Use most recent forecast rows so Borrowing Base KPIs match the forecast sheet.
-    forecast_rows = list(
-        ForecastRow.objects.filter(borrower=borrower)
-        .order_by("-as_of_date", "-period", "-created_at", "-id")[:chart_points]
+    latest_net_value = _bbc_value(latest_bbc, "net_collateral") if latest_bbc else None
+    latest_outstanding_value = _bbc_value(latest_bbc, "outstanding_balance") if latest_bbc else None
+    latest_availability_value = (
+        latest_net_value - latest_outstanding_value
+        if latest_net_value is not None and latest_outstanding_value is not None
+        else None
     )
-    latest_forecast = forecast_rows[0] if forecast_rows else None
-    previous_forecast = forecast_rows[1] if len(forecast_rows) > 1 else None
-
-    forecast_chart_labels = []
-    forecast_net_series = []
-    forecast_outstanding_series = []
-
-    if latest_forecast:
-        forecast_label = (latest_forecast.actual_forecast or "").strip()
-        forecast_date = latest_forecast.as_of_date or latest_forecast.period
-        date_display = _format_date(forecast_date)
-        detail_parts = []
-        if forecast_label:
-            detail_parts.append(forecast_label.title())
-        if date_display and date_display != "—":
-            detail_parts.append(date_display)
-        forecast_detail = " · ".join(detail_parts) if detail_parts else "Latest forecast entry"
-
-        def _apply_forecast_metric(metric_key, field_name):
-            insights[metric_key]["amount"] = _format_currency(
-                getattr(latest_forecast, field_name, None)
-            )
-            insights[metric_key]["detail"] = forecast_detail
-            previous_value = getattr(previous_forecast, field_name, None) if previous_forecast else None
-            insights[metric_key]["delta"] = _delta_payload(
-                getattr(latest_forecast, field_name, None),
-                previous_value,
-            )
-
-        # Forecast values are used for chart history only; keep insight cards anchored to the latest collateral/AR snapshot.
-
-        def _forecast_row_date(row):
-            label_date = row.as_of_date or row.period
-            if not label_date and getattr(row, "created_at", None):
-                created_dt = row.created_at
-                if timezone.is_aware(created_dt):
-                    created_dt = timezone.localtime(created_dt)
-                label_date = created_dt.date()
-            return label_date
-
-        def _format_label(row, date_value, index):
-            if hasattr(date_value, "strftime"):
-                return date_value.strftime("%m/%y")
-            if date_value:
-                return str(date_value)
-            fallback = (row.actual_forecast or "").strip()
-            if fallback:
-                return fallback
-            return f"{index + 1:02d}"
-
-        def _forecast_value(row, field_name):
-            value = getattr(row, field_name, None)
-            return _to_decimal(value) if value is not None else None
-
-        chart_history = list(reversed(forecast_rows[:chart_points]))
-        for idx, row in enumerate(chart_history):
-            date_value = _forecast_row_date(row)
-            base_label = _format_label(row, date_value, idx)
-            forecast_chart_labels.append(base_label)
-            forecast_net_series.append(_forecast_value(row, "available_collateral"))
-            forecast_outstanding_series.append(_forecast_value(row, "loan_balance"))
-
-    previous_collateral_rows = []
-    if latest_collateral_time:
-        previous_collateral_time = (
-            collateral_range_qs.filter(created_at__lt=latest_collateral_time)
-            .order_by("-created_at")
-            .values_list("created_at", flat=True)
-            .first()
-        )
-        if previous_collateral_time:
-            previous_collateral_rows = list(
-                collateral_range_qs.filter(created_at=previous_collateral_time)
-            )
-
-    previous_net_total = _sum_collateral_field(previous_collateral_rows, "net_collateral")
-    previous_outstanding_value = (
-        _to_decimal(ar_prev_row.balance) if ar_prev_row and ar_prev_row.balance is not None else None
+    previous_net_value = _bbc_value(previous_bbc, "net_collateral") if previous_bbc else None
+    previous_outstanding_value = _bbc_value(previous_bbc, "outstanding_balance") if previous_bbc else None
+    previous_availability_value = (
+        previous_net_value - previous_outstanding_value
+        if previous_net_value is not None and previous_outstanding_value is not None
+        else None
     )
-    previous_availability_value = None
-    if previous_net_total is not None and previous_outstanding_value is not None:
-        previous_availability_value = previous_net_total - previous_outstanding_value
-        if previous_availability_value < Decimal("0"):
-            previous_availability_value = Decimal("0")
 
-    insights["net"]["delta"] = _delta_payload(
-        net_total,
-        previous_net_total if previous_collateral_rows else None,
-    )
-    insights["outstanding"]["delta"] = _delta_payload(
-        outstanding_value,
-        previous_outstanding_value,
-    )
-    insights["availability"]["delta"] = _delta_payload(
-        availability_value if collateral_rows or outstanding_value is not None else None,
-        previous_availability_value,
-    )
+    insights["net"]["delta"] = _delta_payload(latest_net_value, previous_net_value)
+    insights["outstanding"]["delta"] = _delta_payload(latest_outstanding_value, previous_outstanding_value)
+    insights["availability"]["delta"] = _delta_payload(latest_availability_value, previous_availability_value)
 
     net_series = net_timeseries["values"]
     outstanding_series = outstanding_timeseries["values"]
     availability_series = availability_timeseries["values"]
-    net_series_raw = list(net_series)
-    outstanding_series_raw = list(outstanding_series)
-    availability_series_raw = list(availability_series)
-
-    def _series_delta(timeseries):
-        if not timeseries:
-            return None
-        raw_series = timeseries.get("raw_values") or []
-        aligned_series = timeseries.get("values") or []
-        candidate = raw_series if len(raw_series) >= 2 else aligned_series
-        cleaned = [val for val in candidate if val is not None]
-        if len(cleaned) < 2:
-            return None
-        return _delta_payload(cleaned[-1], cleaned[-2])
-
-    insights["net"]["delta"] = (
-        _series_delta(net_timeseries) if net_has_data else None
-    )
-    insights["outstanding"]["delta"] = (
-        _series_delta(outstanding_timeseries) if outstanding_has_data else None
-    )
-    availability_series_for_delta = availability_timeseries
-    if base_months and net_timeseries.get("values") and outstanding_timeseries.get("values"):
-        availability_series_for_delta = {
-            **availability_timeseries,
-            "raw_values": availability_values,
-        }
-    insights["availability"]["delta"] = (
-        _series_delta(availability_series_for_delta) if availability_has_data else None
-    )
 
     net_chart = (
         _build_line_series(
@@ -1805,41 +1684,45 @@ def borrower_portfolio_view(request):
             | Q(primary_contact_email__icontains=search_term)
         )
 
+    latest_month = (
+        BBCAvailabilityRow.objects.exclude(period__isnull=True)
+        .annotate(month=TruncMonth("period"))
+        .aggregate(max_month=Max("month"))
+        .get("max_month")
+    )
+    if latest_month:
+        bbc_latest = (
+            BBCAvailabilityRow.objects.filter(
+                borrower=OuterRef("pk"),
+                period__year=latest_month.year,
+                period__month=latest_month.month,
+            )
+            .order_by("-period", "-updated_at", "-id")
+        )
+        borrowers_qs = borrowers_qs.annotate(
+            bbc_period=Subquery(bbc_latest.values("period")[:1]),
+            bbc_net_collateral=Subquery(bbc_latest.values("net_collateral")[:1]),
+            bbc_outstanding_balance=Subquery(bbc_latest.values("outstanding_balance")[:1]),
+            bbc_availability=Subquery(bbc_latest.values("availability")[:1]),
+        ).filter(bbc_period__isnull=False)
+
     borrower_rows = []
     for borrower in borrowers_qs:
-        latest_collateral_time = (
-            CollateralOverviewRow.objects.filter(borrower=borrower)
-            .aggregate(time=Max("created_at"))["time"]
-        )
-        latest_collateral_date = latest_collateral_time.date() if latest_collateral_time else None
-        collateral_rows = (
-            list(
-                CollateralOverviewRow.objects.filter(
-                    borrower=borrower,
-                    created_at__date=latest_collateral_date,
-                )
-            )
-            if latest_collateral_date
-            else []
-        )
-        net_total = sum((_to_decimal(row.net_collateral) for row in collateral_rows), Decimal("0"))
-        ar_row = (
-            ARMetricsRow.objects.filter(borrower=borrower)
-            .order_by("-as_of_date", "-created_at")
-            .first()
-        )
+        net_total = _to_decimal(borrower.bbc_net_collateral) if borrower.bbc_net_collateral is not None else None
         outstanding_value = (
-            _to_decimal(ar_row.balance)
-            if ar_row and ar_row.balance not in (None, "")
-            else Decimal("0")
+            _to_decimal(borrower.bbc_outstanding_balance)
+            if borrower.bbc_outstanding_balance is not None
+            else None
         )
-        available_total = net_total - outstanding_value
-        availability_pct = (available_total / net_total) if net_total else Decimal("0")
-        last_updated_dt = (
-            latest_collateral_time
-            or (ar_row.as_of_date if ar_row and getattr(ar_row, "as_of_date", None) else None)
-            or borrower.updated_at
-        )
+        if net_total is not None and outstanding_value is not None:
+            available_total = net_total - outstanding_value
+        else:
+            available_total = None
+        if net_total:
+            availability_pct = (available_total / net_total) if available_total is not None else Decimal("0")
+        else:
+            availability_pct = None if net_total is None else Decimal("0")
+        last_updated_dt = borrower.bbc_period or borrower.updated_at
         borrower_rows.append(
             {
                 "id": borrower.id,
@@ -1852,7 +1735,7 @@ def borrower_portfolio_view(request):
                 "updated_at": _format_datetime(borrower.updated_at),
                 "last_updated": last_updated_dt.strftime("%Y-%m-%d") if last_updated_dt else "-",
                 "net_collateral": _format_currency(net_total),
-                "outstanding_balance": _format_currency(ar_row.balance if ar_row else None),
+                "outstanding_balance": _format_currency(outstanding_value),
                 "availability": _format_currency(available_total),
                 "availability_pct": _format_pct(availability_pct),
             }
